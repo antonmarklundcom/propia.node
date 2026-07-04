@@ -4,7 +4,7 @@
  * price_usd — no MySQL-only cleverness, so the Postgres escape hatch stays
  * open. JSON columns are display-only and never filtered here.
  */
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "../db";
 import {
   agencies,
@@ -100,6 +100,36 @@ function categoryConds(q: CategoryQuery) {
   return and(...conds);
 }
 
+export type SortOption = "recientes" | "precio_asc" | "precio_desc";
+
+/**
+ * User-chosen narrowing on a category page (price/bedrooms/sort). These are
+ * NEVER folded into countCategory()/getIndexability() — that SEO signal is
+ * about the canonical (operation × location × type) page, not a visitor's
+ * transient filter choice (ARCHITECTURE.md §4.3).
+ */
+export interface CategoryFilters {
+  priceMin?: number;
+  priceMax?: number;
+  minBedrooms?: number;
+  sort?: SortOption;
+}
+
+/** categoryConds() narrowed by optional price/bedroom filters. Price filters run on price_usd (the one normalized, indexed column — see schema). */
+function filterConds(q: CategoryQuery, f: CategoryFilters) {
+  const conds = [categoryConds(q)];
+  if (f.priceMin != null) conds.push(gte(listings.priceUsd, String(f.priceMin)));
+  if (f.priceMax != null) conds.push(lte(listings.priceUsd, String(f.priceMax)));
+  if (f.minBedrooms != null) conds.push(gte(listings.bedrooms, f.minBedrooms));
+  return and(...conds);
+}
+
+function sortOrder(sort: SortOption | undefined) {
+  if (sort === "precio_asc") return asc(listings.priceUsd);
+  if (sort === "precio_desc") return desc(listings.priceUsd);
+  return desc(listings.publishedAt);
+}
+
 export type ListingCard = Pick<
   typeof listings.$inferSelect,
   | "id"
@@ -119,10 +149,16 @@ export type ListingCard = Pick<
   | "locationId"
 > & { coverKey: string | null };
 
-/** Listings for a category page (newest first), plus the total match count. */
-export async function getCategoryListings(
+/**
+ * Listings for a category page's grid, narrowed by user-chosen filters.
+ * filteredCount is ONLY for the page's own "no matches for these filters"
+ * empty state — it must never be passed to getIndexability().
+ */
+export async function getFilteredCategoryListings(
   q: CategoryQuery,
-): Promise<{ listings: ListingCard[]; count: number }> {
+  filters: CategoryFilters = {},
+): Promise<{ listings: ListingCard[]; filteredCount: number }> {
+  const where = filterConds(q, filters);
   const rows = await db
     .select({
       id: listings.id,
@@ -142,14 +178,14 @@ export async function getCategoryListings(
       locationId: listings.locationId,
     })
     .from(listings)
-    .where(categoryConds(q))
-    .orderBy(desc(listings.publishedAt))
+    .where(where)
+    .orderBy(sortOrder(filters.sort))
     .limit(q.limit ?? 48)
     .offset(q.offset ?? 0);
 
-  const count = await countCategory(q);
+  const filteredCountRows = await db.select({ id: listings.id }).from(listings).where(where);
   const cards = await attachCovers(rows);
-  return { listings: cards, count };
+  return { listings: cards, filteredCount: filteredCountRows.length };
 }
 
 /** COUNT for indexability — the single number getIndexability() consumes. */

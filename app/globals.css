@@ -200,6 +200,92 @@ body {
   }
 }
 
+/* ---- Category filter bar -------------------------------------------------- */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.filter-bar__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 130px;
+}
+
+.filter-bar__label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-ink-secondary);
+}
+
+.filter-bar__input,
+.filter-bar__select {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: #fff;
+}
+
+.filter-bar__submit {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-bar__clear {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+  text-decoration: underline;
+  align-self: center;
+}
+
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-bar__field {
+    min-width: 0;
+  }
+}
+
+/* Inline "no matches" state (filters narrowed to zero — not a 404). */
+.filter-empty {
+  margin-top: 16px;
+  padding: 24px;
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  color: var(--color-ink-secondary);
+}
+
+.filter-empty__clear {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
 /* ---- Site footer -------------------------------------------------------- */
 
 .site-footer {
