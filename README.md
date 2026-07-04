@@ -29,6 +29,18 @@ npm run cron:cuotas           # cache listings.cuota_gs (French amortization)
 npm run cron:medians          # market_medians for the current month
 ```
 
+White-glove import (M2) — CSV/spreadsheet → pending_review listings:
+
+```bash
+npm run import:csv -- data/sample-listings.csv whiteglove
+```
+
+Re-running the same file is safe: the normalize → dedup → upsert pipeline
+(`src/lib/import/`) reports every unchanged row as `unchanged` and never
+creates a duplicate. A re-listed property at a slightly different price
+collapses onto the existing listing (`deduped`). See
+`data/sample-listings.csv` for the expected columns.
+
 Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
 `price_usd` into the Gs the financing programs quote in; override it in
 `.env` when a treasury feed is available.
@@ -56,6 +68,30 @@ Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
 5. **R2:** create the bucket in Cloudflare, fill the `R2_*` envs, map
    `img.propia.com.py` to it.
 
+## Launch blockers — what to fix before go-live
+
+Founder-only items that code cannot resolve. Nothing here blocks writing more
+code, but all must be cleared before propia.com.py serves real traffic.
+
+1. **Hostinger Node.js plan (M0).** Confirm the plan has the Node.js app
+   option (Cloud/Business hPanel or a KVM VPS). MySQL is included on every
+   plan; the *app* tier is the gate. If missing → upgrade to Cloud or a small
+   KVM VPS in the São Paulo region.
+2. **Real financing rates.** `scripts/seed-financing.ts` ships PLACEHOLDER
+   Che Róga Porã / AFD terms. Verified symptom: a US$160k home currently gets
+   no cuota because the placeholder caps (~900M Gs ≈ US$123k) are too low.
+   Replace `annualRate`, `maxTermMonths`, `maxAmountGs`, `minDownPct` with the
+   current published AFD/MUVH terms, then `npm run seed:financing` +
+   `npm run cron:cuotas`. The math is verified correct; only the data is a
+   placeholder.
+3. **USD→PYG source.** Cuota and price normalization use `USD_TO_PYG`
+   (default 7300). Set it in `.env` to the rate you want quoted; wire a
+   treasury feed later if desired.
+4. **Domain.** propia.com.py must be registered and pointed at the Hostinger
+   app before public launch (a temporary Hostinger subdomain is fine for M0
+   testing — see below). `NEXT_PUBLIC_CANONICAL_HOST` must match the live host
+   so canonical URLs and vertical routing are correct.
+
 ## Repo map
 
 ```
@@ -65,6 +101,8 @@ src/config/verticals.ts    domain → vertical routing config (propia only enabl
 src/lib/indexability.ts    thin-page rule — the ONLY indexability logic
 src/lib/cuota.ts           French amortization / financing-program engine
 src/lib/crm.ts             CRM boundary — the only file that knows about GHL
+src/lib/slug.ts            shared diacritic-safe slugify + joinSlug
+src/lib/import/            intake pipeline: normalize → dedup → upsert (M2)
 src/i18n/es.ts             canonical voseo strings (never neutral Spanish)
 src/design/tokens.ts       design tokens v1
 middleware.ts              host-header vertical resolution
