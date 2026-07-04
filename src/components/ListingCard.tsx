@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
-import type { Operation, PropertyType } from "@/lib/import/types";
+import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
+import type { Operation } from "@/lib/import/types";
 import type { ListingCard as Card } from "@/lib/queries";
 
 /** Short badge label per operation. Alquiler variants share the amber badge. */
@@ -11,31 +12,6 @@ const OPERATION_BADGE: Record<Operation, string> = {
   alquiler_temporal: "Alquiler temporal",
 };
 
-/** Icon shown on the "photo coming soon" placeholder, per property type. */
-const TYPE_ICON: Record<PropertyType, string> = {
-  casa: "🏠",
-  departamento: "🏢",
-  terreno: "🌳",
-  duplex: "🏘",
-  comercial: "🏬",
-  oficina: "🏢",
-  deposito: "🏭",
-  quinta: "🌳",
-};
-
-/**
- * INTERIM: the demo dataset seeds random picsum.photos covers that have
- * nothing to do with the property (vans, bridges, fruit). Treat those as
- * "no real photo" and fall through to the branded placeholder instead of
- * showing misleading stock. Real R2 covers (any non-picsum key) render
- * normally. Remove this guard once real photos are imported.
- */
-function realCover(coverKey: string | null): string | null {
-  if (!coverKey) return null;
-  if (/picsum\.photos/i.test(coverKey)) return null;
-  return imageUrl(coverKey);
-}
-
 /**
  * Category-grid / homepage card. The whole card is a single <Link> to the
  * listing detail page. Visual hierarchy: photo → price (loudest) → cuota
@@ -43,7 +19,7 @@ function realCover(coverKey: string | null): string | null {
  * differentiator, so it gets the amber chip when we have it cached.
  */
 export function ListingCard({ card }: { card: Card }) {
-  const cover = realCover(card.coverKey);
+  const cover = isPlaceholderPhoto(card.coverKey) ? null : imageUrl(card.coverKey);
   const cuota = formatCuota(card.cuotaGs);
   const area = card.areaM2 ?? card.landM2;
   const isAlquiler = card.operation !== "venta";
