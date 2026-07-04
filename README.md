@@ -103,6 +103,15 @@ src/lib/cuota.ts           French amortization / financing-program engine
 src/lib/crm.ts             CRM boundary — the only file that knows about GHL
 src/lib/slug.ts            shared diacritic-safe slugify + joinSlug
 src/lib/import/            intake pipeline: normalize → dedup → upsert (M2)
+src/lib/urls.ts            URL scheme (§4) — canonical build + inbound parse
+src/lib/queries.ts         public read queries (listing detail, categories)
+src/lib/jsonld.ts          structured data (RealEstateListing, BreadcrumbList…)
+src/lib/format.ts          es-PY price/cuota formatting, R2 image URLs
+src/lib/sitemap.ts         sitemap entries via getIndexability (single source)
+app/propiedad/[slug]/      listing detail page (canonical, JSON-LD, WhatsApp)
+app/[operacion]/[...]/     category pages (§4 shapes, indexability enforced)
+app/api/leads/             lead webhook → MySQL first, then GHL (crm.ts)
+app/sitemap.ts app/robots.ts   SEO surface
 src/i18n/es.ts             canonical voseo strings (never neutral Spanish)
 src/design/tokens.ts       design tokens v1
 middleware.ts              host-header vertical resolution

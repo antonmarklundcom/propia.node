@@ -15,7 +15,12 @@
  */
 import { and, eq } from "drizzle-orm";
 import type { db as Db } from "../../db";
-import { listings, listingSources, locations } from "../../db/schema";
+import {
+  listingImages,
+  listings,
+  listingSources,
+  locations,
+} from "../../db/schema";
 import { slugify } from "../slug";
 import {
   contentHash as computeContentHash,
@@ -69,6 +74,9 @@ async function buildLocationResolver(db: typeof Db) {
 
 export interface ImportOptions {
   usdToPyg?: number;
+  /** Publish new listings immediately instead of pending_review. Use for
+   *  trusted white-glove batches / demo seeding; leave off for scraped sources. */
+  publish?: boolean;
 }
 
 export async function importListings(
@@ -131,6 +139,7 @@ export async function importListings(
             report.unchanged++;
           } else {
             await applyListingFields(db, existing.listingId, raw, priceUsd, locationId);
+            await syncImages(db, existing.listingId, raw.imageUrls);
             await db
               .update(listingSources)
               .set({ contentHash: cHash, dedupKey: dKey, lastSeenAt: now })
@@ -163,8 +172,15 @@ export async function importListings(
         continue;
       }
 
-      // (3) Brand new listing → pending_review (the M2 review queue).
-      const listingId = await insertListing(db, raw, priceUsd, locationId);
+      // (3) Brand new listing → pending_review (or published, if opts.publish).
+      const listingId = await insertListing(
+        db,
+        raw,
+        priceUsd,
+        locationId,
+        opts.publish ?? false,
+      );
+      await syncImages(db, listingId, raw.imageUrls);
       await db.insert(listingSources).values({
         listingId,
         source: raw.source,
@@ -213,13 +229,15 @@ async function insertListing(
   raw: RawListing,
   priceUsd: number,
   locationId: number,
+  publish: boolean,
 ): Promise<number> {
   const publicId = makePublicId();
   const slug = slugify(raw.title);
   const [res] = await db.insert(listings).values({
     publicId,
     slug,
-    status: "pending_review",
+    status: publish ? "published" : "pending_review",
+    publishedAt: publish ? new Date() : undefined,
     ...listingFields(raw, priceUsd, locationId),
   });
   // mysql2 returns insertId on the ResultSetHeader.
@@ -238,4 +256,27 @@ async function applyListingFields(
     .update(listings)
     .set(listingFields(raw, priceUsd, locationId))
     .where(eq(listings.id, listingId));
+}
+
+/**
+ * Replace a listing's images from the source URLs. INTERIM: we store the
+ * source URL in r2Key so photos render immediately (imageUrl() passes the key
+ * through when R2_PUBLIC_BASE_URL is unset). The later R2 fetch pass (M6)
+ * downloads these, watermark-scores them, and rewrites r2Key to real R2 keys.
+ * Empty/absent list → leave existing images untouched.
+ */
+async function syncImages(
+  db: typeof Db,
+  listingId: number,
+  urls: string[] | undefined,
+) {
+  if (!urls || urls.length === 0) return;
+  await db.delete(listingImages).where(eq(listingImages.listingId, listingId));
+  await db.insert(listingImages).values(
+    urls.slice(0, 20).map((url, i) => ({
+      listingId,
+      r2Key: url,
+      position: i,
+    })),
+  );
 }
