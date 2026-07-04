@@ -22,6 +22,7 @@ import {
 import { JsonLd } from "@/components/JsonLd";
 import { WhatsAppContact } from "@/components/WhatsAppContact";
 import { ListingCard } from "@/components/ListingCard";
+import { ListingMapLazy } from "@/components/ListingMapLazy";
 
 export const revalidate = 3600;
 
@@ -107,6 +108,16 @@ export default async function ListingPage({ params }: Params) {
   const realImages = images.filter((im) => !isPlaceholderPhoto(im.r2Key));
   const visibleThumbs = realImages.slice(1, 4);
   const extraCount = realImages.length - 1 - visibleThumbs.length;
+
+  // Approximate location only — barrio centroid, else city centroid. Never
+  // the listing's own lat/lng (schema.ts: precise coords are "never shown
+  // publicly at full precision").
+  const approxLocation =
+    barrio?.lat && barrio?.lng
+      ? { lat: Number(barrio.lat), lng: Number(barrio.lng), label: `${barrio.name}, ${city?.name ?? ""}` }
+      : city?.lat && city?.lng
+        ? { lat: Number(city.lat), lng: Number(city.lng), label: city.name }
+        : null;
 
   const similar = city
     ? await getSimilarListings({
@@ -221,6 +232,14 @@ export default async function ListingPage({ params }: Params) {
             <p style={{ lineHeight: 1.6, color: tokens.color.ink, whiteSpace: "pre-line" }}>
               {listing.descriptionEs}
             </p>
+          )}
+
+          {approxLocation && (
+            <div className="listing-location">
+              <h2 className="listing-location__title">Ubicación aproximada</h2>
+              <p className="listing-location__caption">{approxLocation.label}</p>
+              <ListingMapLazy lat={approxLocation.lat} lng={approxLocation.lng} />
+            </div>
           )}
         </div>
 

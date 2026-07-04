@@ -658,3 +658,38 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
 }
+
+/* ---- Listing location map -------------------------------------------------- */
+
+.listing-location {
+  margin-top: 24px;
+}
+
+.listing-location__title {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+
+.listing-location__caption {
+  font-size: 14px;
+  color: var(--color-ink-secondary);
+  margin: 0 0 10px;
+}
+
+.listing-map {
+  width: 100%;
+  height: 280px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+/* Soft "approximate area" marker — not a precise address pin. */
+.listing-map__marker {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(26, 93, 58, 0.35);
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 0 0 6px rgba(26, 93, 58, 0.12);
+}
