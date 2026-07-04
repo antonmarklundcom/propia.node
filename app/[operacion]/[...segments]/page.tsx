@@ -6,9 +6,11 @@ import {
   resolveCity,
   resolveBarrio,
   citySubtreeIds,
-  getCategoryListings,
+  getFilteredCategoryListings,
   countCategory,
+  type CategoryFilters,
   type LocationRow,
+  type SortOption,
 } from "@/lib/queries";
 import {
   parseOperation,
@@ -20,6 +22,7 @@ import { getIndexability } from "@/lib/indexability";
 import { itemListJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
+import { CategoryFilterBar } from "@/components/CategoryFilterBar";
 import { listingUrl } from "@/lib/urls";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
@@ -44,7 +47,28 @@ const TYPE_LABEL: Record<PropertyType, string> = {
   quinta: "Quintas",
 };
 
-type Params = { params: Promise<{ operacion: string; segments: string[] }> };
+type Params = {
+  params: Promise<{ operacion: string; segments: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+/** Reads ?precio_min=&precio_max=&dormitorios=&orden= into typed filters. Bad/missing values are just dropped, never an error. */
+function parseFilters(sp: Record<string, string | string[] | undefined>): CategoryFilters {
+  const num = (v: string | string[] | undefined) => {
+    if (typeof v !== "string") return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+  const sortRaw = typeof sp.orden === "string" ? sp.orden : undefined;
+  const sort: SortOption | undefined =
+    sortRaw === "precio_asc" || sortRaw === "precio_desc" ? sortRaw : undefined;
+  return {
+    priceMin: num(sp.precio_min),
+    priceMax: num(sp.precio_max),
+    minBedrooms: num(sp.dormitorios),
+    sort,
+  };
+}
 
 interface Resolved {
   operation: Operation;
@@ -148,18 +172,22 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function CategoryPage({ params }: Params) {
+export default async function CategoryPage({ params, searchParams }: Params) {
   const { operacion, segments } = await params;
+  const sp = await searchParams;
   const r = await resolve(operacion, segments);
   if (!r) notFound();
 
-  const { listings, count } = await getCategoryListings({
+  const baseQuery = {
     operation: r.operation,
     locationIds: r.locationIds,
     type: r.type ?? undefined,
-  });
+  };
 
-  // Indexability — barrio pages also require an indexable parent city page.
+  // Indexability is always computed from the canonical (unfiltered) count —
+  // a visitor's price/bedroom filter must never change whether this page
+  // is indexable or gate it behind the 404/redirect below.
+  const count = await countCategory(baseQuery);
   const parentIndexable = r.barrio
     ? (await countCategory({
         operation: r.operation,
@@ -177,6 +205,12 @@ export default async function CategoryPage({ params }: Params) {
     if (ix.redirectTo) redirect(ix.redirectTo);
     notFound();
   }
+
+  const filters = parseFilters(sp);
+  const hasActiveFilters = Boolean(
+    filters.priceMin || filters.priceMax || filters.minBedrooms || filters.sort,
+  );
+  const { listings, filteredCount } = await getFilteredCategoryListings(baseQuery, filters);
 
   const crumbs = [
     { name: "Inicio", url: "/" },
@@ -204,18 +238,37 @@ export default async function CategoryPage({ params }: Params) {
           : es.emptyState}
       </p>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-          gap: 16,
-          marginTop: 16,
-        }}
-      >
-        {listings.map((card) => (
-          <ListingCard key={card.id} card={card} />
-        ))}
-      </div>
+      <CategoryFilterBar
+        basePath={r.canonicalPath}
+        precioMin={typeof sp.precio_min === "string" ? sp.precio_min : undefined}
+        precioMax={typeof sp.precio_max === "string" ? sp.precio_max : undefined}
+        dormitorios={typeof sp.dormitorios === "string" ? sp.dormitorios : undefined}
+        orden={typeof sp.orden === "string" ? sp.orden : undefined}
+        hasActiveFilters={hasActiveFilters}
+      />
+
+      {filteredCount === 0 ? (
+        <div className="filter-empty">
+          No hay propiedades que coincidan con estos filtros.
+          <br />
+          <a className="filter-empty__clear" href={r.canonicalPath}>
+            Quitar filtros
+          </a>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+            gap: 16,
+            marginTop: 16,
+          }}
+        >
+          {listings.map((card) => (
+            <ListingCard key={card.id} card={card} />
+          ))}
+        </div>
+      )}
     </main>
   );
 }
