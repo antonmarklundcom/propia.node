@@ -17,6 +17,15 @@ import type { Operation, PropertyType } from "./import/types";
 
 export type LocationRow = typeof locations.$inferSelect;
 
+/** All ciudad-level locations, alphabetical — populates the search bar's city select. */
+export async function listCities(): Promise<Pick<LocationRow, "id" | "name" | "slug">[]> {
+  return db
+    .select({ id: locations.id, name: locations.name, slug: locations.slug })
+    .from(locations)
+    .where(eq(locations.level, "ciudad"))
+    .orderBy(asc(locations.name));
+}
+
 /** A ciudad by slug (slugs are unique per level in our seed). */
 export async function resolveCity(citySlug: string): Promise<LocationRow | null> {
   const [row] = await db
