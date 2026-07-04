@@ -1,0 +1,149 @@
+/**
+ * Global styles. Kept intentionally small — component layout still lives in
+ * inline styles; this file only carries what inline styles can't express
+ * (hover/focus states, transitions, multi-line clamping, keyframes).
+ *
+ * Colors mirror src/design/tokens.ts. CSS can't import the TS token module, so
+ * the handful of values used here are duplicated by hand — keep them in sync.
+ */
+
+:root {
+  --color-primary: #1a5d3a;
+  --color-accent: #e8a13d;
+  --color-ink: #1b1f24;
+  --color-ink-secondary: #5b6470;
+  --color-surface: #ffffff;
+  --color-border: #e6e9e5;
+}
+
+/* ---- Listing card ------------------------------------------------------- */
+
+.listing-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--color-ink);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.listing-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.14);
+  border-color: #d7ddd4;
+}
+
+.listing-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.listing-card__media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background-color: #e9ece7;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Placeholder wash for listings without a real cover photo. */
+.listing-card__media--empty {
+  background-image: linear-gradient(135deg, #eef1ec 0%, #dfe5da 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  color: #9aa79b;
+}
+
+/* Bottom scrim so the operation badge stays legible over any photo. */
+.listing-card__media::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 42%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+
+.listing-card__badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: var(--color-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.listing-card__badge--alquiler {
+  background: var(--color-accent);
+  color: #3a2a08;
+}
+
+.listing-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 14px;
+}
+
+.listing-card__price {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--color-ink);
+}
+
+.listing-card__cuota {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fcf3e4;
+  color: #a5701c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.listing-card__title {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-ink);
+  /* clamp to two lines so cards keep an even height */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.listing-card__specs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+}
+
+.listing-card__spec {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
