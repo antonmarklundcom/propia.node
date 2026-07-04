@@ -4,7 +4,7 @@
  * price_usd — no MySQL-only cleverness, so the Postgres escape hatch stays
  * open. JSON columns are display-only and never filtered here.
  */
-import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, ne } from "drizzle-orm";
 import { db } from "../db";
 import {
   agencies,
@@ -294,6 +294,47 @@ export async function getListingByPublicId(
   }
 
   return { listing, images, chain, agency, agent };
+}
+
+/** Same operación + tipo, same city subtree, excluding the listing itself. */
+export async function getSimilarListings(params: {
+  excludeId: number;
+  operation: Operation;
+  type: PropertyType;
+  locationIds: number[];
+  limit?: number;
+}): Promise<ListingCard[]> {
+  const rows = await db
+    .select({
+      id: listings.id,
+      publicId: listings.publicId,
+      slug: listings.slug,
+      title: listings.title,
+      operation: listings.operation,
+      propertyType: listings.propertyType,
+      priceUsd: listings.priceUsd,
+      priceAmount: listings.priceAmount,
+      priceCurrency: listings.priceCurrency,
+      cuotaGs: listings.cuotaGs,
+      bedrooms: listings.bedrooms,
+      bathrooms: listings.bathrooms,
+      areaM2: listings.areaM2,
+      landM2: listings.landM2,
+      locationId: listings.locationId,
+    })
+    .from(listings)
+    .where(
+      and(
+        eq(listings.status, "published"),
+        eq(listings.operation, params.operation),
+        eq(listings.propertyType, params.type),
+        inArray(listings.locationId, params.locationIds),
+        ne(listings.id, params.excludeId),
+      ),
+    )
+    .orderBy(desc(listings.publishedAt))
+    .limit(params.limit ?? 4);
+  return attachCovers(rows);
 }
 
 export { citySubtreeIds };

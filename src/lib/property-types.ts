@@ -11,3 +11,8 @@ export const PROPERTY_TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
   { value: "deposito", label: "Depósitos" },
   { value: "quinta", label: "Quintas" },
 ];
+
+/** Same labels, keyed by type — for breadcrumbs and other lookups. */
+export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = Object.fromEntries(
+  PROPERTY_TYPE_OPTIONS.map((o) => [o.value, o.label]),
+) as Record<PropertyType, string>;

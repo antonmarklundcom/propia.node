@@ -1,17 +1,27 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { tokens } from "@/design/tokens";
-import { es } from "@/i18n/es";
-import { getListingByPublicId } from "@/lib/queries";
-import { parseListingPublicId, listingUrl } from "@/lib/urls";
+import {
+  getListingByPublicId,
+  getSimilarListings,
+  citySubtreeIds,
+} from "@/lib/queries";
+import {
+  parseListingPublicId,
+  listingUrl,
+  categoryUrl,
+} from "@/lib/urls";
 import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
+import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
+import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import {
   listingJsonLd,
   breadcrumbJsonLd,
-  locationBreadcrumb,
 } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { WhatsAppContact } from "@/components/WhatsAppContact";
+import { ListingCard } from "@/components/ListingCard";
 
 export const revalidate = 3600;
 
@@ -58,59 +68,115 @@ export default async function ListingPage({ params }: Params) {
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
   const area = listing.areaM2 ?? listing.landM2;
 
-  const crumbs = locationBreadcrumb(chain, {
-    name: listing.title,
-    url: listingUrl(listing),
-  });
+  const city = chain.find((c) => c.level === "ciudad");
+  const barrio = chain.find((c) => c.level === "barrio");
+  const typeLabel = PROPERTY_TYPE_LABELS[listing.propertyType];
+  const typeUrl = city
+    ? categoryUrl({ operation: listing.operation, citySlug: city.slug, type: listing.propertyType })
+    : undefined;
+
+  // Only include nodes with a genuinely routable URL in both the visible
+  // nav and the JSON-LD (a bare barrio page isn't a valid route).
+  const crumbs: { name: string; url?: string }[] = [{ name: "Inicio", url: "/" }];
+  if (city) {
+    crumbs.push({
+      name: city.name,
+      url: categoryUrl({ operation: listing.operation, citySlug: city.slug }),
+    });
+  }
+  if (typeUrl) crumbs.push({ name: typeLabel, url: typeUrl });
+  if (barrio) {
+    crumbs.push({
+      name: barrio.name,
+      url: city
+        ? categoryUrl({
+            operation: listing.operation,
+            citySlug: city.slug,
+            barrioSlug: barrio.slug,
+            type: listing.propertyType,
+          })
+        : undefined,
+    });
+  }
+  crumbs.push({ name: listing.title });
+
+  const jsonLdCrumbs = crumbs
+    .filter((c): c is { name: string; url: string } => Boolean(c.url))
+    .concat([{ name: listing.title, url: listingUrl(listing) }]);
+
+  const realImages = images.filter((im) => !isPlaceholderPhoto(im.r2Key));
+  const visibleThumbs = realImages.slice(1, 4);
+  const extraCount = realImages.length - 1 - visibleThumbs.length;
+
+  const similar = city
+    ? await getSimilarListings({
+        excludeId: listing.id,
+        operation: listing.operation,
+        type: listing.propertyType,
+        locationIds: await citySubtreeIds(city.id),
+        limit: 4,
+      })
+    : [];
 
   return (
-    <main style={{ maxWidth: 1000, margin: "0 auto", padding: "1rem" }}>
-      <JsonLd data={[listingJsonLd(detail), breadcrumbJsonLd(crumbs)]} />
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
+      <JsonLd data={[listingJsonLd(detail), breadcrumbJsonLd(jsonLdCrumbs)]} />
 
-      <nav style={{ fontSize: 13, color: tokens.color.inkSecondary, marginBottom: 12 }}>
-        {chain.map((c) => c.name).join(" › ")}
+      <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
+        {crumbs.map((c, i) => (
+          <span key={`${c.name}-${i}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {i > 0 && <span aria-hidden>›</span>}
+            {c.url && i < crumbs.length - 1 ? (
+              <Link className="breadcrumb-nav__link" href={c.url}>
+                {c.name}
+              </Link>
+            ) : (
+              <span className="breadcrumb-nav__current" aria-current={i === crumbs.length - 1 ? "page" : undefined}>
+                {c.name}
+              </span>
+            )}
+          </span>
+        ))}
       </nav>
 
       {/* Gallery */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: images.length > 1 ? "2fr 1fr" : "1fr",
-          gap: 8,
-          marginBottom: 16,
-        }}
-      >
-        <div
-          style={{
-            aspectRatio: "4 / 3",
-            borderRadius: tokens.radius.card,
-            background: images[0]
-              ? `#eee url(${imageUrl(images[0].r2Key)}) center/cover`
-              : "#e3e6e2",
-          }}
-        />
-        {images.length > 1 && (
-          <div style={{ display: "grid", gap: 8 }}>
-            {images.slice(1, 3).map((im) => (
-              <div
-                key={im.id}
-                style={{
-                  borderRadius: tokens.radius.card,
-                  background: `#eee url(${imageUrl(im.r2Key)}) center/cover`,
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {realImages.length === 0 ? (
+        <div className="detail-gallery__empty">
+          <span className="detail-gallery__empty-icon" aria-hidden>
+            {TYPE_ICON[listing.propertyType]}
+          </span>
+          <span className="detail-gallery__empty-label">Fotos próximamente</span>
+        </div>
+      ) : (
+        <div className="detail-gallery">
+          <div
+            className="detail-gallery__main"
+            style={{ backgroundImage: `url(${imageUrl(realImages[0].r2Key)})` }}
+            role="img"
+            aria-label={listing.title}
+          />
+          {visibleThumbs.length > 0 && (
+            <div className="detail-gallery__thumbs">
+              {visibleThumbs.map((im, i) => {
+                const isLast = i === visibleThumbs.length - 1;
+                return (
+                  <div
+                    key={im.id}
+                    className="detail-gallery__thumb"
+                    style={{ backgroundImage: `url(${imageUrl(im.r2Key)})` }}
+                  >
+                    {isLast && extraCount > 0 && (
+                      <div className="detail-gallery__more">+{extraCount} fotos</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr",
-          gap: 24,
-        }}
-      >
+      <div className="listing-detail__layout">
         <div>
           <h1 style={{ fontSize: 24, margin: "0 0 4px" }}>{listing.title}</h1>
           <div style={{ fontSize: 28, fontWeight: 800, color: tokens.color.primary }}>
@@ -159,16 +225,7 @@ export default async function ListingPage({ params }: Params) {
         </div>
 
         {/* Sticky contact card */}
-        <aside
-          style={{
-            position: "sticky",
-            bottom: 0,
-            background: tokens.color.surface,
-            borderRadius: tokens.radius.card,
-            padding: 16,
-            boxShadow: "0 -2px 12px rgba(0,0,0,0.08)",
-          }}
-        >
+        <aside className="listing-detail__aside">
           <div style={{ fontWeight: 700, marginBottom: 8 }}>
             {agency?.name ?? agent?.name ?? "Publicado en Propia"}
           </div>
@@ -179,6 +236,17 @@ export default async function ListingPage({ params }: Params) {
           />
         </aside>
       </div>
+
+      {similar.length > 0 && (
+        <section className="similar-listings">
+          <h2 className="similar-listings__title">Propiedades similares</h2>
+          <div className="similar-listings__grid">
+            {similar.map((card) => (
+              <ListingCard key={card.id} card={card} />
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
