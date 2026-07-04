@@ -16,10 +16,22 @@ docker compose up -d          # local MySQL 8 on :3306
 npm install
 npm run db:generate           # generate SQL migrations from src/db/schema.ts
 npm run db:migrate            # apply them
-npx tsx scripts/seed-financing.ts
+npm run seed:financing        # financing_programs (verify rates before launch)
+npm run seed:locations        # Gran Asunción metro + major cities hierarchy
 npm run dev                   # http://localhost:3000
 npm run db:studio             # Drizzle Studio — interim admin UI
 ```
+
+Cron-style jobs (idempotent; also run on a schedule in production):
+
+```bash
+npm run cron:cuotas           # cache listings.cuota_gs (French amortization)
+npm run cron:medians          # market_medians for the current month
+```
+
+Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
+`price_usd` into the Gs the financing programs quote in; override it in
+`.env` when a treasury feed is available.
 
 ## Hostinger production setup (one-time)
 

@@ -11,7 +11,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "seed:financing": "tsx scripts/seed-financing.ts",
+    "seed:locations": "tsx scripts/seed-locations.ts",
+    "cron:cuotas": "tsx scripts/recompute-cuotas.ts",
+    "cron:medians": "tsx scripts/compute-medians.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.2",
@@ -26,6 +30,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "drizzle-kit": "^0.31.1",
+    "tsx": "^4.23.0",
     "typescript": "^5.8.3"
   }
 }
