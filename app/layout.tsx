@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: "Propia — Encontrá tu propiedad en Paraguay",
@@ -20,7 +22,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           color: "#1B1F24",
         }}
       >
-        {children}
+        <SiteHeader />
+        <div className="site-main">{children}</div>
+        <SiteFooter />
       </body>
     </html>
   );
