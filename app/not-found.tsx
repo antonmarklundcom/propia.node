@@ -1,17 +1,26 @@
 import Link from "next/link";
 import { tokens } from "@/design/tokens";
+import { listCities } from "@/lib/queries";
+import { SearchBar } from "@/components/SearchBar";
+import { POPULAR_SEARCHES } from "@/config/popular-searches";
+
+// Renders per-request rather than at build time — it queries the DB for the
+// city list, and this page has no dynamic segment to otherwise force that.
+export const dynamic = "force-dynamic";
 
 /**
  * Branded 404. Also what renders for category URLs with zero matching
  * listings (getIndexability() → "gone" with no parent to redirect to,
  * ARCHITECTURE.md §4.3) — that's an intentional SEO signal, but a visitor
- * who just searched should get a helpful page, not Next's bare default.
+ * who just searched should get somewhere to go next, not a dead end.
  */
-export default function NotFound() {
+export default async function NotFound() {
+  const cities = await listCities();
+
   return (
     <main
       style={{
-        maxWidth: 640,
+        maxWidth: 720,
         margin: "0 auto",
         padding: "4rem 1rem",
         textAlign: "center",
@@ -27,21 +36,54 @@ export default function NotFound() {
         Puede que no haya publicaciones disponibles en esa zona o combinación
         todavía. Probá con otra ciudad o tipo de propiedad.
       </p>
+
+      <div style={{ textAlign: "left" }}>
+        <SearchBar cities={cities} />
+      </div>
+
+      <p
+        style={{
+          marginTop: 28,
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: "0.02em",
+          color: tokens.color.inkSecondary,
+        }}
+      >
+        BÚSQUEDAS POPULARES
+      </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
+        {POPULAR_SEARCHES.map((s) => (
+          <Link
+            key={s.href}
+            href={s.href}
+            style={{
+              padding: "8px 14px",
+              borderRadius: tokens.radius.chip,
+              background: tokens.color.surface,
+              border: "1px solid #E1E5E0",
+              color: tokens.color.ink,
+              textDecoration: "none",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            {s.label}
+          </Link>
+        ))}
+      </div>
+
       <Link
         href="/"
         style={{
           display: "inline-block",
-          marginTop: 20,
-          padding: "10px 22px",
-          borderRadius: tokens.radius.chip,
-          background: tokens.color.primary,
-          color: "#fff",
-          textDecoration: "none",
+          marginTop: 24,
+          fontSize: 14,
           fontWeight: 700,
-          fontSize: 15,
+          color: tokens.color.primary,
         }}
       >
-        Volver a buscar
+        Volver al inicio
       </Link>
     </main>
   );

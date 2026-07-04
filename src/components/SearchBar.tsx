@@ -21,12 +21,26 @@ const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
  * the matching category URL (§4 shapes) — no client-side filtering, no new
  * backend. Ciudad list comes from the DB (server-fetched, passed as a prop)
  * so it never drifts from what's actually seeded.
+ *
+ * Also reused on category pages, pre-filled with the current selection
+ * (defaultOperation/defaultCitySlug/defaultType) so a visitor can pivot the
+ * search without going back to the homepage.
  */
-export function SearchBar({ cities }: { cities: CityOption[] }) {
+export function SearchBar({
+  cities,
+  defaultOperation = "venta",
+  defaultCitySlug,
+  defaultType = "",
+}: {
+  cities: CityOption[];
+  defaultOperation?: Operation;
+  defaultCitySlug?: string;
+  defaultType?: PropertyType | "";
+}) {
   const router = useRouter();
-  const [operation, setOperation] = useState<Operation>("venta");
-  const [citySlug, setCitySlug] = useState(cities[0]?.slug ?? "");
-  const [type, setType] = useState<PropertyType | "">("");
+  const [operation, setOperation] = useState<Operation>(defaultOperation);
+  const [citySlug, setCitySlug] = useState(defaultCitySlug ?? cities[0]?.slug ?? "");
+  const [type, setType] = useState<PropertyType | "">(defaultType);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
