@@ -1,0 +1,221 @@
+import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
+import { tokens } from "@/design/tokens";
+import { es } from "@/i18n/es";
+import {
+  resolveCity,
+  resolveBarrio,
+  citySubtreeIds,
+  getCategoryListings,
+  countCategory,
+  type LocationRow,
+} from "@/lib/queries";
+import {
+  parseOperation,
+  parseCategorySegments,
+  categoryUrl,
+  typePlural,
+} from "@/lib/urls";
+import { getIndexability } from "@/lib/indexability";
+import { itemListJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
+import { JsonLd } from "@/components/JsonLd";
+import { ListingCard } from "@/components/ListingCard";
+import { listingUrl } from "@/lib/urls";
+import type { Operation, PropertyType } from "@/lib/import/types";
+
+export const revalidate = 3600;
+
+const ORIGIN = () =>
+  `https://${process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "propia.com.py"}`;
+
+const OP_LABEL: Record<Operation, string> = {
+  venta: "venta",
+  alquiler: "alquiler",
+  alquiler_temporal: "alquiler temporal",
+};
+const TYPE_LABEL: Record<PropertyType, string> = {
+  casa: "Casas",
+  departamento: "Departamentos",
+  terreno: "Terrenos",
+  duplex: "Dúplex",
+  comercial: "Locales comerciales",
+  oficina: "Oficinas",
+  deposito: "Depósitos",
+  quinta: "Quintas",
+};
+
+type Params = { params: Promise<{ operacion: string; segments: string[] }> };
+
+interface Resolved {
+  operation: Operation;
+  city: LocationRow;
+  barrio: LocationRow | null;
+  type: PropertyType | null;
+  locationIds: number[];
+  canonicalPath: string;
+  parentUrl?: string;
+  title: string;
+}
+
+/** Shared resolution for metadata + page (structure + DB lookups, no listings). */
+async function resolve(
+  operacion: string,
+  segments: string[],
+): Promise<Resolved | null> {
+  const operation = parseOperation(operacion);
+  if (!operation) return null;
+  const shape = parseCategorySegments(segments);
+  if (!shape) return null;
+
+  const city = await resolveCity(shape.citySlug);
+  if (!city) return null;
+
+  let barrio: LocationRow | null = null;
+  let type: PropertyType | null = null;
+  let locationIds: number[];
+  let parentUrl: string | undefined;
+
+  if (shape.kind === "city") {
+    locationIds = await citySubtreeIds(city.id);
+  } else if (shape.kind === "city-type") {
+    type = shape.type;
+    locationIds = await citySubtreeIds(city.id);
+    parentUrl = categoryUrl({ operation, citySlug: city.slug });
+  } else {
+    type = shape.type;
+    barrio = await resolveBarrio(city.id, shape.barrioSlug);
+    if (!barrio) return null;
+    locationIds = [barrio.id];
+    parentUrl = categoryUrl({
+      operation,
+      citySlug: city.slug,
+      type: shape.type,
+    });
+  }
+
+  const where = barrio ? `${barrio.name}, ${city.name}` : city.name;
+  const typeLabel = type ? TYPE_LABEL[type] : "Propiedades";
+  const title = `${typeLabel} en ${OP_LABEL[operation]} en ${where}`;
+
+  return {
+    operation,
+    city,
+    barrio,
+    type,
+    locationIds,
+    canonicalPath: categoryUrl({
+      operation,
+      citySlug: city.slug,
+      barrioSlug: barrio?.slug,
+      type: type ?? undefined,
+    }),
+    parentUrl,
+    title,
+  };
+}
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { operacion, segments } = await params;
+  const r = await resolve(operacion, segments);
+  if (!r) return { title: "No encontrado — Propia" };
+
+  const count = await countCategory({
+    operation: r.operation,
+    locationIds: r.locationIds,
+    type: r.type ?? undefined,
+  });
+  const parentIndexable = r.barrio
+    ? (await countCategory({
+        operation: r.operation,
+        locationIds: await citySubtreeIds(r.city.id),
+        type: r.type ?? undefined,
+      })) >= 3
+    : undefined;
+  const ix = getIndexability({
+    listingCount: count,
+    parentIndexable,
+    parentUrl: r.parentUrl,
+  });
+
+  return {
+    title: `${r.title} — Propia`,
+    description: `${count} ${r.title.toLowerCase()} en Propia. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
+    alternates: { canonical: `${ORIGIN()}${r.canonicalPath}` },
+    robots:
+      ix.state === "index"
+        ? { index: true, follow: true }
+        : { index: false, follow: true },
+  };
+}
+
+export default async function CategoryPage({ params }: Params) {
+  const { operacion, segments } = await params;
+  const r = await resolve(operacion, segments);
+  if (!r) notFound();
+
+  const { listings, count } = await getCategoryListings({
+    operation: r.operation,
+    locationIds: r.locationIds,
+    type: r.type ?? undefined,
+  });
+
+  // Indexability — barrio pages also require an indexable parent city page.
+  const parentIndexable = r.barrio
+    ? (await countCategory({
+        operation: r.operation,
+        locationIds: await citySubtreeIds(r.city.id),
+        type: r.type ?? undefined,
+      })) >= 3
+    : undefined;
+  const ix = getIndexability({
+    listingCount: count,
+    parentIndexable,
+    parentUrl: r.parentUrl,
+  });
+
+  if (ix.state === "gone") {
+    if (ix.redirectTo) redirect(ix.redirectTo);
+    notFound();
+  }
+
+  const crumbs = [
+    { name: "Inicio", url: "/" },
+    { name: r.city.name, url: categoryUrl({ operation: r.operation, citySlug: r.city.slug }) },
+    ...(r.barrio ? [{ name: r.barrio.name, url: r.canonicalPath }] : []),
+  ];
+
+  return (
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
+      {ix.state === "index" && (
+        <JsonLd
+          data={[
+            breadcrumbJsonLd(crumbs),
+            itemListJsonLd(
+              listings.map((l) => ({ title: l.title, url: listingUrl(l) })),
+            ),
+          ]}
+        />
+      )}
+
+      <h1 style={{ fontSize: 24 }}>{r.title}</h1>
+      <p style={{ color: tokens.color.inkSecondary, marginTop: 4 }}>
+        {count > 0
+          ? `${count} ${count === 1 ? "propiedad" : "propiedades"} disponibles.`
+          : es.emptyState}
+      </p>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+          gap: 16,
+          marginTop: 16,
+        }}
+      >
+        {listings.map((card) => (
+          <ListingCard key={card.id} card={card} />
+        ))}
+      </div>
+    </main>
+  );
+}
