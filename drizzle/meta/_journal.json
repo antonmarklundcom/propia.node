@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1783162926450,
+      "tag": "0000_slimy_power_man",
+      "breakpoints": true
+    }
+  ]
+}
