@@ -74,6 +74,9 @@ async function buildLocationResolver(db: typeof Db) {
 
 export interface ImportOptions {
   usdToPyg?: number;
+  /** Publish new listings immediately instead of pending_review. Use for
+   *  trusted white-glove batches / demo seeding; leave off for scraped sources. */
+  publish?: boolean;
 }
 
 export async function importListings(
@@ -169,8 +172,14 @@ export async function importListings(
         continue;
       }
 
-      // (3) Brand new listing → pending_review (the M2 review queue).
-      const listingId = await insertListing(db, raw, priceUsd, locationId);
+      // (3) Brand new listing → pending_review (or published, if opts.publish).
+      const listingId = await insertListing(
+        db,
+        raw,
+        priceUsd,
+        locationId,
+        opts.publish ?? false,
+      );
       await syncImages(db, listingId, raw.imageUrls);
       await db.insert(listingSources).values({
         listingId,
@@ -220,13 +229,15 @@ async function insertListing(
   raw: RawListing,
   priceUsd: number,
   locationId: number,
+  publish: boolean,
 ): Promise<number> {
   const publicId = makePublicId();
   const slug = slugify(raw.title);
   const [res] = await db.insert(listings).values({
     publicId,
     slug,
-    status: "pending_review",
+    status: publish ? "published" : "pending_review",
+    publishedAt: publish ? new Date() : undefined,
     ...listingFields(raw, priceUsd, locationId),
   });
   // mysql2 returns insertId on the ResultSetHeader.

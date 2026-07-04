@@ -1,12 +1,13 @@
 /**
  * White-glove CSV import CLI (ARCHITECTURE.md §2.4, M2).
  *
- *   npx tsx scripts/import-csv.ts <file.csv> [source]
- *   npm run import:csv -- data/agency-x.csv whiteglove
+ *   npx tsx scripts/import-csv.ts <file.csv> [source] [--publish]
+ *   npm run import:csv -- data/agency-x.csv whiteglove --publish
  *
- * source defaults to 'whiteglove'. Imported listings land in pending_review;
- * approve them in Drizzle Studio (the interim admin). Re-running the same file
- * is safe — the dedup pipeline reports every row as unchanged.
+ * source defaults to 'whiteglove'. Without --publish, imported listings land
+ * in pending_review (approve in Drizzle Studio, the interim admin). With
+ * --publish they go live immediately — for trusted white-glove batches or
+ * demo seeding. Re-running the same file is safe (dedup → all unchanged).
  */
 import { readFileSync } from "node:fs";
 import { db } from "../src/db";
@@ -15,8 +16,11 @@ import { importListings } from "../src/lib/import/upsert";
 import type { ListingSource, RawListing } from "../src/lib/import/types";
 
 async function main() {
-  const file = process.argv[2];
-  const source = (process.argv[3] as ListingSource) || "whiteglove";
+  const args = process.argv.slice(2);
+  const publish = args.includes("--publish");
+  const positional = args.filter((a) => !a.startsWith("--"));
+  const file = positional[0];
+  const source = (positional[1] as ListingSource) || "whiteglove";
   if (!file) {
     console.error("usage: tsx scripts/import-csv.ts <file.csv> [source]");
     process.exit(1);
@@ -33,9 +37,9 @@ async function main() {
     }
   });
 
-  const report = await importListings(db, rows);
+  const report = await importListings(db, rows, { publish });
   console.log(
-    `\nimport '${file}' (source=${source})\n` +
+    `\nimport '${file}' (source=${source}${publish ? ", published" : ""})\n` +
       `  created:   ${report.created}\n` +
       `  updated:   ${report.updated}\n` +
       `  unchanged: ${report.unchanged}\n` +
