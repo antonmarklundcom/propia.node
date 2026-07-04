@@ -6,6 +6,7 @@ import { currentVertical } from "@/lib/vertical-context";
 import { getRecentListings, listCities } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { SearchBar } from "@/components/SearchBar";
+import { POPULAR_SEARCHES } from "@/config/popular-searches";
 
 export const revalidate = 600;
 
@@ -14,14 +15,6 @@ export const metadata: Metadata = {
   description:
     "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
 };
-
-// Entry points into the category tree — the highest-intent starting pages.
-const QUICK_LINKS = [
-  { label: "Casas en Asunción", href: "/venta/asuncion/casas" },
-  { label: "Departamentos en Asunción", href: "/venta/asuncion/departamentos" },
-  { label: "Terrenos en Luque", href: "/venta/luque/terrenos" },
-  { label: "Alquileres en Asunción", href: "/alquiler/asuncion" },
-];
 
 export default async function Home() {
   await currentVertical();
@@ -43,7 +36,7 @@ export default async function Home() {
         <SearchBar cities={cities} />
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
-          {QUICK_LINKS.map((q) => (
+          {POPULAR_SEARCHES.map((q) => (
             <Link
               key={q.href}
               href={q.href}

@@ -8,6 +8,7 @@ import {
   citySubtreeIds,
   getFilteredCategoryListings,
   countCategory,
+  listCities,
   type CategoryFilters,
   type LocationRow,
   type SortOption,
@@ -23,6 +24,7 @@ import { itemListJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { CategoryFilterBar } from "@/components/CategoryFilterBar";
+import { SearchBar } from "@/components/SearchBar";
 import { listingUrl } from "@/lib/urls";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
@@ -210,7 +212,10 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   const hasActiveFilters = Boolean(
     filters.priceMin || filters.priceMax || filters.minBedrooms || filters.sort,
   );
-  const { listings, filteredCount } = await getFilteredCategoryListings(baseQuery, filters);
+  const [{ listings, filteredCount }, cities] = await Promise.all([
+    getFilteredCategoryListings(baseQuery, filters),
+    listCities(),
+  ]);
 
   const crumbs = [
     { name: "Inicio", url: "/" },
@@ -237,6 +242,13 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           ? `${count} ${count === 1 ? "propiedad" : "propiedades"} disponibles.`
           : es.emptyState}
       </p>
+
+      <SearchBar
+        cities={cities}
+        defaultOperation={r.operation}
+        defaultCitySlug={r.city.slug}
+        defaultType={r.type ?? ""}
+      />
 
       <CategoryFilterBar
         basePath={r.canonicalPath}

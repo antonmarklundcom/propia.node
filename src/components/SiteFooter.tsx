@@ -1,16 +1,10 @@
 import Link from "next/link";
+import { POPULAR_SEARCHES } from "@/config/popular-searches";
 
 /**
  * Global footer (portal shell). Popular searches double as internal links for
  * SEO; the columns give the page a finished base instead of a floating grid.
  */
-const POPULAR = [
-  { label: "Casas en Asunción", href: "/venta/asuncion/casas" },
-  { label: "Departamentos en Asunción", href: "/venta/asuncion/departamentos" },
-  { label: "Terrenos en Luque", href: "/venta/luque/terrenos" },
-  { label: "Alquileres en Asunción", href: "/alquiler/asuncion" },
-];
-
 const ABOUT = [
   { label: "Comprar", href: "/venta/asuncion" },
   { label: "Alquilar", href: "/alquiler/asuncion" },
@@ -33,7 +27,7 @@ export function SiteFooter() {
         <div>
           <div className="site-footer__col-title">Búsquedas populares</div>
           <ul className="site-footer__links">
-            {POPULAR.map((l) => (
+            {POPULAR_SEARCHES.map((l) => (
               <li key={l.href}>
                 <Link className="site-footer__link" href={l.href}>
                   {l.label}
