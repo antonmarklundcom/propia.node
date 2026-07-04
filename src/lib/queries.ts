@@ -175,6 +175,33 @@ async function attachCovers(
   return rows.map((r) => ({ ...r, coverKey: coverByListing.get(r.id) ?? null }));
 }
 
+/** Most recent published listings for the homepage grid. */
+export async function getRecentListings(limit = 12): Promise<ListingCard[]> {
+  const rows = await db
+    .select({
+      id: listings.id,
+      publicId: listings.publicId,
+      slug: listings.slug,
+      title: listings.title,
+      operation: listings.operation,
+      propertyType: listings.propertyType,
+      priceUsd: listings.priceUsd,
+      priceAmount: listings.priceAmount,
+      priceCurrency: listings.priceCurrency,
+      cuotaGs: listings.cuotaGs,
+      bedrooms: listings.bedrooms,
+      bathrooms: listings.bathrooms,
+      areaM2: listings.areaM2,
+      landM2: listings.landM2,
+      locationId: listings.locationId,
+    })
+    .from(listings)
+    .where(eq(listings.status, "published"))
+    .orderBy(desc(listings.publishedAt))
+    .limit(limit);
+  return attachCovers(rows);
+}
+
 export interface ListingDetail {
   listing: typeof listings.$inferSelect;
   images: (typeof listingImages.$inferSelect)[];
