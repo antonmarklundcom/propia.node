@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import { tokens } from "@/design/tokens";
 import { es } from "@/i18n/es";
 import { currentVertical } from "@/lib/vertical-context";
-import { getRecentListings } from "@/lib/queries";
+import { getRecentListings, listCities } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
+import { SearchBar } from "@/components/SearchBar";
 
 export const revalidate = 600;
 
@@ -24,7 +25,10 @@ const QUICK_LINKS = [
 
 export default async function Home() {
   await currentVertical();
-  const recent = await getRecentListings(12);
+  const [recent, cities] = await Promise.all([
+    getRecentListings(12),
+    listCities(),
+  ]);
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
@@ -35,6 +39,9 @@ export default async function Home() {
         <p style={{ fontSize: 18, color: tokens.color.inkSecondary, marginTop: 8 }}>
           Casas, departamentos y terrenos — con cuota estimada y financiamiento.
         </p>
+
+        <SearchBar cities={cities} />
+
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
           {QUICK_LINKS.map((q) => (
             <Link
