@@ -192,12 +192,13 @@ export default async function ListingPage({ params }: Params) {
           <h1 className="page-title" style={{ marginBottom: 4 }}>
             {listing.title}
           </h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
             <div
               style={{
                 fontSize: "var(--text-2xl)",
                 fontWeight: 800,
                 color: "var(--color-primary)",
+                whiteSpace: "nowrap",
               }}
             >
               {formatPrice(listing)}

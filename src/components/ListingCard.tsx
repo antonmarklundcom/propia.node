@@ -61,7 +61,7 @@ export function ListingCard({ card }: { card: Card }) {
       </div>
 
       <div className="listing-card__body">
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
           <div className="listing-card__price">{formatPrice(card)}</div>
           {card.isVerified && <Badge variant="success">✓ Verificado</Badge>}
         </div>

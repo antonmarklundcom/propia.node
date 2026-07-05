@@ -963,6 +963,7 @@ a.card:hover {
   font-weight: 800;
   line-height: 1.1;
   color: var(--color-ink);
+  white-space: nowrap;
 }
 
 .listing-card__title {
