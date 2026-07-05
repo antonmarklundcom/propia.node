@@ -41,6 +41,13 @@ creates a duplicate. A re-listed property at a slightly different price
 collapses onto the existing listing (`deduped`). See
 `data/sample-listings.csv` for the expected columns.
 
+For a fuller local preview (design review, screenshots) — 50 synthetic
+listings spread across real seeded neighborhoods/cities, mixed
+operations/types/prices — import `data/demo-listings.csv` instead:
+`npm run import:csv -- data/demo-listings.csv whiteglove`. **Fake data for
+testing only**, not real inventory — real supply comes from the wizard
+(M6′) and agency-CRM integrations (M9′), never scraping.
+
 Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
 `price_usd` into the Gs the financing programs quote in; override it in
 `.env` when a treasury feed is available.
