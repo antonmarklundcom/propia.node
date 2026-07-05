@@ -705,6 +705,11 @@ body {
   .search-bar .field {
     min-width: 0;
   }
+  /* In a column flex container, flex-grow stretches height, not width —
+     the desktop row-fill trick must not apply once stacked. */
+  .search-bar__field--grow {
+    flex: 0 1 auto;
+  }
 }
 
 /* ---- Category filter bar -------------------------------------------------- */
@@ -1063,26 +1068,41 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
+  /* Room for the fixed mobile contact bar so it never covers the last bit
+     of content (similar listings, footer) — see .listing-detail__aside. */
+  padding-bottom: 88px;
 }
 
+/* Mobile: a fixed bottom contact bar, not `sticky` — `sticky` computes its
+   stuck position from normal document flow, which on a short first
+   viewport made it overlap the title/price on load instead of waiting
+   for scroll. `fixed` always pins it to the viewport, no overlap. */
 .listing-detail__aside {
-  position: sticky;
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
+  z-index: var(--z-sticky);
   background: var(--color-surface);
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 14px 14px 0 0;
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-float);
 }
 
 @media (min-width: 860px) {
   .listing-detail__layout {
     grid-template-columns: 2fr 1fr;
     align-items: start;
+    padding-bottom: 0;
   }
   .listing-detail__aside {
     position: sticky;
+    left: auto;
+    right: auto;
     top: 88px;
     bottom: auto;
+    z-index: auto;
+    border-radius: 14px;
     box-shadow: 0 4px 16px rgba(16, 24, 40, 0.08);
     border: 1px solid var(--color-border);
   }
