@@ -19,7 +19,7 @@
     "import:csv": "tsx scripts/import-csv.ts"
   },
   "dependencies": {
-    "drizzle-orm": "^0.44.2",
+    "drizzle-orm": "^0.45.2",
     "maplibre-gl": "^5.24.0",
     "mysql2": "^3.14.1",
     "next": "^15.3.4",
@@ -34,5 +34,9 @@
     "drizzle-kit": "^0.31.1",
     "tsx": "^4.23.0",
     "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1",
+    "postcss": "^8.5.10"
   }
 }
