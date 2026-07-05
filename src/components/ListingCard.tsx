@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
+import { Badge } from "@/components/ui/Badge";
 import type { Operation } from "@/lib/import/types";
 import type { ListingCard as Card } from "@/lib/queries";
 
@@ -60,7 +61,10 @@ export function ListingCard({ card }: { card: Card }) {
       </div>
 
       <div className="listing-card__body">
-        <div className="listing-card__price">{formatPrice(card)}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="listing-card__price">{formatPrice(card)}</div>
+          {card.isVerified && <Badge variant="success">✓ Verificado</Badge>}
+        </div>
         {cuota && <div className="cuota-chip" style={{ marginTop: 2 }}>💳 {cuota}</div>}
         <div className="listing-card__title">{card.title}</div>
 

@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { es } from "@/i18n/es";
 import { currentVertical } from "@/lib/vertical-context";
-import { getRecentListings, listCities } from "@/lib/queries";
+import { getRecentListings, getBrowseStats, listCities } from "@/lib/queries";
+import { categoryUrl } from "@/lib/urls";
+import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
+import { TYPE_ICON } from "@/lib/photos";
 import { ListingCard } from "@/components/ListingCard";
 import { SearchBar } from "@/components/SearchBar";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
+import type { PropertyType } from "@/lib/import/types";
 
 export const revalidate = 600;
 
@@ -18,10 +22,16 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   await currentVertical();
-  const [recent, cities] = await Promise.all([
+  const [recent, cities, stats] = await Promise.all([
     getRecentListings(12),
     listCities(),
+    getBrowseStats(),
   ]);
+
+  // Type tiles need a city segment (§4 URL scheme has no city-less URL) —
+  // anchor them to whichever city has the most listings, or the first
+  // seeded city if nothing is published yet.
+  const anchorCity = stats.cities[0] ?? cities[0];
 
   return (
     <main className="container">
@@ -52,9 +62,112 @@ export default async function Home() {
             </Chip>
           ))}
         </div>
+
+        {stats.totalListings > 0 && (
+          <p
+            style={{
+              marginTop: "var(--space-4)",
+              fontSize: "var(--text-sm)",
+              fontWeight: 700,
+              color: "var(--color-ink-secondary)",
+            }}
+          >
+            {stats.totalListings.toLocaleString("es-PY")}{" "}
+            {stats.totalListings === 1 ? "propiedad" : "propiedades"} activas ·{" "}
+            {stats.totalCities} {stats.totalCities === 1 ? "ciudad" : "ciudades"}
+          </p>
+        )}
       </section>
 
-      <section>
+      {stats.cities.length > 0 && (
+        <section style={{ marginTop: "var(--space-6)" }}>
+          <h2 className="section-title">Explorá por ciudad</h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+              gap: "var(--space-3)",
+            }}
+          >
+            {stats.cities.map((c) => (
+              <a
+                key={c.id}
+                href={categoryUrl({ operation: "venta", citySlug: c.slug })}
+                className="card"
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <div style={{ fontWeight: 700, fontSize: "var(--text-body)" }}>
+                  {c.name}
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    fontSize: "var(--text-sm)",
+                    color: "var(--color-ink-secondary)",
+                  }}
+                >
+                  {c.count > 0
+                    ? `${c.count} ${c.count === 1 ? "propiedad" : "propiedades"}`
+                    : "Ver zona"}
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {stats.types.length > 0 && anchorCity && (
+        <section style={{ marginTop: "var(--space-6)" }}>
+          <h2 className="section-title">Explorá por tipo</h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+              gap: "var(--space-3)",
+            }}
+          >
+            {stats.types.map(({ type, count }) => (
+              <a
+                key={type}
+                href={categoryUrl({
+                  operation: "venta",
+                  citySlug: anchorCity.slug,
+                  type: type as PropertyType,
+                })}
+                className="card"
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: 28 }} aria-hidden>
+                  {TYPE_ICON[type as PropertyType]}
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    fontWeight: 700,
+                    fontSize: "var(--text-sm)",
+                  }}
+                >
+                  {PROPERTY_TYPE_LABELS[type as PropertyType]}
+                </div>
+                <div
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--color-ink-secondary)",
+                  }}
+                >
+                  {count} {count === 1 ? "propiedad" : "propiedades"}
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section style={{ marginTop: "var(--space-6)" }}>
         <h2 className="section-title">Publicaciones recientes</h2>
         {recent.length === 0 ? (
           <EmptyState title={es.emptyState} />

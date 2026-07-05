@@ -48,7 +48,11 @@ export function WhatsAppContact({
 
   return (
     <Button variant="whatsapp" block size="lg" onClick={onContact} disabled={sending}>
-      {es.contactWhatsapp}
+      {/* Full label fits the desktop sidebar card; the compact mobile bar
+          (see .listing-detail__aside in globals.css) only has room for the
+          short one once the price sits next to it. */}
+      <span className="wa-cta__full">{es.contactWhatsapp}</span>
+      <span className="wa-cta__short">Contactar</span>
     </Button>
   );
 }

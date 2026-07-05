@@ -147,7 +147,28 @@ export type ListingCard = Pick<
   | "areaM2"
   | "landM2"
   | "locationId"
+  | "isVerified"
 > & { coverKey: string | null };
+
+/** Column set shared by every ListingCard query — keeps the four call sites in sync. */
+const cardColumns = {
+  id: listings.id,
+  publicId: listings.publicId,
+  slug: listings.slug,
+  title: listings.title,
+  operation: listings.operation,
+  propertyType: listings.propertyType,
+  priceUsd: listings.priceUsd,
+  priceAmount: listings.priceAmount,
+  priceCurrency: listings.priceCurrency,
+  cuotaGs: listings.cuotaGs,
+  bedrooms: listings.bedrooms,
+  bathrooms: listings.bathrooms,
+  areaM2: listings.areaM2,
+  landM2: listings.landM2,
+  locationId: listings.locationId,
+  isVerified: listings.isVerified,
+} as const;
 
 /**
  * Listings for a category page's grid, narrowed by user-chosen filters.
@@ -160,23 +181,7 @@ export async function getFilteredCategoryListings(
 ): Promise<{ listings: ListingCard[]; filteredCount: number }> {
   const where = filterConds(q, filters);
   const rows = await db
-    .select({
-      id: listings.id,
-      publicId: listings.publicId,
-      slug: listings.slug,
-      title: listings.title,
-      operation: listings.operation,
-      propertyType: listings.propertyType,
-      priceUsd: listings.priceUsd,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
-      cuotaGs: listings.cuotaGs,
-      bedrooms: listings.bedrooms,
-      bathrooms: listings.bathrooms,
-      areaM2: listings.areaM2,
-      landM2: listings.landM2,
-      locationId: listings.locationId,
-    })
+    .select(cardColumns)
     .from(listings)
     .where(where)
     .orderBy(sortOrder(filters.sort))
@@ -223,23 +228,7 @@ async function attachCovers(
 /** Most recent published listings for the homepage grid. */
 export async function getRecentListings(limit = 12): Promise<ListingCard[]> {
   const rows = await db
-    .select({
-      id: listings.id,
-      publicId: listings.publicId,
-      slug: listings.slug,
-      title: listings.title,
-      operation: listings.operation,
-      propertyType: listings.propertyType,
-      priceUsd: listings.priceUsd,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
-      cuotaGs: listings.cuotaGs,
-      bedrooms: listings.bedrooms,
-      bathrooms: listings.bathrooms,
-      areaM2: listings.areaM2,
-      landM2: listings.landM2,
-      locationId: listings.locationId,
-    })
+    .select(cardColumns)
     .from(listings)
     .where(eq(listings.status, "published"))
     .orderBy(desc(listings.publishedAt))
@@ -305,23 +294,7 @@ export async function getSimilarListings(params: {
   limit?: number;
 }): Promise<ListingCard[]> {
   const rows = await db
-    .select({
-      id: listings.id,
-      publicId: listings.publicId,
-      slug: listings.slug,
-      title: listings.title,
-      operation: listings.operation,
-      propertyType: listings.propertyType,
-      priceUsd: listings.priceUsd,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
-      cuotaGs: listings.cuotaGs,
-      bedrooms: listings.bedrooms,
-      bathrooms: listings.bathrooms,
-      areaM2: listings.areaM2,
-      landM2: listings.landM2,
-      locationId: listings.locationId,
-    })
+    .select(cardColumns)
     .from(listings)
     .where(
       and(
@@ -335,6 +308,71 @@ export async function getSimilarListings(params: {
     .orderBy(desc(listings.publishedAt))
     .limit(params.limit ?? 4);
   return attachCovers(rows);
+}
+
+export interface CityBrowseRow {
+  id: number;
+  name: string;
+  slug: string;
+  count: number;
+}
+
+export interface BrowseStats {
+  totalListings: number;
+  totalCities: number;
+  cities: CityBrowseRow[];
+  types: { type: PropertyType; count: number }[];
+}
+
+/**
+ * Homepage "explore" data: published-listing counts per city (walking each
+ * listing's location up to its ciudad ancestor) and per property type, plus
+ * overall totals. One pass over small tables (locations, listing location
+ * ids) — no per-city COUNT queries. Not the cached `locations.listing_counts`
+ * column (that's the hourly cron path for category-page indexability); this
+ * is a lighter homepage-only read.
+ */
+export async function getBrowseStats(cityLimit = 6): Promise<BrowseStats> {
+  const [allLocations, publishedRows, cities] = await Promise.all([
+    db.select({ id: locations.id, parentId: locations.parentId, level: locations.level }).from(locations),
+    db
+      .select({ locationId: listings.locationId, propertyType: listings.propertyType })
+      .from(listings)
+      .where(eq(listings.status, "published")),
+    listCities(),
+  ]);
+
+  const parentOf = new Map(allLocations.map((l) => [l.id, l.parentId]));
+  const levelOf = new Map(allLocations.map((l) => [l.id, l.level]));
+
+  function cityAncestorOf(locationId: number): number | null {
+    let current: number | null = locationId;
+    for (let guard = 0; guard < 6 && current != null; guard++) {
+      if (levelOf.get(current) === "ciudad") return current;
+      current = parentOf.get(current) ?? null;
+    }
+    return null;
+  }
+
+  const countByCity = new Map<number, number>();
+  const countByType = new Map<PropertyType, number>();
+  for (const row of publishedRows) {
+    const cityId = cityAncestorOf(row.locationId);
+    if (cityId != null) countByCity.set(cityId, (countByCity.get(cityId) ?? 0) + 1);
+    countByType.set(row.propertyType, (countByType.get(row.propertyType) ?? 0) + 1);
+  }
+
+  const citiesWithCounts = cities
+    .map((c) => ({ ...c, count: countByCity.get(c.id) ?? 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, cityLimit);
+
+  return {
+    totalListings: publishedRows.length,
+    totalCities: countByCity.size,
+    cities: citiesWithCounts,
+    types: [...countByType.entries()].map(([type, count]) => ({ type, count })),
+  };
 }
 
 export { citySubtreeIds };

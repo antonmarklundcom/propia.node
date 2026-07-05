@@ -374,6 +374,33 @@ body {
   font-size: var(--text-sm);
 }
 
+/* Cuota box — the detail-page version of the chip, with a label. A step
+   toward TuLugar's fuller financing box; the "ingreso requerido" line
+   waits on real per-program income-band data (deferred, ARCHITECTURE.md
+   v3 amendment 1) rather than shipping a fabricated number. */
+.cuota-box {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: var(--radius-card);
+  background: var(--color-accent-soft);
+}
+
+.cuota-box__label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #a5701c;
+  opacity: 0.85;
+}
+
+.cuota-box__amount {
+  font-size: var(--text-md);
+  font-weight: 800;
+  color: #a5701c;
+}
+
 /* ---- Generic surface card --------------------------------------------------- */
 
 .card {
@@ -382,6 +409,17 @@ body {
   border-radius: var(--radius-card);
   padding: var(--space-4);
   box-shadow: var(--shadow-card);
+}
+
+a.card {
+  display: block;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+a.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: #d7ddd4;
 }
 
 /* ---- Empty state ------------------------------------------------------------ */
@@ -1076,17 +1114,78 @@ body {
 /* Mobile: a fixed bottom contact bar, not `sticky` — `sticky` computes its
    stuck position from normal document flow, which on a short first
    viewport made it overlap the title/price on load instead of waiting
-   for scroll. `fixed` always pins it to the viewport, no overlap. */
+   for scroll. `fixed` always pins it to the viewport, no overlap.
+
+   Deliberately compact — price + a normal-brand-colored button, NOT a
+   full-bleed WhatsApp-green banner (that read as an ad, not a contact
+   card). The agency name is hidden here and shown instead in the fuller
+   desktop sidebar card below. */
 .listing-detail__aside {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   background: var(--color-surface);
   border-radius: 14px 14px 0 0;
   padding: var(--space-3) var(--space-4);
   box-shadow: var(--shadow-float);
+}
+
+.contact-bar__agency {
+  display: none;
+}
+
+.contact-bar__price {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.wa-cta__full {
+  display: none;
+}
+
+.wa-cta__short {
+  display: inline;
+}
+
+@media (min-width: 860px) {
+  .wa-cta__full {
+    display: inline;
+  }
+  .wa-cta__short {
+    display: none;
+  }
+}
+
+.contact-bar__amount {
+  font-size: var(--text-md);
+  font-weight: 800;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tone the CTA down to the brand primary color at bar size — WhatsApp is
+   still the channel (icon in the label), the bar itself just shouldn't
+   read as an ad. Two classes beat .btn--block's one, so this wins without
+   !important. */
+.listing-detail__aside .btn--whatsapp {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 44px;
+  padding: 10px 18px;
+  background: var(--color-primary);
+  font-size: var(--text-sm);
 }
 
 @media (min-width: 860px) {
@@ -1102,9 +1201,26 @@ body {
     top: 88px;
     bottom: auto;
     z-index: auto;
+    display: block;
     border-radius: 14px;
     box-shadow: 0 4px 16px rgba(16, 24, 40, 0.08);
     border: 1px solid var(--color-border);
+  }
+  .contact-bar__agency {
+    display: block;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+  }
+  /* Price already shown prominently in the main column on desktop. */
+  .contact-bar__price {
+    display: none;
+  }
+  .listing-detail__aside .btn--whatsapp {
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 28px;
+    background: var(--color-whatsapp);
+    font-size: var(--text-body);
   }
 }
 

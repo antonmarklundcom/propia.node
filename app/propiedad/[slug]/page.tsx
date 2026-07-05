@@ -22,6 +22,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { WhatsAppContact } from "@/components/WhatsAppContact";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
+import { Badge } from "@/components/ui/Badge";
 
 export const revalidate = 3600;
 
@@ -191,18 +192,22 @@ export default async function ListingPage({ params }: Params) {
           <h1 className="page-title" style={{ marginBottom: 4 }}>
             {listing.title}
           </h1>
-          <div
-            style={{
-              fontSize: "var(--text-2xl)",
-              fontWeight: 800,
-              color: "var(--color-primary)",
-            }}
-          >
-            {formatPrice(listing)}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{
+                fontSize: "var(--text-2xl)",
+                fontWeight: 800,
+                color: "var(--color-primary)",
+              }}
+            >
+              {formatPrice(listing)}
+            </div>
+            {listing.isVerified && <Badge variant="success">✓ Verificado</Badge>}
           </div>
           {cuota && (
-            <div className="cuota-chip cuota-chip--lg" style={{ marginTop: 8 }}>
-              💳 {cuota}
+            <div className="cuota-box" style={{ marginTop: 8 }}>
+              <span className="cuota-box__label">Cuota estimada</span>
+              <span className="cuota-box__amount">💳 {cuota}</span>
             </div>
           )}
 
@@ -239,10 +244,16 @@ export default async function ListingPage({ params }: Params) {
           )}
         </div>
 
-        {/* Sticky contact card */}
+        {/* Contact bar: a compact price + CTA row fixed to the bottom on
+            mobile (never a full-bleed WhatsApp-green banner — that read as
+            an ad); a fuller sticky sidebar card on desktop. */}
         <aside className="listing-detail__aside">
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>
+          <div className="contact-bar__agency">
             {agency?.name ?? agent?.name ?? "Publicado en Propia"}
+          </div>
+          <div className="contact-bar__price">
+            <span className="contact-bar__amount">{formatPrice(listing)}</span>
+            {cuota && <span className="cuota-chip">💳 {cuota}</span>}
           </div>
           <WhatsAppContact
             listingPublicId={listing.publicId}
