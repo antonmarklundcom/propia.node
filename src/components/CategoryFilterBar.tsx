@@ -21,8 +21,8 @@ export function CategoryFilterBar({
 }) {
   return (
     <form className="filter-bar" method="GET" action={basePath}>
-      <div className="filter-bar__field">
-        <label className="filter-bar__label" htmlFor="precio_min">
+      <div className="field">
+        <label className="field__label" htmlFor="precio_min">
           Precio mín. (US$)
         </label>
         <input
@@ -33,12 +33,12 @@ export function CategoryFilterBar({
           inputMode="numeric"
           placeholder="Sin mínimo"
           defaultValue={precioMin}
-          className="filter-bar__input"
+          className="input"
         />
       </div>
 
-      <div className="filter-bar__field">
-        <label className="filter-bar__label" htmlFor="precio_max">
+      <div className="field">
+        <label className="field__label" htmlFor="precio_max">
           Precio máx. (US$)
         </label>
         <input
@@ -49,19 +49,19 @@ export function CategoryFilterBar({
           inputMode="numeric"
           placeholder="Sin máximo"
           defaultValue={precioMax}
-          className="filter-bar__input"
+          className="input"
         />
       </div>
 
-      <div className="filter-bar__field">
-        <label className="filter-bar__label" htmlFor="dormitorios">
+      <div className="field">
+        <label className="field__label" htmlFor="dormitorios">
           Dormitorios
         </label>
         <select
           id="dormitorios"
           name="dormitorios"
           defaultValue={dormitorios ?? ""}
-          className="filter-bar__select"
+          className="select"
         >
           <option value="">Cualquiera</option>
           <option value="1">1+</option>
@@ -71,15 +71,15 @@ export function CategoryFilterBar({
         </select>
       </div>
 
-      <div className="filter-bar__field">
-        <label className="filter-bar__label" htmlFor="orden">
+      <div className="field">
+        <label className="field__label" htmlFor="orden">
           Ordenar por
         </label>
         <select
           id="orden"
           name="orden"
           defaultValue={orden ?? "recientes"}
-          className="filter-bar__select"
+          className="select"
         >
           <option value="recientes">Más recientes</option>
           <option value="precio_asc">Menor precio</option>
@@ -87,7 +87,7 @@ export function CategoryFilterBar({
         </select>
       </div>
 
-      <button className="filter-bar__submit" type="submit">
+      <button className="btn btn--primary" type="submit">
         Filtrar
       </button>
       {hasActiveFilters && (

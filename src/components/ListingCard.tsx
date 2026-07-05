@@ -61,7 +61,7 @@ export function ListingCard({ card }: { card: Card }) {
 
       <div className="listing-card__body">
         <div className="listing-card__price">{formatPrice(card)}</div>
-        {cuota && <div className="listing-card__cuota">💳 {cuota}</div>}
+        {cuota && <div className="cuota-chip" style={{ marginTop: 2 }}>💳 {cuota}</div>}
         <div className="listing-card__title">{card.title}</div>
 
         {specs.length > 0 && (

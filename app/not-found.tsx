@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { tokens } from "@/design/tokens";
 import { listCities } from "@/lib/queries";
 import { SearchBar } from "@/components/SearchBar";
+import { Chip } from "@/components/ui/Chip";
+import { Button } from "@/components/ui/Button";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 
 // Renders per-request rather than at build time — it queries the DB for the
@@ -19,20 +19,25 @@ export default async function NotFound() {
 
   return (
     <main
-      style={{
-        maxWidth: 720,
-        margin: "0 auto",
-        padding: "4rem 1rem",
-        textAlign: "center",
-      }}
+      className="container container--narrow"
+      style={{ padding: "4rem var(--space-4)", textAlign: "center" }}
     >
       <div style={{ fontSize: 48 }} aria-hidden>
         🏡
       </div>
-      <h1 style={{ fontSize: 26, margin: "16px 0 8px", color: tokens.color.primary }}>
+      <h1
+        className="page-title"
+        style={{ margin: "16px 0 8px", color: "var(--color-primary)", fontSize: 26 }}
+      >
         No encontramos propiedades para esa búsqueda
       </h1>
-      <p style={{ fontSize: 16, color: tokens.color.inkSecondary, lineHeight: 1.6 }}>
+      <p
+        style={{
+          fontSize: "var(--text-body)",
+          color: "var(--color-ink-secondary)",
+          lineHeight: 1.6,
+        }}
+      >
         Puede que no haya publicaciones disponibles en esa zona o combinación
         todavía. Probá con otra ciudad o tipo de propiedad.
       </p>
@@ -44,47 +49,35 @@ export default async function NotFound() {
       <p
         style={{
           marginTop: 28,
-          fontSize: 13,
+          fontSize: "var(--text-xs)",
           fontWeight: 700,
           letterSpacing: "0.02em",
-          color: tokens.color.inkSecondary,
+          color: "var(--color-ink-secondary)",
         }}
       >
         BÚSQUEDAS POPULARES
       </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "var(--space-2)",
+          justifyContent: "center",
+          marginTop: "var(--space-2)",
+        }}
+      >
         {POPULAR_SEARCHES.map((s) => (
-          <Link
-            key={s.href}
-            href={s.href}
-            style={{
-              padding: "8px 14px",
-              borderRadius: tokens.radius.chip,
-              background: tokens.color.surface,
-              border: "1px solid #E1E5E0",
-              color: tokens.color.ink,
-              textDecoration: "none",
-              fontSize: 14,
-              fontWeight: 600,
-            }}
-          >
+          <Chip key={s.href} href={s.href}>
             {s.label}
-          </Link>
+          </Chip>
         ))}
       </div>
 
-      <Link
-        href="/"
-        style={{
-          display: "inline-block",
-          marginTop: 24,
-          fontSize: 14,
-          fontWeight: 700,
-          color: tokens.color.primary,
-        }}
-      >
-        Volver al inicio
-      </Link>
+      <div style={{ marginTop: "var(--space-5)" }}>
+        <Button href="/" variant="ghost">
+          Volver al inicio
+        </Button>
+      </div>
     </main>
   );
 }

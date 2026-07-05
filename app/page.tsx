@@ -1,11 +1,11 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import { tokens } from "@/design/tokens";
 import { es } from "@/i18n/es";
 import { currentVertical } from "@/lib/vertical-context";
 import { getRecentListings, listCities } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { SearchBar } from "@/components/SearchBar";
+import { Chip } from "@/components/ui/Chip";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 
 export const revalidate = 600;
@@ -24,52 +24,42 @@ export default async function Home() {
   ]);
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
+    <main className="container">
       <section style={{ padding: "2.5rem 0 1.5rem" }}>
-        <h1 style={{ fontSize: 34, margin: 0, color: tokens.color.primary }}>
+        <h1
+          className="page-title"
+          style={{ fontSize: "var(--text-3xl)", color: "var(--color-primary)" }}
+        >
           Encontrá tu propiedad en Paraguay
         </h1>
-        <p style={{ fontSize: 18, color: tokens.color.inkSecondary, marginTop: 8 }}>
+        <p className="page-subtitle" style={{ fontSize: "var(--text-md)" }}>
           Casas, departamentos y terrenos — con cuota estimada y financiamiento.
         </p>
 
         <SearchBar cities={cities} />
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "var(--space-2)",
+            marginTop: "var(--space-4)",
+          }}
+        >
           {POPULAR_SEARCHES.map((q) => (
-            <Link
-              key={q.href}
-              href={q.href}
-              style={{
-                padding: "8px 14px",
-                borderRadius: tokens.radius.chip,
-                background: tokens.color.surface,
-                border: "1px solid #E1E5E0",
-                color: tokens.color.ink,
-                textDecoration: "none",
-                fontSize: 14,
-                fontWeight: 600,
-              }}
-            >
+            <Chip key={q.href} href={q.href}>
               {q.label}
-            </Link>
+            </Chip>
           ))}
         </div>
       </section>
 
       <section>
-        <h2 style={{ fontSize: 20 }}>Publicaciones recientes</h2>
+        <h2 className="section-title">Publicaciones recientes</h2>
         {recent.length === 0 ? (
-          <p style={{ color: tokens.color.inkSecondary }}>{es.emptyState}</p>
+          <EmptyState title={es.emptyState} />
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-              gap: 16,
-              marginTop: 12,
-            }}
-          >
+          <div className="listing-grid">
             {recent.map((card) => (
               <ListingCard key={card.id} card={card} />
             ))}

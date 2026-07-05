@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { tokens } from "@/design/tokens";
 import { es } from "@/i18n/es";
+import { Button } from "@/components/ui/Button";
 
 /**
  * Sticky WhatsApp contact (ARCHITECTURE.md §3). Records the lead through
@@ -47,27 +47,9 @@ export function WhatsAppContact({
   }
 
   return (
-    <button
-      onClick={onContact}
-      disabled={sending}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        width: "100%",
-        padding: "0.9rem 1rem",
-        background: tokens.color.whatsapp,
-        color: "#fff",
-        border: "none",
-        borderRadius: tokens.radius.input,
-        fontSize: 16,
-        fontWeight: 700,
-        cursor: sending ? "wait" : "pointer",
-      }}
-    >
+    <Button variant="whatsapp" block size="lg" onClick={onContact} disabled={sending}>
       {es.contactWhatsapp}
-    </button>
+    </Button>
   );
 }
 

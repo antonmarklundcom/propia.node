@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { tokens } from "@/design/tokens";
 import { es } from "@/i18n/es";
 import {
   resolveCity,
@@ -25,6 +24,8 @@ import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { CategoryFilterBar } from "@/components/CategoryFilterBar";
 import { SearchBar } from "@/components/SearchBar";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { listingUrl } from "@/lib/urls";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
@@ -224,7 +225,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   ];
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
+    <main className="container">
       {ix.state === "index" && (
         <JsonLd
           data={[
@@ -236,8 +237,10 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         />
       )}
 
-      <h1 style={{ fontSize: 24 }}>{r.title}</h1>
-      <p style={{ color: tokens.color.inkSecondary, marginTop: 4 }}>
+      <h1 className="page-title" style={{ marginTop: "var(--space-3)" }}>
+        {r.title}
+      </h1>
+      <p className="page-subtitle">
         {count > 0
           ? `${count} ${count === 1 ? "propiedad" : "propiedades"} disponibles.`
           : es.emptyState}
@@ -260,22 +263,19 @@ export default async function CategoryPage({ params, searchParams }: Params) {
       />
 
       {filteredCount === 0 ? (
-        <div className="filter-empty">
-          No hay propiedades que coincidan con estos filtros.
-          <br />
-          <a className="filter-empty__clear" href={r.canonicalPath}>
-            Quitar filtros
-          </a>
+        <div style={{ marginTop: "var(--space-4)" }}>
+          <EmptyState
+            icon="🔍"
+            title="No hay propiedades que coincidan con estos filtros."
+            action={
+              <Button href={r.canonicalPath} variant="ghost" size="sm">
+                Quitar filtros
+              </Button>
+            }
+          />
         </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-            gap: 16,
-            marginTop: 16,
-          }}
-        >
+        <div className="listing-grid">
           {listings.map((card) => (
             <ListingCard key={card.id} card={card} />
           ))}

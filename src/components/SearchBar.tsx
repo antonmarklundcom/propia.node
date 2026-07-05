@@ -55,13 +55,13 @@ export function SearchBar({
 
   return (
     <form className="search-bar" onSubmit={handleSubmit} role="search">
-      <div className="search-bar__field">
-        <label className="search-bar__label" htmlFor="search-operation">
+      <div className="field">
+        <label className="field__label" htmlFor="search-operation">
           Operación
         </label>
         <select
           id="search-operation"
-          className="search-bar__select"
+          className="select"
           value={operation}
           onChange={(e) => setOperation(e.target.value as Operation)}
         >
@@ -73,13 +73,13 @@ export function SearchBar({
         </select>
       </div>
 
-      <div className="search-bar__field search-bar__field--grow">
-        <label className="search-bar__label" htmlFor="search-city">
+      <div className="field search-bar__field--grow">
+        <label className="field__label" htmlFor="search-city">
           Ciudad
         </label>
         <select
           id="search-city"
-          className="search-bar__select"
+          className="select"
           value={citySlug}
           onChange={(e) => setCitySlug(e.target.value)}
         >
@@ -91,13 +91,13 @@ export function SearchBar({
         </select>
       </div>
 
-      <div className="search-bar__field search-bar__field--grow">
-        <label className="search-bar__label" htmlFor="search-type">
+      <div className="field search-bar__field--grow">
+        <label className="field__label" htmlFor="search-type">
           Tipo
         </label>
         <select
           id="search-type"
-          className="search-bar__select"
+          className="select"
           value={type}
           onChange={(e) => setType(e.target.value as PropertyType | "")}
         >
@@ -110,7 +110,7 @@ export function SearchBar({
         </select>
       </div>
 
-      <button className="search-bar__submit" type="submit">
+      <button className="btn btn--primary" type="submit">
         Buscar
       </button>
     </form>

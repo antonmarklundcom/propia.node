@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { tokens } from "@/design/tokens";
 import {
   getListingByPublicId,
   getSimilarListings,
@@ -130,7 +129,7 @@ export default async function ListingPage({ params }: Params) {
     : [];
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
+    <main className="container">
       <JsonLd data={[listingJsonLd(detail), breadcrumbJsonLd(jsonLdCrumbs)]} />
 
       <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
@@ -189,23 +188,20 @@ export default async function ListingPage({ params }: Params) {
 
       <div className="listing-detail__layout">
         <div>
-          <h1 style={{ fontSize: 24, margin: "0 0 4px" }}>{listing.title}</h1>
-          <div style={{ fontSize: 28, fontWeight: 800, color: tokens.color.primary }}>
+          <h1 className="page-title" style={{ marginBottom: 4 }}>
+            {listing.title}
+          </h1>
+          <div
+            style={{
+              fontSize: "var(--text-2xl)",
+              fontWeight: 800,
+              color: "var(--color-primary)",
+            }}
+          >
             {formatPrice(listing)}
           </div>
           {cuota && (
-            <div
-              style={{
-                display: "inline-block",
-                marginTop: 8,
-                padding: "6px 12px",
-                borderRadius: tokens.radius.chip,
-                background: "#FCF3E4",
-                color: tokens.color.accent,
-                fontWeight: 700,
-                fontSize: 14,
-              }}
-            >
+            <div className="cuota-chip cuota-chip--lg" style={{ marginTop: 8 }}>
               💳 {cuota}
             </div>
           )}
@@ -214,12 +210,12 @@ export default async function ListingPage({ params }: Params) {
             style={{
               listStyle: "none",
               padding: 0,
-              margin: "16px 0",
+              margin: "var(--space-4) 0",
               display: "flex",
               flexWrap: "wrap",
-              gap: 16,
+              gap: "var(--space-4)",
               fontSize: 15,
-              color: tokens.color.ink,
+              color: "var(--color-ink)",
             }}
           >
             {listing.bedrooms != null && <li>🛏 {listing.bedrooms} dormitorios</li>}
@@ -229,7 +225,7 @@ export default async function ListingPage({ params }: Params) {
           </ul>
 
           {listing.descriptionEs && (
-            <p style={{ lineHeight: 1.6, color: tokens.color.ink, whiteSpace: "pre-line" }}>
+            <p style={{ lineHeight: 1.6, whiteSpace: "pre-line" }}>
               {listing.descriptionEs}
             </p>
           )}
