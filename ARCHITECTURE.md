@@ -25,6 +25,34 @@ maintaining it.
    Opus 4.8 executes the heavy implementation phases; Sonnet 5 executes
    templated work (page templates, forms, wizard steps, copy wiring).
 
+**v3 amendments (2026-07-05), superseding v2 and the original where they
+conflict:**
+
+1. **Financing data is deferred, not a launch blocker.** The cuota engine
+   and UI stay as built; they degrade gracefully (no qualifying
+   `financing_programs` row → no cuota line on the card). Verifying real
+   Che Róga Porã / AFD / partner-bank terms, the tiered-fallback selection
+   (Che Róga Porã → AFD Mi Casa → private bank), and any bank integration
+   move to the monetization milestone. The admin panel (§6.4) gets a
+   `financing_programs` editor so updating rates later is a 2-minute task,
+   not a deploy.
+2. **Build order re-sequenced around the founder's priorities** — polished
+   front end, accounts + publishing funnel, en-pozo/multi-unit project
+   pages, and a real admin panel come BEFORE search-at-scale, scrape
+   importers, and monetization. New plan in §7; design decisions in §6.
+3. **Auth is a Google OAuth + WhatsApp OTP hybrid** (§6.1). Google = low
+   friction identity; verified WhatsApp = the publish gate. They are
+   orthogonal and both land in the existing `users` table.
+4. **Projects become a public surface.** `/proyectos/{slug}` template for
+   edificios / loteamientos / en-pozo developments listing their units
+   (§6.3); the wizard gets a developer path that attaches units to a
+   project (§6.2).
+5. **The admin panel replaces Drizzle Studio** as the management surface
+   (§6.4). Studio remains an emergency hatch only.
+6. **Nothing in M4′–M7′ requires the production domain.** The domain
+   unlocks only the §7 day-of-domain checklist (DNS, canonical host, OAuth
+   redirect URIs, GSC, GHL webhook, R2 custom domain, GA4).
+
 Constraining facts: (1) hosting starts on Hostinger shared/cloud (Brazil
 region — São Paulo is the lowest-latency major region to Paraguay), migrate
 once traction is proven; (2) inventory seeded by scrape/API bootstrap +
@@ -206,7 +234,113 @@ handle follow-up.
 
 Do **not** build CRM features in this repo beyond the webhook boundary.
 
-## 6. Build plan (sequential milestones, no dates — ship ASAP)
+## 6. Accounts, publishing funnel, projects & admin (v3 design)
+
+### 6.1 Identity & sessions
+
+Two identity signals, deliberately orthogonal:
+
+- **Google OAuth** — account creation / login convenience. Hand-rolled
+  authorization-code flow (server-side code exchange, then the `userinfo`
+  endpoint over TLS — no JWT verification dependency, no auth framework;
+  `users` and `otp_codes` already exist and next-auth's adapter model buys
+  nothing here). Adds `users.google_sub` (varchar, unique, nullable);
+  Google's email fills `users.email`.
+- **WhatsApp OTP** — the **publish gate**, not a login method requirement.
+  Existing `otp_codes` table + `crm.ts sendOtp()` (the `ConsoleCrm` dev
+  fallback means this is fully buildable and testable before GHL or the
+  domain exist). A listing cannot leave `draft` until its owner has
+  `whatsapp_verified_at` set. Phone-only users (OTP login, no Google) are
+  first-class; Google-only users must verify WhatsApp at publish time.
+
+Sessions: new `sessions` table (`id`, `user_id`, `token_hash`,
+`expires_at`, `created_at`, `last_seen_at`). Opaque 256-bit random token,
+SHA-256 hashed at rest, in an HTTP-only `Secure` `SameSite=Lax` cookie,
+30-day sliding expiry. No JWTs — revocation is a row delete.
+
+Account types: the existing `users.role` enum (`consumer`, `agent`,
+`agency_admin`, `developer`, `admin`) already covers the wizard's
+publish-as personas — no schema change. OTP abuse controls: existing
+`attempts` + resend cooldown, plus a per-IP cap at the route layer.
+
+### 6.2 Publishing funnel (the wizard)
+
+Three steps, autosave from the first keystroke: step 1 immediately creates
+a `listings` row with `status = 'draft'`; every subsequent change patches
+it. Abandoned drafts cost nothing and enable "seguí donde quedaste".
+
+1. **Lo básico** — operation, property type, publish-as persona, location
+   (map pin + barrio autocomplete), price + currency (cuota preview when a
+   program qualifies).
+2. **Detalles** — bedrooms/bathrooms/m², amenities, description, photos
+   (≤ 20, presigned direct-to-R2 upload, position 0 = cover), video URL.
+3. **Publicar** — preview card, foreign-exposure toggle (default ON),
+   WhatsApp OTP if not yet verified, submit.
+
+Moderation: v1 is **review-first for everyone** — `draft` →
+(OTP verified) → `pending_review` → admin approves → `published`. The
+publish-first-with-post-hoc-review model (market norm per the InfoCasas /
+Tu Lugar audit) is a later flip, isolated behind a single
+`autoPublish(user)` predicate — never scattered role checks.
+
+**Developer / en-pozo path:** when the persona is `developer` (or
+`property_state` ∈ en_pozo / en_construccion), the wizard asks "¿Es parte
+de un proyecto?" → autocomplete over `projects` (already in the schema) or
+an inline mini-form (name, type, stage, delivery date, location) that
+creates the project pending admin approval. Units are ordinary listings
+with `project_id` set. A **"Duplicar unidad"** action clones a unit
+listing for retitle/reprice — a 40-unit tower is minutes of work, and the
+schema needs nothing new.
+
+### 6.3 Project pages — `/proyectos/{slug}`
+
+The §4 URL scheme already reserves the route; v3 makes it a real template:
+hero + stage badge (`en pozo` / `en construcción` / `entrega inmediata`),
+delivery date, developer card, description, map, and a unit grid grouped
+by typology (bedrooms × m² banding) with "desde $X" pricing; lead CTA
+routes to the developer (`leads.routed_to = 'developer'` — already in
+`crm.ts`). Unit detail pages link up to their project via the existing
+`RelatedLinks` system.
+
+Indexability goes through `getIndexability()` — the single source of
+truth, extended, never duplicated: a project page is indexable when it has
+≥ 1 published unit; otherwise `noindex,follow`. JSON-LD: `ApartmentComplex`
++ `ItemList` of units.
+
+### 6.4 Admin panel — `/admin`
+
+Same Next.js app (no second deploy), an `/admin` route group behind a
+server-side session check for `role = 'admin'`; `noindex`, robots
+disallow, out of the sitemap. v1 surface in priority order:
+
+1. **Review queue** — `pending_review` listings and dedup flags from
+   `listing_sources`; approve / reject-with-reason / edit-then-approve.
+2. **Listings table** — filter by status/source; pause, remove, mark
+   sold/rented; edit.
+3. **Projects & developers** — approve wizard-created projects, CRUD-lite.
+4. **Agencies & agents** — CRUD-lite, `is_verified` toggle, `plan`
+   assignment (free / destacado / partner — the §20-question answer was in
+   the schema all along; what each tier *unlocks* is defined in M10′).
+5. **Leads (the money report)** — list with listing/vertical/UTM context,
+   GHL push status, manual re-push.
+6. **Financing programs** — editor over `financing_programs`, so the
+   deferred rate verification (v3 amendment 1) becomes data entry.
+
+**Invariant:** admin actions call the same mutation layer the wizard and
+importer use (one status-transition + upsert module) — slug generation,
+`price_usd` normalization, and dedup bookkeeping hold no matter who
+writes. Drizzle Studio stays for emergencies only.
+
+### 6.5 Design system pass
+
+`src/design/tokens.ts` grows from color/type primitives to a full scale:
+spacing, radii, shadows, type scale, z-index. One shared component set —
+Button, Input/Select/Textarea, Chip, Badge, Card, Modal/Sheet, Stepper,
+Toast, EmptyState — consumed by BOTH the public site and the wizard/admin,
+built once in M4′. Voseo microcopy stays in `src/i18n/es.ts`; mobile-first
+Android remains the target.
+
+## 7. Build plan v3 (sequential milestones, no dates — ship ASAP)
 
 Model policy: **Fable 5** = architecture + hardest problems + review gates
 (done: this document, schema, indexability, cuota, routing, CRM boundary).
@@ -240,26 +374,65 @@ block, `getIndexability()` enforced, sitemap index + robots, lead capture →
 GHL webhook, GA4 + Search Console. STOP → **LAUNCH propia.com.py**: real
 listings indexed, leads landing in GHL with correct attribution.
 
-**M4 — Search, filters & map** _(Opus 4.8 query layer, Sonnet 5 UI)_ — typed
-query function over `idx_search`, facets, map API (bounding box +
-supercluster), split list/map UI, mobile full-screen map. STOP: <200ms
-server-side filters, every combination hits an index (EXPLAIN audit).
+**M4′ — Design system & public polish** _(Sonnet 5)_ — §6.5: tokens
+expansion + the shared component set, applied across the existing public
+pages (cards, detail, category, header/footer, 404). STOP: founder signs
+off the look **on a phone**; no component ships that the wizard/admin
+can't reuse.
 
-**M5 — Wizard, OTP & accounts** _(Sonnet 5; Opus 4.8 for auth/OTP)_ — 3-step
-wizard with autosave, nearby-projects autocomplete, foreign-exposure toggle,
-cuota preview, 20 photos + video URL; GHL WhatsApp OTP; agency/agent
-profiles; "¿Tienes muchos inmuebles?" intake. STOP: an outsider publishes
-end-to-end on a phone; OTP delivery > 95%.
+**M5′ — Auth & accounts** _(Opus 4.8; run a security review before
+merge)_ — §6.1: Google OAuth flow, `sessions` table + cookie layer,
+WhatsApp OTP login/verify against `ConsoleCrm` (no GHL, no domain needed),
+minimal `/cuenta` page. Schema delta: `users.google_sub` + `sessions` —
+migrate BEFORE M6′ builds on it. STOP: an outsider creates an account via
+Google AND via phone-only OTP, on a phone; OTP rate limits and session
+revocation verified.
 
-**M6 — Scrape importers + programmatic SEO at scale** _(Opus 4.8)_ —
-InfoCasas/Clasipar adapters (Tu Lugar API for bootstrap/validation only —
-fragile, never a foundation), watermark scoring, barrio guides via Claude
-API for top 30 barrios, /precios pages, full internal-link modules. STOP:
-Screaming Frog crawl — zero indexable thin pages, zero canonical conflicts,
-valid structured data everywhere.
+**M6′ — Wizard, uploads & projects** _(Opus 4.8 core, Sonnet 5 UI)_ —
+§6.2 funnel with autosave + presigned R2 uploads, §6.3 `/proyectos/{slug}`
+template, "Duplicar unidad", review-first moderation via the shared
+mutation layer. STOP: end-to-end publish of (a) a casa and (b) an en-pozo
+project with 3 units, both on a phone, landing in `pending_review`.
 
-**M7 — Monetization & feeders** _(mixed)_ — valuation lead magnet, featured
-listings + preventa promotion, then feeder domains flipped on one at a time
-(alquiler → EN site → directories), each with distinct copy. Year-2 items
-(Meilisearch, VPS/Postgres, agent lite-CRM, reviews) stay out of scope until
-§1 triggers fire.
+**M7′ — Admin panel** _(Sonnet 5 UI over an Opus 4.8 authz/mutation
+layer)_ — §6.4 in its priority order. STOP: founder moderates a real
+submission start-to-finish (approve, reject, feature, mark sold) without
+opening Drizzle Studio.
+
+**M8′ — Search, filters & map at scale** _(Opus 4.8 query layer, Sonnet 5
+UI)_ — typed query function over `idx_search`, facets, map API (bounding
+box + supercluster), split list/map UI, mobile full-screen map. STOP:
+<200ms server-side filters, every combination hits an index (EXPLAIN
+audit).
+
+**M9′ — Importers + programmatic SEO at scale** _(Opus 4.8)_ — **no
+scraping** (v3 legal review: Ley 1328/1998 database rights +
+unfair-competition + cybercrime exposure make portal scraping a
+non-starter). Inventory comes from agency-CRM integrations (KiteProp,
+2clicsApp, Bitrix24, Tokko syndication feeds) + white-glove imports +
+FSBO ads. Watermark scoring, barrio guides via Claude API for top 30
+barrios, /precios pages, full internal-link modules. STOP: Screaming Frog
+crawl — zero indexable thin pages, zero canonical conflicts, valid
+structured data everywhere.
+
+**M10′ — Monetization & feeders** _(mixed)_ — define what each
+`agencies.plan` tier (free / destacado / partner) actually unlocks;
+verified financing data + tiered cuota fallback (v3 amendment 1);
+valuation lead magnet; featured listings + preventa promotion; then feeder
+domains flipped on one at a time (alquiler → EN site → directories), each
+with distinct copy. Year-2 items (Meilisearch, VPS/Postgres, agent
+lite-CRM, reviews) stay out of scope until §1 triggers fire.
+
+### Day-of-domain checklist (the ONLY work gated on owning propia.com.py)
+
+1. DNS → the Hostinger app; `NEXT_PUBLIC_CANONICAL_HOST=propia.com.py`.
+2. Google OAuth: add the production redirect URI in Google Cloud Console
+   (localhost URIs keep working for dev).
+3. Google Search Console: verify property, submit the sitemap index.
+4. GHL: point `GHL_WEBHOOK_URL` at the production workflow; send one test
+   lead and one test OTP end-to-end.
+5. R2: map `img.propia.com.py` to the bucket.
+6. GA4: create the property, add the tag.
+
+Everything else in M4′–M7′ proceeds on localhost / a temporary Hostinger
+subdomain without waiting.

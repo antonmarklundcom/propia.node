@@ -77,20 +77,21 @@ code, but all must be cleared before propia.com.py serves real traffic.
    option (Cloud/Business hPanel or a KVM VPS). MySQL is included on every
    plan; the *app* tier is the gate. If missing → upgrade to Cloud or a small
    KVM VPS in the São Paulo region.
-2. **Real financing rates.** `scripts/seed-financing.ts` ships PLACEHOLDER
-   Che Róga Porã / AFD terms. Verified symptom: a US$160k home currently gets
-   no cuota because the placeholder caps (~900M Gs ≈ US$123k) are too low.
-   Replace `annualRate`, `maxTermMonths`, `maxAmountGs`, `minDownPct` with the
-   current published AFD/MUVH terms, then `npm run seed:financing` +
-   `npm run cron:cuotas`. The math is verified correct; only the data is a
-   placeholder.
-3. **USD→PYG source.** Cuota and price normalization use `USD_TO_PYG`
+2. **USD→PYG source.** Cuota and price normalization use `USD_TO_PYG`
    (default 7300). Set it in `.env` to the rate you want quoted; wire a
    treasury feed later if desired.
-4. **Domain.** propia.com.py must be registered and pointed at the Hostinger
+3. **Domain.** propia.com.py must be registered and pointed at the Hostinger
    app before public launch (a temporary Hostinger subdomain is fine for M0
    testing — see below). `NEXT_PUBLIC_CANONICAL_HOST` must match the live host
-   so canonical URLs and vertical routing are correct.
+   so canonical URLs and vertical routing are correct. The full
+   day-of-domain checklist (OAuth redirect URIs, GSC, GHL, R2 custom
+   domain, GA4) is in `ARCHITECTURE.md` §7.
+
+Deferred by design (v3): real Che Róga Porã / AFD financing rates. The
+cuota engine degrades gracefully on placeholder data (listings above the
+placeholder caps simply show no cuota line); verified rates + the tiered
+program fallback land in milestone M10′ via the admin panel's
+`financing_programs` editor — no deploy needed when the numbers arrive.
 
 ## Repo map
 
@@ -120,7 +121,7 @@ scripts/                   cron-run idempotent jobs (seeds, medians, sitemap…)
 
 ## Working rules for Claude Code sessions
 
-- Milestones and STOP gates are defined in `ARCHITECTURE.md` §6. Do not start
+- Milestones and STOP gates are defined in `ARCHITECTURE.md` §7. Do not start
   the next milestone past a gate without founder sign-off.
 - No MySQL-only tricks (stored procs, JSON in hot paths) — the Postgres
   escape hatch stays open.
