@@ -340,6 +340,52 @@ Toast, EmptyState — consumed by BOTH the public site and the wizard/admin,
 built once in M4′. Voseo microcopy stays in `src/i18n/es.ts`; mobile-first
 Android remains the target.
 
+### 6.6 Global navigation & home layout (v3.1 amendment, 2026-07-05)
+
+Founder decision: bring the shell to TuLugar parity NOW (partner demos),
+without waiting for accounts. Everything below uses the §6.5 component
+set; nothing ships a dead link.
+
+**Header.** Desktop: brand · Comprar · Alquilar · Terrenos · Publicar CTA
+("Proyectos" joins when §6.3 ships). Mobile: brand + Publicar CTA +
+hamburger opening a full-height sheet (the §6.5 Modal in sheet mode) with
+the same links plus the popular-search chips.
+
+**Mobile bottom tab bar** (global, mobile-only, 4 tabs):
+Inicio (/) · Buscar (opens a bottom sheet containing the SearchBar) ·
+Publicar (accent style; existing WhatsApp intake link until M6′) ·
+WhatsApp (chat with Propia — logs a lead first, same pattern as the
+detail-page CTA). Rules: (1) hidden on listing detail pages — the §3
+contact bar owns that slot, never two stacked bars; (2) active state per
+route; (3) ≥44px targets; (4) sits below modals in the z-ladder. When M5′
+lands: WhatsApp slot → Mensajes, and a 5th Cuenta tab appears.
+
+**Home layout, in order:**
+1. Hero: H1 + subtitle + SearchBar + popular-search chips.
+2. Four TuLugar-style highlight tiles (colored icon + title + subtitle):
+   Asunción (Capital) · Luque (Zona en crecimiento) · Areguá (Lago
+   Ypacaraí) · Proyectos en pozo → the §4 category URL filtered by the new
+   `estado` param.
+3. Live stats strip: "N nuevas publicaciones en los últimos 7 días"
+   (computed from `published_at`) + "Más de X propiedades activas ·
+   Actualizado diariamente · Publicá gratis" (`es.publishCta`).
+4. Preventa strip: horizontal-scroll row of `property_state ∈ {en_pozo,
+   en_construccion}` listing cards with a stage Badge — becomes the real
+   projects carousel when §6.3 ships.
+5. Explorá por ciudad (counts) → 6. Explorá por tipo →
+7. Publicaciones recientes → footer.
+
+**Category filter extension:** public `estado` query param (`en_pozo` |
+`en_construccion` | `entrega_inmediata`) added to `CategoryFilters` —
+same rule as every filter: narrows the visible grid only, NEVER feeds
+`getIndexability()`.
+
+**Share polish (same pass):** favicon set + default OpenGraph image and
+per-listing OG tags — partner links travel over WhatsApp; the preview is
+the first impression.
+
+Execution: Sonnet 5 (templated UI over the §6.5 set).
+
 ## 7. Build plan v3 (sequential milestones, no dates — ship ASAP)
 
 Model policy: **Fable 5** = architecture + hardest problems + review gates
