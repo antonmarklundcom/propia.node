@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MobileNavMenu } from "@/components/MobileNavMenu";
 
 /**
  * Global top bar (portal shell). Brand + primary category nav + a "publish"
@@ -49,6 +50,8 @@ export function SiteHeader() {
         >
           Publicar propiedad
         </a>
+
+        <MobileNavMenu />
       </div>
     </header>
   );

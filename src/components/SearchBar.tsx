@@ -31,11 +31,14 @@ export function SearchBar({
   defaultOperation = "venta",
   defaultCitySlug,
   defaultType = "",
+  onSubmitOverride,
 }: {
   cities: CityOption[];
   defaultOperation?: Operation;
   defaultCitySlug?: string;
   defaultType?: PropertyType | "";
+  /** Used by the mobile tab-bar search sheet to close itself before navigating. */
+  onSubmitOverride?: (href: string) => void;
 }) {
   const router = useRouter();
   const [operation, setOperation] = useState<Operation>(defaultOperation);
@@ -50,7 +53,8 @@ export function SearchBar({
       citySlug,
       type: type || undefined,
     });
-    router.push(href);
+    if (onSubmitOverride) onSubmitOverride(href);
+    else router.push(href);
   }
 
   return (

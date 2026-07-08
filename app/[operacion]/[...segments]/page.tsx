@@ -27,7 +27,14 @@ import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { listingUrl } from "@/lib/urls";
-import type { Operation, PropertyType } from "@/lib/import/types";
+import type { Operation, PropertyState, PropertyType } from "@/lib/import/types";
+
+const VALID_ESTADOS: readonly PropertyState[] = [
+  "en_pozo",
+  "en_construccion",
+  "entrega_inmediata",
+  "usado",
+];
 
 export const revalidate = 3600;
 
@@ -65,11 +72,14 @@ function parseFilters(sp: Record<string, string | string[] | undefined>): Catego
   const sortRaw = typeof sp.orden === "string" ? sp.orden : undefined;
   const sort: SortOption | undefined =
     sortRaw === "precio_asc" || sortRaw === "precio_desc" ? sortRaw : undefined;
+  const estadoRaw = typeof sp.estado === "string" ? sp.estado : undefined;
+  const estado = VALID_ESTADOS.find((e) => e === estadoRaw);
   return {
     priceMin: num(sp.precio_min),
     priceMax: num(sp.precio_max),
     minBedrooms: num(sp.dormitorios),
     sort,
+    estado,
   };
 }
 
@@ -211,7 +221,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
 
   const filters = parseFilters(sp);
   const hasActiveFilters = Boolean(
-    filters.priceMin || filters.priceMax || filters.minBedrooms || filters.sort,
+    filters.priceMin || filters.priceMax || filters.minBedrooms || filters.sort || filters.estado,
   );
   const [{ listings, filteredCount }, cities] = await Promise.all([
     getFilteredCategoryListings(baseQuery, filters),

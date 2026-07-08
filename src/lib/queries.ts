@@ -13,7 +13,7 @@ import {
   listings,
   locations,
 } from "../db/schema";
-import type { Operation, PropertyType } from "./import/types";
+import type { Operation, PropertyState, PropertyType } from "./import/types";
 
 export type LocationRow = typeof locations.$inferSelect;
 
@@ -113,14 +113,19 @@ export interface CategoryFilters {
   priceMax?: number;
   minBedrooms?: number;
   sort?: SortOption;
+  /** Public filter (§6.6) — en_pozo/en_construccion/entrega_inmediata tiles.
+   * Narrows the visible grid only, same as every other CategoryFilters
+   * field — NEVER feeds getIndexability(). */
+  estado?: PropertyState;
 }
 
-/** categoryConds() narrowed by optional price/bedroom filters. Price filters run on price_usd (the one normalized, indexed column — see schema). */
+/** categoryConds() narrowed by optional price/bedroom/estado filters. Price filters run on price_usd (the one normalized, indexed column — see schema). */
 function filterConds(q: CategoryQuery, f: CategoryFilters) {
   const conds = [categoryConds(q)];
   if (f.priceMin != null) conds.push(gte(listings.priceUsd, String(f.priceMin)));
   if (f.priceMax != null) conds.push(lte(listings.priceUsd, String(f.priceMax)));
   if (f.minBedrooms != null) conds.push(gte(listings.bedrooms, f.minBedrooms));
+  if (f.estado != null) conds.push(eq(listings.propertyState, f.estado));
   return and(...conds);
 }
 
@@ -148,6 +153,7 @@ export type ListingCard = Pick<
   | "landM2"
   | "locationId"
   | "isVerified"
+  | "propertyState"
 > & { coverKey: string | null };
 
 /** Column set shared by every ListingCard query — keeps the four call sites in sync. */
@@ -168,6 +174,7 @@ const cardColumns = {
   landM2: listings.landM2,
   locationId: listings.locationId,
   isVerified: listings.isVerified,
+  propertyState: listings.propertyState,
 } as const;
 
 /**
@@ -322,6 +329,8 @@ export interface BrowseStats {
   totalCities: number;
   cities: CityBrowseRow[];
   types: { type: PropertyType; count: number }[];
+  /** Published in the last 7 days — powers the home "N nuevas publicaciones" strip (§6.6). */
+  newLast7Days: number;
 }
 
 /**
@@ -336,7 +345,11 @@ export async function getBrowseStats(cityLimit = 6): Promise<BrowseStats> {
   const [allLocations, publishedRows, cities] = await Promise.all([
     db.select({ id: locations.id, parentId: locations.parentId, level: locations.level }).from(locations),
     db
-      .select({ locationId: listings.locationId, propertyType: listings.propertyType })
+      .select({
+        locationId: listings.locationId,
+        propertyType: listings.propertyType,
+        publishedAt: listings.publishedAt,
+      })
       .from(listings)
       .where(eq(listings.status, "published")),
     listCities(),
@@ -367,12 +380,38 @@ export async function getBrowseStats(cityLimit = 6): Promise<BrowseStats> {
     .sort((a, b) => b.count - a.count)
     .slice(0, cityLimit);
 
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const newLast7Days = publishedRows.filter(
+    (r) => r.publishedAt != null && new Date(r.publishedAt).getTime() >= sevenDaysAgo,
+  ).length;
+
   return {
     totalListings: publishedRows.length,
     totalCities: countByCity.size,
     cities: citiesWithCounts,
     types: [...countByType.entries()].map(([type, count]) => ({ type, count })),
+    newLast7Days,
   };
+}
+
+/**
+ * Preventa strip (§6.6 home layout): listings still en_pozo/en_construccion,
+ * most recent first. Becomes the real projects carousel once §6.3 ships —
+ * for now these are ordinary listings shown with a stage Badge.
+ */
+export async function getPreventaListings(limit = 10): Promise<ListingCard[]> {
+  const rows = await db
+    .select(cardColumns)
+    .from(listings)
+    .where(
+      and(
+        eq(listings.status, "published"),
+        inArray(listings.propertyState, ["en_pozo", "en_construccion"]),
+      ),
+    )
+    .orderBy(desc(listings.publishedAt))
+    .limit(limit);
+  return attachCovers(rows);
 }
 
 export { citySubtreeIds };
