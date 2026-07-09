@@ -5,6 +5,7 @@ import { tokens } from "@/design/tokens";
 import {
   getListingByPublicId,
   getSimilarListings,
+  getAgencyListings,
   citySubtreeIds,
 } from "@/lib/queries";
 import {
@@ -19,6 +20,7 @@ import {
   listingJsonLd,
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
+import { inquiryPrefillFor } from "@/i18n/es";
 import { JsonLd } from "@/components/JsonLd";
 import { WhatsAppContact } from "@/components/WhatsAppContact";
 import { ListingCard } from "@/components/ListingCard";
@@ -58,6 +60,33 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
+const STATE_LABELS: Record<string, string> = {
+  entrega_inmediata: "Entrega inmediata",
+  en_construccion: "En construcción",
+  en_pozo: "En pozo",
+  usado: "Usado",
+};
+
+/**
+ * amenities is display-only JSON with no enforced shape (schema §2.1): accept
+ * an array of strings, or an object whose truthy keys are the amenities.
+ */
+function normalizeAmenities(raw: unknown): string[] {
+  const pretty = (s: string) => {
+    const t = s.replace(/[_-]+/g, " ").trim();
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  };
+  if (Array.isArray(raw)) {
+    return raw.filter((x): x is string => typeof x === "string").map(pretty);
+  }
+  if (raw && typeof raw === "object") {
+    return Object.entries(raw as Record<string, unknown>)
+      .filter(([, v]) => Boolean(v))
+      .map(([k]) => pretty(k));
+  }
+  return [];
+}
+
 export default async function ListingPage({ params }: Params) {
   const { slug } = await params;
   const detail = await load(slug);
@@ -68,6 +97,8 @@ export default async function ListingPage({ params }: Params) {
   const contactWhatsapp = agent?.whatsapp ?? agency?.whatsapp ?? null;
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
   const area = listing.areaM2 ?? listing.landM2;
+  const canonical = `${ORIGIN()}${listingUrl(listing)}`;
+  const waMessage = inquiryPrefillFor(listing.title, canonical);
 
   const city = chain.find((c) => c.level === "ciudad");
   const barrio = chain.find((c) => c.level === "barrio");
@@ -119,15 +150,46 @@ export default async function ListingPage({ params }: Params) {
         ? { lat: Number(city.lat), lng: Number(city.lng), label: city.name }
         : null;
 
-  const similar = city
-    ? await getSimilarListings({
-        excludeId: listing.id,
-        operation: listing.operation,
-        type: listing.propertyType,
-        locationIds: await citySubtreeIds(city.id),
-        limit: 4,
-      })
-    : [];
+  const [similar, fromAgency] = await Promise.all([
+    city
+      ? getSimilarListings({
+          excludeId: listing.id,
+          operation: listing.operation,
+          type: listing.propertyType,
+          locationIds: await citySubtreeIds(city.id),
+          limit: 4,
+        })
+      : Promise.resolve([]),
+    listing.agencyId
+      ? getAgencyListings({ agencyId: listing.agencyId, excludeId: listing.id, limit: 4 })
+      : Promise.resolve([]),
+  ]);
+
+  const amenities = normalizeAmenities(listing.amenities);
+  const publishedAgo = listing.publishedAt
+    ? formatPublishedAgo(listing.publishedAt)
+    : null;
+
+  // "Detalles de la propiedad" rows — only what we actually know.
+  const details: { label: string; value: string }[] = [];
+  if (barrio) details.push({ label: "Barrio", value: barrio.name });
+  if (city) details.push({ label: "Ciudad", value: city.name });
+  details.push({ label: "Tipo", value: typeLabel });
+  if (listing.propertyState)
+    details.push({ label: "Estado", value: STATE_LABELS[listing.propertyState] ?? listing.propertyState });
+  if (listing.areaM2)
+    details.push({ label: "Superficie", value: `${Math.round(Number(listing.areaM2))} m²` });
+  if (listing.landM2)
+    details.push({ label: "Terreno", value: `${Math.round(Number(listing.landM2))} m²` });
+  if (listing.parking != null)
+    details.push({ label: "Cocheras", value: String(listing.parking) });
+
+  const sellerName = agency?.name ?? agent?.name ?? "Publicado en Propia";
+  const sellerInitials = sellerName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
@@ -149,6 +211,8 @@ export default async function ListingPage({ params }: Params) {
           </span>
         ))}
       </nav>
+
+      <h1 className="listing-title">{listing.title}</h1>
 
       {/* Gallery */}
       {realImages.length === 0 ? (
@@ -189,9 +253,42 @@ export default async function ListingPage({ params }: Params) {
 
       <div className="listing-detail__layout">
         <div>
-          <h1 style={{ fontSize: 24, margin: "0 0 4px" }}>{listing.title}</h1>
-          <div style={{ fontSize: 28, fontWeight: 800, color: tokens.color.primary }}>
-            {formatPrice(listing)}
+          {/* Facts strip: type · beds · baths · area · freshness */}
+          <ul className="listing-facts">
+            <li className="listing-facts__item">
+              <span aria-hidden>{TYPE_ICON[listing.propertyType]}</span> {typeLabel.replace(/s$/, "")}
+            </li>
+            {listing.bedrooms != null && (
+              <li className="listing-facts__item">🛏 {listing.bedrooms} dorm</li>
+            )}
+            {listing.bathrooms != null && (
+              <li className="listing-facts__item">
+                🚿 {listing.bathrooms} {listing.bathrooms === 1 ? "baño" : "baños"}
+              </li>
+            )}
+            {listing.parking != null && (
+              <li className="listing-facts__item">🚗 {listing.parking} cocheras</li>
+            )}
+            {area && (
+              <li className="listing-facts__item">📐 {Math.round(Number(area))} m²</li>
+            )}
+            {publishedAgo && (
+              <li className="listing-facts__item listing-facts__item--muted">
+                🕓 {publishedAgo}
+              </li>
+            )}
+          </ul>
+
+          <div className="listing-price">
+            {listing.operation !== "venta" ? (
+              <>
+                <span className="listing-price__label">Alquiler</span>{" "}
+                <span className="listing-price__amount">{formatPrice(listing)}</span>
+                <span className="listing-price__period">/mes</span>
+              </>
+            ) : (
+              <span className="listing-price__amount">{formatPrice(listing)}</span>
+            )}
           </div>
           {cuota && (
             <div
@@ -210,48 +307,80 @@ export default async function ListingPage({ params }: Params) {
             </div>
           )}
 
-          <ul
-            style={{
-              listStyle: "none",
-              padding: 0,
-              margin: "16px 0",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 16,
-              fontSize: 15,
-              color: tokens.color.ink,
-            }}
-          >
-            {listing.bedrooms != null && <li>🛏 {listing.bedrooms} dormitorios</li>}
-            {listing.bathrooms != null && <li>🚿 {listing.bathrooms} baños</li>}
-            {listing.parking != null && <li>🚗 {listing.parking} cocheras</li>}
-            {area && <li>📐 {Math.round(Number(area))} m²</li>}
-          </ul>
+          {details.length > 0 && (
+            <section className="listing-section">
+              <h2 className="listing-section__title">☰ Detalles de la propiedad</h2>
+              <dl className="listing-details-grid">
+                {details.map((d) => (
+                  <div className="listing-details-grid__row" key={d.label}>
+                    <dt className="listing-details-grid__label">{d.label}</dt>
+                    <dd className="listing-details-grid__value">{d.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {amenities.length > 0 && (
+            <section className="listing-section">
+              <h2 className="listing-section__title">✨ Comodidades de la propiedad</h2>
+              <ul className="listing-amenities">
+                {amenities.map((a) => (
+                  <li className="listing-amenities__item" key={a}>
+                    <span className="listing-amenities__check" aria-hidden>✓</span>
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {listing.descriptionEs && (
-            <p style={{ lineHeight: 1.6, color: tokens.color.ink, whiteSpace: "pre-line" }}>
-              {listing.descriptionEs}
-            </p>
+            <section className="listing-section">
+              <h2 className="listing-section__title">📄 Descripción</h2>
+              <p style={{ lineHeight: 1.6, color: tokens.color.ink, whiteSpace: "pre-line", margin: 0 }}>
+                {listing.descriptionEs}
+              </p>
+            </section>
           )}
 
           {approxLocation && (
-            <div className="listing-location">
-              <h2 className="listing-location__title">Ubicación aproximada</h2>
+            <section className="listing-section">
+              <h2 className="listing-section__title">📍 Ubicación aproximada</h2>
               <p className="listing-location__caption">{approxLocation.label}</p>
               <ListingMapLazy lat={approxLocation.lat} lng={approxLocation.lng} />
-            </div>
+            </section>
           )}
         </div>
 
         {/* Sticky contact card */}
         <aside className="listing-detail__aside">
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>
-            {agency?.name ?? agent?.name ?? "Publicado en Propia"}
+          <div className="seller-card__head">
+            {agency?.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="seller-card__logo" src={agency.logoUrl} alt={sellerName} />
+            ) : (
+              <div className="seller-card__avatar" aria-hidden>
+                {sellerInitials || "P"}
+              </div>
+            )}
+            <div>
+              <div className="seller-card__name">
+                {sellerName}
+                {(agency?.isVerified || agent?.isVerified) && (
+                  <span className="seller-card__verified" title="Verificado">✓</span>
+                )}
+              </div>
+              <div className="seller-card__kind">
+                {agency ? "Inmobiliaria" : agent ? "Agente" : "propia.com.py"}
+              </div>
+            </div>
           </div>
           <WhatsAppContact
             listingPublicId={listing.publicId}
             contactWhatsapp={contactWhatsapp}
             leadType={leadType}
+            message={waMessage}
           />
         </aside>
       </div>
@@ -266,6 +395,55 @@ export default async function ListingPage({ params }: Params) {
           </div>
         </section>
       )}
+
+      {fromAgency.length > 0 && (
+        <section className="similar-listings">
+          <h2 className="similar-listings__title">Más de {agency?.name ?? "esta inmobiliaria"}</h2>
+          <div className="similar-listings__grid">
+            {fromAgency.map((card) => (
+              <ListingCard key={card.id} card={card} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Internal-link chips back into the category tree */}
+      {city && (
+        <div className="listing-morelinks">
+          {barrio && (
+            <Link
+              className="listing-morelinks__chip"
+              href={categoryUrl({
+                operation: listing.operation,
+                citySlug: city.slug,
+                barrioSlug: barrio.slug,
+                type: listing.propertyType,
+              })}
+            >
+              📍 Más propiedades en {barrio.name}
+            </Link>
+          )}
+          <Link
+            className="listing-morelinks__chip"
+            href={categoryUrl({ operation: listing.operation, citySlug: city.slug })}
+          >
+            🏙 Todas las propiedades en {city.name}
+          </Link>
+        </div>
+      )}
     </main>
   );
+}
+
+/** "Publicado hace N días/semanas/meses" — coarse freshness, es-PY voseo-neutral. */
+function formatPublishedAgo(publishedAt: Date | string): string | null {
+  const ts = new Date(publishedAt).getTime();
+  if (!Number.isFinite(ts)) return null;
+  const days = Math.floor((Date.now() - ts) / 86_400_000);
+  if (days < 0) return null;
+  if (days === 0) return "Publicado hoy";
+  if (days === 1) return "Publicado ayer";
+  if (days < 14) return `Publicado hace ${days} días`;
+  if (days < 60) return `Publicado hace ${Math.floor(days / 7)} semanas`;
+  return `Publicado hace ${Math.floor(days / 30)} meses`;
 }

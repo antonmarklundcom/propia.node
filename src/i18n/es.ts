@@ -20,3 +20,12 @@ export const es = {
   inquiryPrefill: "Hola, estoy interesado en esta propiedad.",
   quickQuestions: ["¿Disponible?", "¿Puedo visitar?", "¿Requisitos?"],
 } as const;
+
+/**
+ * Per-listing WhatsApp prefill: names the property and links back to it, so
+ * the seller knows exactly which listing the message is about (and the
+ * portal gets attribution in the chat itself).
+ */
+export function inquiryPrefillFor(title: string, url: string): string {
+  return `Hola, vi esta propiedad en Propia.com.py y me interesa: ${title}\n${url}`;
+}
