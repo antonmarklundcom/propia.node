@@ -4,14 +4,17 @@
  * price_usd — no MySQL-only cleverness, so the Postgres escape hatch stays
  * open. JSON columns are display-only and never filtered here.
  */
-import { and, asc, desc, eq, gte, inArray, lte, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   agencies,
   agents,
+  developers,
+  financingPrograms,
   listingImages,
   listings,
   locations,
+  projects,
 } from "../db/schema";
 import type { Operation, PropertyType } from "./import/types";
 
@@ -406,6 +409,200 @@ export async function getSimilarListings(params: {
     .orderBy(desc(listings.publishedAt))
     .limit(params.limit ?? 4);
   return attachCovers(rows);
+}
+
+/* ------------------------------------------------------------------ */
+/* Projects (preventas / edificios) — homepage carousel + /proyecto    */
+/* ------------------------------------------------------------------ */
+
+export interface ProjectCard {
+  id: number;
+  name: string;
+  slug: string;
+  projectType: string;
+  stage: string | null;
+  deliveryDate: string | Date | null;
+  heroImageUrl: string | null;
+  developerName: string | null;
+  cityName: string | null;
+  minPriceUsd: number | null;
+  availableUnits: number;
+}
+
+/** Aggregate unit facts (min price / count) for a set of project ids. */
+async function projectUnitStats(projectIds: number[]) {
+  if (projectIds.length === 0)
+    return new Map<number, { minPriceUsd: number; units: number }>();
+  const rows = await db
+    .select({
+      projectId: listings.projectId,
+      minPriceUsd: sql<string>`MIN(${listings.priceUsd})`,
+      units: sql<number>`COUNT(*)`,
+    })
+    .from(listings)
+    .where(
+      and(
+        eq(listings.status, "published"),
+        inArray(listings.projectId, projectIds),
+      ),
+    )
+    .groupBy(listings.projectId);
+  return new Map(
+    rows
+      .filter((r) => r.projectId != null)
+      .map((r) => [
+        r.projectId as number,
+        { minPriceUsd: Number(r.minPriceUsd), units: Number(r.units) },
+      ]),
+  );
+}
+
+/** Newest projects with developer + city + unit stats — homepage carousel. */
+export async function getFeaturedProjects(limit = 6): Promise<ProjectCard[]> {
+  const rows = await db
+    .select({
+      id: projects.id,
+      name: projects.name,
+      slug: projects.slug,
+      projectType: projects.projectType,
+      stage: projects.stage,
+      deliveryDate: projects.deliveryDate,
+      heroImageUrl: projects.heroImageUrl,
+      developerName: developers.name,
+      cityName: locations.name,
+    })
+    .from(projects)
+    .leftJoin(developers, eq(projects.developerId, developers.id))
+    .leftJoin(locations, eq(projects.locationId, locations.id))
+    .orderBy(desc(projects.id))
+    .limit(limit);
+  const stats = await projectUnitStats(rows.map((r) => r.id));
+  return rows.map((r) => ({
+    ...r,
+    minPriceUsd: stats.get(r.id)?.minPriceUsd ?? null,
+    availableUnits: stats.get(r.id)?.units ?? 0,
+  }));
+}
+
+export interface DeveloperCard {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  projectCount: number;
+}
+
+/** Developers with at least one project — "Desarrolladoras destacadas". */
+export async function getFeaturedDevelopers(limit = 8): Promise<DeveloperCard[]> {
+  const rows = await db
+    .select({
+      id: developers.id,
+      name: developers.name,
+      slug: developers.slug,
+      logoUrl: developers.logoUrl,
+      projectCount: sql<number>`COUNT(${projects.id})`,
+    })
+    .from(developers)
+    .innerJoin(projects, eq(projects.developerId, developers.id))
+    .groupBy(developers.id, developers.name, developers.slug, developers.logoUrl)
+    .orderBy(desc(sql`COUNT(${projects.id})`))
+    .limit(limit);
+  return rows.map((r) => ({ ...r, projectCount: Number(r.projectCount) }));
+}
+
+export interface ProjectUnit {
+  id: number;
+  publicId: string;
+  slug: string;
+  title: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  areaM2: string | null;
+  priceUsd: string;
+  priceAmount: string;
+  priceCurrency: "USD" | "PYG";
+  propertyState: string | null;
+}
+
+/** Full project detail: project + developer + location chain + its units. */
+export async function getProjectBySlug(slug: string) {
+  const [row] = await db
+    .select({
+      project: projects,
+      developer: developers,
+      location: locations,
+    })
+    .from(projects)
+    .leftJoin(developers, eq(projects.developerId, developers.id))
+    .leftJoin(locations, eq(projects.locationId, locations.id))
+    .where(eq(projects.slug, slug))
+    .limit(1);
+  if (!row) return null;
+
+  const units: ProjectUnit[] = await db
+    .select({
+      id: listings.id,
+      publicId: listings.publicId,
+      slug: listings.slug,
+      title: listings.title,
+      bedrooms: listings.bedrooms,
+      bathrooms: listings.bathrooms,
+      areaM2: listings.areaM2,
+      priceUsd: listings.priceUsd,
+      priceAmount: listings.priceAmount,
+      priceCurrency: listings.priceCurrency,
+      propertyState: listings.propertyState,
+    })
+    .from(listings)
+    .where(
+      and(eq(listings.status, "published"), eq(listings.projectId, row.project.id)),
+    )
+    .orderBy(asc(listings.priceUsd));
+
+  // Other projects by the same developer (for the "Otros proyectos" row).
+  const siblings = row.project.developerId
+    ? await db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          slug: projects.slug,
+          projectType: projects.projectType,
+          stage: projects.stage,
+          deliveryDate: projects.deliveryDate,
+          heroImageUrl: projects.heroImageUrl,
+          developerName: developers.name,
+          cityName: locations.name,
+        })
+        .from(projects)
+        .leftJoin(developers, eq(projects.developerId, developers.id))
+        .leftJoin(locations, eq(projects.locationId, locations.id))
+        .where(
+          and(
+            eq(projects.developerId, row.project.developerId),
+            ne(projects.id, row.project.id),
+          ),
+        )
+        .limit(6)
+    : [];
+  const sibStats = await projectUnitStats(siblings.map((s) => s.id));
+  const otherProjects: ProjectCard[] = siblings.map((s) => ({
+    ...s,
+    minPriceUsd: sibStats.get(s.id)?.minPriceUsd ?? null,
+    availableUnits: sibStats.get(s.id)?.units ?? 0,
+  }));
+
+  return { ...row, units, otherProjects };
+}
+
+/** Best active financing program (lowest rate) — listing cuota module. */
+export async function getBestFinancingProgram() {
+  const [row] = await db
+    .select()
+    .from(financingPrograms)
+    .where(eq(financingPrograms.active, true))
+    .orderBy(asc(financingPrograms.annualRate))
+    .limit(1);
+  return row ?? null;
 }
 
 export { citySubtreeIds };
