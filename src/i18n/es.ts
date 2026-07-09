@@ -22,6 +22,56 @@ export const es = {
 } as const;
 
 /**
+ * Panel / auth copy (admin + agency). Voseo, same register as `es`. This is the
+ * internal surface (login, review queue, agency dashboard) — never indexed, but
+ * still es-PY so the founder and agencies read the same language as the site.
+ */
+export const esPanel = {
+  loginTitle: "Ingresá a tu panel",
+  loginSubtitle: "Usá tu email y contraseña.",
+  emailLabel: "Email",
+  passwordLabel: "Contraseña",
+  loginSubmit: "Entrar",
+  loginError: "Email o contraseña incorrectos.",
+  logout: "Salir",
+
+  // Admin
+  adminReviewTitle: "Cola de revisión",
+  adminReviewEmpty: "No hay avisos esperando revisión. 🎉",
+  approve: "Aprobar",
+  reject: "Rechazar",
+  rejectReasonLabel: "Motivo del rechazo",
+  rejectReasonPlaceholder: "Contale al publicador por qué (ej: fotos con marca de agua)",
+  adminAgenciesTitle: "Inmobiliarias y agentes",
+  verify: "Verificar",
+  unverify: "Quitar verificación",
+  verifiedBadge: "✓ Verificado",
+  notVerifiedBadge: "Sin verificar",
+
+  // Agency
+  agencyListingsTitle: "Tus propiedades",
+  agencyListingsEmpty: "Todavía no tenés propiedades cargadas.",
+  agencyLeadsTitle: "Consultas recibidas",
+  agencyLeadsEmpty: "Todavía no recibiste consultas.",
+  agencyNoLink:
+    "Tu usuario todavía no está vinculado a una inmobiliaria. Escribinos para activarlo.",
+  statusLabel: "Estado",
+  saveStatus: "Guardar",
+  contactLead: "Responder por WhatsApp",
+} as const;
+
+/** es-PY labels for listing statuses shown in the panel. */
+export const listingStatusLabel: Record<string, string> = {
+  draft: "Borrador",
+  pending_review: "En revisión",
+  published: "Publicado",
+  paused: "Pausado",
+  sold: "Vendido",
+  rented: "Alquilado",
+  removed: "Eliminado",
+};
+
+/**
  * Per-listing WhatsApp prefill: names the property and links back to it, so
  * the seller knows exactly which listing the message is about (and the
  * portal gets attribution in the chat itself).
