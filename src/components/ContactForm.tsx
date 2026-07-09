@@ -21,7 +21,8 @@ export function ContactForm({
   prefillMessage,
   variant = "card",
 }: {
-  listingPublicId: string;
+  /** Omit for non-listing inquiries (e.g. a project page). */
+  listingPublicId?: string;
   contactWhatsapp: string | null;
   leadType: "buyer" | "renter";
   prefillMessage: string;

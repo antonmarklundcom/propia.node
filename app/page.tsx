@@ -5,15 +5,47 @@ import { currentVertical } from "@/lib/vertical-context";
 import {
   getRecentListings,
   getRecentListingsBy,
+  getFeaturedProjects,
+  getFeaturedDevelopers,
   countPublished,
   listCities,
   type ListingCard as Card,
 } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
+import { ProjectCard } from "@/components/ProjectCard";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { SearchBar } from "@/components/SearchBar";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 import { categoryUrl } from "@/lib/urls";
+
+/** Hero quick-access tiles under the search bar. */
+const HERO_TILES = [
+  {
+    icon: "🏛",
+    title: "Asunción",
+    sub: "Capital — mayor oferta",
+    href: "/venta/asuncion",
+  },
+  {
+    icon: "🌆",
+    title: "Luque",
+    sub: "Zona en crecimiento",
+    href: "/venta/luque",
+  },
+  {
+    icon: "🔑",
+    title: "Alquileres",
+    sub: "Tu próximo lugar",
+    href: "/alquiler/asuncion",
+  },
+  {
+    icon: "🏗",
+    title: "Proyectos en pozo",
+    sub: "Obra nueva y preventa",
+    href: "/#proyectos",
+  },
+];
 
 /** Curated, high-population cities — a fixed shortcut row (avoids querying
  * every seeded city, some of which have little to no live inventory yet). */
@@ -117,16 +149,27 @@ function Row({
 
 export default async function Home() {
   await currentVertical();
-  const [recent, cities, total, ventaCasas, ventaDeptos, alquileres, terrenos] =
-    await Promise.all([
-      getRecentListings(8),
-      listCities(),
-      countPublished(),
-      getRecentListingsBy({ operation: "venta", type: "casa" }, 8),
-      getRecentListingsBy({ operation: "venta", type: "departamento" }, 8),
-      getRecentListingsBy({ operation: "alquiler" }, 8),
-      getRecentListingsBy({ operation: "venta", type: "terreno" }, 8),
-    ]);
+  const [
+    recent,
+    cities,
+    total,
+    ventaCasas,
+    ventaDeptos,
+    alquileres,
+    terrenos,
+    featuredProjects,
+    featuredDevelopers,
+  ] = await Promise.all([
+    getRecentListings(8),
+    listCities(),
+    countPublished(),
+    getRecentListingsBy({ operation: "venta", type: "casa" }, 8),
+    getRecentListingsBy({ operation: "venta", type: "departamento" }, 8),
+    getRecentListingsBy({ operation: "alquiler" }, 8),
+    getRecentListingsBy({ operation: "venta", type: "terreno" }, 8),
+    getFeaturedProjects(6),
+    getFeaturedDevelopers(8),
+  ]);
 
   const cityShortcuts = CITY_SHORTCUTS.map((name) =>
     cities.find((c) => c.name === name),
@@ -152,6 +195,20 @@ export default async function Home() {
               </Link>
             ))}
           </div>
+
+          <div className="home-hero__tiles">
+            {HERO_TILES.map((t) => (
+              <Link key={t.title} href={t.href} className="home-hero__tile">
+                <span className="home-hero__tile-icon" aria-hidden>
+                  {t.icon}
+                </span>
+                <span>
+                  <span className="home-hero__tile-title">{t.title}</span>
+                  <span className="home-hero__tile-sub">{t.sub}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -172,6 +229,28 @@ export default async function Home() {
           </a>
         </div>
       </div>
+
+      {/* Nuevos proyectos — renders only once real projects exist */}
+      {featuredProjects.length > 0 && (
+        <section className="home-projects" id="proyectos">
+          <div className="home-projects__inner">
+            <div className="home-section__head">
+              <h2 className="home-section__title">
+                🏗 Nuevos proyectos en Paraguay
+              </h2>
+            </div>
+            <p className="home-projects__subtitle">
+              Obra nueva verificada — departamentos en pozo, en construcción y
+              entrega inmediata.
+            </p>
+            <div className="home-row home-row--projects">
+              {featuredProjects.map((p) => (
+                <ProjectCard key={p.id} card={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* City shortcuts */}
       {cityShortcuts.length > 0 && (
@@ -194,23 +273,24 @@ export default async function Home() {
       )}
 
       <div className="home-body">
+        <RecentlyViewed />
         <Row
-          title="Publicaciones recientes"
+          title="Propiedades recomendadas"
           href="/venta/asuncion"
           cards={recent}
         />
         <Row
-          title="Casas en venta"
+          title="Casas en Venta — Asunción y alrededores"
           href="/venta/asuncion/casas"
           cards={ventaCasas}
         />
         <Row
-          title="Departamentos en venta"
+          title="Departamentos en Venta — Asunción"
           href="/venta/asuncion/departamentos"
           cards={ventaDeptos}
         />
         <Row
-          title="Alquileres"
+          title="Alquileres en Asunción"
           href="/alquiler/asuncion"
           cards={alquileres}
         />
@@ -226,6 +306,71 @@ export default async function Home() {
           </p>
         )}
       </div>
+
+      {/* Desarrolladoras destacadas — renders only once developers exist */}
+      {featuredDevelopers.length > 0 && (
+        <section className="home-devs">
+          <div className="home-devs__inner">
+            <div className="home-section__head">
+              <h2 className="home-section__title">Desarrolladoras destacadas</h2>
+            </div>
+            <p className="home-projects__subtitle">
+              Conocé quién construye los proyectos del país.
+            </p>
+            <div className="home-devs__grid">
+              {featuredDevelopers.map((d) => (
+                <div key={d.id} className="home-devs__card">
+                  {d.logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="home-devs__logo" src={d.logoUrl} alt={d.name} />
+                  ) : (
+                    <div className="home-devs__logo home-devs__logo--fallback" aria-hidden>
+                      {d.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className="home-devs__name">{d.name}</div>
+                  <div className="home-devs__count">
+                    {d.projectCount} {d.projectCount === 1 ? "proyecto" : "proyectos"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Value proposition strip */}
+      <section className="home-values">
+        <div className="home-values__inner">
+          {[
+            {
+              icon: "✅",
+              title: "Contacto directo",
+              text: "Hablás directo con el vendedor o la inmobiliaria, sin intermediarios.",
+            },
+            {
+              icon: "💳",
+              title: "Cuota estimada",
+              text: "Cada propiedad en venta muestra su cuota mensual con financiamiento vigente.",
+            },
+            {
+              icon: "🇵🇾",
+              title: "Hecho para Paraguay",
+              text: "Precios en guaraníes y dólares, barrios reales y WhatsApp primero.",
+            },
+          ].map((v) => (
+            <div key={v.title} className="home-values__item">
+              <span className="home-values__icon" aria-hidden>
+                {v.icon}
+              </span>
+              <div>
+                <div className="home-values__title">{v.title}</div>
+                <div className="home-values__text">{v.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Descubre más — secondary product surfaces */}
       <section className="home-discover">

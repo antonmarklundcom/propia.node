@@ -6,6 +6,7 @@ import {
   getListingByPublicId,
   getSimilarListings,
   getAgencyListings,
+  getBestFinancingProgram,
   citySubtreeIds,
 } from "@/lib/queries";
 import {
@@ -25,6 +26,8 @@ import { JsonLd } from "@/components/JsonLd";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
+import { PriceAlert } from "@/components/PriceAlert";
+import { RecentlyViewedRecorder } from "@/components/RecentlyViewed";
 
 export const revalidate = 3600;
 
@@ -150,7 +153,7 @@ export default async function ListingPage({ params }: Params) {
         ? { lat: Number(city.lat), lng: Number(city.lng), label: city.name }
         : null;
 
-  const [similar, fromAgency] = await Promise.all([
+  const [similar, fromAgency, financingProgram] = await Promise.all([
     city
       ? getSimilarListings({
           excludeId: listing.id,
@@ -163,6 +166,9 @@ export default async function ListingPage({ params }: Params) {
     listing.agencyId
       ? getAgencyListings({ agencyId: listing.agencyId, excludeId: listing.id, limit: 4 })
       : Promise.resolve([]),
+    listing.operation === "venta" && cuota
+      ? getBestFinancingProgram()
+      : Promise.resolve(null),
   ]);
 
   const amenities = normalizeAmenities(listing.amenities);
@@ -171,18 +177,18 @@ export default async function ListingPage({ params }: Params) {
     : null;
 
   // "Detalles de la propiedad" rows — only what we actually know.
-  const details: { label: string; value: string }[] = [];
-  if (barrio) details.push({ label: "Barrio", value: barrio.name });
-  if (city) details.push({ label: "Ciudad", value: city.name });
-  details.push({ label: "Tipo", value: typeLabel });
+  const details: { icon: string; label: string; value: string }[] = [];
+  if (barrio) details.push({ icon: "📍", label: "Barrio", value: barrio.name });
+  if (city) details.push({ icon: "🏙", label: "Ciudad", value: city.name });
+  details.push({ icon: TYPE_ICON[listing.propertyType], label: "Tipo", value: typeLabel });
   if (listing.propertyState)
-    details.push({ label: "Estado", value: STATE_LABELS[listing.propertyState] ?? listing.propertyState });
+    details.push({ icon: "🔨", label: "Estado", value: STATE_LABELS[listing.propertyState] ?? listing.propertyState });
   if (listing.areaM2)
-    details.push({ label: "Superficie", value: `${Math.round(Number(listing.areaM2))} m²` });
+    details.push({ icon: "📐", label: "Superficie", value: `${Math.round(Number(listing.areaM2))} m²` });
   if (listing.landM2)
-    details.push({ label: "Terreno", value: `${Math.round(Number(listing.landM2))} m²` });
+    details.push({ icon: "🌳", label: "Terreno", value: `${Math.round(Number(listing.landM2))} m²` });
   if (listing.parking != null)
-    details.push({ label: "Cocheras", value: String(listing.parking) });
+    details.push({ icon: "🚗", label: "Cocheras", value: String(listing.parking) });
 
   const sellerName = agency?.name ?? agent?.name ?? "Publicado en Propia";
   const sellerInitials = sellerName
@@ -194,6 +200,19 @@ export default async function ListingPage({ params }: Params) {
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
       <JsonLd data={[listingJsonLd(detail), breadcrumbJsonLd(jsonLdCrumbs)]} />
+      <RecentlyViewedRecorder
+        entry={{
+          href: listingUrl(listing),
+          title: listing.title,
+          price: formatPrice(listing),
+          operation: listing.operation,
+          specs: [
+            listing.bedrooms != null ? `${listing.bedrooms} dorm` : null,
+            listing.bathrooms != null ? `${listing.bathrooms} baño${listing.bathrooms === 1 ? "" : "s"}` : null,
+            area ? `${Math.round(Number(area))} m²` : null,
+          ].filter((s): s is string => s !== null),
+        }}
+      />
 
       <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
         {crumbs.map((c, i) => (
@@ -289,8 +308,40 @@ export default async function ListingPage({ params }: Params) {
             ) : (
               <span className="listing-price__amount">{formatPrice(listing)}</span>
             )}
+            <PriceAlert
+              listingPublicId={listing.publicId}
+              listingTitle={listing.title}
+              leadType={leadType}
+            />
           </div>
-          {cuota && (
+
+          {/* Financing module — the cuota differentiator (ARCHITECTURE.md §3) */}
+          {cuota && financingProgram && (
+            <div className="financing-box">
+              <div className="financing-box__head">
+                💳 Con {financingProgram.name}
+                {financingProgram.code === "che_roga_pora" && " (programa estatal)"}
+              </div>
+              <div className="financing-box__grid">
+                <div>
+                  <div className="financing-box__label">Cuota estimada</div>
+                  <div className="financing-box__value">{cuota}</div>
+                </div>
+                <div>
+                  <div className="financing-box__label">Condiciones</div>
+                  <div className="financing-box__value financing-box__value--muted">
+                    Tasa {Number(financingProgram.annualRate).toLocaleString("es-PY")}% ·{" "}
+                    {Math.round(financingProgram.maxTermMonths / 12)} años
+                  </div>
+                </div>
+              </div>
+              <div className="financing-box__foot">
+                Estimación referencial para esta propiedad — la aprobación depende
+                del banco y del programa.
+              </div>
+            </div>
+          )}
+          {cuota && !financingProgram && (
             <div
               style={{
                 display: "inline-block",
@@ -313,7 +364,9 @@ export default async function ListingPage({ params }: Params) {
               <dl className="listing-details-grid">
                 {details.map((d) => (
                   <div className="listing-details-grid__row" key={d.label}>
-                    <dt className="listing-details-grid__label">{d.label}</dt>
+                    <dt className="listing-details-grid__label">
+                      <span aria-hidden>{d.icon}</span> {d.label}
+                    </dt>
                     <dd className="listing-details-grid__value">{d.value}</dd>
                   </div>
                 ))}
