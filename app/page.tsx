@@ -11,7 +11,21 @@ import {
 } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { SearchBar } from "@/components/SearchBar";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
+import { categoryUrl } from "@/lib/urls";
+
+/** Curated, high-population cities — a fixed shortcut row (avoids querying
+ * every seeded city, some of which have little to no live inventory yet). */
+const CITY_SHORTCUTS = [
+  "Asunción",
+  "Luque",
+  "San Lorenzo",
+  "Lambaré",
+  "Fernando de la Mora",
+  "Ciudad del Este",
+  "Encarnación",
+];
 
 export const revalidate = 600;
 
@@ -31,6 +45,21 @@ function publishHref(): string {
     ? `https://wa.me/${wa}?text=${text}`
     : "mailto:hola@propia.com.py?subject=Quiero%20publicar%20una%20propiedad";
 }
+
+const DISCOVER_CARDS = [
+  {
+    icon: "🏡",
+    title: "Publicá tu propiedad gratis",
+    text: "Cargá fotos, precio y ubicación en minutos. Sin comisión, sin costo de publicación.",
+    cta: "Publicar ahora",
+  },
+  {
+    icon: "💰",
+    title: es.valuationMagnet,
+    text: "Contanos sobre tu propiedad y te ayudamos a estimar su valor de mercado en Paraguay.",
+    cta: "Consultar gratis",
+  },
+];
 
 const FAQ: { q: string; a: string }[] = [
   {
@@ -52,6 +81,10 @@ const FAQ: { q: string; a: string }[] = [
   {
     q: "¿Qué es la cuota estimada?",
     a: "Para propiedades en venta mostramos una cuota mensual estimada según los programas de financiamiento vigentes en Paraguay, para que sepas de entrada si te cierra el número.",
+  },
+  {
+    q: "¿Puedo publicar como inmobiliaria o agente?",
+    a: "Sí. Las inmobiliarias y agentes pueden publicar su cartera completa y aparecer verificados en cada aviso. Escribinos por WhatsApp para activar tu cuenta.",
   },
 ];
 
@@ -84,15 +117,20 @@ function Row({
 
 export default async function Home() {
   await currentVertical();
-  const [recent, cities, total, ventaDeptos, alquileres, terrenos] =
+  const [recent, cities, total, ventaCasas, ventaDeptos, alquileres, terrenos] =
     await Promise.all([
       getRecentListings(8),
       listCities(),
       countPublished(),
+      getRecentListingsBy({ operation: "venta", type: "casa" }, 8),
       getRecentListingsBy({ operation: "venta", type: "departamento" }, 8),
       getRecentListingsBy({ operation: "alquiler" }, 8),
       getRecentListingsBy({ operation: "venta", type: "terreno" }, 8),
     ]);
+
+  const cityShortcuts = CITY_SHORTCUTS.map((name) =>
+    cities.find((c) => c.name === name),
+  ).filter((c): c is (typeof cities)[number] => Boolean(c));
 
   return (
     <main>
@@ -135,11 +173,36 @@ export default async function Home() {
         </div>
       </div>
 
+      {/* City shortcuts */}
+      {cityShortcuts.length > 0 && (
+        <section className="home-cities">
+          <div className="home-cities__inner">
+            <h2 className="home-cities__title">Explorá por ciudad</h2>
+            <div className="home-cities__row">
+              {cityShortcuts.map((c) => (
+                <Link
+                  key={c.slug}
+                  className="home-cities__chip"
+                  href={categoryUrl({ operation: "venta", citySlug: c.slug })}
+                >
+                  📍 {c.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="home-body">
         <Row
           title="Publicaciones recientes"
           href="/venta/asuncion"
           cards={recent}
+        />
+        <Row
+          title="Casas en venta"
+          href="/venta/asuncion/casas"
+          cards={ventaCasas}
         />
         <Row
           title="Departamentos en venta"
@@ -164,6 +227,31 @@ export default async function Home() {
         )}
       </div>
 
+      {/* Descubre más — secondary product surfaces */}
+      <section className="home-discover">
+        <div className="home-discover__inner">
+          <h2 className="home-discover__title">Descubre más en Propia</h2>
+          <div className="home-discover__grid">
+            {DISCOVER_CARDS.map((c) => (
+              <a
+                key={c.title}
+                className="home-discover__card"
+                href={publishHref()}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="home-discover__icon" aria-hidden>
+                  {c.icon}
+                </span>
+                <h3 className="home-discover__card-title">{c.title}</h3>
+                <p className="home-discover__card-text">{c.text}</p>
+                <span className="home-discover__card-cta">{c.cta} →</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Publish CTA banner */}
       <section className="home-cta">
         <div className="home-cta__inner">
@@ -180,6 +268,22 @@ export default async function Home() {
           >
             Publicar ahora
           </a>
+        </div>
+      </section>
+
+      {/* Newsletter */}
+      <section className="home-newsletter">
+        <div className="home-newsletter__inner">
+          <div>
+            <h2 className="home-newsletter__title">
+              Oportunidades inmobiliarias, una vez por semana
+            </h2>
+            <p className="home-newsletter__text">
+              Propiedades curadas, señales del mercado y las últimas del sector —
+              en tu correo. Sin spam, podés cancelar cuando quieras.
+            </p>
+          </div>
+          <NewsletterSignup />
         </div>
       </section>
 

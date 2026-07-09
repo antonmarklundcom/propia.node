@@ -22,7 +22,7 @@ import {
 } from "@/lib/jsonld";
 import { inquiryPrefillFor } from "@/i18n/es";
 import { JsonLd } from "@/components/JsonLd";
-import { WhatsAppContact } from "@/components/WhatsAppContact";
+import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
 
@@ -376,14 +376,31 @@ export default async function ListingPage({ params }: Params) {
               </div>
             </div>
           </div>
-          <WhatsAppContact
+          <ContactForm
             listingPublicId={listing.publicId}
             contactWhatsapp={contactWhatsapp}
             leadType={leadType}
-            message={waMessage}
+            prefillMessage={waMessage}
+            variant="card"
           />
         </aside>
       </div>
+
+      {/* Full-width contact panel, mirrors the sticky card for visitors
+          who scrolled past it without noticing. */}
+      <section className="contact-panel">
+        <h2 className="contact-panel__title">¿Interesado en esta propiedad?</h2>
+        <p className="contact-panel__subtitle">
+          Contactanos hoy para más información o para agendar una visita.
+        </p>
+        <ContactForm
+          listingPublicId={listing.publicId}
+          contactWhatsapp={contactWhatsapp}
+          leadType={leadType}
+          prefillMessage={waMessage}
+          variant="panel"
+        />
+      </section>
 
       {similar.length > 0 && (
         <section className="similar-listings">
