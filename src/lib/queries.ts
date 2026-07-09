@@ -220,6 +220,77 @@ async function attachCovers(
   return rows.map((r) => ({ ...r, coverKey: coverByListing.get(r.id) ?? null }));
 }
 
+/** Total published listings — the homepage "propiedades activas" stat. */
+export async function countPublished(): Promise<number> {
+  const rows = await db
+    .select({ id: listings.id })
+    .from(listings)
+    .where(eq(listings.status, "published"));
+  return rows.length;
+}
+
+/**
+ * Recent published listings, optionally narrowed by operation/type — powers
+ * the homepage category rows ("Departamentos en venta", "Alquileres", …).
+ */
+export async function getRecentListingsBy(
+  by: { operation?: Operation; type?: PropertyType },
+  limit = 8,
+): Promise<ListingCard[]> {
+  const conds = [eq(listings.status, "published")];
+  if (by.operation) conds.push(eq(listings.operation, by.operation));
+  if (by.type) conds.push(eq(listings.propertyType, by.type));
+  const rows = await db
+    .select(cardColumns())
+    .from(listings)
+    .where(and(...conds))
+    .orderBy(desc(listings.publishedAt))
+    .limit(limit);
+  return attachCovers(rows);
+}
+
+/** Other published listings from the same agency — "Más de esta inmobiliaria". */
+export async function getAgencyListings(params: {
+  agencyId: number;
+  excludeId: number;
+  limit?: number;
+}): Promise<ListingCard[]> {
+  const rows = await db
+    .select(cardColumns())
+    .from(listings)
+    .where(
+      and(
+        eq(listings.status, "published"),
+        eq(listings.agencyId, params.agencyId),
+        ne(listings.id, params.excludeId),
+      ),
+    )
+    .orderBy(desc(listings.publishedAt))
+    .limit(params.limit ?? 4);
+  return attachCovers(rows);
+}
+
+/** The card-shaped column set — shared by every query that feeds <ListingCard>. */
+function cardColumns() {
+  return {
+    id: listings.id,
+    publicId: listings.publicId,
+    slug: listings.slug,
+    title: listings.title,
+    operation: listings.operation,
+    propertyType: listings.propertyType,
+    priceUsd: listings.priceUsd,
+    priceAmount: listings.priceAmount,
+    priceCurrency: listings.priceCurrency,
+    cuotaGs: listings.cuotaGs,
+    bedrooms: listings.bedrooms,
+    bathrooms: listings.bathrooms,
+    areaM2: listings.areaM2,
+    landM2: listings.landM2,
+    locationId: listings.locationId,
+  };
+}
+
 /** Most recent published listings for the homepage grid. */
 export async function getRecentListings(limit = 12): Promise<ListingCard[]> {
   const rows = await db
