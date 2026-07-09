@@ -16,7 +16,8 @@
     "seed:locations": "tsx scripts/seed-locations.ts",
     "cron:cuotas": "tsx scripts/recompute-cuotas.ts",
     "cron:medians": "tsx scripts/compute-medians.ts",
-    "import:csv": "tsx scripts/import-csv.ts"
+    "import:csv": "tsx scripts/import-csv.ts",
+    "user:create": "tsx scripts/create-user.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

@@ -8,6 +8,13 @@
       "when": 1783162926450,
       "tag": "0000_slimy_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1783631099911,
+      "tag": "0001_complete_invaders",
+      "breakpoints": true
     }
   ]
 }

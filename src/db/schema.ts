@@ -104,6 +104,7 @@ export const listings = mysqlTable(
 
     isVerified: boolean("is_verified").notNull().default(false),
     verifiedAt: datetime("verified_at"),
+    reviewNotes: varchar("review_notes", { length: 280 }), // super-admin reject reason (review queue); cleared on approve
     featuredUntil: datetime("featured_until"), // paid placement
     foreignExposure: boolean("foreign_exposure").notNull().default(true), // opt-in to realestateinparaguay.com
 
@@ -206,7 +207,10 @@ export const agents = mysqlTable(
     whatsapp: varchar("whatsapp", { length: 30 }),
     isVerified: boolean("is_verified").notNull().default(false),
   },
-  (t) => [index("idx_agency").on(t.agencyId)],
+  (t) => [
+    index("idx_agency").on(t.agencyId),
+    index("idx_user").on(t.userId), // agency-context lookup: which agency a logged-in user belongs to
+  ],
 );
 
 export const developers = mysqlTable("developers", {
@@ -362,6 +366,7 @@ export const users = mysqlTable("users", {
   id: id(),
   name: varchar("name", { length: 140 }),
   email: varchar("email", { length: 190 }).unique(),
+  passwordHash: varchar("password_hash", { length: 255 }), // NULL = OTP-only account (email+password login is opt-in; WhatsApp OTP is a later pass)
   whatsapp: varchar("whatsapp", { length: 30 }).unique(),
   whatsappVerifiedAt: datetime("whatsapp_verified_at"),
   role: mysqlEnum("role", [
@@ -388,4 +393,21 @@ export const otpCodes = mysqlTable(
     consumedAt: datetime("consumed_at"),
   },
   (t) => [index("idx_wa").on(t.whatsapp, t.expiresAt)],
+);
+
+/**
+ * Opaque server-side sessions (ARCHITECTURE.md §1: "Session cookies + WhatsApp
+ * OTP via GHL" — no third-party auth library). `id` is the sha256 hex of the
+ * random cookie token, so the raw token never touches the database and the
+ * lookup is a primary-key hit. Rows are deleted on logout and lazily on expiry.
+ */
+export const sessions = mysqlTable(
+  "sessions",
+  {
+    id: char("id", { length: 64 }).primaryKey(), // sha256(token) hex
+    userId: fk("user_id").notNull(),
+    expiresAt: datetime("expires_at").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("idx_user").on(t.userId)],
 );
