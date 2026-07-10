@@ -66,6 +66,45 @@ verification rails existed. In the first PR, before any product code:
 round-trip, one image through the CDN — BEFORE feature work. propia built
 M1–M5 with no deploy artifacts in the repo; don't repeat that.
 
+### Day-0 artifacts (copy-paste, adjust names)
+
+`.github/workflows/ci.yml`:
+
+```yaml
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --audit-level=high
+```
+
+ESLint (flat config, `eslint.config.mjs`):
+
+```js
+import next from "eslint-config-next";
+export default [...next(), { ignores: [".next/", "node_modules/"] }];
+```
+
+Tests — `vitest` with zero config; put `*.test.ts` next to the pure-logic
+modules (`src/lib/cuota.test.ts`, `src/lib/urls.test.ts`,
+`src/lib/import/normalize.test.ts`, `src/lib/indexability.test.ts`).
+`package.json` scripts: `"test": "vitest run"`, `"lint": "eslint ."`.
+These four test files ARE the no-DB verify path for cloud sessions —
+every money-math or URL change gets caught without MySQL running.
+
 ## Architecture defaults (proven on propia — reuse unless a reason not to)
 
 | Layer | Choice | Notes |
@@ -134,6 +173,45 @@ templated pages/forms/copy wiring.
   quarterly): >~50k rows with filter latency, need search-as-you-type,
   import jobs exceed execution limits → then VPS + Meilisearch (+ optionally
   Postgres), a weekend not a rewrite.
+
+## Connecting multiple domains to one engine
+
+Feeder domains (terreno.*, alquiler.*, the EN site) are the SAME app and
+the SAME database — do NOT stand up a second app that "fetches" listings
+from the first. A second deployment sharing data means an internal API,
+auth between apps, cache/sync drift, and double ops — with no real
+security gain, since it's the same data owned by the same founder. The
+isolation that matters is enforced in code, not by infrastructure:
+
+- **Routing**: point every domain's DNS at the same Hostinger Node app
+  (hPanel → Domains → add domain/alias to the site, or an A/CNAME record
+  to the same target). Next.js middleware reads the `Host` header, looks
+  it up in `src/config/verticals.ts`, and injects `x-vertical` +
+  `x-locale` into the request. Unknown/disabled hosts resolve to the
+  primary brand.
+- **Data slice**: each vertical config declares hard filters (e.g.
+  terreno → `property_type=['terreno']`) that every listing query applies.
+  A feeder domain physically cannot render inventory outside its slice —
+  that's the "share only terreno's properties" guarantee, done at the
+  query layer.
+- **Write surface**: keep /admin, /publicar, /login on the primary domain
+  only — feeder verticals get a redirect for panel routes. Public doors
+  are read-only + lead capture; the attack surface of a feeder domain is
+  a filtered read.
+- **SEO safety (the actual risk)**: listing DETAIL pages are canonical on
+  the primary domain only; feeder domains own their own category/landing/
+  guide pages with distinct copy and link into the primary for details.
+  Without this, Google sees duplicate content across your own domains and
+  splits/penalizes rankings.
+- **Lead attribution**: the captured vertical is stored on every lead
+  (`leads.vertical`) so you can measure each door's yield from day one.
+- **TLS**: Hostinger issues certificates per domain — add each domain in
+  hPanel and enable SSL before flipping `enabled: true`.
+
+Launch checklist per feeder domain: DNS → hPanel domain + SSL → distinct
+copy strings → `enabled: true` in verticals config → verify canonicals
+point at the primary → submit the feeder's sitemap in its own Search
+Console property.
 
 ## Process rules (the actual retro of propia's 14 PRs)
 
