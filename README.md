@@ -59,6 +59,12 @@ Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
    option, the cheapest fixes are upgrading to Cloud or a small Hostinger
    KVM VPS in the same São Paulo region). Point it at this repo (git
    deploy), build command `npm run build`, start command `npm run start`.
+   **After every deploy where `drizzle/` changed, run the migrations against
+   the production DB** (`DATABASE_URL=<prod url> npm run db:migrate`, or paste
+   the new `drizzle/NNNN_*.sql` into phpMyAdmin). Deployed code selects every
+   column in `src/db/schema.ts`; a DB behind on migrations 500s entire page
+   trees (e.g. missing `listings.review_notes` broke every listing detail
+   page after M5).
 3. **Domains:** point propia.com.py (and later feeder domains) at the same
    app. `middleware.ts` routes by Host header; disabled verticals resolve to
    propia.
