@@ -60,6 +60,83 @@ export const esPanel = {
   contactLead: "Responder por WhatsApp",
 } as const;
 
+/** Voseo strings for the publish wizard (ARCHITECTURE.md §3, M5). */
+export const esPublish = {
+  pageTitle: "Publicá tu propiedad",
+  pageSubtitle:
+    "Cargala en tres pasos. Guardamos tu avance automáticamente, así podés terminar cuando quieras.",
+
+  stepLabels: ["Detalles", "Ubicación", "Precio y publicación"] as const,
+
+  // Step 1
+  operationLabel: "¿Qué querés hacer?",
+  propertyTypeLabel: "Tipo de propiedad",
+  titleLabel: "Título del aviso",
+  titlePlaceholder: "Casa a estrenar en Barrio San Roque",
+  descriptionLabel: "Descripción",
+  descriptionPlaceholder:
+    "Contá lo que hace especial a la propiedad: estado, extras, cercanías…",
+  bedroomsLabel: "Dormitorios",
+  bathroomsLabel: "Baños",
+  parkingLabel: "Cocheras",
+  areaLabel: "Superficie (m²)",
+  landLabel: "Terreno (m²)",
+
+  // Step 2
+  locationLabel: "Ubicación",
+  locationPlaceholder: "Escribí tu ciudad o barrio",
+  locationHint: "Elegí el barrio si está en la lista; si no, la ciudad.",
+  projectLabel: "Proyecto cercano (opcional)",
+  projectPlaceholder: "Buscá un edificio o loteamiento",
+  projectHint: "Vinculá tu unidad de preventa al proyecto para que aparezca en su página.",
+
+  // Step 3
+  priceLabel: "Precio",
+  cuotaWith: "con",
+  videoLabel: "Video (opcional)",
+  photosHint:
+    "Las fotos se agregan después de publicar, desde tu panel. Podés cargar hasta 20.",
+  foreignExposureLabel:
+    "Mostrar también a compradores del exterior (realestateinparaguay.com) — próximamente",
+
+  // OTP
+  otpTitle: "Verificá tu WhatsApp para publicar",
+  otpSubtitle:
+    "Te mandamos un código por WhatsApp. Los avisos verificados muestran el sello ✓ y generan más confianza.",
+  whatsappLabel: "Número de WhatsApp",
+  codeLabel: "Código de 6 dígitos",
+  sendCode: "Enviar código",
+  sending: "Enviando…",
+  resend: "Reenviar código",
+  resendIn: "Reenviar en",
+  publish: "Publicar aviso",
+  publishing: "Publicando…",
+
+  // Nav
+  back: "Volver",
+  next: "Siguiente",
+  saving: "Guardando…",
+
+  // Done
+  doneTitle: "¡Tu aviso fue enviado!",
+  doneBody:
+    "Lo estamos revisando. En cuanto lo aprobemos, sale publicado en Propia.com.py. Podés seguir su estado y sumarle fotos desde tu panel.",
+  doneCta: "Ir a mi panel",
+
+  errors: {
+    operation: "Elegí si es venta o alquiler.",
+    propertyType: "Elegí el tipo de propiedad.",
+    title: "Poné un título de al menos 8 caracteres.",
+    price: "Ingresá un precio válido.",
+    location: "Elegí una ubicación de la lista.",
+    invalidNumber: "Revisá el número de WhatsApp.",
+    otpMismatch: "El código no coincide. Probá de nuevo.",
+    otpTooMany: "Demasiados intentos. Pedí un código nuevo.",
+    not_found: "No encontramos tu borrador. Recargá la página.",
+    generic: "Algo salió mal. Probá de nuevo.",
+  } as Record<string, string>,
+} as const;
+
 /** es-PY labels for listing statuses shown in the panel. */
 export const listingStatusLabel: Record<string, string> = {
   draft: "Borrador",
