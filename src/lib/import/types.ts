@@ -14,7 +14,8 @@ export type ListingSource =
   | "import_infocasas"
   | "import_clasipar"
   | "import_agency_site"
-  | "api";
+  | "api"
+  | "terreno";
 
 export type Operation = "venta" | "alquiler" | "alquiler_temporal";
 

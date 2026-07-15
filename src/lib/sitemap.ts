@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { listings, locations } from "../db/schema";
 import { getIndexability } from "./indexability";
-import { categoryUrl } from "./urls";
+import { categoryUrl, externalCanonicalFor } from "./urls";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 
@@ -46,8 +46,11 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
 
   const entries: SitemapEntry[] = [];
 
-  // 1. Listing detail pages — always indexable when published.
+  // 1. Listing detail pages — always indexable when published, EXCEPT land
+  // listings: terreno.com.py is their canonical (cross-posting SEO policy,
+  // docs/PROPIA-MIGRATION.md §3) so propia's own copy stays out of the map.
   for (const l of pub) {
+    if (externalCanonicalFor(l)) continue;
     entries.push({
       path: listingUrl({ slug: l.slug, publicId: l.publicId }),
       lastmod: l.updatedAt,

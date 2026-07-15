@@ -268,6 +268,7 @@ export const listingSources = mysqlTable(
       "import_clasipar",
       "import_agency_site",
       "api",
+      "terreno", // cross-posted from terreno.com.py's own feed (sibling site, ARCHITECTURE.md §5)
     ]).notNull(),
     sourceUrl: varchar("source_url", { length: 600 }),
     sourceExternalId: varchar("source_external_id", { length: 120 }),

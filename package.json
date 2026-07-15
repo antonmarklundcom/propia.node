@@ -16,6 +16,7 @@
     "seed:locations": "tsx scripts/seed-locations.ts",
     "cron:cuotas": "tsx scripts/recompute-cuotas.ts",
     "cron:medians": "tsx scripts/compute-medians.ts",
+    "cron:sync-terreno": "tsx scripts/sync-terreno.ts",
     "import:csv": "tsx scripts/import-csv.ts",
     "user:create": "tsx scripts/create-user.ts"
   },

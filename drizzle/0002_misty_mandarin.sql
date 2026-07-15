@@ -1,0 +1,1 @@
+ALTER TABLE `listing_sources` MODIFY COLUMN `source` enum('manual','fsbo_ads','whiteglove','import_tulugar','import_infocasas','import_clasipar','import_agency_site','api','terreno') NOT NULL;

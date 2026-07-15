@@ -13,6 +13,7 @@ import {
   parseListingPublicId,
   listingUrl,
   categoryUrl,
+  externalCanonicalFor,
 } from "@/lib/urls";
 import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
@@ -47,7 +48,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const detail = await load(slug);
   if (!detail) return { title: "Propiedad no encontrada — Propia" };
   const { listing } = detail;
-  const canonical = `${ORIGIN()}${listingUrl(listing)}`;
+  // Land listings are canonical on terreno.com.py (cross-posting SEO policy);
+  // the page still renders normally here, it just isn't the canonical copy.
+  const canonical = externalCanonicalFor(listing) ?? `${ORIGIN()}${listingUrl(listing)}`;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
     title: `${listing.title} — ${formatPrice(listing)} | Propia`,

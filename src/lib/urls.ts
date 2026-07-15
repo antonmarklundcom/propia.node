@@ -9,6 +9,7 @@
  *   /propiedad/{slug}-{public_id}            listing detail (canonical)
  */
 import type { Operation, PropertyType } from "./import/types";
+import { VERTICALS } from "@/config/verticals";
 
 /** Enum value ↔ URL segment. alquiler_temporal hyphenates for the path. */
 const OPERATION_SLUG: Record<Operation, string> = {
@@ -80,6 +81,24 @@ export function listingUrl(listing: {
 export function parseListingPublicId(slugParam: string): string | null {
   const m = slugParam.match(/-([a-z0-9]{10})$/);
   return m ? m[1] : null;
+}
+
+/**
+ * terreno.com.py is canonical for every land listing (cross-posting SEO
+ * policy — terreno's ARCHITECTURE.md §7, docs/PROPIA-MIGRATION.md §3). A
+ * propia-side land listing's canonical link points across, using the same
+ * {slug}-{publicId} pair the feed shares, so the URL is stable whichever
+ * site originated the listing. Detail pages for a NON-land listing return
+ * null (self-canonical, unaffected).
+ */
+export function externalCanonicalFor(listing: {
+  slug: string;
+  publicId: string;
+  propertyType: string;
+}): string | null {
+  const landTypes = VERTICALS["terreno.com.py"].filters?.property_type ?? [];
+  if (!landTypes.includes(listing.propertyType)) return null;
+  return `https://terreno.com.py/terreno/${listing.slug}-${listing.publicId}`;
 }
 
 /**

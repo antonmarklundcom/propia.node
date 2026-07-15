@@ -15,6 +15,13 @@
       "when": 1783631099911,
       "tag": "0001_complete_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1784153606131,
+      "tag": "0002_misty_mandarin",
+      "breakpoints": true
     }
   ]
 }
