@@ -4,7 +4,7 @@
  * price_usd — no MySQL-only cleverness, so the Postgres escape hatch stays
  * open. JSON columns are display-only and never filtered here.
  */
-import { and, asc, desc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
+import { and, asc, between, desc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   agencies,
@@ -17,6 +17,7 @@ import {
   projects,
 } from "../db/schema";
 import type { Operation, PropertyType } from "./import/types";
+import { snapToGrid } from "./geo";
 
 export type LocationRow = typeof locations.$inferSelect;
 
@@ -93,7 +94,7 @@ export interface CategoryQuery {
 }
 
 /** Conditions shared by the list query and the count query. */
-function categoryConds(q: CategoryQuery) {
+export function categoryConds(q: CategoryQuery) {
   const conds = [
     eq(listings.status, "published"),
     eq(listings.operation, q.operation),
@@ -119,7 +120,7 @@ export interface CategoryFilters {
 }
 
 /** categoryConds() narrowed by optional price/bedroom filters. Price filters run on price_usd (the one normalized, indexed column — see schema). */
-function filterConds(q: CategoryQuery, f: CategoryFilters) {
+export function filterConds(q: CategoryQuery, f: CategoryFilters) {
   const conds = [categoryConds(q)];
   if (f.priceMin != null) conds.push(gte(listings.priceUsd, String(f.priceMin)));
   if (f.priceMax != null) conds.push(lte(listings.priceUsd, String(f.priceMax)));
@@ -186,26 +187,127 @@ export async function getFilteredCategoryListings(
     .limit(q.limit ?? 48)
     .offset(q.offset ?? 0);
 
-  const filteredCountRows = await db.select({ id: listings.id }).from(listings).where(where);
+  const [{ count }] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(listings)
+    .where(where);
   const cards = await attachCovers(rows);
-  return { listings: cards, filteredCount: filteredCountRows.length };
+  return { listings: cards, filteredCount: Number(count) };
 }
 
 /** COUNT for indexability — the single number getIndexability() consumes. */
 export async function countCategory(q: CategoryQuery): Promise<number> {
-  const rows = await db
-    .select({ id: listings.id })
+  const [{ count }] = await db
+    .select({ count: sql<number>`COUNT(*)` })
     .from(listings)
     .where(categoryConds(q));
-  return rows.length;
+  return Number(count);
 }
 
-/** Attach cover image (position 0) to a set of listing cards in one query. */
-async function attachCovers(
-  rows: Omit<ListingCard, "coverKey">[],
-): Promise<ListingCard[]> {
-  if (rows.length === 0) return [];
-  const ids = rows.map((r) => r.id);
+export interface MapBBox {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+
+export interface MapPoint {
+  id: number;
+  publicId: string;
+  slug: string;
+  title: string;
+  operation: Operation;
+  propertyType: PropertyType;
+  priceUsd: string;
+  priceAmount: string;
+  priceCurrency: "USD" | "PYG";
+  bedrooms: number | null;
+  coverKey: string | null;
+  lat: number;
+  lng: number;
+}
+
+const MAP_RESULT_CAP = 500;
+
+/**
+ * Published listings inside a viewport bbox, for the map view. Leads with
+ * idx_geo (status, lat, lng) — the same CategoryQuery narrowing (operation,
+ * type, locationIds) applies on top so the map shows exactly what the list
+ * view shows. Coordinates are snapped to a coarse grid (src/lib/geo.ts)
+ * before leaving the server; the DB's precise lat/lng never reaches the
+ * client.
+ */
+/** Conditions for the map bbox query — leads with idx_geo (status, lat, lng). */
+export function bboxConds(
+  bbox: MapBBox,
+  q: Omit<CategoryQuery, "limit" | "offset">,
+  filters: Pick<CategoryFilters, "priceMin" | "priceMax" | "minBedrooms"> = {},
+) {
+  const conds = [
+    eq(listings.status, "published"),
+    between(listings.lat, String(bbox.minLat), String(bbox.maxLat)),
+    between(listings.lng, String(bbox.minLng), String(bbox.maxLng)),
+    eq(listings.operation, q.operation),
+    inArray(listings.locationId, q.locationIds),
+  ];
+  if (q.type) conds.push(eq(listings.propertyType, q.type));
+  if (filters.priceMin != null) conds.push(gte(listings.priceUsd, String(filters.priceMin)));
+  if (filters.priceMax != null) conds.push(lte(listings.priceUsd, String(filters.priceMax)));
+  if (filters.minBedrooms != null) conds.push(gte(listings.bedrooms, filters.minBedrooms));
+  return and(...conds);
+}
+
+export async function mapListingsInBBox(
+  bbox: MapBBox,
+  q: Omit<CategoryQuery, "limit" | "offset">,
+  filters: Pick<CategoryFilters, "priceMin" | "priceMax" | "minBedrooms"> = {},
+): Promise<MapPoint[]> {
+  const rows = await db
+    .select({
+      id: listings.id,
+      publicId: listings.publicId,
+      slug: listings.slug,
+      title: listings.title,
+      operation: listings.operation,
+      propertyType: listings.propertyType,
+      priceUsd: listings.priceUsd,
+      priceAmount: listings.priceAmount,
+      priceCurrency: listings.priceCurrency,
+      bedrooms: listings.bedrooms,
+      lat: listings.lat,
+      lng: listings.lng,
+    })
+    .from(listings)
+    .where(bboxConds(bbox, q, filters))
+    .limit(MAP_RESULT_CAP);
+
+  const coverByListing = await coverKeysFor(rows.map((r) => r.id));
+
+  return rows
+    .filter((r) => r.lat != null && r.lng != null)
+    .map((r) => {
+      const snapped = snapToGrid(Number(r.lat), Number(r.lng));
+      return {
+        id: r.id,
+        publicId: r.publicId,
+        slug: r.slug,
+        title: r.title,
+        operation: r.operation,
+        propertyType: r.propertyType,
+        priceUsd: r.priceUsd,
+        priceAmount: r.priceAmount,
+        priceCurrency: r.priceCurrency,
+        bedrooms: r.bedrooms,
+        coverKey: coverByListing.get(r.id) ?? null,
+        lat: snapped.lat,
+        lng: snapped.lng,
+      };
+    });
+}
+
+/** Cover image r2Key (position 0) per listing id, for a batch of ids in one query. */
+async function coverKeysFor(ids: number[]): Promise<Map<number, string>> {
+  if (ids.length === 0) return new Map();
   const imgs = await db
     .select({
       listingId: listingImages.listingId,
@@ -220,16 +322,25 @@ async function attachCovers(
     if (!coverByListing.has(img.listingId))
       coverByListing.set(img.listingId, img.r2Key);
   }
+  return coverByListing;
+}
+
+/** Attach cover image (position 0) to a set of listing cards in one query. */
+async function attachCovers(
+  rows: Omit<ListingCard, "coverKey">[],
+): Promise<ListingCard[]> {
+  if (rows.length === 0) return [];
+  const coverByListing = await coverKeysFor(rows.map((r) => r.id));
   return rows.map((r) => ({ ...r, coverKey: coverByListing.get(r.id) ?? null }));
 }
 
 /** Total published listings — the homepage "propiedades activas" stat. */
 export async function countPublished(): Promise<number> {
-  const rows = await db
-    .select({ id: listings.id })
+  const [{ count }] = await db
+    .select({ count: sql<number>`COUNT(*)` })
     .from(listings)
     .where(eq(listings.status, "published"));
-  return rows.length;
+  return Number(count);
 }
 
 /**

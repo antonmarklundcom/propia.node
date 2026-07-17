@@ -25,6 +25,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { CategoryFilterBar } from "@/components/CategoryFilterBar";
 import { SearchBar } from "@/components/SearchBar";
+import { MapViewLazy } from "@/components/MapViewLazy";
 import { listingUrl } from "@/lib/urls";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
@@ -217,6 +218,24 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     listCities(),
   ]);
 
+  const vista = sp.vista === "mapa" ? "mapa" : "lista";
+  const mapCenterSource = r.barrio?.lat && r.barrio?.lng ? r.barrio : r.city;
+  const mapCenter =
+    mapCenterSource.lat != null && mapCenterSource.lng != null
+      ? { lat: Number(mapCenterSource.lat), lng: Number(mapCenterSource.lng) }
+      : null;
+  const viewParams = new URLSearchParams(
+    Object.entries(sp).flatMap(([k, v]) =>
+      k === "vista" ? [] : typeof v === "string" ? [[k, v]] : [],
+    ),
+  );
+  const viewHref = (v: "lista" | "mapa") => {
+    const params = new URLSearchParams(viewParams);
+    if (v === "mapa") params.set("vista", "mapa");
+    const qs = params.toString();
+    return qs ? `${r.canonicalPath}?${qs}` : r.canonicalPath;
+  };
+
   const crumbs = [
     { name: "Inicio", url: "/" },
     { name: r.city.name, url: categoryUrl({ operation: r.operation, citySlug: r.city.slug }) },
@@ -259,7 +278,38 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         hasActiveFilters={hasActiveFilters}
       />
 
-      {filteredCount === 0 ? (
+      {mapCenter && (
+        <nav className="view-tabs" aria-label="Vista">
+          <a
+            className={`view-tabs__link${vista === "lista" ? " view-tabs__link--active" : ""}`}
+            href={viewHref("lista")}
+          >
+            Lista
+          </a>
+          <a
+            className={`view-tabs__link${vista === "mapa" ? " view-tabs__link--active" : ""}`}
+            href={viewHref("mapa")}
+          >
+            Mapa
+          </a>
+        </nav>
+      )}
+
+      {vista === "mapa" && mapCenter ? (
+        <MapViewLazy
+          key={`${r.canonicalPath}?${viewParams}`}
+          center={mapCenter}
+          zoom={r.barrio ? 15 : 12}
+          query={{
+            operation: r.operation,
+            locationIds: r.locationIds,
+            type: r.type ?? undefined,
+            priceMin: filters.priceMin,
+            priceMax: filters.priceMax,
+            minBedrooms: filters.minBedrooms,
+          }}
+        />
+      ) : filteredCount === 0 ? (
         <div className="filter-empty">
           No hay propiedades que coincidan con estos filtros.
           <br />

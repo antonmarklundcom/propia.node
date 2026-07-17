@@ -2102,6 +2102,80 @@ body {
   box-shadow: 0 0 0 6px rgba(26, 93, 58, 0.12);
 }
 
+/* ---- Category list/map split view ---------------------------------------- */
+
+.view-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin: 16px 0 0;
+  padding: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.view-tabs__link {
+  padding: 7px 16px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink-secondary);
+}
+
+.view-tabs__link--active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.map-view {
+  width: 100%;
+  height: 70vh;
+  min-height: 420px;
+  margin-top: 16px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.map-view__cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(26, 93, 58, 0.18);
+}
+
+.map-view__pin {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-ink);
+  border: 2px solid var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+@media (max-width: 640px) {
+  /* Full-screen map on mobile: fill the viewport below the fixed header. */
+  .map-view {
+    height: calc(100dvh - 56px);
+    min-height: 0;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
 /* ======================================================================== */
 /* Panel (admin + agency) — internal surface, same tokens as the public site */
 /* ======================================================================== */

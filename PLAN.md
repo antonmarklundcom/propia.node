@@ -5,7 +5,7 @@ every session that finishes a step** — mark items done, add new blockers.
 `[C]` = Claude does it (code/session work). `[YOU]` = founder must do it
 (hosting, accounts, real-world data — things code cannot reach).
 
-_Last updated: 2026-07-10 (session: single-listing-pages-broken)._
+_Last updated: 2026-07-17 (session: m4-search-filters-map)._
 
 ---
 
@@ -54,7 +54,7 @@ description.
 | M1 Schema + seeds | ✅ done | ⚠️ financing rates are placeholders |
 | M2 Minimum supply (importer, review queue) | ✅ done | ⏳ 50 hand-audited listings not confirmed |
 | M3 Public launch surface | ✅ done | ⏳ NOT launched — blocked on launch blockers below |
-| M4 Search, filters & map | 🔶 partial — filters + search bar exist; split list/map view, map API (bbox + supercluster), <200ms EXPLAIN audit remain | ❌ |
+| M4 Search, filters & map | ✅ code done (query layer, map API, split list/map UI) | ⏳ EXPLAIN audit needs to run against real data ([YOU]) |
 | M5 Wizard, OTP & accounts | ✅ code merged (PR #13, #14) | ❌ — prod migration missing (incident above), GHL OTP envs unset, no end-to-end phone publish test |
 | M6 Scrape importers + SEO at scale | ❌ not started | — |
 | M7 Monetization & feeders | ❌ not started | — |
@@ -96,11 +96,32 @@ description.
 
 ### Step 4 — Finish M4 (search, filters & map)
 
-- [ ] **[C]** Typed query layer over `idx_search` for all facet combinations.
-- [ ] **[C]** Map API: bounding-box endpoint + client supercluster.
-- [ ] **[C]** Split list/map UI, mobile full-screen map.
-- [ ] **[C]** EXPLAIN audit: every combination hits an index, <200ms.
+- [x] **[C]** Typed query layer over `idx_search`: exported `categoryConds`/
+      `filterConds`/`bboxConds` as the single source of truth for every
+      filter shape; fixed `getFilteredCategoryListings`/`countCategory`/
+      `countPublished` to do `COUNT(*)` in SQL instead of fetching every
+      matching row into JS just to read `.length` (was a real perf bug on
+      every page view, not just this milestone).
+- [x] **[C]** Map API: `GET /api/listings/map` — bbox + operation/type/
+      location/price/bedroom filters, hits `idx_geo`. Coordinates are
+      snapped to a ~150m grid (`src/lib/geo.ts`) before leaving the server —
+      same "never exact lat/lng publicly" rule as the detail-page map.
+      Client-side clustering via `supercluster` in `src/components/MapView.tsx`
+      (added as a new dependency).
+- [x] **[C]** Split list/map UI: `Lista`/`Mapa` tabs on every category page
+      (`?vista=mapa`, plain links — no client JS for the toggle itself),
+      full-screen map on mobile (CSS only). Map view reuses the same
+      MapLibre + OSM style as the listing detail map (extracted to
+      `src/lib/mapStyle.ts` to keep the two in sync).
+- [x] **[C]** EXPLAIN audit script (`scripts/explain-audit.ts`) — runs
+      `EXPLAIN` against every representative filter/bbox shape and fails if
+      any hits `type=ALL` or `key=NULL`. **Not yet run** — needs a
+      `DATABASE_URL` with realistic listing volume, which this session
+      doesn't have. **[YOU]**: run `npx tsx scripts/explain-audit.ts`
+      against prod (or a seeded dev DB) and paste the output back here.
 - [ ] **[YOU]** GATE: click through filters on your phone; feels instant.
+      (Depends on the EXPLAIN audit above passing — <200ms only holds once
+      every shape confirms it's hitting an index.)
 
 ### Step 5 — M6 (scale supply + SEO)
 

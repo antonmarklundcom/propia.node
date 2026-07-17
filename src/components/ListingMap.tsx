@@ -3,25 +3,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-
-/**
- * Free ($0) raster OSM style — no API key. Fine for current traffic; revisit
- * (MapTiler/Stadia free tier) per OSM's tile usage policy if traffic grows
- * (ARCHITECTURE.md §1: MapLibre + OSM, "token swap" to a paid tile provider
- * later needs no code change beyond this style object).
- */
-const OSM_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    osm: {
-      type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution: "© OpenStreetMap contributors",
-    },
-  },
-  layers: [{ id: "osm", type: "raster", source: "osm" }],
-};
+import { OSM_STYLE } from "@/lib/mapStyle";
 
 /**
  * Approximate-location map for the listing detail page. Deliberately centers
