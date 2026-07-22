@@ -6,7 +6,7 @@ import { homeForRole } from "@/lib/auth/guards";
 import { loginAction } from "@/lib/auth/actions";
 
 export const metadata: Metadata = {
-  title: "Ingresar — Propia",
+  title: "Ingresar — Homes Paraguay",
   robots: { index: false, follow: false },
 };
 

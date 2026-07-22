@@ -8,7 +8,7 @@ import { listingUrl } from "@/lib/urls";
 import { agencyTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: "Consultas — Propia",
+  title: "Consultas — Homes Paraguay",
   robots: { index: false, follow: false },
 };
 

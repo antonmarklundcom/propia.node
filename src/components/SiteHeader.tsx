@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BRAND_NAME } from "@/lib/brand";
 
 /**
  * Global top bar (portal shell). Brand + primary category nav + a "publish"
@@ -20,7 +21,7 @@ export function SiteHeader() {
           <span className="site-header__brand-mark" aria-hidden>
             🏡
           </span>
-          Propia
+          {BRAND_NAME}
         </Link>
 
         <nav className="site-header__nav" aria-label="Categorías">

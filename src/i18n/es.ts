@@ -3,6 +3,8 @@
  * All local-facing copy is Paraguayan voseo. NEVER generate
  * neutral-Spanish variants of these.
  */
+import { BRAND_NAME } from "@/lib/brand";
+
 export const es = {
   searchPlaceholder: "¿Dónde querés vivir?",
   publishCta: "Publicá gratis",
@@ -120,7 +122,7 @@ export const esPublish = {
   // Done
   doneTitle: "¡Tu aviso fue enviado!",
   doneBody:
-    "Lo estamos revisando. En cuanto lo aprobemos, sale publicado en Propia.com.py. Podés seguir su estado y sumarle fotos desde tu panel.",
+    "Lo estamos revisando. En cuanto lo aprobemos, sale publicado en el sitio. Podés seguir su estado y sumarle fotos desde tu panel.",
   doneCta: "Ir a mi panel",
 
   errors: {
@@ -154,5 +156,5 @@ export const listingStatusLabel: Record<string, string> = {
  * portal gets attribution in the chat itself).
  */
 export function inquiryPrefillFor(title: string, url: string): string {
-  return `Hola, vi esta propiedad en Propia.com.py y me interesa: ${title}\n${url}`;
+  return `Hola, vi esta propiedad en ${BRAND_NAME} y me interesa: ${title}\n${url}`;
 }

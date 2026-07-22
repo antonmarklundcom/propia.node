@@ -14,7 +14,7 @@ import {
 } from "@/components/publish/PublishWizard";
 
 export const metadata: Metadata = {
-  title: "Publicá tu propiedad — Propia",
+  title: "Publicá tu propiedad — Homes Paraguay",
   robots: { index: false, follow: false },
 };
 

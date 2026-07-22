@@ -45,12 +45,12 @@ async function load(slugParam: string) {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await load(slug);
-  if (!detail) return { title: "Propiedad no encontrada — Propia" };
+  if (!detail) return { title: "Propiedad no encontrada — Homes Paraguay" };
   const { listing } = detail;
   const canonical = `${ORIGIN()}${listingUrl(listing)}`;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: `${listing.title} — ${formatPrice(listing)} | Propia`,
+    title: `${listing.title} — ${formatPrice(listing)} | Homes Paraguay`,
     description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
     alternates: { canonical },
     openGraph: {
@@ -190,7 +190,7 @@ export default async function ListingPage({ params }: Params) {
   if (listing.parking != null)
     details.push({ icon: "🚗", label: "Cocheras", value: String(listing.parking) });
 
-  const sellerName = agency?.name ?? agent?.name ?? "Publicado en Propia";
+  const sellerName = agency?.name ?? agent?.name ?? "Publicado en Homes Paraguay";
   const sellerInitials = sellerName
     .split(/\s+/)
     .slice(0, 2)
