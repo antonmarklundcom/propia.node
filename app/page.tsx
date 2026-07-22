@@ -18,6 +18,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 import { categoryUrl } from "@/lib/urls";
+import { BRAND_NAME } from "@/lib/brand";
 
 /** Hero quick-access tiles under the search bar. */
 const HERO_TILES = [
@@ -62,7 +63,7 @@ const CITY_SHORTCUTS = [
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: "Propia — Encontrá tu propiedad en Paraguay",
+  title: `${BRAND_NAME} — Encontrá tu propiedad en Paraguay`,
   description:
     "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
 };
@@ -71,7 +72,7 @@ export const metadata: Metadata = {
 function publishHref(): string {
   const wa = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP?.replace(/\D/g, "");
   const text = encodeURIComponent(
-    "Hola, quiero publicar una propiedad en Propia.",
+    `Hola, quiero publicar una propiedad en ${BRAND_NAME}.`,
   );
   return wa
     ? `https://wa.me/${wa}?text=${text}`
@@ -95,8 +96,8 @@ const DISCOVER_CARDS = [
 
 const FAQ: { q: string; a: string }[] = [
   {
-    q: "¿Qué es Propia?",
-    a: "Propia es un portal inmobiliario de Paraguay donde podés buscar casas, departamentos y terrenos en venta y alquiler, comparar precios y contactar directamente a vendedores e inmobiliarias por WhatsApp.",
+    q: `¿Qué es ${BRAND_NAME}?`,
+    a: `${BRAND_NAME} es un portal inmobiliario de Paraguay donde podés buscar casas, departamentos y terrenos en venta y alquiler, comparar precios y contactar directamente a vendedores e inmobiliarias por WhatsApp.`,
   },
   {
     q: "¿Es gratis buscar propiedades?",
@@ -375,7 +376,7 @@ export default async function Home() {
       {/* Descubre más — secondary product surfaces */}
       <section className="home-discover">
         <div className="home-discover__inner">
-          <h2 className="home-discover__title">Descubre más en Propia</h2>
+          <h2 className="home-discover__title">Descubre más en {BRAND_NAME}</h2>
           <div className="home-discover__grid">
             {DISCOVER_CARDS.map((c) => (
               <a
@@ -437,7 +438,7 @@ export default async function Home() {
         <div className="home-faq__inner">
           <h2 className="home-faq__title">Preguntas frecuentes</h2>
           <p className="home-faq__subtitle">
-            Todo lo que necesitás saber sobre Propia.
+            Todo lo que necesitás saber sobre {BRAND_NAME}.
           </p>
           {FAQ.map((f) => (
             <details key={f.q} className="home-faq__item">

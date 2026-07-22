@@ -3,9 +3,10 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Propia — Encontrá tu propiedad en Paraguay",
+  title: `${BRAND_NAME} — Encontrá tu propiedad en Paraguay`,
   description:
     "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay.",
 };

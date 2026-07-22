@@ -1211,11 +1211,18 @@ body {
   pointer-events: none;
 }
 
-.listing-card__badge {
+.listing-card__badge-row {
   position: absolute;
   top: 10px;
   left: 10px;
+  right: 10px;
   z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.listing-card__badge {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -1229,6 +1236,16 @@ body {
 .listing-card__badge--alquiler {
   background: var(--color-accent);
   color: #3a2a08;
+}
+
+.listing-card__badge--featured {
+  background: #e0a030;
+  color: #3a2a08;
+}
+
+.listing-card__badge--verified {
+  background: #1f8a5f;
+  color: #ffffff;
 }
 
 .listing-card__body {

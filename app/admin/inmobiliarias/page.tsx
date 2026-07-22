@@ -14,7 +14,7 @@ import {
 } from "../actions";
 
 export const metadata: Metadata = {
-  title: "Inmobiliarias y agentes — Propia",
+  title: "Inmobiliarias y agentes — Homes Paraguay",
   robots: { index: false, follow: false },
 };
 

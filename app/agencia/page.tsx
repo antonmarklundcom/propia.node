@@ -11,7 +11,7 @@ import { agencyTabs } from "./tabs";
 import { setListingStatusAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Tus propiedades — Propia",
+  title: "Tus propiedades — Homes Paraguay",
   robots: { index: false, follow: false },
 };
 

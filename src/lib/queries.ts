@@ -150,6 +150,8 @@ export type ListingCard = Pick<
   | "areaM2"
   | "landM2"
   | "locationId"
+  | "isVerified"
+  | "featuredUntil"
 > & { coverKey: string | null };
 
 /**
@@ -179,6 +181,8 @@ export async function getFilteredCategoryListings(
       areaM2: listings.areaM2,
       landM2: listings.landM2,
       locationId: listings.locationId,
+      isVerified: listings.isVerified,
+      featuredUntil: listings.featuredUntil,
     })
     .from(listings)
     .where(where)
@@ -291,6 +295,8 @@ function cardColumns() {
     areaM2: listings.areaM2,
     landM2: listings.landM2,
     locationId: listings.locationId,
+    isVerified: listings.isVerified,
+    featuredUntil: listings.featuredUntil,
   };
 }
 
@@ -313,6 +319,8 @@ export async function getRecentListings(limit = 12): Promise<ListingCard[]> {
       areaM2: listings.areaM2,
       landM2: listings.landM2,
       locationId: listings.locationId,
+      isVerified: listings.isVerified,
+      featuredUntil: listings.featuredUntil,
     })
     .from(listings)
     .where(eq(listings.status, "published"))
@@ -395,6 +403,8 @@ export async function getSimilarListings(params: {
       areaM2: listings.areaM2,
       landM2: listings.landM2,
       locationId: listings.locationId,
+      isVerified: listings.isVerified,
+      featuredUntil: listings.featuredUntil,
     })
     .from(listings)
     .where(

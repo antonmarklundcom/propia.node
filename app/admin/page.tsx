@@ -9,7 +9,7 @@ import { adminTabs } from "./tabs";
 import { approveAction, rejectAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Cola de revisión — Propia",
+  title: "Cola de revisión — Homes Paraguay",
   robots: { index: false, follow: false },
 };
 

@@ -143,7 +143,7 @@ async function resolve(
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { operacion, segments } = await params;
   const r = await resolve(operacion, segments);
-  if (!r) return { title: "No encontrado — Propia" };
+  if (!r) return { title: "No encontrado — Homes Paraguay" };
 
   const count = await countCategory({
     operation: r.operation,
@@ -164,8 +164,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   });
 
   return {
-    title: `${r.title} — Propia`,
-    description: `${count} ${r.title.toLowerCase()} en Propia. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
+    title: `${r.title} — Homes Paraguay`,
+    description: `${count} ${r.title.toLowerCase()} en Homes Paraguay. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
     alternates: { canonical: `${ORIGIN()}${r.canonicalPath}` },
     robots:
       ix.state === "index"

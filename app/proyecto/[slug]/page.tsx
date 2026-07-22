@@ -46,10 +46,10 @@ function deliveryLabel(d: string | Date | null): string | null {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await getProjectBySlug(slug);
-  if (!detail) return { title: "Proyecto no encontrado — Propia" };
+  if (!detail) return { title: "Proyecto no encontrado — Homes Paraguay" };
   const { project, developer } = detail;
   return {
-    title: `${project.name}${developer ? ` — ${developer.name}` : ""} | Propia`,
+    title: `${project.name}${developer ? ` — ${developer.name}` : ""} | Homes Paraguay`,
     description:
       project.descriptionEs?.slice(0, 160) ??
       `${project.name}: proyecto inmobiliario en Paraguay.`,
@@ -232,7 +232,7 @@ export default async function ProjectPage({ params }: Params) {
             )}
             <div>
               <div className="seller-card__name">
-                {developer?.name ?? "Publicado en Propia"}
+                {developer?.name ?? "Publicado en Homes Paraguay"}
               </div>
               <div className="seller-card__kind">
                 {developer ? "Desarrolladora" : "propia.com.py"}

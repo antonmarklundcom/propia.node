@@ -2,6 +2,7 @@ import Link from "next/link";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import { categoryUrl } from "@/lib/urls";
+import { BRAND_NAME } from "@/lib/brand";
 
 /**
  * Global footer (portal shell). Popular searches double as internal links for
@@ -36,7 +37,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer__inner">
         <div>
-          <div className="site-footer__brand">Propia</div>
+          <div className="site-footer__brand">{BRAND_NAME}</div>
           <p className="site-footer__tagline">
             Casas, departamentos y terrenos en venta y alquiler en todo
             Paraguay — con cuota estimada y financiamiento.
@@ -100,7 +101,7 @@ export function SiteFooter() {
       </div>
 
       <div className="site-footer__bottom">
-        © {year} Propia · propia.com.py — Encontrá tu propiedad en Paraguay.
+        © {year} {BRAND_NAME} — Encontrá tu propiedad en Paraguay.
       </div>
     </footer>
   );

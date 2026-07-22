@@ -23,6 +23,7 @@ export function ListingCard({ card }: { card: Card }) {
   const cuota = formatCuota(card.cuotaGs);
   const area = card.areaM2 ?? card.landM2;
   const isAlquiler = card.operation !== "venta";
+  const isFeatured = card.featuredUntil != null && card.featuredUntil > new Date();
 
   const specs = [
     card.bedrooms != null
@@ -42,11 +43,23 @@ export function ListingCard({ card }: { card: Card }) {
         role="img"
         aria-label={card.title}
       >
-        <span
-          className={`listing-card__badge${isAlquiler ? " listing-card__badge--alquiler" : ""}`}
-        >
-          {OPERATION_BADGE[card.operation]}
-        </span>
+        <div className="listing-card__badge-row">
+          <span
+            className={`listing-card__badge${isAlquiler ? " listing-card__badge--alquiler" : ""}`}
+          >
+            {OPERATION_BADGE[card.operation]}
+          </span>
+          {isFeatured && (
+            <span className="listing-card__badge listing-card__badge--featured">
+              ★ Destacado
+            </span>
+          )}
+          {card.isVerified && (
+            <span className="listing-card__badge listing-card__badge--verified">
+              ✓ Verificado
+            </span>
+          )}
+        </div>
         {!cover && (
           <>
             <span className="listing-card__placeholder-icon" aria-hidden>
