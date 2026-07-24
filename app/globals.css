@@ -2913,3 +2913,128 @@ summary.panel-btn::-webkit-details-marker {
     grid-template-columns: 1fr;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Panel — listing photos (admin + agency share one component)         */
+/* ------------------------------------------------------------------ */
+
+.panel-photos__upload {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.panel-photos {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  /* Cover first, then reading order — the grid mirrors what the visitor
+     sees on the listing page. */
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.panel-photos__item {
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-photos__thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background: #EFF1EE;
+}
+
+.panel-photos__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px 0;
+  min-height: 0;
+}
+
+.panel-photos__badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1A5D3A;
+  background: #E7F1EB;
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.panel-photos__note {
+  font-size: 11.5px;
+  color: #8A6D3B;
+  background: #FBF3E2;
+  border-radius: 999px;
+  padding: 2px 9px;
+  /* Long note, small card: clip rather than push the buttons out of view. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.panel-photos__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  margin-top: auto;
+}
+
+.panel-photos__actions .panel-btn {
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+
+/* Wizard photo strip — same upload path as the panel, lighter chrome. */
+.wizard-photos {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.wizard-photos__item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #EFF1EE;
+}
+
+.wizard-photos__thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.wizard-photos__remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: 0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(20, 24, 28, 0.72);
+}
+
+.wizard-photos__remove:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

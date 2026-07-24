@@ -112,6 +112,29 @@ export const esPanel = {
   listingNotFound: "No encontramos ese aviso.",
   listingInvalid: "Revisá los datos: faltan campos obligatorios.",
 
+  // Fotos (shared: admin + agency)
+  photosTitle: "Fotos",
+  photosEmpty: "Este aviso todavía no tiene fotos.",
+  photosHint:
+    "La primera foto es la portada: es la que se ve en los listados. Podés subir varias a la vez (JPG, PNG, WebP o HEIC, hasta 12 MB cada una).",
+  photosAddLabel: "Agregar fotos",
+  photosUpload: "Subir",
+  photosCover: "Portada",
+  photosMakeCover: "Hacer portada",
+  photosMoveUp: "Mover antes",
+  photosMoveDown: "Mover después",
+  photosDelete: "Borrar",
+  photosDeleteConfirm: "¿Borrar esta foto? No se puede deshacer.",
+  photosUploaded: "Fotos subidas.",
+  photosDeleted: "Foto borrada.",
+  photosReordered: "Orden actualizado.",
+  photosNoFiles: "No elegiste ninguna foto.",
+  photosRejected: "Algunas fotos no se pudieron subir.",
+  photosNotConfigured:
+    "El almacenamiento de fotos todavía no está configurado (faltan las claves de R2). Avisale al administrador.",
+  photosPlaceholderNote:
+    "Foto de muestra del importador — reemplazala por fotos reales de la propiedad.",
+
   // Agency
   agencyListingsTitle: "Tus propiedades",
   agencyListingsEmpty: "Todavía no tenés propiedades cargadas.",
@@ -158,8 +181,17 @@ export const esPublish = {
   priceLabel: "Precio",
   cuotaWith: "con",
   videoLabel: "Video (opcional)",
+  photosTitle: "Fotos",
   photosHint:
-    "Las fotos se agregan después de publicar, desde tu panel. Podés cargar hasta 20.",
+    "La primera foto es la portada. Podés agregarlas ahora o después, desde tu panel.",
+  photosPickLabel: "Elegí las fotos",
+  photosUploading: "Subiendo…",
+  photosDelete: "Borrar",
+  photosDraftFirst:
+    "Completá los datos de la propiedad y seguí adelante: apenas se guarda el borrador vas a poder subir fotos.",
+  photosStorageOff:
+    "El almacenamiento de fotos todavía no está disponible. Podés publicar igual y agregarlas después.",
+  photosFailed: "No pudimos subir algunas fotos. Probá de nuevo.",
   foreignExposureLabel:
     "Mostrar también a compradores del exterior (realestateinparaguay.com) — próximamente",
 

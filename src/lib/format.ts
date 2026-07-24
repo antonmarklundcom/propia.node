@@ -41,3 +41,17 @@ export function imageUrl(r2Key: string | null): string | null {
   const base = process.env.R2_PUBLIC_BASE_URL ?? "";
   return base ? `${base.replace(/\/$/, "")}/${r2Key}` : r2Key;
 }
+
+/**
+ * Card-sized derivative of a stored key (~480px). Mirrors `thumbKey()` in
+ * lib/images.ts — the two must agree, since one writes the object and the
+ * other addresses it.
+ *
+ * Only keys we uploaded have a thumb: imported placeholders are still remote
+ * URLs, so those fall back to the original rather than 404ing a grid of cards.
+ */
+export function imageThumbUrl(r2Key: string | null): string | null {
+  if (!r2Key) return null;
+  if (!/\.webp$/.test(r2Key)) return imageUrl(r2Key);
+  return imageUrl(r2Key.replace(/\.webp$/, "-thumb.webp"));
+}

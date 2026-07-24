@@ -22,6 +22,12 @@ import {
   verifyAndPublishAction,
   type DraftPayload,
 } from "../../../app/publicar/actions";
+import {
+  deleteDraftPhotoAction,
+  uploadDraftPhotosAction,
+} from "../../../app/publicar/photo-actions";
+import { imageThumbUrl } from "@/lib/format";
+import type { ListingImageRow } from "@/lib/listing-images";
 
 const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
   { value: "venta", label: "Venta" },
@@ -84,6 +90,7 @@ export function PublishWizard({
   programs,
   usdToPyg,
   initialDraft,
+  initialPhotos,
   homeHref,
 }: {
   locations: PublishLocation[];
@@ -91,6 +98,7 @@ export function PublishWizard({
   programs: FinancingProgram[];
   usdToPyg: number;
   initialDraft: InitialDraft | null;
+  initialPhotos?: ListingImageRow[];
   homeHref: string;
 }) {
   const [state, setState] = useState<WizardState>(() => ({
@@ -102,6 +110,12 @@ export function PublishWizard({
   const [saving, setSaving] = useState(false);
   const [stepError, setStepError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // Photos live on the server as soon as there is a draft row to hang them
+  // on — there is no client-side "pending upload" state to lose on reload.
+  const [photos, setPhotos] = useState<ListingImageRow[]>(initialPhotos ?? []);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   // OTP sub-state (step 3 → publish).
   const [otpSent, setOtpSent] = useState(false);
@@ -186,6 +200,58 @@ export function PublishWizard({
       foreignExposure: state.foreignExposure,
     }),
     [state],
+  );
+
+  /**
+   * Upload picked files against the current draft. The server returns the new
+   * image list rather than us patching state optimistically — position is
+   * decided server-side, and a half-rejected batch must not leave the grid
+   * claiming photos that were never stored.
+   */
+  const uploadPhotos = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0 || !state.draftId) return;
+      setPhotoBusy(true);
+      setPhotoError(null);
+      try {
+        const fd = new FormData();
+        fd.set("draftId", String(state.draftId));
+        for (const file of Array.from(files)) fd.append("photos", file);
+
+        const res = await uploadDraftPhotosAction(fd);
+        if (!res.ok) {
+          setPhotoError(
+            res.error === "not_configured"
+              ? esPublish.photosStorageOff
+              : esPublish.photosFailed,
+          );
+          return;
+        }
+        setPhotos(res.images);
+        if (res.rejected.length > 0) setPhotoError(esPublish.photosFailed);
+      } catch {
+        setPhotoError(esPublish.photosFailed);
+      } finally {
+        setPhotoBusy(false);
+      }
+    },
+    [state.draftId],
+  );
+
+  const removePhoto = useCallback(
+    async (imageId: number) => {
+      if (!state.draftId) return;
+      setPhotoBusy(true);
+      try {
+        const res = await deleteDraftPhotoAction(state.draftId, imageId);
+        if (res.ok) setPhotos(res.images);
+      } catch {
+        setPhotoError(esPublish.photosFailed);
+      } finally {
+        setPhotoBusy(false);
+      }
+    },
+    [state.draftId],
   );
 
   /** Persist the server draft; returns the (possibly new) draft id or null. */
@@ -502,7 +568,59 @@ export function PublishWizard({
               placeholder="https://youtube.com/..."
               onChange={(e) => set("videoUrl", e.target.value)}
             />
+          </div>
+
+          <div className="wizard-field">
+            <span className="wizard-label">{esPublish.photosTitle}</span>
             <p className="wizard-hint">{esPublish.photosHint}</p>
+
+            {state.draftId == null ? (
+              <p className="wizard-hint">{esPublish.photosDraftFirst}</p>
+            ) : (
+              <>
+                <input
+                  className="wizard-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={photoBusy}
+                  onChange={(e) => {
+                    void uploadPhotos(e.target.files);
+                    // Let the same file be picked again after a failure.
+                    e.target.value = "";
+                  }}
+                  aria-label={esPublish.photosPickLabel}
+                />
+                {photoBusy && (
+                  <p className="wizard-hint">{esPublish.photosUploading}</p>
+                )}
+                {photoError && <p className="auth-error">{photoError}</p>}
+
+                {photos.length > 0 && (
+                  <ul className="wizard-photos">
+                    {photos.map((photo) => (
+                      <li key={photo.id} className="wizard-photos__item">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          className="wizard-photos__thumb"
+                          src={imageThumbUrl(photo.r2Key) ?? ""}
+                          alt=""
+                          loading="lazy"
+                        />
+                        <button
+                          type="button"
+                          className="wizard-photos__remove"
+                          onClick={() => void removePhoto(photo.id)}
+                          disabled={photoBusy}
+                        >
+                          {esPublish.photosDelete}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
           </div>
 
           <label className="wizard-toggle">

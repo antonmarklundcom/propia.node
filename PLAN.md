@@ -22,9 +22,10 @@ _Last updated: 2026-07-24 (session: shared-edit-admin-pages)._
   `listings.review_notes` are all present — verified with `SHOW COLUMNS`. The
   "listing detail pages return 500" incident recorded in earlier versions of
   this file is **resolved**; do not re-diagnose it.
-- **Photos are `picsum.photos` placeholders.** `next.config.ts` now whitelists
-  that host so listing cards render instead of crashing the page, but no real
-  photo pipeline exists (see 1.1).
+- **Photos are still `picsum.photos` placeholders in the data**, but the
+  pipeline to replace them now exists (1.1). The rows hold *source URLs*, so
+  the site hotlinks them until `npm run backfill:images` runs — which needs
+  the R2 envs below.
 
 ### Post-mortem worth keeping
 
@@ -72,7 +73,13 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 - [ ] `GHL_WEBHOOK_URL` + `GHL_API_KEY` in the production env. **Until these
       are set, WhatsApp OTP never sends and no lead reaches the CRM** — the
       publish wizard and every contact form are effectively dead.
-- [ ] Cloudflare R2 bucket + `R2_*` envs + image host mapping (pairs with 1.1).
+- [ ] **Cloudflare R2 bucket + `R2_*` envs + image host mapping.** Now the
+      blocker rather than a companion task: 1.1 is written and builds, but
+      until `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and
+      `R2_BUCKET` exist in the production env, every upload button says
+      "storage not configured". Also map `R2_PUBLIC_BASE_URL`
+      (img.propia.com.py) to the bucket's public URL, then run
+      `npm run backfill:images` once to stop hotlinking the import sources.
 - [ ] GA4 + Search Console properties.
 - [ ] hPanel cron jobs: `cron:cuotas`, `cron:medians` (nightly).
 - [ ] **Security hygiene from the migration session:** rotate the MySQL
@@ -90,7 +97,7 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 
 | Milestone | Code | Gate cleared? |
 | --- | --- | --- |
-| M0 Rails (deploy, DB, R2) | ⚠️ deploy + DB done; **R2 never built** | ❌ |
+| M0 Rails (deploy, DB, R2) | ✅ deploy + DB + R2 pipeline built | ⏳ R2 envs not set, so no photo has been stored yet |
 | M1 Schema + seeds | ✅ done | ⚠️ financing rates are placeholders (D3) |
 | M2 Minimum supply (importer, review queue) | ✅ done | ⏳ 50 hand-audited listings not confirmed |
 | M3 Public launch surface | ✅ done | ✅ canonical host is per-request (1.2) |
@@ -108,15 +115,24 @@ the product more usable than the last.
 
 ### Step 1 — Make the portal genuinely usable
 
-- [ ] **1.1 R2 image pipeline.** The single biggest gap: no one can upload a
-      photo. Today `src/lib/format.ts` only prefixes a stored key with
-      `R2_PUBLIC_BASE_URL`; there is no S3/R2 client in the repo at all, and
-      the importer parks the source URL in `listing_images.r2_key` with a
-      comment deferring the real fetch to M6. Build: upload helper (presigned
-      PUT or server-side put), `sharp` thumbnails, wire it into the publish
-      wizard and the agency panel, and a backfill script that pulls existing
-      remote URLs into R2 and rewrites `r2_key`. Needs the `[YOU]` R2 envs to
-      run, but the code can land first.
+- [x] **1.1 R2 image pipeline.** ✅ Code done — **waiting on the `[YOU]` R2
+      envs to actually run.** `src/lib/r2.ts` (S3 client pointed at R2),
+      `src/lib/images.ts` (sharp: EXIF-oriented, downscaled to 1600px + a
+      480px thumb, re-encoded to WebP) and `src/lib/listing-images.ts` (the
+      same `EditScope` guard the edit layer uses, extended with an `owner`
+      scope for FSBO publishers). Upload/delete/reorder/set-cover in both
+      panels via one shared `PhotoManager`, photo upload in the publish
+      wizard as soon as a draft row exists, and
+      `npm run backfill:images [--dry-run] [--limit N]` to pull the importer's
+      remote URLs into the bucket and rewrite `r2_key`.
+      Two things worth knowing: re-encoding is what makes the upload path
+      safe — a file that only claims to be an image never gets stored, and
+      **EXIF GPS is dropped** rather than served (schema §2.1 says precise
+      coordinates are never public). And cards now request the thumb, so a
+      category page stops pulling ~20 full-size photos over mobile data.
+      Until the envs are set the panel shows "photo storage is not
+      configured" instead of failing — missing config is a disabled feature,
+      never a crash.
 - [x] **1.2 Per-request canonical host.** ✅ Done — `src/lib/origin.ts` derives
       the origin from the `Host` header, the way `middleware.ts` already
       resolves the vertical, and every absolute URL (canonical, OG, JSON-LD,
@@ -137,7 +153,7 @@ the product more usable than the last.
       edits every field, not just status. Shares one form component and one
       parser with the admin edit (`src/components/panel/ListingForm.tsx`,
       `src/lib/listing-form-input.ts`) so the two can never validate
-      differently. Photos still excluded — they need 1.1.
+      differently. Photos included as of 1.1 (shared `PhotoManager`).
 
 ### Step 2 — Admin control plane
 

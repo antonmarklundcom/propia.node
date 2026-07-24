@@ -20,10 +20,18 @@ import type { Operation, PropertyType } from "@/lib/import/types";
 
 export type ListingStatusValue = (typeof listings.$inferSelect)["status"];
 
-/** Who is editing, and therefore which rows they may touch. */
+/**
+ * Who is editing, and therefore which rows they may touch.
+ *
+ * `owner` is the publish wizard's scope: an FSBO publisher has no agency, so
+ * their claim on a listing is `owner_user_id`. It is intentionally the
+ * narrowest of the three — it can reach a row no matter which agency the row
+ * was later assigned to, but only ever a row this user created.
+ */
 export type EditScope =
   | { kind: "admin" }
-  | { kind: "agency"; agencyId: number };
+  | { kind: "agency"; agencyId: number }
+  | { kind: "owner"; userId: number };
 
 /** Statuses each scope may set. Admin owns the full lifecycle. */
 export const ADMIN_STATUSES: readonly ListingStatusValue[] = [
@@ -50,9 +58,14 @@ export function statusesFor(scope: EditScope): readonly ListingStatusValue[] {
 
 /** Ownership predicate for a scope — the guard every query is built on. */
 function scopeWhere(scope: EditScope): SQL | undefined {
-  return scope.kind === "admin"
-    ? undefined
-    : eq(listings.agencyId, scope.agencyId);
+  switch (scope.kind) {
+    case "admin":
+      return undefined;
+    case "agency":
+      return eq(listings.agencyId, scope.agencyId);
+    case "owner":
+      return eq(listings.ownerUserId, scope.userId);
+  }
 }
 
 /* ------------------------------------------------------------------ */
