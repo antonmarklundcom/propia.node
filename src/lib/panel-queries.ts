@@ -5,9 +5,19 @@
  * can never mutate a row it doesn't own — the agencyId comes from the session
  * (guards.ts), never from the request.
  */
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { agencies, agents, leads, listings, locations } from "@/db/schema";
+import {
+  agencies,
+  agents,
+  leads,
+  listings,
+  locations,
+  sessions,
+  users,
+} from "@/db/schema";
+import { hashPassword } from "@/lib/auth/password";
+import { slugify } from "@/lib/slug";
 
 export type ListingStatus = (typeof listings.$inferSelect)["status"];
 
@@ -144,6 +154,180 @@ export async function setAgencyVerified(id: number, verified: boolean): Promise<
 
 export async function setAgentVerified(id: number, verified: boolean): Promise<void> {
   await db.update(agents).set({ isVerified: verified }).where(eq(agents.id, id));
+}
+
+/* ------------------------------------------------------------------ */
+/* Super-admin: user management                                        */
+/* ------------------------------------------------------------------ */
+
+export type UserRoleValue = (typeof users.$inferSelect)["role"];
+
+export interface PanelUserRow {
+  id: number;
+  name: string | null;
+  email: string | null;
+  role: UserRoleValue;
+  locale: "es" | "en";
+  whatsapp: string | null;
+  hasPassword: boolean;
+  createdAt: Date;
+  /** Agency the user belongs to via agents.user_id — NULL when unlinked. */
+  agencyId: number | null;
+  agencyName: string | null;
+}
+
+/** Every panel user, newest first, with the agency their agents row points at. */
+export async function listUsers(): Promise<PanelUserRow[]> {
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      locale: users.locale,
+      whatsapp: users.whatsapp,
+      passwordHash: users.passwordHash,
+      createdAt: users.createdAt,
+      agencyId: agents.agencyId,
+      agencyName: agencies.name,
+    })
+    .from(users)
+    .leftJoin(agents, eq(agents.userId, users.id))
+    .leftJoin(agencies, eq(agents.agencyId, agencies.id))
+    .orderBy(desc(users.createdAt));
+
+  return rows.map(({ passwordHash, ...r }) => ({
+    ...r,
+    hasPassword: Boolean(passwordHash),
+  }));
+}
+
+/** How many super-admins exist — used to refuse removing the last one. */
+export async function countSuperAdmins(): Promise<number> {
+  const rows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, "admin"));
+  return rows.length;
+}
+
+export interface UpsertUserInput {
+  name: string | null;
+  email: string;
+  role: UserRoleValue;
+  locale: "es" | "en";
+  /** Omitted/empty on edit = keep the existing password. */
+  password?: string;
+}
+
+/** True when another user already owns this email (unique column). */
+async function emailTaken(email: string, exceptId?: number): Promise<boolean> {
+  const rows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(
+      exceptId
+        ? and(eq(users.email, email), ne(users.id, exceptId))
+        : eq(users.email, email),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
+/** Create a panel user. Returns the new id, or null when the email is taken. */
+export async function createPanelUser(
+  input: UpsertUserInput & { password: string },
+): Promise<number | null> {
+  const email = input.email.trim().toLowerCase();
+  if (await emailTaken(email)) return null;
+
+  await db.insert(users).values({
+    name: input.name,
+    email,
+    role: input.role,
+    locale: input.locale,
+    passwordHash: await hashPassword(input.password),
+  });
+
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  return row?.id ?? null;
+}
+
+/**
+ * Update a user's profile fields, and optionally their password. Returns false
+ * when the email collides with another account (the caller surfaces the error).
+ */
+export async function updatePanelUser(
+  id: number,
+  input: UpsertUserInput,
+): Promise<boolean> {
+  const email = input.email.trim().toLowerCase();
+  if (await emailTaken(email, id)) return false;
+
+  const patch: Partial<typeof users.$inferInsert> = {
+    name: input.name,
+    email,
+    role: input.role,
+    locale: input.locale,
+  };
+  if (input.password) patch.passwordHash = await hashPassword(input.password);
+
+  await db.update(users).set(patch).where(eq(users.id, id));
+  return true;
+}
+
+/**
+ * Delete a user and every session they hold, so an open cookie cannot outlive
+ * the account. Their `agents` row is kept but unlinked — the public profile and
+ * its listings survive the login being removed.
+ */
+export async function deletePanelUser(id: number): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, id));
+  await db.update(agents).set({ userId: null }).where(eq(agents.userId, id));
+  await db.delete(users).where(eq(users.id, id));
+}
+
+/** Drop every session for a user — used after a password reset. */
+export async function revokeUserSessions(id: number): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, id));
+}
+
+/**
+ * Point a user's `agents` row at an agency (or NULL for independent), creating
+ * the row on first link. This is the join `requireAgencyContext()` reads, and
+ * it previously had to be made by hand in Drizzle Studio.
+ */
+export async function linkUserToAgency(params: {
+  userId: number;
+  agencyId: number | null;
+  fallbackName: string;
+}): Promise<void> {
+  const [existing] = await db
+    .select({ id: agents.id })
+    .from(agents)
+    .where(eq(agents.userId, params.userId))
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(agents)
+      .set({ agencyId: params.agencyId })
+      .where(eq(agents.id, existing.id));
+    return;
+  }
+
+  // Slugs are unique and never recomputed later — disambiguate with the user id.
+  const base = slugify(params.fallbackName) || "agente";
+  await db.insert(agents).values({
+    agencyId: params.agencyId,
+    userId: params.userId,
+    name: params.fallbackName,
+    slug: `${base}-${params.userId}`,
+  });
 }
 
 /* ------------------------------------------------------------------ */

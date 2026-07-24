@@ -2479,6 +2479,92 @@ summary.panel-btn::-webkit-details-marker {
   background: #fff;
 }
 
+/* Inline panel forms (user management) — wraps to one column on phones. */
+.panel-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: flex-end;
+}
+
+.panel-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.panel-form__field--action {
+  flex: 0 0 auto;
+}
+
+.panel-form .auth-field__input,
+.panel-form .panel-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.panel-form + .panel-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.panel-form__check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 100%;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Status filter chips (admin listings) */
+.panel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.panel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.panel-chip--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.panel-chip--active .panel-tab__count {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+/* Success flash — the error variant reuses .auth-error. */
+.panel-flash {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 /* ---- Login ---------------------------------------------------------------- */
 
 .auth-wrap {

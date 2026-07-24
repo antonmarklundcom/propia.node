@@ -87,31 +87,39 @@ async function AgencyListings({ agencyId }: { agencyId: number }) {
                 </span>
               </td>
               <td>
-                <form
-                  action={setListingStatusAction}
-                  className="panel-actions"
-                  style={{ gap: 6 }}
-                >
-                  <input type="hidden" name="listingId" value={row.id} />
-                  <select
-                    name="status"
-                    className="panel-select"
-                    defaultValue={
-                      AGENCY_STATUS_OPTIONS.includes(row.status)
-                        ? row.status
-                        : "draft"
-                    }
+                <div className="panel-actions">
+                  <form
+                    action={setListingStatusAction}
+                    className="panel-actions"
+                    style={{ gap: 6 }}
                   >
-                    {AGENCY_STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>
-                        {listingStatusLabel[s]}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="panel-btn" type="submit">
-                    {esPanel.saveStatus}
-                  </button>
-                </form>
+                    <input type="hidden" name="listingId" value={row.id} />
+                    <select
+                      name="status"
+                      className="panel-select"
+                      defaultValue={
+                        AGENCY_STATUS_OPTIONS.includes(row.status)
+                          ? row.status
+                          : "draft"
+                      }
+                    >
+                      {AGENCY_STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s}>
+                          {listingStatusLabel[s]}
+                        </option>
+                      ))}
+                    </select>
+                    <button className="panel-btn" type="submit">
+                      {esPanel.saveStatus}
+                    </button>
+                  </form>
+                  <Link
+                    className="panel-btn"
+                    href={`/agencia/propiedad/${row.id}`}
+                  >
+                    {esPanel.editListing}
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}
