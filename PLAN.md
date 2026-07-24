@@ -113,7 +113,9 @@ the product more usable than the last.
       wizard and the agency panel, and a backfill script that pulls existing
       remote URLs into R2 and rewrites `r2_key`. Needs the `[YOU]` R2 envs to
       run, but the code can land first.
-- [ ] **1.2 Per-request canonical host.** `app/sitemap.ts`, `app/robots.ts`,
+- [ ] **1.2 Per-request canonical host.** _(Not blocked by D2 after all — the
+      generic fix is correct whichever domains you switch on; D2 only decides
+      which verticals are `enabled`.)_ `app/sitemap.ts`, `app/robots.ts`,
       `src/lib/jsonld.ts`, `app/api/leads/route.ts` and every `page.tsx` build
       absolute URLs from the build-time `NEXT_PUBLIC_CANONICAL_HOST`. With one
       deployment serving several domains this is wrong by construction: attach
@@ -130,19 +132,21 @@ the product more usable than the last.
 
 ### Step 2 — Admin control plane
 
-- [ ] **2.1 `/admin/usuarios` — user management.** Does not exist in any form;
-      today the only way to touch a user is `scripts/create-user.ts` or raw
-      SQL. Build: list/search users, create, edit (name, email, role, locale),
-      reset password, deactivate, and delete. Roles come from
-      `src/lib/auth/roles.ts` — do not compare raw enum strings at call sites.
+- [x] **2.1 `/admin/usuarios` — user management.** ✅ Done. Third `/admin` tab:
+      create users, edit name/email/role/locale, reset a password (which also
+      revokes that user's open sessions), and delete a user (sessions removed,
+      their `agents` row unlinked but kept so the public profile and its
+      listings survive). Lockout guards live in the server actions, not the UI:
+      no changing your own role, no deleting your own account, no removing the
+      last super-admin. No migration — existing columns only.
 - [ ] **2.2 `/admin/propiedades` — all listings.** `/admin` only shows the
       `pending_review` queue, so a superadmin cannot see, edit or moderate a
       published, paused or sold listing. Add a filterable table over every
       status with admin-level edit and status override regardless of owner.
-- [ ] **2.3 Link users to agencies in the UI.** `requireAgencyContext()`
-      resolves the agency via `agents.user_id`, and `create-user.ts` says
-      outright that this link must be made by hand in Drizzle Studio. Expose it
-      in 2.1 so onboarding an agency does not require database access.
+- [x] **2.3 Link users to agencies in the UI.** ✅ Done as part of 2.1 — each
+      user card has an agency picker that creates or repoints the `agents` row
+      `requireAgencyContext()` reads. Onboarding an agency no longer needs
+      database access.
 
 ### Step 3 — Supply-side self-service
 
