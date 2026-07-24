@@ -8,11 +8,10 @@ import { inquiryPrefillFor } from "@/i18n/es";
 import { ContactForm } from "@/components/ContactForm";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
+import { siteOrigin } from "@/lib/origin";
 
-export const revalidate = 3600;
-
-const ORIGIN = () =>
-  `https://${process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "propia.com.py"}`;
+// Canonical URLs come from the Host header (src/lib/origin.ts), a dynamic
+// API — so this route renders per request instead of on an ISR window.
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -53,7 +52,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description:
       project.descriptionEs?.slice(0, 160) ??
       `${project.name}: proyecto inmobiliario en Paraguay.`,
-    alternates: { canonical: `${ORIGIN()}/proyecto/${project.slug}` },
+    alternates: {
+      canonical: `${await siteOrigin()}/proyecto/${project.slug}`,
+    },
   };
 }
 
@@ -65,7 +66,7 @@ export default async function ProjectPage({ params }: Params) {
   const { project, developer, location, units, otherProjects } = detail;
   const minPrice = units.length > 0 ? Number(units[0].priceUsd) : null;
   const delivery = deliveryLabel(project.deliveryDate);
-  const canonical = `${ORIGIN()}/proyecto/${project.slug}`;
+  const canonical = `${await siteOrigin()}/proyecto/${project.slug}`;
   const waMessage = inquiryPrefillFor(project.name, canonical);
 
   return (

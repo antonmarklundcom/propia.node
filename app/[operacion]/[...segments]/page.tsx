@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { tokens } from "@/design/tokens";
@@ -21,6 +22,7 @@ import {
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
 import { itemListJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
+import { siteOrigin, listingCanonicalOrigin } from "@/lib/origin";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { CategoryFilterBar } from "@/components/CategoryFilterBar";
@@ -28,10 +30,8 @@ import { SearchBar } from "@/components/SearchBar";
 import { listingUrl } from "@/lib/urls";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
-export const revalidate = 3600;
-
-const ORIGIN = () =>
-  `https://${process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "propia.com.py"}`;
+// Already rendered per request (searchParams drive the filter bar); the Host
+// header now feeds the canonical URL too — see src/lib/origin.ts.
 
 const OP_LABEL: Record<Operation, string> = {
   venta: "venta",
@@ -83,8 +83,21 @@ interface Resolved {
   title: string;
 }
 
+/**
+ * generateMetadata and the page body run the same resolution and the same
+ * counts on every request. cache() makes the second caller free — note that
+ * it keys on argument identity, which is why locationIds must come from the
+ * cached subtreeIds() (same array reference) for countFor() to hit.
+ */
+const subtreeIds = cache(citySubtreeIds);
+
+const countFor = cache(
+  (operation: Operation, locationIds: number[], type: PropertyType | null) =>
+    countCategory({ operation, locationIds, type: type ?? undefined }),
+);
+
 /** Shared resolution for metadata + page (structure + DB lookups, no listings). */
-async function resolve(
+const resolve = cache(async function resolve(
   operacion: string,
   segments: string[],
 ): Promise<Resolved | null> {
@@ -102,10 +115,10 @@ async function resolve(
   let parentUrl: string | undefined;
 
   if (shape.kind === "city") {
-    locationIds = await citySubtreeIds(city.id);
+    locationIds = await subtreeIds(city.id);
   } else if (shape.kind === "city-type") {
     type = shape.type;
-    locationIds = await citySubtreeIds(city.id);
+    locationIds = await subtreeIds(city.id);
     parentUrl = categoryUrl({ operation, citySlug: city.slug });
   } else {
     type = shape.type;
@@ -138,24 +151,16 @@ async function resolve(
     parentUrl,
     title,
   };
-}
+});
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { operacion, segments } = await params;
   const r = await resolve(operacion, segments);
   if (!r) return { title: "No encontrado — Homes Paraguay" };
 
-  const count = await countCategory({
-    operation: r.operation,
-    locationIds: r.locationIds,
-    type: r.type ?? undefined,
-  });
+  const count = await countFor(r.operation, r.locationIds, r.type);
   const parentIndexable = r.barrio
-    ? (await countCategory({
-        operation: r.operation,
-        locationIds: await citySubtreeIds(r.city.id),
-        type: r.type ?? undefined,
-      })) >= 3
+    ? (await countFor(r.operation, await subtreeIds(r.city.id), r.type)) >= 3
     : undefined;
   const ix = getIndexability({
     listingCount: count,
@@ -166,7 +171,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${r.title} — Homes Paraguay`,
     description: `${count} ${r.title.toLowerCase()} en Homes Paraguay. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
-    alternates: { canonical: `${ORIGIN()}${r.canonicalPath}` },
+    alternates: { canonical: `${await siteOrigin()}${r.canonicalPath}` },
     robots:
       ix.state === "index"
         ? { index: true, follow: true }
@@ -189,13 +194,9 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   // Indexability is always computed from the canonical (unfiltered) count —
   // a visitor's price/bedroom filter must never change whether this page
   // is indexable or gate it behind the 404/redirect below.
-  const count = await countCategory(baseQuery);
+  const count = await countFor(r.operation, r.locationIds, r.type);
   const parentIndexable = r.barrio
-    ? (await countCategory({
-        operation: r.operation,
-        locationIds: await citySubtreeIds(r.city.id),
-        type: r.type ?? undefined,
-      })) >= 3
+    ? (await countFor(r.operation, await subtreeIds(r.city.id), r.type)) >= 3
     : undefined;
   const ix = getIndexability({
     listingCount: count,
@@ -217,6 +218,13 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     listCities(),
   ]);
 
+  // Breadcrumbs are this host's own pages; the ItemList points at listing
+  // detail pages, which may be canonical on a different host entirely.
+  const [origin, listingOrigin] = await Promise.all([
+    siteOrigin(),
+    listingCanonicalOrigin(),
+  ]);
+
   const crumbs = [
     { name: "Inicio", url: "/" },
     { name: r.city.name, url: categoryUrl({ operation: r.operation, citySlug: r.city.slug }) },
@@ -228,8 +236,9 @@ export default async function CategoryPage({ params, searchParams }: Params) {
       {ix.state === "index" && (
         <JsonLd
           data={[
-            breadcrumbJsonLd(crumbs),
+            breadcrumbJsonLd(origin, crumbs),
             itemListJsonLd(
+              listingOrigin,
               listings.map((l) => ({ title: l.title, url: listingUrl(l) })),
             ),
           ]}

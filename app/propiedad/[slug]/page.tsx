@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -22,6 +23,7 @@ import {
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
 import { inquiryPrefillFor } from "@/i18n/es";
+import { listingCanonicalOrigin } from "@/lib/origin";
 import { JsonLd } from "@/components/JsonLd";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
@@ -29,25 +31,30 @@ import { ListingMapLazy } from "@/components/ListingMapLazy";
 import { PriceAlert } from "@/components/PriceAlert";
 import { RecentlyViewedRecorder } from "@/components/RecentlyViewed";
 
-export const revalidate = 3600;
-
-const ORIGIN = () =>
-  `https://${process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "propia.com.py"}`;
+// Canonical URLs are derived from the Host header (one deployment, several
+// domains — src/lib/origin.ts), which is a dynamic API, so this route can no
+// longer be cached across requests: an ISR entry is not keyed by host and
+// would serve one domain's canonical to another. The cache() below plus the
+// parallelised loader in queries.ts pay for the lost ISR.
 
 type Params = { params: Promise<{ slug: string }> };
 
-async function load(slugParam: string) {
+// generateMetadata and the page body both need the listing; cache() collapses
+// them into one set of queries per request.
+const load = cache(async (slugParam: string) => {
   const publicId = parseListingPublicId(slugParam);
   if (!publicId) return null;
   return getListingByPublicId(publicId);
-}
+});
+
+const subtreeIds = cache(citySubtreeIds);
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await load(slug);
   if (!detail) return { title: "Propiedad no encontrada — Homes Paraguay" };
   const { listing } = detail;
-  const canonical = `${ORIGIN()}${listingUrl(listing)}`;
+  const canonical = `${await listingCanonicalOrigin()}${listingUrl(listing)}`;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
     title: `${listing.title} — ${formatPrice(listing)} | Homes Paraguay`,
@@ -100,7 +107,8 @@ export default async function ListingPage({ params }: Params) {
   const contactWhatsapp = agent?.whatsapp ?? agency?.whatsapp ?? null;
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
   const area = listing.areaM2 ?? listing.landM2;
-  const canonical = `${ORIGIN()}${listingUrl(listing)}`;
+  const origin = await listingCanonicalOrigin();
+  const canonical = `${origin}${listingUrl(listing)}`;
   const waMessage = inquiryPrefillFor(listing.title, canonical);
 
   const city = chain.find((c) => c.level === "ciudad");
@@ -153,13 +161,18 @@ export default async function ListingPage({ params }: Params) {
         ? { lat: Number(city.lat), lng: Number(city.lng), label: city.name }
         : null;
 
+  // citySubtreeIds must be awaited BEFORE the Promise.all array is built —
+  // inside it, the await ran to completion before the other two branches were
+  // even started, so the "parallel" block was three serial round-trips.
+  const similarLocationIds = city ? await subtreeIds(city.id) : null;
+
   const [similar, fromAgency, financingProgram] = await Promise.all([
-    city
+    city && similarLocationIds
       ? getSimilarListings({
           excludeId: listing.id,
           operation: listing.operation,
           type: listing.propertyType,
-          locationIds: await citySubtreeIds(city.id),
+          locationIds: similarLocationIds,
           limit: 4,
         })
       : Promise.resolve([]),
@@ -199,7 +212,12 @@ export default async function ListingPage({ params }: Params) {
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
-      <JsonLd data={[listingJsonLd(detail), breadcrumbJsonLd(jsonLdCrumbs)]} />
+      <JsonLd
+        data={[
+          listingJsonLd(origin, detail),
+          breadcrumbJsonLd(origin, jsonLdCrumbs),
+        ]}
+      />
       <RecentlyViewedRecorder
         entry={{
           href: listingUrl(listing),

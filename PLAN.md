@@ -5,7 +5,7 @@ every session that finishes a step** — mark items done, add new blockers.
 `[C]` = Claude does it (code/session work). `[YOU]` = founder must do it
 (hosting, accounts, real-world data — things code cannot reach).
 
-_Last updated: 2026-07-24 (session: domain-migration-server-error)._
+_Last updated: 2026-07-24 (session: shared-edit-admin-pages)._
 
 ---
 
@@ -57,7 +57,11 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       `NEXT_PUBLIC_CANONICAL_HOST=realestateinparaguay.com`, and
       `verticals.ts` still marks that host disabled (so it is silently served
       the Spanish propia experience). Decide which domains are on and which is
-      canonical, then 1.2 implements it.
+      canonical. The URL layer no longer waits on this (1.2 is done and treats
+      the primary host as authoritative whatever `enabled` says); what is still
+      wrong until you decide is the *experience* — the English domain serving
+      Spanish copy — plus `realestateinparaguay.com` being `enabled: false`
+      while it is the only live host.
 - [ ] **D3 — Real financing terms.** `scripts/seed-financing.ts` ships
       placeholder Che Róga Porã / AFD numbers. Every venta card currently
       advertises a monthly cuota derived from invented terms.
@@ -89,7 +93,7 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 | M0 Rails (deploy, DB, R2) | ⚠️ deploy + DB done; **R2 never built** | ❌ |
 | M1 Schema + seeds | ✅ done | ⚠️ financing rates are placeholders (D3) |
 | M2 Minimum supply (importer, review queue) | ✅ done | ⏳ 50 hand-audited listings not confirmed |
-| M3 Public launch surface | ✅ done | ⏳ canonical host is wrong for multi-domain (1.2) |
+| M3 Public launch surface | ✅ done | ✅ canonical host is per-request (1.2) |
 | M4 Search, filters & map | 🔶 filters + search bar exist; map API, split list/map view, EXPLAIN audit remain | ❌ |
 | M5 Wizard, OTP & accounts | 🔶 wizard + auth merged, but **no account management at all** and OTP undeliverable | ❌ |
 | M6 Scrape importers + SEO at scale | ❌ not started | — |
@@ -113,17 +117,22 @@ the product more usable than the last.
       wizard and the agency panel, and a backfill script that pulls existing
       remote URLs into R2 and rewrites `r2_key`. Needs the `[YOU]` R2 envs to
       run, but the code can land first.
-- [ ] **1.2 Per-request canonical host.** _(Not blocked by D2 after all — the
-      generic fix is correct whichever domains you switch on; D2 only decides
-      which verticals are `enabled`.)_ `app/sitemap.ts`, `app/robots.ts`,
-      `src/lib/jsonld.ts`, `app/api/leads/route.ts` and every `page.tsx` build
-      absolute URLs from the build-time `NEXT_PUBLIC_CANONICAL_HOST`. With one
-      deployment serving several domains this is wrong by construction: attach
-      propia.com.py today and every Spanish page emits a canonical pointing at
-      the English site, and the sitemap lists the wrong domain. Derive the host
-      per request from the `Host` header, the way `middleware.ts` already
-      resolves the vertical. Depends on **D2**. Cost of delay grows with every
-      page Google indexes.
+- [x] **1.2 Per-request canonical host.** ✅ Done — `src/lib/origin.ts` derives
+      the origin from the `Host` header, the way `middleware.ts` already
+      resolves the vertical, and every absolute URL (canonical, OG, JSON-LD,
+      sitemap, robots, the CRM's listing link) now goes through it. Two
+      functions, because detail pages are the one page type whose owning host
+      isn't simply the host that served it: `siteOrigin()` and
+      `listingCanonicalOrigin()` (ARCHITECTURE §2.8 — feeders canonicalise
+      their detail pages back to the primary host; EN owns its own).
+      A host speaks for itself only if it is an enabled vertical **or** the
+      `NEXT_PUBLIC_CANONICAL_HOST` primary — so unknown hosts (previews, the
+      raw `*.hostingersite.com` name) still point at the primary instead of
+      indexing themselves. Verified against a running build: the live host
+      self-canonicals exactly as before (no regression), propia.com.py starts
+      self-canonicalling the moment it is attached, and disabled feeders point
+      at the primary. **D2 no longer gates any of this** — it now only decides
+      which verticals are `enabled` and what the env var says.
 - [x] **1.3 Listing editing for owners.** ✅ Done — `/agencia/propiedad/[id]`
       edits every field, not just status. Shares one form component and one
       parser with the admin edit (`src/components/panel/ListingForm.tsx`,
@@ -171,15 +180,21 @@ the product more usable than the last.
 
 ### Step 5 — Performance (already diagnosed, just needs doing)
 
-- [ ] `React.cache()` around `resolve()` / `countCategory()` (category page)
-      and `load()` / `getListingByPublicId()` (detail page). `generateMetadata`
-      and the page body currently run the same queries twice per request.
-- [ ] Parallelise `getListingByPublicId` (`src/lib/queries.ts:341`): `images`,
-      `agency` and `agent` are independent of each other and are awaited in
-      series today — up to ~7 sequential round-trips to load one listing.
-- [ ] Fix the false-parallel block at `app/propiedad/[slug]/page.tsx:156-172`:
-      `await citySubtreeIds(city.id)` sits *inside* the `Promise.all` array
-      literal, so it completes before the other branches start. Hoist it.
+- [x] `React.cache()` around `resolve()` / `countCategory()` (category page)
+      and `load()` (detail page). ✅ Done with 1.2, which is what made it
+      urgent: reading the `Host` header is a dynamic API, so those routes no
+      longer keep a full route cache between requests and every hit is a real
+      render. Note `cache()` keys on **argument identity** — the cached
+      `subtreeIds()` exists so `countFor()` receives the same array reference
+      from both callers and actually hits.
+- [x] Parallelise `getListingByPublicId` (`src/lib/queries.ts`): ✅ done —
+      `images`, `chain`, `agency` and `agent` depend only on the listing row,
+      never on each other, and now run in one `Promise.all` instead of four
+      serial round-trips.
+- [x] Fix the false-parallel block in `app/propiedad/[slug]/page.tsx`: ✅ done —
+      `await citySubtreeIds(city.id)` sat *inside* the `Promise.all` array
+      literal, so it ran to completion before the other two branches started.
+      Hoisted above the block.
 - [ ] In `getFilteredCategoryListings` (`src/lib/queries.ts:162`) the rows
       select and the count select do not depend on each other — run them
       together.

@@ -3,18 +3,19 @@
  * pages, BreadcrumbList everywhere, ItemList on categories. Emitted as a
  * <script type="application/ld+json"> the templates inline. Grounded only in
  * DB fields — never invented values.
+ *
+ * `origin` is passed in rather than read from the environment: with one
+ * deployment behind several domains it is a per-request value (src/lib/origin.ts),
+ * and JSON-LD that disagrees with the page's own canonical is a crawl error.
  */
 import type { ListingDetail, LocationRow } from "./queries";
 import { imageUrl } from "./format";
 import { listingUrl } from "./urls";
 
-const CANONICAL_ORIGIN = () =>
-  `https://${process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "propia.com.py"}`;
-
 export function breadcrumbJsonLd(
+  origin: string,
   items: { name: string; url: string }[],
 ): object {
-  const origin = CANONICAL_ORIGIN();
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -27,9 +28,8 @@ export function breadcrumbJsonLd(
   };
 }
 
-export function listingJsonLd(detail: ListingDetail): object {
+export function listingJsonLd(origin: string, detail: ListingDetail): object {
   const { listing, images, chain } = detail;
-  const origin = CANONICAL_ORIGIN();
   const isLand = listing.propertyType === "terreno";
 
   return {
@@ -87,9 +87,9 @@ export function listingJsonLd(detail: ListingDetail): object {
 }
 
 export function itemListJsonLd(
+  origin: string,
   urls: { title: string; url: string }[],
 ): object {
-  const origin = CANONICAL_ORIGIN();
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
