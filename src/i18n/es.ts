@@ -78,6 +78,40 @@ export const esPanel = {
     "Contraseña actualizada. Se cerraron las sesiones abiertas de ese usuario.",
   userAgencyLinked: "Vínculo con la inmobiliaria actualizado.",
 
+  // Admin — todas las propiedades
+  adminListingsTitle: "Propiedades",
+  adminListingsEmpty: "No hay propiedades con ese filtro.",
+  searchListingsLabel: "Buscar por título o código",
+  searchSubmit: "Buscar",
+  filterAll: "Todas",
+  editListing: "Editar",
+  viewListing: "Ver aviso",
+  backToListings: "← Volver a propiedades",
+
+  // Listing edit form (shared: admin + agency)
+  listingTitleLabel: "Título del aviso",
+  listingDescriptionLabel: "Descripción",
+  listingOperationLabel: "Operación",
+  listingTypeLabel: "Tipo de propiedad",
+  listingPriceLabel: "Precio",
+  listingCurrencyLabel: "Moneda",
+  listingBedroomsLabel: "Dormitorios",
+  listingBathroomsLabel: "Baños",
+  listingParkingLabel: "Cocheras",
+  listingAreaLabel: "Superficie (m²)",
+  listingLandLabel: "Terreno (m²)",
+  listingLocationLabel: "Ubicación",
+  listingVideoLabel: "Video (URL)",
+  listingForeignLabel: "Mostrar también a compradores del exterior",
+  saveListing: "Guardar cambios",
+  deleteListing: "Eliminar aviso",
+  deleteListingWarning:
+    "Se borra definitivamente, junto con sus fotos. Si solo querés sacarlo de la web, usá el estado “Eliminado”.",
+  listingSaved: "Aviso actualizado.",
+  listingDeleted: "Aviso eliminado.",
+  listingNotFound: "No encontramos ese aviso.",
+  listingInvalid: "Revisá los datos: faltan campos obligatorios.",
+
   // Agency
   agencyListingsTitle: "Tus propiedades",
   agencyListingsEmpty: "Todavía no tenés propiedades cargadas.",

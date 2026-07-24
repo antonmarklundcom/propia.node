@@ -124,11 +124,11 @@ the product more usable than the last.
       per request from the `Host` header, the way `middleware.ts` already
       resolves the vertical. Depends on **D2**. Cost of delay grows with every
       page Google indexes.
-- [ ] **1.3 Listing editing for owners.** `/agencia` can only change a
-      listing's *status* (`app/agencia/page.tsx`). An agency cannot fix a
-      price, a title, a description or a photo. Add a real edit form scoped by
-      `agencyId` from the session (never from the request), reusing the publish
-      wizard's field validation.
+- [x] **1.3 Listing editing for owners.** ✅ Done — `/agencia/propiedad/[id]`
+      edits every field, not just status. Shares one form component and one
+      parser with the admin edit (`src/components/panel/ListingForm.tsx`,
+      `src/lib/listing-form-input.ts`) so the two can never validate
+      differently. Photos still excluded — they need 1.1.
 
 ### Step 2 — Admin control plane
 
@@ -139,10 +139,12 @@ the product more usable than the last.
       listings survive). Lockout guards live in the server actions, not the UI:
       no changing your own role, no deleting your own account, no removing the
       last super-admin. No migration — existing columns only.
-- [ ] **2.2 `/admin/propiedades` — all listings.** `/admin` only shows the
-      `pending_review` queue, so a superadmin cannot see, edit or moderate a
-      published, paused or sold listing. Add a filterable table over every
-      status with admin-level edit and status override regardless of owner.
+- [x] **2.2 `/admin/propiedades` — all listings.** ✅ Done — status filter
+      chips with counts, title/public-id search, and edit at
+      `/admin/propiedades/[id]` covering every field, the full status
+      lifecycle, and hard delete. Scope is an `EditScope` enforced in the query
+      layer's WHERE clause (`src/lib/listing-edit.ts`), so the same code serves
+      the agency panel without it ever reaching another agency's rows.
 - [x] **2.3 Link users to agencies in the UI.** ✅ Done as part of 2.1 — each
       user card has an agency picker that creates or repoints the `agents` row
       `requireAgencyContext()` reads. Onboarding an agency no longer needs

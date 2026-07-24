@@ -2511,6 +2511,48 @@ summary.panel-btn::-webkit-details-marker {
   border-top: 1px solid var(--color-border);
 }
 
+.panel-form__check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 100%;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Status filter chips (admin listings) */
+.panel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.panel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.panel-chip--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.panel-chip--active .panel-tab__count {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
 /* Success flash — the error variant reuses .auth-error. */
 .panel-flash {
   margin: 0 0 16px;
