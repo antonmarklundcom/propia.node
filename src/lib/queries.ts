@@ -348,32 +348,33 @@ export async function getListingByPublicId(
     .limit(1);
   if (!listing || listing.status !== "published") return null;
 
-  const images = await db
-    .select()
-    .from(listingImages)
-    .where(eq(listingImages.listingId, listing.id))
-    .orderBy(asc(listingImages.position));
-
-  const chain = await locationChain(listing.locationId);
-
-  let agency: typeof agencies.$inferSelect | null = null;
-  if (listing.agencyId) {
-    const [a] = await db
+  // Images, location chain, agency and agent depend only on the listing row,
+  // never on each other — awaiting them in sequence made one detail page up
+  // to four serial round-trips where one suffices.
+  const [images, chain, agency, agent] = await Promise.all([
+    db
       .select()
-      .from(agencies)
-      .where(eq(agencies.id, listing.agencyId))
-      .limit(1);
-    agency = a ?? null;
-  }
-  let agent: typeof agents.$inferSelect | null = null;
-  if (listing.agentId) {
-    const [a] = await db
-      .select()
-      .from(agents)
-      .where(eq(agents.id, listing.agentId))
-      .limit(1);
-    agent = a ?? null;
-  }
+      .from(listingImages)
+      .where(eq(listingImages.listingId, listing.id))
+      .orderBy(asc(listingImages.position)),
+    locationChain(listing.locationId),
+    listing.agencyId
+      ? db
+          .select()
+          .from(agencies)
+          .where(eq(agencies.id, listing.agencyId))
+          .limit(1)
+          .then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
+    listing.agentId
+      ? db
+          .select()
+          .from(agents)
+          .where(eq(agents.id, listing.agentId))
+          .limit(1)
+          .then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
+  ]);
 
   return { listing, images, chain, agency, agent };
 }

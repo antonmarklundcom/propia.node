@@ -10,9 +10,7 @@ import { db } from "@/db";
 import { leads, listings } from "@/db/schema";
 import { getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
-
-const CANONICAL_ORIGIN = () =>
-  `https://${process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "propia.com.py"}`;
+import { listingCanonicalOrigin } from "@/lib/origin";
 
 const bodySchema = z.object({
   leadType: z.enum([
@@ -90,7 +88,7 @@ export async function POST(req: NextRequest) {
       ? {
           publicId: listing.publicId,
           title: listing.title,
-          url: `${CANONICAL_ORIGIN()}${listingUrl(listing)}`,
+          url: `${await listingCanonicalOrigin()}${listingUrl(listing)}`,
           priceUsd: Number(listing.priceUsd),
           operation: listing.operation,
         }

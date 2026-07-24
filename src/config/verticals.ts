@@ -29,6 +29,13 @@ export interface VerticalConfig {
   copy: "ownership" | "land" | "rental" | "foreign" | "directory";
   /** Only enabled verticals are routed; others 302 to propia until launch. */
   enabled: boolean;
+  /**
+   * Whether /propiedad/{slug} is canonical on THIS host (§2.8: detail pages
+   * live on propia only; the EN site is the translation exception). Feeder
+   * domains own category/landing pages and link into the primary host, so
+   * their detail pages canonicalise away — see `listingCanonicalOrigin()`.
+   */
+  ownsListingDetail: boolean;
 }
 
 export const VERTICALS: Record<string, VerticalConfig> = {
@@ -37,6 +44,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     locale: "es",
     copy: "ownership",
     enabled: true,
+    ownsListingDetail: true,
   },
   "terreno.com.py": {
     key: "terreno",
@@ -44,6 +52,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     filters: { property_type: ["terreno"] },
     copy: "land",
     enabled: false,
+    ownsListingDetail: false,
   },
   "alquiler.com.py": {
     key: "alquiler",
@@ -51,6 +60,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     filters: { operation: ["alquiler"] },
     copy: "rental", // "tu próximo lugar" — never ownership language
     enabled: false,
+    ownsListingDetail: false,
   },
   "inmobiliarios.com.py": {
     key: "agents",
@@ -58,6 +68,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     mode: "directory",
     copy: "directory",
     enabled: false,
+    ownsListingDetail: false,
   },
   "desarrolladores.com.py": {
     key: "devs",
@@ -65,16 +76,25 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     mode: "projects",
     copy: "directory",
     enabled: false,
+    ownsListingDetail: false,
   },
   "realestateinparaguay.com": {
     key: "en",
     locale: "en",
     filters: { foreign_exposure: true },
     copy: "foreign",
+    // description_en detail pages with hreflang — translation ≠ duplicate.
     enabled: false,
+    ownsListingDetail: true,
   },
 } as const;
 
+/**
+ * The host this deployment answers to first. Every other host either
+ * self-references (if it is an enabled vertical) or points its canonical
+ * URLs here — see `src/lib/origin.ts`. Changing it is a D2 decision, not a
+ * code decision.
+ */
 export const CANONICAL_HOST =
   process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "propia.com.py";
 
