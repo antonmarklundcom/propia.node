@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "**.r2.dev" },
       { protocol: "https", hostname: "img.propia.com.py" },
+      { protocol: "https", hostname: "picsum.photos" },
     ],
   },
   // Shared-hosting friendly: standalone output keeps the deployed footprint small.
