@@ -70,6 +70,14 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 
 ## [YOU] — production items code cannot reach
 
+- [ ] ⚠️ **Run `npm run db:migrate` against prod when you merge.**
+      `drizzle/0002` is generated but not applied: it reorders `idx_search` and
+      adds `idx_recent` on `listings` (the EXPLAIN audit in step 4). **No rush
+      and no risk** — deployed code selects no new columns, so the app runs
+      fine without it; category pages just keep the slower query plan. It is
+      one DROP INDEX plus two CREATE INDEX on a small table, so it completes
+      immediately. Standing rule: a schema change is not done until the
+      migration has run against prod.
 - [x] ~~`GHL_WEBHOOK_URL` + `GHL_API_KEY`~~ **No longer required — GHL is
       optional.** Leads were always written to MySQL *before* the CRM push, so
       the push was a copy and nothing is lost without it; `/admin/leads` is now
@@ -232,9 +240,31 @@ the product more usable than the last.
 
 ### Step 4 — Finish M4 (search, filters & map)
 
-- [ ] Typed query layer over `idx_search` covering every facet combination.
-- [ ] Map API: bounding-box endpoint + client-side supercluster.
-- [ ] Split list/map UI, mobile full-screen map.
+- [x] **Map API: bounding-box endpoint.** ✅ `GET /api/mapa?bbox=…` plus the
+      same filter vocabulary the category URLs use, so pins and grid can never
+      disagree. `src/lib/map-queries.ts` owns the rule that matters:
+      **coordinates are rounded to 3 decimals (~110 m) before they leave the
+      module**, because `lat`/`lng` and `address_text` are "never shown publicly
+      at full precision" (schema §2.1) — a pin on the exact building tells a
+      stranger which house is empty and for sale. A listing with no coordinates
+      of its own borrows its barrio/city centroid and is flagged
+      `approximate: true` (dashed pin) rather than being invented into a
+      position or dropped. Capped at 400 pins, and a box wider than 12° is
+      refused (422) rather than answered with the country.
+- [x] **Split list/map UI, mobile map.** ✅ `?vista=mapa` on any category page —
+      a query param, not a route, so the canonical URL is untouched and no thin
+      duplicate gets indexed. Price pills + cluster chips, filters carried
+      across the switch, maplibre still lazy-loaded so the list view (what
+      crawlers and most visitors see) never downloads the map engine.
+      **Clustering is ~50 lines of screen-space grid bucketing, not
+      `supercluster`:** MapLibre's built-in clustering draws counts with a
+      `symbol` layer, which needs a `glyphs` font URL the free raster OSM style
+      does not have — so the "cheap" path was a dependency on someone else's
+      font server. HTML markers style with plain CSS instead.
+- [ ] Typed query layer over `idx_search` covering every facet combination
+      (the audit and the index fix are done; the remaining piece is one shared
+      typed builder so the category, map and future saved-search queries can't
+      drift apart).
 - [x] **EXPLAIN audit — done, and it found a real index bug.** ⚠️ **MIGRATION
       REQUIRED (`drizzle/0002`).** `idx_search` was
       `(status, operation, property_type, location_id, price_usd)`, but the URL
@@ -305,6 +335,22 @@ the product more usable than the last.
 ---
 
 ## Verification you can re-run
+
+- **The map was driven in a real browser (Playwright + Chromium), not just
+  typechecked — and that is the only reason it works.** Two bugs were invisible
+  from the code: (1) `maplibre-gl.css` sets `.maplibregl-map { position:
+  relative }` and its stylesheet is injected *after* `globals.css`, so
+  `inset: 0` silently stopped sizing the map container — it collapsed to
+  height 0 and, because maplibre also sets `overflow: hidden`, every marker
+  inside became unclickable (`document.elementFromPoint` at a cluster chip
+  returned the wrapper, and a real mouse click did nothing); (2) on a phone the
+  search and filter cards filled the entire first screen, so tapping "Mapa"
+  showed no map until you scrolled past both. Both fixed and re-verified:
+  container 1098×620, hit test lands on the chip, a genuine click zooms
+  (chips 33 → 11, pins 10 → 31), price pill links to the right listing.
+  Note OSM raster tiles cannot load from inside the dev sandbox (the proxy
+  blocks `tile.openstreetmap.org`), so screenshots show pins over a blank
+  backdrop; pins and clustering are ours and work regardless.
 
 - `npm run verify:scopes` — exercises the panel's ownership guards against a
   local database: sign-up shape (roles, unverified flags, the `agents` link),
