@@ -70,9 +70,19 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 
 ## [YOU] — production items code cannot reach
 
-- [ ] `GHL_WEBHOOK_URL` + `GHL_API_KEY` in the production env. **Until these
-      are set, WhatsApp OTP never sends and no lead reaches the CRM** — the
-      publish wizard and every contact form are effectively dead.
+- [x] ~~`GHL_WEBHOOK_URL` + `GHL_API_KEY`~~ **No longer required — GHL is
+      optional.** Leads were always written to MySQL *before* the CRM push, so
+      the push was a copy and nothing is lost without it; `/admin/leads` is now
+      the founder's inbox and `/agencia/leads` the agency's. The one thing GHL
+      really carried was OTP delivery, and that had a trap: with no key
+      configured the provider logged the code server-side and returned
+      **success**, so production told publishers "we sent you a code" that could
+      never arrive. Now `isMessagingConfigured()` decides: no provider → the
+      wizard publishes straight to `pending_review` (login + review are the
+      gate) and the row is *not* flagged phone-verified; a provider that fails
+      → an honest error, never a fake send.
+      Optional later: set `LEAD_WEBHOOK_URL` to any endpoint (n8n, your own
+      CRM, GHL) to get lead pushes and re-enable OTP.
 - [ ] **Cloudflare R2 bucket + `R2_*` envs + image host mapping.** Now the
       blocker rather than a companion task: 1.1 is written and builds, but
       until `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and
@@ -211,6 +221,14 @@ the product more usable than the last.
       now rather than uploads, even though 1.1 could power an upload.
 - [ ] **3.3 Per-listing stats for the owner** (views, leads) so the panel is
       worth logging into.
+- [x] **3.4 `/admin/leads` — every lead the site captured.** ✅ Done — third
+      `/admin` tab: type filter chips with counts, search by name / WhatsApp /
+      email, the owning agency (or “Interno” when the lead is yours), which
+      vertical captured it, the listing it came from, and a one-tap WhatsApp
+      reply. This is the only place `routed_to = 'internal'` leads (valuation,
+      seller) are visible at all — no agency panel shows them.
+      Note: `/admin` now has five tabs, which is past what fits one row on a
+      phone; the next addition should group rather than append.
 
 ### Step 4 — Finish M4 (search, filters & map)
 

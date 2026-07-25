@@ -8,6 +8,7 @@ import {
   USD_TO_PYG,
 } from "@/lib/publish-queries";
 import { esPublish } from "@/i18n/es";
+import { isMessagingConfigured } from "@/lib/crm";
 import {
   PublishWizard,
   type InitialDraft,
@@ -83,6 +84,7 @@ export default async function PublishPage({
         usdToPyg={USD_TO_PYG}
         initialDraft={initialDraft}
         initialPhotos={initialPhotos}
+        otpEnabled={isMessagingConfigured()}
         homeHref={homeForRole(user)}
       />
     </main>

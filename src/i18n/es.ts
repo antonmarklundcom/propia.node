@@ -128,6 +128,13 @@ export const esPanel = {
     "Contraseña actualizada. Se cerraron las sesiones abiertas de ese usuario.",
   userAgencyLinked: "Vínculo con la inmobiliaria actualizado.",
 
+  // Admin — todas las consultas
+  adminLeadsTitle: "Consultas",
+  adminLeadsHint:
+    "Todas las consultas que entran por el sitio, de cualquier inmobiliaria o agente. Las marcadas como “Interno” son tuyas para trabajar.",
+  adminLeadsEmpty: "No hay consultas con ese filtro.",
+  adminLeadsSearchLabel: "Buscar por nombre, WhatsApp o email",
+
   // Admin — todas las propiedades
   adminListingsTitle: "Propiedades",
   adminListingsEmpty: "No hay propiedades con ese filtro.",
@@ -246,6 +253,11 @@ export const esPublish = {
   photosFailed: "No pudimos subir algunas fotos. Probá de nuevo.",
   foreignExposureLabel:
     "Mostrar también a compradores del exterior (realestateinparaguay.com) — próximamente",
+
+  // Publicación sin verificación (no hay proveedor de mensajería configurado)
+  publishTitle: "Publicá tu aviso",
+  publishSubtitle:
+    "Dejanos tu WhatsApp para que te contacten los interesados. Revisamos el aviso antes de que salga publicado.",
 
   // OTP
   otpTitle: "Verificá tu WhatsApp para publicar",

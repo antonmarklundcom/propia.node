@@ -17,6 +17,7 @@ import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { NearbyProject, PublishLocation } from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
 import {
+  publishDraftAction,
   requestOtpAction,
   saveDraftAction,
   verifyAndPublishAction,
@@ -91,6 +92,7 @@ export function PublishWizard({
   usdToPyg,
   initialDraft,
   initialPhotos,
+  otpEnabled,
   homeHref,
 }: {
   locations: PublishLocation[];
@@ -99,6 +101,11 @@ export function PublishWizard({
   usdToPyg: number;
   initialDraft: InitialDraft | null;
   initialPhotos?: ListingImageRow[];
+  /**
+   * Whether a WhatsApp code can actually be delivered. False → publish
+   * directly; the server enforces the same rule, this only shapes the UI.
+   */
+  otpEnabled: boolean;
   homeHref: string;
 }) {
   const [state, setState] = useState<WizardState>(() => ({
@@ -324,6 +331,31 @@ export function PublishWizard({
       }
       setOtpSent(true);
       setCooldown(60);
+    } catch {
+      setOtpError(esPublish.errors.generic);
+    } finally {
+      setOtpBusy(false);
+    }
+  }, [persist, whatsapp]);
+
+  /** Publish with no code, when none can be delivered (otpEnabled === false). */
+  const publishDirect = useCallback(async () => {
+    setOtpBusy(true);
+    setOtpError(null);
+    try {
+      const saved = await persist();
+      if (saved === null) return;
+      const res = await publishDraftAction({ draftId: saved, whatsapp });
+      if (!res.ok) {
+        setOtpError(esPublish.errors.generic);
+        return;
+      }
+      try {
+        localStorage.removeItem(LS_KEY);
+      } catch {
+        /* ignore */
+      }
+      setDone(true);
     } catch {
       setOtpError(esPublish.errors.generic);
     } finally {
@@ -632,10 +664,14 @@ export function PublishWizard({
             <span>{esPublish.foreignExposureLabel}</span>
           </label>
 
-          {/* OTP-at-publish */}
+          {/* OTP-at-publish — only when a code can actually reach them. */}
           <div className="wizard-otp">
-            <h3 className="wizard-otp__title">{esPublish.otpTitle}</h3>
-            <p className="wizard-hint">{esPublish.otpSubtitle}</p>
+            <h3 className="wizard-otp__title">
+              {otpEnabled ? esPublish.otpTitle : esPublish.publishTitle}
+            </h3>
+            <p className="wizard-hint">
+              {otpEnabled ? esPublish.otpSubtitle : esPublish.publishSubtitle}
+            </p>
             <div className="wizard-field">
               <label className="wizard-label" htmlFor="wa">
                 {esPublish.whatsappLabel}
@@ -647,11 +683,11 @@ export function PublishWizard({
                 value={whatsapp}
                 placeholder="0981 123 456"
                 onChange={(e) => setWhatsapp(e.target.value)}
-                disabled={otpSent}
+                disabled={otpEnabled && otpSent}
               />
             </div>
 
-            {otpSent && (
+            {otpEnabled && otpSent && (
               <div className="wizard-field">
                 <label className="wizard-label" htmlFor="code">
                   {esPublish.codeLabel}
@@ -671,7 +707,16 @@ export function PublishWizard({
             {otpError && <p className="auth-error">{otpError}</p>}
 
             <div className="wizard-actions">
-              {!otpSent ? (
+              {!otpEnabled ? (
+                <button
+                  type="button"
+                  className="panel-btn panel-btn--primary"
+                  onClick={publishDirect}
+                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                >
+                  {otpBusy ? esPublish.publishing : esPublish.publish}
+                </button>
+              ) : !otpSent ? (
                 <button
                   type="button"
                   className="panel-btn panel-btn--whatsapp"

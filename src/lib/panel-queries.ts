@@ -5,7 +5,7 @@
  * can never mutate a row it doesn't own — the agencyId comes from the session
  * (guards.ts), never from the request.
  */
-import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, like, ne, or, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   agencies,
@@ -418,6 +418,74 @@ export interface LeadRow {
  * listing ids first, then read leads on idx_listing. routedTo is constrained to
  * the agency/agent lanes so internal/developer leads never leak in.
  */
+export interface AdminLeadRow extends LeadRow {
+  vertical: string;
+  routedTo: (typeof leads.$inferSelect)["routedTo"];
+  agencyName: string | null;
+}
+
+/**
+ * Every lead the site captured, newest first — the super-admin view.
+ *
+ * Unscoped by design: this is the founder's own inbox, and it is the only
+ * place a lead with `routed_to = 'internal'` (valuation and seller leads,
+ * which belong to no agency) is visible at all. Optional filters narrow by
+ * type and search name / WhatsApp / email.
+ */
+export async function listAllLeads(params: {
+  type?: LeadRow["leadType"] | "all";
+  q?: string;
+  limit?: number;
+}): Promise<AdminLeadRow[]> {
+  const filters: SQL[] = [];
+  if (params.type && params.type !== "all") {
+    filters.push(eq(leads.leadType, params.type));
+  }
+  const q = params.q?.trim();
+  if (q) {
+    const term = `%${q}%`;
+    const match = or(
+      like(leads.name, term),
+      like(leads.whatsapp, term),
+      like(leads.email, term),
+    );
+    if (match) filters.push(match);
+  }
+
+  return db
+    .select({
+      id: leads.id,
+      leadType: leads.leadType,
+      name: leads.name,
+      whatsapp: leads.whatsapp,
+      email: leads.email,
+      message: leads.message,
+      createdAt: leads.createdAt,
+      listingId: leads.listingId,
+      listingTitle: listings.title,
+      listingPublicId: listings.publicId,
+      listingSlug: listings.slug,
+      vertical: leads.vertical,
+      routedTo: leads.routedTo,
+      agencyName: agencies.name,
+    })
+    .from(leads)
+    .leftJoin(listings, eq(leads.listingId, listings.id))
+    .leftJoin(agencies, eq(listings.agencyId, agencies.id))
+    .where(filters.length ? and(...filters) : undefined)
+    .orderBy(desc(leads.createdAt))
+    .limit(params.limit ?? 300);
+}
+
+/** Lead counts per type for the admin filter chips — one pass, not one query each. */
+export async function countLeadsByType(): Promise<Record<string, number>> {
+  const rows = await db.select({ leadType: leads.leadType }).from(leads);
+  const out: Record<string, number> = {};
+  for (const r of rows) out[r.leadType] = (out[r.leadType] ?? 0) + 1;
+  out.all = rows.length;
+  return out;
+}
+
 export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
   const owned = await db
     .select({ id: listings.id })
