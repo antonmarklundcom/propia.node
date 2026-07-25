@@ -4,6 +4,11 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import type { EditScope } from "@/lib/listing-edit";
 import { getPanelListings } from "@/lib/panel-queries";
+import {
+  getPanelListingStats,
+  STATS_WINDOW_DAYS,
+  totalsFrom,
+} from "@/lib/stats-queries";
 import { esPanel, listingStatusLabel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -59,13 +64,30 @@ export default async function AgencyListingsPage({
 }
 
 async function AgencyListings({ scope }: { scope: EditScope }) {
-  const rows = await getPanelListings(scope);
+  // Both are scope-guarded reads and neither depends on the other.
+  const [rows, stats] = await Promise.all([
+    getPanelListings(scope),
+    getPanelListingStats(scope),
+  ]);
   if (rows.length === 0) {
     return <p className="panel-empty">{esPanel.agencyListingsEmpty}</p>;
   }
 
+  const totals = totalsFrom(stats);
+
   return (
-    <div className="panel-table__wrap">
+    <>
+      {/* The headline answer to "is this working?", before the table detail. */}
+      <p className="panel-stats-summary">
+        {esPanel.statsSummary}:{" "}
+        <strong>{totals.views}</strong> {esPanel.statsViews.toLowerCase()} ·{" "}
+        <strong>{totals.leads}</strong> {esPanel.statsLeads.toLowerCase()}{" "}
+        <span className="panel-stats-summary__hint">
+          ({STATS_WINDOW_DAYS} días — {esPanel.statsViewsHint})
+        </span>
+      </p>
+
+      <div className="panel-table__wrap">
       <table className="panel-table">
         <thead>
           <tr>
@@ -73,6 +95,8 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
             <th>Tipo</th>
             <th>Precio</th>
             <th>{esPanel.statusLabel}</th>
+            <th title={esPanel.statsViewsHint}>{esPanel.statsViews}</th>
+            <th>{esPanel.statsLeads}</th>
             <th>Cambiar estado</th>
           </tr>
         </thead>
@@ -100,6 +124,9 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
                   {listingStatusLabel[row.status] ?? row.status}
                 </span>
               </td>
+              {/* A listing with no activity is absent from the map, not 0 in it. */}
+              <td className="panel-table__num">{stats.get(row.id)?.views ?? 0}</td>
+              <td className="panel-table__num">{stats.get(row.id)?.leads ?? 0}</td>
               <td>
                 <div className="panel-actions">
                   <form
@@ -137,8 +164,9 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
               </td>
             </tr>
           ))}
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

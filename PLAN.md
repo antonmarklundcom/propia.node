@@ -70,14 +70,19 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 
 ## [YOU] — production items code cannot reach
 
-- [ ] ⚠️ **Run `npm run db:migrate` against prod when you merge.**
-      `drizzle/0002` is generated but not applied: it reorders `idx_search` and
-      adds `idx_recent` on `listings` (the EXPLAIN audit in step 4). **No rush
-      and no risk** — deployed code selects no new columns, so the app runs
-      fine without it; category pages just keep the slower query plan. It is
-      one DROP INDEX plus two CREATE INDEX on a small table, so it completes
-      immediately. Standing rule: a schema change is not done until the
-      migration has run against prod.
+- [ ] ⚠️ **Run `npm run db:migrate` against prod when you merge.** Two
+      migrations are generated but not applied:
+      • `drizzle/0002` reorders `idx_search` and adds `idx_recent` on
+        `listings` (the EXPLAIN audit in step 4). No risk, no rush — the app
+        runs fine without it, category pages just keep the slower plan.
+      • `drizzle/0003` creates `listing_views_daily`. **This one the code does
+        touch:** without the table, every listing detail page render tries to
+        count a view and fails. The failure is swallowed (the counter is
+        wrapped in try/catch and runs after the response, so pages still
+        render) but the panel will report zero views until it exists.
+      Both are fast — one DROP/CREATE INDEX pair and one small CREATE TABLE.
+      Standing rule: a schema change is not done until the migration has run
+      against prod.
 - [x] ~~`GHL_WEBHOOK_URL` + `GHL_API_KEY`~~ **No longer required — GHL is
       optional.** Leads were always written to MySQL *before* the CRM push, so
       the push was a copy and nothing is lost without it; `/admin/leads` is now
@@ -119,7 +124,7 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 | M1 Schema + seeds | ✅ done | ⚠️ financing rates are placeholders (D3) |
 | M2 Minimum supply (importer, review queue) | ✅ done | ⏳ 50 hand-audited listings not confirmed |
 | M3 Public launch surface | ✅ done | ✅ canonical host is per-request (1.2) |
-| M4 Search, filters & map | 🔶 filters, search bar and the EXPLAIN audit done (index fixed, migration 0002); map API + split list/map view remain | ❌ |
+| M4 Search, filters & map | ✅ filters, search, EXPLAIN audit (index fixed, migration 0002), bbox map API + split list/map view | ⏳ one typed facet builder still to share between category and map queries |
 | M5 Wizard, OTP & accounts | ✅ wizard, auth, admin user management, self-registration, profile editing; publishing no longer needs OTP | ✅ no external provider required |
 | M6 Scrape importers + SEO at scale | ❌ not started | — |
 | M7 Monetization & feeders | ❌ not started | — |
@@ -227,8 +232,29 @@ the product more usable than the last.
       name/photo/whatsapp). Adding it is a one-column migration — say the word
       and it lands with MIGRATION REQUIRED. Logo and photo are URL fields for
       now rather than uploads, even though 1.1 could power an upload.
-- [ ] **3.3 Per-listing stats for the owner** (views, leads) so the panel is
-      worth logging into.
+- [x] **3.3 Per-listing stats for the owner.** ✅ Done — **MIGRATION REQUIRED
+      (`drizzle/0003`, new `listing_views_daily` table).** Views and leads per
+      listing over a rolling 30 days: totals across the top of `/agencia`, two
+      columns in the listings table, and a figures-plus-30-day-bars card at the
+      top of every edit page (admin and agency, same component).
+      Four decisions worth keeping:
+      **(a) One row per listing per day, not per view** — an owner asks "how
+      many people saw my ad this week", never "who saw it at 14:03", and a
+      row-per-view would be the fastest-growing table in the schema for an
+      answer nobody wants. **(b) Counted after the response** via Next's
+      `after()`, so stats never cost the visitor latency and a failed counter
+      never breaks a page that rendered fine. **(c) Crawlers excluded**
+      (`view-tracking.ts`) — an owner who sees "420 views" and gets no calls
+      concludes the portal is broken; if most of those were Googlebot the
+      number lied. **(d) UPDATE-then-INSERT, not `ON DUPLICATE KEY UPDATE`**,
+      which is MySQL-only and the schema's first rule is that the Postgres
+      escape hatch stays open; the insert race is caught and retried as an
+      update.
+      Verified against a real database and a real browser: 3 human views
+      counted and 3 bot views ignored end-to-end, 8 concurrent first-views of
+      the same listing produce one row and lose none of the 8, views older than
+      the window excluded, another agency's scope sees nothing, and the panel
+      renders 188 views / 3 leads with a 30-bar trend.
 - [x] **3.4 `/admin/leads` — every lead the site captured.** ✅ Done — third
       `/admin` tab: type filter chips with counts, search by name / WhatsApp /
       email, the owning agency (or “Interno” when the lead is yours), which

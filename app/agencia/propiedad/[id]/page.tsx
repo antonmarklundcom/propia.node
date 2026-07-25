@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { ListingForm } from "@/components/panel/ListingForm";
 import { PhotoManager } from "@/components/panel/PhotoManager";
+import { ListingStats } from "@/components/panel/ListingStats";
 import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   AGENCY_STATUSES,
@@ -11,6 +12,10 @@ import {
   type EditScope,
 } from "@/lib/listing-edit";
 import { listListingImages } from "@/lib/listing-images";
+import {
+  getListingDailyViews,
+  getPanelListingStats,
+} from "@/lib/stats-queries";
 import { isR2Configured } from "@/lib/r2";
 import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
@@ -63,11 +68,13 @@ export default async function AgencyListingEditPage({
   // own rows (panelScope) — so this page serves both without a special case.
   const scope: EditScope = panelScope(ctx);
 
-  const [listing, locations, images] = await Promise.all([
+  const [listing, locations, images, daily, stats] = await Promise.all([
     getEditableListing(listingId, scope),
     listPublishLocations(),
     // Same scope the listing was loaded with — an agency reaches only its own.
     listListingImages(listingId, scope),
+    getListingDailyViews(listingId, scope),
+    getPanelListingStats(scope),
   ]);
   if (!listing) notFound();
 
@@ -103,6 +110,12 @@ export default async function AgencyListingEditPage({
           {listing.reviewNotes ? <span>· {listing.reviewNotes}</span> : null}
         </p>
 
+        <ListingStats
+          views={daily.reduce((sum, d) => sum + d.views, 0)}
+          leads={stats.get(listing.id)?.leads ?? 0}
+          daily={daily}
+        />
+
         <article className="panel-card">
           <ListingForm
             listing={listing}
@@ -111,6 +124,7 @@ export default async function AgencyListingEditPage({
             action={agencyUpdateListingAction}
           />
         </article>
+
 
         <PhotoManager
           listingId={listing.id}

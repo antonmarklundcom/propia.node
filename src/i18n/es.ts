@@ -202,6 +202,16 @@ export const esPanel = {
   agencyNoLink:
     "Tu usuario todavía no está vinculado a una inmobiliaria. Escribinos para activarlo.",
   statusLabel: "Estado",
+
+  // Estadísticas por aviso (3.3)
+  statsViews: "Visitas",
+  statsLeads: "Consultas",
+  statsWindow: "Últimos 30 días",
+  statsSummary: "En los últimos 30 días",
+  statsNoData:
+    "Todavía no hay visitas registradas. Las estadísticas empiezan a contar desde que el aviso está publicado.",
+  statsViewsHint:
+    "Visitas de personas: excluimos buscadores y bots para que el número signifique algo.",
   saveStatus: "Guardar",
   contactLead: "Responder por WhatsApp",
 } as const;

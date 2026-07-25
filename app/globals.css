@@ -2127,6 +2127,10 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   padding: 24px 16px 64px;
+  /* .site-main is width:100%, so without this the 16px side padding is added
+     OUTSIDE that width and every panel page scrolled sideways on a phone
+     (measured: 422px of content in a 390px viewport). */
+  box-sizing: border-box;
 }
 
 /* Panel sub-header: title + role/logout on the right, tabs below. */
@@ -3225,4 +3229,74 @@ summary.panel-btn::-webkit-details-marker {
     height: calc(100vh - 210px);
     border-radius: 10px;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Panel — per-listing stats (3.3)                                     */
+/* ------------------------------------------------------------------ */
+
+.panel-stats-summary {
+  margin: 0 0 1rem;
+  font-size: 14px;
+  color: #1B1F24;
+}
+
+.panel-stats-summary__hint {
+  color: var(--color-ink-secondary, #5B6470);
+  font-size: 12.5px;
+}
+
+.panel-table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-stats {
+  display: flex;
+  gap: 28px;
+}
+
+.panel-stats__figure {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-stats__value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #1A5D3A;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-stats__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-ink-secondary, #5B6470);
+}
+
+/* 30 bars from divs — a trend shape does not justify a chart library. */
+.panel-spark {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 64px;
+}
+
+.panel-spark__col {
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.panel-spark__bar {
+  display: block;
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  background: #1A5D3A;
+  opacity: 0.85;
 }

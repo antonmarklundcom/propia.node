@@ -1,4 +1,6 @@
 import { cache } from "react";
+import { after } from "next/server";
+import { headers } from "next/headers";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -24,6 +26,8 @@ import {
 } from "@/lib/jsonld";
 import { inquiryPrefillFor } from "@/i18n/es";
 import { listingCanonicalOrigin } from "@/lib/origin";
+import { recordListingView } from "@/lib/stats-queries";
+import { isBotUserAgent } from "@/lib/view-tracking";
 import { JsonLd } from "@/components/JsonLd";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
@@ -103,6 +107,23 @@ export default async function ListingPage({ params }: Params) {
   if (!detail) notFound();
 
   const { listing, images, chain, agency, agent } = detail;
+
+  /**
+   * Count the view after the response is sent: the owner's stats must never
+   * cost the visitor latency, and a failed counter must never break a page
+   * that rendered fine. Crawlers are excluded so the number means people
+   * (see view-tracking.ts).
+   */
+  const userAgent = (await headers()).get("user-agent");
+  if (!isBotUserAgent(userAgent)) {
+    after(async () => {
+      try {
+        await recordListingView(listing.id);
+      } catch {
+        /* a dropped view is not worth an error page */
+      }
+    });
+  }
   const cuota = formatCuota(listing.cuotaGs);
   const contactWhatsapp = agent?.whatsapp ?? agency?.whatsapp ?? null;
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
