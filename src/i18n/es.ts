@@ -203,6 +203,39 @@ export const esPanel = {
     "Tu usuario todavía no está vinculado a una inmobiliaria. Escribinos para activarlo.",
   statusLabel: "Estado",
 
+  // Importar desde un enlace (3.5)
+  importTab: "Importar",
+  importTitle: "Traé tu aviso desde otro portal",
+  importSubtitle:
+    "Pegá el enlace de TU aviso y llenamos el formulario por vos. Queda como borrador: revisás los datos, agregás fotos y lo enviás a publicación.",
+  importUrlLabel: "Enlace de tu aviso",
+  importFetch: "Leer el enlace",
+  importReading: "Leyendo…",
+  importOwnershipLabel:
+    "Declaro que este aviso es mío (o que la inmobiliaria me autorizó a publicarlo) y que puedo usar su texto y sus fotos.",
+  importOwnershipRequired:
+    "Necesitamos que confirmes que el aviso es tuyo antes de importarlo.",
+  importReviewTitle: "Revisá lo que leímos",
+  importReviewHint:
+    "Corregí lo que haga falta. Lo que no pudimos leer quedó vacío a propósito: preferimos un campo en blanco a un dato inventado.",
+  importCreate: "Crear borrador",
+  importPhotosNote:
+    "Las fotos no se copian automáticamente. Subilas desde la edición del aviso — así te quedás con tus propias imágenes, sin marcas de agua de otro portal.",
+  importCreated:
+    "Borrador creado. Revisalo, agregá fotos y mandalo a publicación.",
+  importDuplicate: "Ese enlace ya fue importado antes:",
+  importLocationLabel: "Ubicación (confirmá o corregí)",
+  importErrorBadUrl: "Ese enlace no parece válido. Copialo completo, con https://",
+  importErrorBlocked:
+    "Solo podemos leer enlaces públicos de internet.",
+  importErrorUnreachable:
+    "No pudimos abrir esa página. Puede estar caída o bloquear lectores externos — cargá el aviso a mano.",
+  importErrorNotHtml: "Ese enlace no es una página web con un aviso.",
+  importErrorTooLarge: "Esa página es demasiado grande para leerla.",
+  importErrorGeneric: "No pudimos leer ese enlace. Probá cargar el aviso a mano.",
+  importLegalNote:
+    "Importamos un aviso a la vez, a pedido de su titular. No copiamos catálogos de otros portales.",
+
   // Estadísticas por aviso (3.3)
   statsViews: "Visitas",
   statsLeads: "Consultas",

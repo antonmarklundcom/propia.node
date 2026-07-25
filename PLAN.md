@@ -346,7 +346,43 @@ the product more usable than the last.
 
 ### Step 6 — M6 (scale supply + SEO)
 
-- [ ] InfoCasas / Clasipar import adapters + watermark scoring.
+- [x] **3.5 Import one listing from its link — the agent claims it.** ✅ Done at
+      `/agencia/importar` (fourth agency tab).
+      **This replaces the "InfoCasas / Clasipar scrape adapters" item below, on
+      purpose.** Crawling a competitor's catalogue and republishing it breaches
+      their terms, copies listing text and photos that belong to the agency or
+      the portal, and fills the site with duplicates carrying someone else's
+      watermarks — and the risk lands on us, not them. Pulling *one* listing, at
+      the request of the agent who owns it, who ticks an attestation, is the same
+      utility with none of that: it is a migration tool for supply we are
+      recruiting anyway.
+      How it works: paste a link → we fetch and parse → **a review form**
+      pre-filled with what we read, blanks left blank on purpose → the
+      attestation → a `draft` in that agent's own scope that still goes through
+      the review queue. Nothing is published from a URL, and `is_verified` stays
+      false. The source URL lands on `listing_sources` and in `review_notes`, so
+      when you approve it you can see where it came from.
+      Parsing is JSON-LD first, then OpenGraph, then generic text patterns —
+      **no per-site CSS selectors**, which is both more robust and the part that
+      would make this feel like scraping. Amount parsing follows PY convention
+      (`Gs. 1.250.000.000`, `US$ 85.000` — dots are thousands).
+      **Photos are not copied.** The agent uploads their own from the edit page;
+      that keeps other portals' watermarks off the site.
+      The security-critical piece is `src/lib/safe-fetch.ts`: fetching a
+      user-supplied URL server-side is SSRF, so http/https only, DNS resolved
+      and every address checked public, re-checked after each redirect hop, 2 MB
+      cap, 10 s timeout. Verified against loopback, link-local (cloud metadata),
+      all three RFC1918 ranges, IPv6 loopback, `file://`, `gopher://` and
+      `0.0.0.0` — all refused.
+      _Known limit:_ no per-user rate limit on the fetcher yet. It needs a login
+      and only ever returns parsed listing fields (never raw HTML), so the abuse
+      ceiling is low, but a cooldown is worth adding before you have many
+      accounts.
+- [ ] ~~InfoCasas / Clasipar scrape adapters~~ — **deliberately not built**, see
+      3.5 above. If you ever want bulk supply from a portal, the route is a
+      *partnership* with a feed, not a crawler.
+- [ ] Watermark scoring for imported photos (still relevant once photos arrive
+      from anywhere but a direct upload).
 - [ ] Barrio guides via the Claude API (top 30), `/precios` pages, internal
       link modules. Needs `ANTHROPIC_API_KEY` in prod `[YOU]`.
 - [ ] **[YOU]** GATE: Screaming Frog crawl — zero indexable thin pages, zero

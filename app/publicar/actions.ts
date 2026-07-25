@@ -13,21 +13,14 @@ import { agents, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth/guards";
 import { getCrm, isMessagingConfigured } from "@/lib/crm";
 import { canonPhone } from "@/lib/import/normalize";
-import type { Operation, PropertyType } from "@/lib/import/types";
+import {
+  OPERATIONS,
+  PROPERTY_TYPES,
+  type Operation,
+  type PropertyType,
+} from "@/lib/import/types";
 import { createOtp, verifyOtp } from "@/lib/otp";
 import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
-
-const OPERATIONS: Operation[] = ["venta", "alquiler", "alquiler_temporal"];
-const PROPERTY_TYPES: PropertyType[] = [
-  "casa",
-  "departamento",
-  "terreno",
-  "duplex",
-  "comercial",
-  "oficina",
-  "deposito",
-  "quinta",
-];
 
 /** Which agency (if any) a publisher belongs to — never read from the client. */
 async function resolveAgencyId(userId: number): Promise<number | null> {
