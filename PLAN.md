@@ -67,6 +67,10 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       placeholder Che Róga Porã / AFD numbers. Every venta card currently
       advertises a monthly cuota derived from invented terms.
 - [ ] **D4 — USD→PYG rate** to quote (`USD_TO_PYG`, currently 6082).
+- [ ] **D5 — Featured-listing pricing, and how money arrives.** In-app payment
+      (an integration to pick and build) or invoice/transfer with an admin
+      toggle? The toggle is a small build on the existing `featured_until`
+      column; the integration is not. Blocks the rest of M7.
 
 ## [YOU] — production items code cannot reach
 
@@ -127,7 +131,7 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 | M4 Search, filters & map | ✅ filters, search, EXPLAIN audit (index fixed, migration 0002), bbox map API + split list/map view | ⏳ one typed facet builder still to share between category and map queries |
 | M5 Wizard, OTP & accounts | ✅ wizard, auth, admin user management, self-registration, profile editing; publishing no longer needs OTP | ✅ no external provider required |
 | M6 Scrape importers + SEO at scale | 🔶 link-import (3.5) + `/precios` pages and internal link modules done; barrio guides remain | ⏳ Screaming Frog crawl not run |
-| M7 Monetization & feeders | ❌ not started | — |
+| M7 Monetization & feeders | 🔶 valuation magnet done | ⏳ featured/preventa need a pricing decision (D5) |
 
 ---
 
@@ -406,7 +410,30 @@ the product more usable than the last.
 
 ### Step 7 — M7 (monetization & feeders)
 
-- [ ] Valuation lead magnet, featured listings, preventa promotion.
+- [x] **Valuation lead magnet (`/tasacion`).** ✅ Done, no key or price decision
+      needed — it runs on the medians `cron:medians` already computes, and it
+      produces *seller* leads, which are future listings.
+      Four restraints are the design, because this is the one screen that puts a
+      number on a property nobody has seen:
+      **(a) A range, never a single number** — a point estimate off a median
+      price/m² is false precision, and an owner who anchors on it and lists 20%
+      high sits unsold for months. **(b) The band widens as data thins** (±12%
+      at 60+ comparables, ±25% under 15). **(c) Under 8 comparables it refuses
+      outright** and offers a human instead — no estimate beats one we would not
+      defend. **(d)** The copy states it is built from *asking* prices, not
+      closing prices, and is not an official appraisal.
+      The estimate is free and shown *before* any contact field: gating the
+      number behind a phone number earns one lead and loses the trust that
+      brings someone back to publish. The lead is created only if they ask,
+      lands as `routed_to = 'internal'` (yours, in `/admin/leads`), and carries
+      the full valuation context so the follow-up starts informed.
+      Also repointed the homepage's "¿Cuánto vale tu casa?" card, which until now
+      pointed at the same outbound WhatsApp link as the publish card because no
+      tool existed.
+- [ ] Featured listings + preventa promotion — **needs you first**: pricing, and
+      a decision on whether money changes hands in-app (a payment integration)
+      or by invoice/transfer with an admin toggle. The toggle version is a small
+      build on top of `listings.featured_until`, which already exists.
 - [ ] **[YOU]** Decide the first feeder domain to switch on and the pricing for
       featured placement.
 
