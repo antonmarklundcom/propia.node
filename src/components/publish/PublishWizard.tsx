@@ -17,11 +17,18 @@ import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { NearbyProject, PublishLocation } from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
 import {
+  publishDraftAction,
   requestOtpAction,
   saveDraftAction,
   verifyAndPublishAction,
   type DraftPayload,
 } from "../../../app/publicar/actions";
+import {
+  deleteDraftPhotoAction,
+  uploadDraftPhotosAction,
+} from "../../../app/publicar/photo-actions";
+import { imageThumbUrl } from "@/lib/format";
+import type { ListingImageRow } from "@/lib/listing-images";
 
 const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
   { value: "venta", label: "Venta" },
@@ -84,6 +91,8 @@ export function PublishWizard({
   programs,
   usdToPyg,
   initialDraft,
+  initialPhotos,
+  otpEnabled,
   homeHref,
 }: {
   locations: PublishLocation[];
@@ -91,6 +100,12 @@ export function PublishWizard({
   programs: FinancingProgram[];
   usdToPyg: number;
   initialDraft: InitialDraft | null;
+  initialPhotos?: ListingImageRow[];
+  /**
+   * Whether a WhatsApp code can actually be delivered. False → publish
+   * directly; the server enforces the same rule, this only shapes the UI.
+   */
+  otpEnabled: boolean;
   homeHref: string;
 }) {
   const [state, setState] = useState<WizardState>(() => ({
@@ -102,6 +117,12 @@ export function PublishWizard({
   const [saving, setSaving] = useState(false);
   const [stepError, setStepError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // Photos live on the server as soon as there is a draft row to hang them
+  // on — there is no client-side "pending upload" state to lose on reload.
+  const [photos, setPhotos] = useState<ListingImageRow[]>(initialPhotos ?? []);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   // OTP sub-state (step 3 → publish).
   const [otpSent, setOtpSent] = useState(false);
@@ -188,6 +209,58 @@ export function PublishWizard({
     [state],
   );
 
+  /**
+   * Upload picked files against the current draft. The server returns the new
+   * image list rather than us patching state optimistically — position is
+   * decided server-side, and a half-rejected batch must not leave the grid
+   * claiming photos that were never stored.
+   */
+  const uploadPhotos = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0 || !state.draftId) return;
+      setPhotoBusy(true);
+      setPhotoError(null);
+      try {
+        const fd = new FormData();
+        fd.set("draftId", String(state.draftId));
+        for (const file of Array.from(files)) fd.append("photos", file);
+
+        const res = await uploadDraftPhotosAction(fd);
+        if (!res.ok) {
+          setPhotoError(
+            res.error === "not_configured"
+              ? esPublish.photosStorageOff
+              : esPublish.photosFailed,
+          );
+          return;
+        }
+        setPhotos(res.images);
+        if (res.rejected.length > 0) setPhotoError(esPublish.photosFailed);
+      } catch {
+        setPhotoError(esPublish.photosFailed);
+      } finally {
+        setPhotoBusy(false);
+      }
+    },
+    [state.draftId],
+  );
+
+  const removePhoto = useCallback(
+    async (imageId: number) => {
+      if (!state.draftId) return;
+      setPhotoBusy(true);
+      try {
+        const res = await deleteDraftPhotoAction(state.draftId, imageId);
+        if (res.ok) setPhotos(res.images);
+      } catch {
+        setPhotoError(esPublish.photosFailed);
+      } finally {
+        setPhotoBusy(false);
+      }
+    },
+    [state.draftId],
+  );
+
   /** Persist the server draft; returns the (possibly new) draft id or null. */
   const persist = useCallback(async (): Promise<number | null> => {
     setSaving(true);
@@ -258,6 +331,31 @@ export function PublishWizard({
       }
       setOtpSent(true);
       setCooldown(60);
+    } catch {
+      setOtpError(esPublish.errors.generic);
+    } finally {
+      setOtpBusy(false);
+    }
+  }, [persist, whatsapp]);
+
+  /** Publish with no code, when none can be delivered (otpEnabled === false). */
+  const publishDirect = useCallback(async () => {
+    setOtpBusy(true);
+    setOtpError(null);
+    try {
+      const saved = await persist();
+      if (saved === null) return;
+      const res = await publishDraftAction({ draftId: saved, whatsapp });
+      if (!res.ok) {
+        setOtpError(esPublish.errors.generic);
+        return;
+      }
+      try {
+        localStorage.removeItem(LS_KEY);
+      } catch {
+        /* ignore */
+      }
+      setDone(true);
     } catch {
       setOtpError(esPublish.errors.generic);
     } finally {
@@ -502,7 +600,59 @@ export function PublishWizard({
               placeholder="https://youtube.com/..."
               onChange={(e) => set("videoUrl", e.target.value)}
             />
+          </div>
+
+          <div className="wizard-field">
+            <span className="wizard-label">{esPublish.photosTitle}</span>
             <p className="wizard-hint">{esPublish.photosHint}</p>
+
+            {state.draftId == null ? (
+              <p className="wizard-hint">{esPublish.photosDraftFirst}</p>
+            ) : (
+              <>
+                <input
+                  className="wizard-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={photoBusy}
+                  onChange={(e) => {
+                    void uploadPhotos(e.target.files);
+                    // Let the same file be picked again after a failure.
+                    e.target.value = "";
+                  }}
+                  aria-label={esPublish.photosPickLabel}
+                />
+                {photoBusy && (
+                  <p className="wizard-hint">{esPublish.photosUploading}</p>
+                )}
+                {photoError && <p className="auth-error">{photoError}</p>}
+
+                {photos.length > 0 && (
+                  <ul className="wizard-photos">
+                    {photos.map((photo) => (
+                      <li key={photo.id} className="wizard-photos__item">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          className="wizard-photos__thumb"
+                          src={imageThumbUrl(photo.r2Key) ?? ""}
+                          alt=""
+                          loading="lazy"
+                        />
+                        <button
+                          type="button"
+                          className="wizard-photos__remove"
+                          onClick={() => void removePhoto(photo.id)}
+                          disabled={photoBusy}
+                        >
+                          {esPublish.photosDelete}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
           </div>
 
           <label className="wizard-toggle">
@@ -514,10 +664,14 @@ export function PublishWizard({
             <span>{esPublish.foreignExposureLabel}</span>
           </label>
 
-          {/* OTP-at-publish */}
+          {/* OTP-at-publish — only when a code can actually reach them. */}
           <div className="wizard-otp">
-            <h3 className="wizard-otp__title">{esPublish.otpTitle}</h3>
-            <p className="wizard-hint">{esPublish.otpSubtitle}</p>
+            <h3 className="wizard-otp__title">
+              {otpEnabled ? esPublish.otpTitle : esPublish.publishTitle}
+            </h3>
+            <p className="wizard-hint">
+              {otpEnabled ? esPublish.otpSubtitle : esPublish.publishSubtitle}
+            </p>
             <div className="wizard-field">
               <label className="wizard-label" htmlFor="wa">
                 {esPublish.whatsappLabel}
@@ -529,11 +683,11 @@ export function PublishWizard({
                 value={whatsapp}
                 placeholder="0981 123 456"
                 onChange={(e) => setWhatsapp(e.target.value)}
-                disabled={otpSent}
+                disabled={otpEnabled && otpSent}
               />
             </div>
 
-            {otpSent && (
+            {otpEnabled && otpSent && (
               <div className="wizard-field">
                 <label className="wizard-label" htmlFor="code">
                   {esPublish.codeLabel}
@@ -553,7 +707,16 @@ export function PublishWizard({
             {otpError && <p className="auth-error">{otpError}</p>}
 
             <div className="wizard-actions">
-              {!otpSent ? (
+              {!otpEnabled ? (
+                <button
+                  type="button"
+                  className="panel-btn panel-btn--primary"
+                  onClick={publishDirect}
+                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                >
+                  {otpBusy ? esPublish.publishing : esPublish.publish}
+                </button>
+              ) : !otpSent ? (
                 <button
                   type="button"
                   className="panel-btn panel-btn--whatsapp"

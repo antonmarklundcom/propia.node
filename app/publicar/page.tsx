@@ -8,10 +8,12 @@ import {
   USD_TO_PYG,
 } from "@/lib/publish-queries";
 import { esPublish } from "@/i18n/es";
+import { isMessagingConfigured } from "@/lib/crm";
 import {
   PublishWizard,
   type InitialDraft,
 } from "@/components/publish/PublishWizard";
+import { listListingImages, type ListingImageRow } from "@/lib/listing-images";
 
 export const metadata: Metadata = {
   title: "Publicá tu propiedad — Homes Paraguay",
@@ -37,6 +39,7 @@ export default async function PublishPage({
 
   // Resume an existing draft only if it belongs to the signed-in user.
   let initialDraft: InitialDraft | null = null;
+  let initialPhotos: ListingImageRow[] = [];
   const draftId = Number(draft);
   if (Number.isInteger(draftId) && draftId > 0) {
     const row = await getUserDraft(user.id, draftId);
@@ -59,6 +62,12 @@ export default async function PublishPage({
         videoUrl: row.videoUrl ?? "",
         foreignExposure: row.foreignExposure,
       };
+      // Same owner scope the upload action uses, so a resumed draft shows the
+      // photos already stored for it.
+      initialPhotos = await listListingImages(row.id, {
+        kind: "owner",
+        userId: user.id,
+      });
     }
   }
 
@@ -74,6 +83,8 @@ export default async function PublishPage({
         programs={programs}
         usdToPyg={USD_TO_PYG}
         initialDraft={initialDraft}
+        initialPhotos={initialPhotos}
+        otpEnabled={isMessagingConfigured()}
         homeHref={homeForRole(user)}
       />
     </main>

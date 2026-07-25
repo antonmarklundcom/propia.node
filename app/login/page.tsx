@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { esPanel } from "@/i18n/es";
 import { getSessionUser } from "@/lib/auth/session";
@@ -65,6 +66,10 @@ export default async function LoginPage({
               {esPanel.loginSubmit}
             </button>
           </form>
+
+          <p className="auth-alt">
+            <Link href="/registro">{esPanel.loginToRegister}</Link>
+          </p>
         </div>
       </div>
     </main>

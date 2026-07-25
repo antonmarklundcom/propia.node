@@ -12,6 +12,7 @@ import { db } from "@/db";
 import { agents } from "@/db/schema";
 import { getSessionUser, type SessionUser } from "./session";
 import { isAgencyRole, isSuperAdmin } from "./roles";
+import type { EditScope } from "@/lib/listing-edit";
 
 /** Where a logged-in user belongs by role — used for post-login and 403 bounces. */
 export function homeForRole(user: SessionUser): string {
@@ -62,4 +63,19 @@ export async function requireAgencyContext(): Promise<AgencyContext> {
     .limit(1);
 
   return { user, agencyId: row?.agencyId ?? null };
+}
+
+/**
+ * The scope every /agencia query and mutation runs under.
+ *
+ * An agency account is scoped to its agency, so colleagues share one inbox and
+ * one set of listings. An independent agent has no agencies row at all — their
+ * claim is `owner_user_id`, the same scope the publish wizard uses — and
+ * without this fallback they would log in to an empty panel and be unable to
+ * edit the listings they just published.
+ */
+export function panelScope(ctx: AgencyContext): EditScope {
+  return ctx.agencyId != null
+    ? { kind: "agency", agencyId: ctx.agencyId }
+    : { kind: "owner", userId: ctx.user.id };
 }

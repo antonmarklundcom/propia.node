@@ -2127,6 +2127,10 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   padding: 24px 16px 64px;
+  /* .site-main is width:100%, so without this the 16px side padding is added
+     OUTSIDE that width and every panel page scrolled sideways on a phone
+     (measured: 422px of content in a 390px viewport). */
+  box-sizing: border-box;
 }
 
 /* Panel sub-header: title + role/logout on the right, tabs below. */
@@ -2912,4 +2916,470 @@ summary.panel-btn::-webkit-details-marker {
   .wizard-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Panel — listing photos (admin + agency share one component)         */
+/* ------------------------------------------------------------------ */
+
+.panel-photos__upload {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.panel-photos {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  /* Cover first, then reading order — the grid mirrors what the visitor
+     sees on the listing page. */
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.panel-photos__item {
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-photos__thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background: #EFF1EE;
+}
+
+.panel-photos__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px 0;
+  min-height: 0;
+}
+
+.panel-photos__badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1A5D3A;
+  background: #E7F1EB;
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.panel-photos__note {
+  font-size: 11.5px;
+  color: #8A6D3B;
+  background: #FBF3E2;
+  border-radius: 999px;
+  padding: 2px 9px;
+  /* Long note, small card: clip rather than push the buttons out of view. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.panel-photos__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  margin-top: auto;
+}
+
+.panel-photos__actions .panel-btn {
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+
+/* Wizard photo strip — same upload path as the panel, lighter chrome. */
+.wizard-photos {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.wizard-photos__item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #EFF1EE;
+}
+
+.wizard-photos__thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.wizard-photos__remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: 0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(20, 24, 28, 0.72);
+}
+
+.wizard-photos__remove:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------------ */
+/* Auth — sign-up extras on top of the existing login card             */
+/* ------------------------------------------------------------------ */
+
+.auth-choice {
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  border-radius: 10px;
+  padding: 10px 12px 12px;
+  margin: 0 0 14px;
+}
+
+.auth-choice__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+.auth-field__hint,
+.auth-note {
+  color: var(--color-ink-secondary, #5B6470);
+  font-size: 12.5px;
+  margin: 6px 0 0;
+}
+
+.auth-note {
+  margin-top: 14px;
+  line-height: 1.45;
+}
+
+.auth-alt {
+  margin: 14px 0 0;
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Panel — profile cards (/agencia/perfil)                             */
+/* ------------------------------------------------------------------ */
+
+.panel-profile {
+  display: grid;
+  gap: 18px;
+  margin-top: 1.25rem;
+}
+
+.panel-profile__badge {
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: #E7F1EB;
+  color: #1A5D3A;
+}
+
+.panel-profile__badge--pending {
+  background: #FBF3E2;
+  color: #8A6D3B;
+}
+
+/* ------------------------------------------------------------------ */
+/* Category map — split list/map view (M4)                             */
+/* ------------------------------------------------------------------ */
+
+.map-view {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  /* Tall enough to be usable on a phone without hiding the toggle. */
+  height: min(70vh, 620px);
+  background: #EFF1EE;
+}
+
+.map-view--loading {
+  display: block;
+}
+
+.map-view__canvas {
+  /* maplibre-gl.css sets `.maplibregl-map { position: relative }` and its
+     stylesheet is injected after this one, so `inset: 0` on an absolutely
+     positioned box silently stopped applying — the container collapsed to
+     height 0, and because .maplibregl-map also sets overflow:hidden, every
+     marker inside became invisible to hit-testing (a cluster chip could be
+     seen but not clicked). Explicit 100% sizing works whichever `position`
+     wins. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.map-view__status {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1B1F24;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+  max-width: calc(100% - 90px);
+}
+
+/* Price pill — the market-standard map affordance. */
+.map-pin {
+  display: inline-block;
+  background: #fff;
+  color: #1A5D3A;
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1.5px solid #1A5D3A;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+}
+
+.map-pin:hover {
+  background: #1A5D3A;
+  color: #fff;
+}
+
+/* Dashed edge = position is the barrio/city centroid, not the property. */
+.map-pin--approx {
+  border-style: dashed;
+}
+
+.map-chip {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #1A5D3A;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+}
+
+.map-chip:hover {
+  background: #144B2E;
+}
+
+/* Lista / Mapa switch */
+.view-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #EFF1EE;
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  margin: 0 0 14px;
+}
+
+.view-switch__option {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #5B6470;
+  text-decoration: none;
+}
+
+.view-switch__option--active {
+  background: #fff;
+  color: #1A5D3A;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 560px) {
+  .map-view {
+    /* Full-screen-ish map on mobile: the grid is a tap away via the switch. */
+    height: calc(100vh - 210px);
+    border-radius: 10px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Panel — per-listing stats (3.3)                                     */
+/* ------------------------------------------------------------------ */
+
+.panel-stats-summary {
+  margin: 0 0 1rem;
+  font-size: 14px;
+  color: #1B1F24;
+}
+
+.panel-stats-summary__hint {
+  color: var(--color-ink-secondary, #5B6470);
+  font-size: 12.5px;
+}
+
+.panel-table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-stats {
+  display: flex;
+  gap: 28px;
+}
+
+.panel-stats__figure {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-stats__value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #1A5D3A;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-stats__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-ink-secondary, #5B6470);
+}
+
+/* 30 bars from divs — a trend shape does not justify a chart library. */
+.panel-spark {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 64px;
+}
+
+.panel-spark__col {
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.panel-spark__bar {
+  display: block;
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  background: #1A5D3A;
+  opacity: 0.85;
+}
+
+/* ------------------------------------------------------------------ */
+/* Price pages (/precios) + the internal link module                   */
+/* ------------------------------------------------------------------ */
+
+.precios-city-list {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.precios-city-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  border-radius: 10px;
+  background: #fff;
+  text-decoration: none;
+  color: #1B1F24;
+  font-weight: 700;
+}
+
+.precios-city-link:hover {
+  border-color: #1A5D3A;
+}
+
+.precios-city-link__count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-ink-secondary, #5B6470);
+}
+
+.precios-table {
+  margin-top: 18px;
+}
+
+/* A group we would not defend as a market price is dimmed, not hidden: the
+   number is still information, it just carries a caveat. */
+.precios-row--thin {
+  color: var(--color-ink-secondary, #5B6470);
+}
+
+.precios-caveat {
+  color: #8A6D3B;
+  cursor: help;
+}
+
+.precios-thin-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: #8A6D3B;
+}
+
+.precios-method {
+  margin: 28px 0 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #F3F5F2;
+  font-size: 13px;
+  color: var(--color-ink-secondary, #5B6470);
+  line-height: 1.5;
+}
+
+.precios-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 28px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  border-radius: 12px;
+  background: #F3F5F2;
+  font-weight: 700;
+  color: #1B1F24;
 }

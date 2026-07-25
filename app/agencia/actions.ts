@@ -7,9 +7,9 @@
  * listings, whatever the form claims.
  */
 import { revalidatePath } from "next/cache";
-import { requireAgencyContext } from "@/lib/auth/guards";
+import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
-  setAgencyListingStatus,
+  setPanelListingStatus,
   type ListingStatus,
 } from "@/lib/panel-queries";
 
@@ -23,17 +23,16 @@ const AGENCY_STATUSES: ListingStatus[] = [
 ];
 
 export async function setListingStatusAction(formData: FormData): Promise<void> {
-  const { agencyId } = await requireAgencyContext();
-  if (agencyId == null) return;
+  const scope = panelScope(await requireAgencyContext());
 
   const listingId = Number(formData.get("listingId"));
   const status = String(formData.get("status") ?? "");
   if (!Number.isInteger(listingId) || listingId <= 0) return;
   if (!AGENCY_STATUSES.includes(status as ListingStatus)) return;
 
-  await setAgencyListingStatus({
+  await setPanelListingStatus({
     listingId,
-    agencyId,
+    scope,
     status: status as ListingStatus,
   });
   revalidatePath("/agencia");

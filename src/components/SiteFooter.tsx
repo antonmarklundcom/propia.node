@@ -16,6 +16,9 @@ const EXPLORE = [
   { label: "Comprar", href: "/venta/asuncion" },
   { label: "Alquilar", href: "/alquiler/asuncion" },
   { label: "Terrenos", href: "/venta/asuncion/terrenos" },
+  // Market data is a genuine entry point, not just a cross-link from a
+  // category page — otherwise /precios is reachable only sideways.
+  { label: "Precios por ciudad", href: "/precios" },
 ];
 
 const LOCATIONS = [

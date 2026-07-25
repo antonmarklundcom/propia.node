@@ -2,7 +2,8 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { tokens } from "@/design/tokens";
-import { es } from "@/i18n/es";
+import Link from "next/link";
+import { es, esPrecios } from "@/i18n/es";
 import {
   resolveCity,
   resolveBarrio,
@@ -18,14 +19,17 @@ import {
   parseOperation,
   parseCategorySegments,
   categoryUrl,
+  operationSlug,
   typePlural,
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
+import { getCityPrices as cityPricesFor } from "@/lib/precios-queries";
 import { itemListJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { siteOrigin, listingCanonicalOrigin } from "@/lib/origin";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { CategoryFilterBar } from "@/components/CategoryFilterBar";
+import { CategoryMapLazy } from "@/components/CategoryMapLazy";
 import { SearchBar } from "@/components/SearchBar";
 import { listingUrl } from "@/lib/urls";
 import type { Operation, PropertyType } from "@/lib/import/types";
@@ -218,6 +222,10 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     listCities(),
   ]);
 
+  // Does this city have a price page worth linking to? Cheap: one aggregate.
+  const cityPrices = await cityPricesFor(r.city.slug);
+  const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
+
   // Breadcrumbs are this host's own pages; the ItemList points at listing
   // detail pages, which may be canonical on a different host entirely.
   const [origin, listingOrigin] = await Promise.all([
@@ -230,6 +238,60 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     { name: r.city.name, url: categoryUrl({ operation: r.operation, citySlug: r.city.slug }) },
     ...(r.barrio ? [{ name: r.barrio.name, url: r.canonicalPath }] : []),
   ];
+
+  /**
+   * Map view is opt-in via ?vista=mapa. A query param rather than a route so
+   * the canonical URL is unchanged and no thin duplicate page gets indexed —
+   * the map is a way to browse this page, not a page of its own.
+   */
+  const mapView = sp.vista === "mapa";
+
+  // The map centres on the barrio when the path names one, else the city.
+  const centre = r.barrio?.lat && r.barrio?.lng ? r.barrio : r.city;
+  const mapCentre =
+    centre.lat && centre.lng
+      ? { lat: Number(centre.lat), lng: Number(centre.lng) }
+      : null;
+
+  // Forwarded verbatim to /api/mapa so the pins match the grid's filters.
+  const mapQuery: Record<string, string> = {
+    operacion: operationSlug(r.operation),
+    ...(r.type ? { tipo: typePlural(r.type) } : {}),
+    ...(filters.priceMin ? { precio_min: String(filters.priceMin) } : {}),
+    ...(filters.priceMax ? { precio_max: String(filters.priceMax) } : {}),
+    ...(filters.minBedrooms ? { dormitorios: String(filters.minBedrooms) } : {}),
+  };
+
+  const controls = (
+    <>
+      <SearchBar
+        cities={cities}
+        defaultOperation={r.operation}
+        defaultCitySlug={r.city.slug}
+        defaultType={r.type ?? ""}
+      />
+
+      <CategoryFilterBar
+        basePath={r.canonicalPath}
+        precioMin={typeof sp.precio_min === "string" ? sp.precio_min : undefined}
+        precioMax={typeof sp.precio_max === "string" ? sp.precio_max : undefined}
+        dormitorios={typeof sp.dormitorios === "string" ? sp.dormitorios : undefined}
+        orden={typeof sp.orden === "string" ? sp.orden : undefined}
+        hasActiveFilters={hasActiveFilters}
+      />
+    </>
+  );
+
+  /** Keep every active filter when switching views. */
+  const viewHref = (view: "lista" | "mapa") => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(sp)) {
+      if (typeof value === "string" && key !== "vista") params.set(key, value);
+    }
+    if (view === "mapa") params.set("vista", "mapa");
+    const qs = params.toString();
+    return qs ? `${r.canonicalPath}?${qs}` : r.canonicalPath;
+  };
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
@@ -252,23 +314,36 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           : es.emptyState}
       </p>
 
-      <SearchBar
-        cities={cities}
-        defaultOperation={r.operation}
-        defaultCitySlug={r.city.slug}
-        defaultType={r.type ?? ""}
-      />
+      {/* In map view the controls go BELOW the map: on a phone the search and
+          filter cards fill the whole first screen, so a visitor who tapped
+          "Mapa" would have to scroll past both to reach what they asked for. */}
+      {!mapView && controls}
 
-      <CategoryFilterBar
-        basePath={r.canonicalPath}
-        precioMin={typeof sp.precio_min === "string" ? sp.precio_min : undefined}
-        precioMax={typeof sp.precio_max === "string" ? sp.precio_max : undefined}
-        dormitorios={typeof sp.dormitorios === "string" ? sp.dormitorios : undefined}
-        orden={typeof sp.orden === "string" ? sp.orden : undefined}
-        hasActiveFilters={hasActiveFilters}
-      />
+      {mapCentre && (
+        <nav className="view-switch" aria-label="Vista">
+          <a
+            className={`view-switch__option${!mapView ? " view-switch__option--active" : ""}`}
+            href={viewHref("lista")}
+          >
+            Lista
+          </a>
+          <a
+            className={`view-switch__option${mapView ? " view-switch__option--active" : ""}`}
+            href={viewHref("mapa")}
+          >
+            Mapa
+          </a>
+        </nav>
+      )}
 
-      {filteredCount === 0 ? (
+      {mapView && mapCentre ? (
+        <CategoryMapLazy
+          centerLat={mapCentre.lat}
+          centerLng={mapCentre.lng}
+          zoom={r.barrio ? 14 : 12}
+          query={mapQuery}
+        />
+      ) : filteredCount === 0 ? (
         <div className="filter-empty">
           No hay propiedades que coincidan con estos filtros.
           <br />
@@ -290,6 +365,20 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           ))}
         </div>
       )}
+
+      {/* Internal link module: market context for this city. Only rendered
+          when the medians job has something defensible to show, so we never
+          link into an empty page. */}
+      {cityHasPrices && (
+        <aside className="precios-cta">
+          <span>{esPrecios.relatedPrices(r.city.name)}</span>
+          <Link className="panel-btn" href={`/precios/${r.city.slug}`}>
+            {esPrecios.relatedPricesCta}
+          </Link>
+        </aside>
+      )}
+
+      {mapView && controls}
     </main>
   );
 }

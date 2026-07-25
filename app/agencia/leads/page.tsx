@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { requireAgencyContext } from "@/lib/auth/guards";
-import { getAgencyLeads } from "@/lib/panel-queries";
+import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
+import type { EditScope } from "@/lib/listing-edit";
+import { getPanelLeads } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { agencyTabs } from "../tabs";
@@ -39,7 +40,9 @@ function formatWhen(d: Date): string {
 }
 
 export default async function AgencyLeadsPage() {
-  const { user, agencyId } = await requireAgencyContext();
+  const ctx = await requireAgencyContext();
+  const { user, agencyId } = ctx;
+  const scope = panelScope(ctx);
 
   return (
     <>
@@ -52,18 +55,18 @@ export default async function AgencyLeadsPage() {
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.agencyLeadsTitle}</h2>
 
-        {agencyId == null ? (
+        {agencyId == null && user.role === "agency_admin" ? (
           <p className="panel-empty">{esPanel.agencyNoLink}</p>
         ) : (
-          <AgencyLeads agencyId={agencyId} />
+          <AgencyLeads scope={scope} />
         )}
       </main>
     </>
   );
 }
 
-async function AgencyLeads({ agencyId }: { agencyId: number }) {
-  const leads = await getAgencyLeads(agencyId);
+async function AgencyLeads({ scope }: { scope: EditScope }) {
+  const leads = await getPanelLeads(scope);
   if (leads.length === 0) {
     return <p className="panel-empty">{esPanel.agencyLeadsEmpty}</p>;
   }
