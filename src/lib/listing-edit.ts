@@ -11,7 +11,7 @@
  * the SEO contract and are not recomputed for an existing row.
  */
 import "server-only";
-import { and, desc, eq, like, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies, listings, locations } from "@/db/schema";
 import { toPriceUsd } from "@/lib/import/normalize";
@@ -140,16 +140,22 @@ export async function listAllListings(params: {
     .limit(params.limit ?? 200);
 }
 
-/** Status counts for the filter chips — one grouped pass, not one query each. */
+/** Status counts for the filter chips — one GROUP BY, not a full table read. */
 export async function countListingsByStatus(): Promise<
   Record<string, number>
 > {
   const rows = await db
-    .select({ status: listings.status, id: listings.id })
-    .from(listings);
+    .select({ status: listings.status, n: sql<number>`count(*)` })
+    .from(listings)
+    .groupBy(listings.status);
   const out: Record<string, number> = {};
-  for (const r of rows) out[r.status] = (out[r.status] ?? 0) + 1;
-  out.all = rows.length;
+  let total = 0;
+  for (const r of rows) {
+    const n = Number(r.n);
+    out[r.status] = n;
+    total += n;
+  }
+  out.all = total;
   return out;
 }
 

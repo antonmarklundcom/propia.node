@@ -5,7 +5,7 @@
  * can never mutate a row it doesn't own — the agencyId comes from the session
  * (guards.ts), never from the request.
  */
-import { and, desc, eq, inArray, like, ne, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, like, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   agencies,
@@ -65,13 +65,13 @@ export async function getReviewQueue(): Promise<ReviewRow[]> {
     .orderBy(listings.createdAt);
 }
 
-/** How many listings are waiting — the /admin nav badge. */
+/** How many listings are waiting — the /admin nav badge, on every panel page. */
 export async function countReviewQueue(): Promise<number> {
-  const rows = await db
-    .select({ id: listings.id })
+  const [row] = await db
+    .select({ n: sql<number>`count(*)` })
     .from(listings)
     .where(eq(listings.status, "pending_review"));
-  return rows.length;
+  return Number(row?.n ?? 0);
 }
 
 /** Approve a pending listing → published. Scoped to pending_review so it can't
@@ -205,11 +205,11 @@ export async function listUsers(): Promise<PanelUserRow[]> {
 
 /** How many super-admins exist — used to refuse removing the last one. */
 export async function countSuperAdmins(): Promise<number> {
-  const rows = await db
-    .select({ id: users.id })
+  const [row] = await db
+    .select({ n: sql<number>`count(*)` })
     .from(users)
     .where(eq(users.role, "admin"));
-  return rows.length;
+  return Number(row?.n ?? 0);
 }
 
 export interface UpsertUserInput {
@@ -477,22 +477,29 @@ export async function listAllLeads(params: {
     .limit(params.limit ?? 300);
 }
 
-/** Lead counts per type for the admin filter chips — one pass, not one query each. */
+/** Lead counts per type for the admin filter chips — one GROUP BY, not one query each. */
 export async function countLeadsByType(): Promise<Record<string, number>> {
-  const rows = await db.select({ leadType: leads.leadType }).from(leads);
+  const rows = await db
+    .select({ leadType: leads.leadType, n: sql<number>`count(*)` })
+    .from(leads)
+    .groupBy(leads.leadType);
   const out: Record<string, number> = {};
-  for (const r of rows) out[r.leadType] = (out[r.leadType] ?? 0) + 1;
-  out.all = rows.length;
+  let total = 0;
+  for (const r of rows) {
+    const n = Number(r.n);
+    out[r.leadType] = n;
+    total += n;
+  }
+  out.all = total;
   return out;
 }
 
 export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
-  const owned = await db
-    .select({ id: listings.id })
-    .from(listings)
-    .where(listingScopeWhere(scope));
-  const listingIds = owned.map((r) => r.id);
-  if (listingIds.length === 0) return [];
+  // One join with the ownership predicate applied to the joined listing —
+  // the previous shape read every owned listing id into Node first and then
+  // sent them back as an IN(...) list, which grows with the agency's inventory.
+  const guard = listingScopeWhere(scope);
+  const routed = inArray(leads.routedTo, ["agency", "agent"]);
 
   return db
     .select({
@@ -509,12 +516,8 @@ export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
       listingSlug: listings.slug,
     })
     .from(leads)
-    .leftJoin(listings, eq(leads.listingId, listings.id))
-    .where(
-      and(
-        inArray(leads.listingId, listingIds),
-        inArray(leads.routedTo, ["agency", "agent"]),
-      ),
-    )
+    // INNER join: a lead with no listing belongs to no agency panel.
+    .innerJoin(listings, eq(leads.listingId, listings.id))
+    .where(guard ? and(routed, guard) : routed)
     .orderBy(desc(leads.createdAt));
 }

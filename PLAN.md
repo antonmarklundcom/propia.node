@@ -111,8 +111,8 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 | M1 Schema + seeds | ✅ done | ⚠️ financing rates are placeholders (D3) |
 | M2 Minimum supply (importer, review queue) | ✅ done | ⏳ 50 hand-audited listings not confirmed |
 | M3 Public launch surface | ✅ done | ✅ canonical host is per-request (1.2) |
-| M4 Search, filters & map | 🔶 filters + search bar exist; map API, split list/map view, EXPLAIN audit remain | ❌ |
-| M5 Wizard, OTP & accounts | 🔶 wizard, auth, admin user management, self-registration and profile editing all merged | ⏳ OTP still undeliverable until the GHL envs exist |
+| M4 Search, filters & map | 🔶 filters, search bar and the EXPLAIN audit done (index fixed, migration 0002); map API + split list/map view remain | ❌ |
+| M5 Wizard, OTP & accounts | ✅ wizard, auth, admin user management, self-registration, profile editing; publishing no longer needs OTP | ✅ no external provider required |
 | M6 Scrape importers + SEO at scale | ❌ not started | — |
 | M7 Monetization & feeders | ❌ not started | — |
 
@@ -235,7 +235,25 @@ the product more usable than the last.
 - [ ] Typed query layer over `idx_search` covering every facet combination.
 - [ ] Map API: bounding-box endpoint + client-side supercluster.
 - [ ] Split list/map UI, mobile full-screen map.
-- [ ] EXPLAIN audit — every combination hits an index, <200ms.
+- [x] **EXPLAIN audit — done, and it found a real index bug.** ⚠️ **MIGRATION
+      REQUIRED (`drizzle/0002`).** `idx_search` was
+      `(status, operation, property_type, location_id, price_usd)`, but the URL
+      scheme queries operation + location *always* and property_type only on
+      `/{operacion}/{ciudad}/{tipo}` — so a city landing page could use only
+      the `(status, operation)` prefix and scanned every listing of that
+      operation (`key_len 2`, ~1 800 rows at 3 000 listings). Reordered to
+      `(status, operation, location_id, property_type, price_usd)` so the
+      optional column is last, and added `idx_recent`
+      `(status, operation, location_id, published_at)` for the default
+      `published_at desc` ordering, which no index covered.
+      Verified on a local DB with 3 000 listings spread across the seeded
+      locations: rows examined on a city page **1 800 → 163**, and the query
+      itself **1.50 ms → 0.75 ms** (A/B on the same data, with a control run).
+      Remaining honestly: an `IN (...)` location list plus `ORDER BY` still
+      filesorts — inherent to a range predicate, and cheap now that the range
+      is small.
+      _Left for the map work:_ a typed facet layer and the bounding-box
+      endpoint below.
 
 ### Step 5 — Performance (already diagnosed, just needs doing)
 
@@ -254,11 +272,21 @@ the product more usable than the last.
       `await citySubtreeIds(city.id)` sat *inside* the `Promise.all` array
       literal, so it ran to completion before the other two branches started.
       Hoisted above the block.
-- [ ] In `getFilteredCategoryListings` (`src/lib/queries.ts:162`) the rows
-      select and the count select do not depend on each other — run them
-      together.
-- [ ] Consider loading the small `locations` table once and walking the
-      parent chain in memory instead of one query per level.
+- [x] In `getFilteredCategoryListings` the rows select and the count select do
+      not depend on each other — ✅ now issued together in one `Promise.all`.
+- [x] Load the small `locations` table once and walk the parent chain in
+      memory — ✅ done. One cached read per request serves every
+      `locationChain()` *and* `citySubtreeIds()` call, replacing one round-trip
+      per hierarchy level plus one per subtree lookup.
+- [x] **Counters were reading whole result sets.** ✅ Fixed — `countCategory`,
+      `countPublished`, the filtered count, `countReviewQueue`,
+      `countSuperAdmins`, `countListingsByStatus` and `countLeadsByType` all
+      selected every matching row and took `rows.length` in JavaScript, so
+      MySQL streamed the full result to Node to be thrown away. Now `COUNT(*)`
+      and `GROUP BY`, index-only per EXPLAIN. Measured ~2× faster at 3 000
+      listings, and it stops scaling with inventory.
+- [x] `getPanelLeads` read every owned listing id into Node and sent them back
+      as an `IN (...)` list — ✅ now one inner join with the scope predicate.
 
 ### Step 6 — M6 (scale supply + SEO)
 
@@ -286,6 +314,15 @@ the product more usable than the last.
   unless `DATABASE_URL` points at localhost, and it cleans up its own rows.
   This is the only automated check in the repo — if you touch
   `listingScopeWhere`, `panelScope` or any panel query, run it.
+
+## Pending migration
+
+**`drizzle/0002` is generated but NOT applied to production.** It reorders
+`idx_search` and adds `idx_recent` on `listings` (see the EXPLAIN audit in step
+4). Deployed code does not select new columns, so the app runs fine either way
+— the only cost of waiting is that category pages keep the slower plan. Run
+`npm run db:migrate` against prod when convenient; it is a DROP INDEX plus two
+CREATE INDEX on a small table, so it completes immediately.
 
 ## Standing rules
 
