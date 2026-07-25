@@ -3300,3 +3300,86 @@ summary.panel-btn::-webkit-details-marker {
   background: #1A5D3A;
   opacity: 0.85;
 }
+
+/* ------------------------------------------------------------------ */
+/* Price pages (/precios) + the internal link module                   */
+/* ------------------------------------------------------------------ */
+
+.precios-city-list {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.precios-city-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  border-radius: 10px;
+  background: #fff;
+  text-decoration: none;
+  color: #1B1F24;
+  font-weight: 700;
+}
+
+.precios-city-link:hover {
+  border-color: #1A5D3A;
+}
+
+.precios-city-link__count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-ink-secondary, #5B6470);
+}
+
+.precios-table {
+  margin-top: 18px;
+}
+
+/* A group we would not defend as a market price is dimmed, not hidden: the
+   number is still information, it just carries a caveat. */
+.precios-row--thin {
+  color: var(--color-ink-secondary, #5B6470);
+}
+
+.precios-caveat {
+  color: #8A6D3B;
+  cursor: help;
+}
+
+.precios-thin-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: #8A6D3B;
+}
+
+.precios-method {
+  margin: 28px 0 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #F3F5F2;
+  font-size: 13px;
+  color: var(--color-ink-secondary, #5B6470);
+  line-height: 1.5;
+}
+
+.precios-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 28px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--color-hairline, #E3E6E1);
+  border-radius: 12px;
+  background: #F3F5F2;
+  font-weight: 700;
+  color: #1B1F24;
+}

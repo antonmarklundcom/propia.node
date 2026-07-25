@@ -126,7 +126,7 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 | M3 Public launch surface | ✅ done | ✅ canonical host is per-request (1.2) |
 | M4 Search, filters & map | ✅ filters, search, EXPLAIN audit (index fixed, migration 0002), bbox map API + split list/map view | ⏳ one typed facet builder still to share between category and map queries |
 | M5 Wizard, OTP & accounts | ✅ wizard, auth, admin user management, self-registration, profile editing; publishing no longer needs OTP | ✅ no external provider required |
-| M6 Scrape importers + SEO at scale | ❌ not started | — |
+| M6 Scrape importers + SEO at scale | 🔶 link-import (3.5) + `/precios` pages and internal link modules done; barrio guides remain | ⏳ Screaming Frog crawl not run |
 | M7 Monetization & feeders | ❌ not started | — |
 
 ---
@@ -383,8 +383,24 @@ the product more usable than the last.
       *partnership* with a feed, not a crawler.
 - [ ] Watermark scoring for imported photos (still relevant once photos arrive
       from anywhere but a direct upload).
-- [ ] Barrio guides via the Claude API (top 30), `/precios` pages, internal
-      link modules. Needs `ANTHROPIC_API_KEY` in prod `[YOU]`.
+- [x] **`/precios` pages + internal link modules.** ✅ Done, and **no API key
+      needed** — this half of the SEO surface is built from medians we compute
+      ourselves (`cron:medians`), so it works the moment that cron runs.
+      `/precios` lists cities with defensible data; `/precios/{ciudad}` shows
+      median price and price/m² per (type × operation) with a link into the
+      matching category page, plus a plain-language method note.
+      The honesty rule is load-bearing: a city aggregate is a
+      **sample-weighted** mean of its barrio medians (not a median of medians,
+      which would treat a barrio with 40 listings and one with 2 as equals), a
+      group under 8 listings renders **with a caveat** rather than silently, and
+      a page whose every group is thin is `noindex`. The sitemap uses the same
+      rule, so page and sitemap can never disagree — that agreement is what
+      keeps programmatic pages out of doorway territory, and it matters more
+      here than on a category page because a median *looks* authoritative.
+      Link modules: category page → its city's prices, listing detail → same,
+      price row → the category page it summarises, footer → `/precios`.
+- [ ] Barrio guides via the Claude API (top 30). Needs `ANTHROPIC_API_KEY` in
+      prod `[YOU]`. Note the guides are the *only* part of §4.4 that needs it.
 - [ ] **[YOU]** GATE: Screaming Frog crawl — zero indexable thin pages, zero
       canonical conflicts.
 
@@ -395,6 +411,14 @@ the product more usable than the last.
       featured placement.
 
 ---
+
+## Known dialect dependency
+
+`scripts/compute-medians.ts` uses `.onDuplicateKeyUpdate()`, which is
+MySQL-only, against the standing "no MySQL-only tricks" rule. It is one call in
+a nightly cron (not a request path), so it is cheap to port when needed — but it
+is the one place the Postgres escape hatch is currently nailed shut. The views
+counter deliberately avoids the same trick; see `recordListingView`.
 
 ## Verification you can re-run
 

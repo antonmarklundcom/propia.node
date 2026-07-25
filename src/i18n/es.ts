@@ -23,6 +23,33 @@ export const es = {
   quickQuestions: ["¿Disponible?", "¿Puedo visitar?", "¿Requisitos?"],
 } as const;
 
+/** Price pages (/precios) — market data in plain voseo, caveats included. */
+export const esPrecios = {
+  indexTitle: "Precios de propiedades en Paraguay",
+  indexSubtitle:
+    "Precio mediano por ciudad, calculado con los avisos publicados en Homes Paraguay. Elegí una ciudad para ver el detalle por tipo de propiedad.",
+  indexEmpty:
+    "Todavía no tenemos suficientes avisos publicados para calcular precios confiables.",
+  cityTitle: (city: string) => `Precios de propiedades en ${city}`,
+  citySubtitle: (city: string, period: string) =>
+    `Precio mediano de venta y alquiler en ${city}, según los avisos publicados en Homes Paraguay${period ? ` (${period})` : ""}.`,
+  tableType: "Tipo",
+  tableOperation: "Operación",
+  tableMedian: "Precio mediano",
+  tableMedianM2: "Por m²",
+  tableSample: "Avisos",
+  seeListings: "Ver avisos",
+  fewSamples: "Pocos avisos — tomalo como referencia, no como precio de mercado.",
+  methodTitle: "Cómo calculamos esto",
+  methodBody:
+    "Usamos la mediana (no el promedio) de los precios publicados en Homes Paraguay, por ciudad y tipo de propiedad. La mediana aguanta mejor los avisos con precios extremos. Un grupo con menos de 8 avisos se muestra con aviso: es una referencia, no un precio de mercado. Los precios publicados no son precios de cierre.",
+  emptyCity:
+    "Todavía no tenemos avisos suficientes en esta ciudad para calcular un precio.",
+  backToPrices: "← Todos los precios",
+  relatedPrices: (city: string) => `¿Cuánto vale una propiedad en ${city}?`,
+  relatedPricesCta: "Ver precios medianos",
+} as const;
+
 /**
  * Panel / auth copy (admin + agency). Voseo, same register as `es`. This is the
  * internal surface (login, review queue, agency dashboard) — never indexed, but

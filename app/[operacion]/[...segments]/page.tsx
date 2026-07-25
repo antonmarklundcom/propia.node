@@ -2,7 +2,8 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { tokens } from "@/design/tokens";
-import { es } from "@/i18n/es";
+import Link from "next/link";
+import { es, esPrecios } from "@/i18n/es";
 import {
   resolveCity,
   resolveBarrio,
@@ -22,6 +23,7 @@ import {
   typePlural,
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
+import { getCityPrices as cityPricesFor } from "@/lib/precios-queries";
 import { itemListJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { siteOrigin, listingCanonicalOrigin } from "@/lib/origin";
 import { JsonLd } from "@/components/JsonLd";
@@ -220,6 +222,10 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     listCities(),
   ]);
 
+  // Does this city have a price page worth linking to? Cheap: one aggregate.
+  const cityPrices = await cityPricesFor(r.city.slug);
+  const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
+
   // Breadcrumbs are this host's own pages; the ItemList points at listing
   // detail pages, which may be canonical on a different host entirely.
   const [origin, listingOrigin] = await Promise.all([
@@ -358,6 +364,18 @@ export default async function CategoryPage({ params, searchParams }: Params) {
             <ListingCard key={card.id} card={card} />
           ))}
         </div>
+      )}
+
+      {/* Internal link module: market context for this city. Only rendered
+          when the medians job has something defensible to show, so we never
+          link into an empty page. */}
+      {cityHasPrices && (
+        <aside className="precios-cta">
+          <span>{esPrecios.relatedPrices(r.city.name)}</span>
+          <Link className="panel-btn" href={`/precios/${r.city.slug}`}>
+            {esPrecios.relatedPricesCta}
+          </Link>
+        </aside>
       )}
 
       {mapView && controls}
