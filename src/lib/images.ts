@@ -14,10 +14,7 @@
  * The thumb is a key convention, not a column: see `thumbKey()` and the
  * matching `imageThumbUrl()` in format.ts.
  */
-// Deliberately NOT `import "server-only"`: scripts/backfill-images.ts runs
-// this under tsx, where that marker module throws on import. Nothing here
-// touches the request context, so the guard buys nothing — the modules that
-// do (listing-images.ts) keep it.
+import "server-only";
 import sharp from "sharp";
 
 /** Uploads above this are rejected before decoding — a phone photo is ~5 MB. */

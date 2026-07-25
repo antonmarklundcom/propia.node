@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { ListingForm } from "@/components/panel/ListingForm";
 import { PhotoManager } from "@/components/panel/PhotoManager";
-import { requireAgencyContext } from "@/lib/auth/guards";
+import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   AGENCY_STATUSES,
   getEditableListing,
@@ -59,9 +59,9 @@ export default async function AgencyListingEditPage({
   const listingId = Number(id);
   if (!Number.isInteger(listingId) || listingId <= 0) notFound();
 
-  // An unlinked user owns no agency rows, so there is nothing to edit.
-  if (ctx.agencyId == null) notFound();
-  const scope: EditScope = { kind: "agency", agencyId: ctx.agencyId };
+  // Agency accounts are scoped to their agency; an independent agent to their
+  // own rows (panelScope) — so this page serves both without a special case.
+  const scope: EditScope = panelScope(ctx);
 
   const [listing, locations, images] = await Promise.all([
     getEditableListing(listingId, scope),

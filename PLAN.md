@@ -102,7 +102,7 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 | M2 Minimum supply (importer, review queue) | ✅ done | ⏳ 50 hand-audited listings not confirmed |
 | M3 Public launch surface | ✅ done | ✅ canonical host is per-request (1.2) |
 | M4 Search, filters & map | 🔶 filters + search bar exist; map API, split list/map view, EXPLAIN audit remain | ❌ |
-| M5 Wizard, OTP & accounts | 🔶 wizard + auth merged, but **no account management at all** and OTP undeliverable | ❌ |
+| M5 Wizard, OTP & accounts | 🔶 wizard, auth, admin user management, self-registration and profile editing all merged | ⏳ OTP still undeliverable until the GHL envs exist |
 | M6 Scrape importers + SEO at scale | ❌ not started | — |
 | M7 Monetization & feeders | ❌ not started | — |
 
@@ -177,13 +177,38 @@ the product more usable than the last.
 
 ### Step 3 — Supply-side self-service
 
-- [ ] **3.1 Registration for agents and agencies.** There is no `/registro`
-      route; every account is founder-created. Add sign-up that creates the
-      user plus its `agents`/`agencies` rows in a pending state, reusing the
-      existing `isVerified` flag for your approval.
-- [ ] **3.2 Profile editing.** Agencies and agents cannot edit their own name,
-      logo, contact details or description — the data model supports it
-      (`agencies`, `agents`), the UI does not exist.
+- [x] **3.1 Registration for agents and agencies.** ✅ Done — `/registro`
+      creates the login plus its profile rows in one call
+      (`src/lib/registration.ts`): an *inmobiliaria* gets a `users` row
+      (`agency_admin`), an `agencies` row and the `agents` row that links them;
+      an *agente independiente* gets a `users` row (`agent`) and an `agents`
+      row with `agency_id` NULL. Both start `is_verified = false`, so sign-up
+      grants a login and never trust — the ✓ badge is still your manual call,
+      and listings still pass the review queue. The new account is logged in
+      immediately, and the form has no `role` field to forge: role, agency link
+      and verification state are all decided server-side.
+      **This exposed a real gap it had to fix:** the whole `/agencia` panel
+      assumed an `agency_id`, so an independent agent would have logged in to
+      an empty dashboard and been unable to edit the listing they just
+      published. `panelScope()` (auth/guards.ts) now resolves an agency account
+      to its agency and an independent to `owner_user_id` — the same `owner`
+      scope the wizard uses — and the dashboard listings, leads inbox, status
+      changes, edit form and photo actions all run through it.
+- [x] **3.2 Profile editing.** ✅ Done — `/agencia/perfil` (fourth tab) edits
+      the company record (name, logo, WhatsApp, contact email), the caller's own
+      public agent profile (name, photo, WhatsApp) and their own login (name,
+      email, password). Three separate permissions, not one form: the company
+      record is **agency-admin only** — an `agent` inside the agency sees it
+      read-only and a forged POST is refused — while every user owns their agent
+      profile and their login. Changing a password revokes every session for
+      that user and reissues one for the browser doing it, so a stolen cookie
+      cannot outlive the change. Slugs are never rewritten on a rename, same SEO
+      contract as listings.
+      _Not included:_ a **description/bio** field. The plan assumed the schema
+      had one; it does not (`agencies` has name/logo/whatsapp/email, `agents`
+      name/photo/whatsapp). Adding it is a one-column migration — say the word
+      and it lands with MIGRATION REQUIRED. Logo and photo are URL fields for
+      now rather than uploads, even though 1.1 could power an upload.
 - [ ] **3.3 Per-listing stats for the owner** (views, leads) so the panel is
       worth logging into.
 
@@ -232,6 +257,17 @@ the product more usable than the last.
       featured placement.
 
 ---
+
+## Verification you can re-run
+
+- `npm run verify:scopes` — exercises the panel's ownership guards against a
+  local database: sign-up shape (roles, unverified flags, the `agents` link),
+  the validation refusals, **cross-tenant isolation** (an agency cannot read,
+  edit or restatus an independent's listing), slug immutability on rename, and
+  that a password change revokes only that user's sessions. It refuses to run
+  unless `DATABASE_URL` points at localhost, and it cleans up its own rows.
+  This is the only automated check in the repo — if you touch
+  `listingScopeWhere`, `panelScope` or any panel query, run it.
 
 ## Standing rules
 

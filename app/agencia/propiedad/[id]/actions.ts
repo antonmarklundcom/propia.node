@@ -8,22 +8,19 @@
  */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAgencyContext } from "@/lib/auth/guards";
+import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import { updateListing } from "@/lib/listing-edit";
 import { readListingForm } from "@/lib/listing-form-input";
 
 export async function agencyUpdateListingAction(formData: FormData): Promise<void> {
-  const { agencyId } = await requireAgencyContext();
+  const scope = panelScope(await requireAgencyContext());
 
   const parsed = readListingForm(formData);
   if (!parsed.ok) redirect(`/agencia/propiedad/${parsed.id}?msg=invalid`);
 
-  // No agency link yet → nothing this user may edit.
-  if (agencyId == null) redirect(`/agencia/propiedad/${parsed.id}?msg=not_found`);
-
   const affected = await updateListing({
     id: parsed.id,
-    scope: { kind: "agency", agencyId },
+    scope,
     input: parsed.input,
   });
 

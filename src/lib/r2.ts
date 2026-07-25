@@ -12,8 +12,7 @@
  * `imageUrl()` in format.ts builds — zero egress cost and no Node process in
  * the path.
  */
-// Not `import "server-only"` — the backfill script imports this under tsx,
-// where that marker throws. See the same note in lib/images.ts.
+import "server-only";
 import {
   DeleteObjectsCommand,
   PutObjectCommand,

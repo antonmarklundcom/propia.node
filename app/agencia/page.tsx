@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { requireAgencyContext } from "@/lib/auth/guards";
-import { getAgencyListings } from "@/lib/panel-queries";
+import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
+import type { EditScope } from "@/lib/listing-edit";
+import { getPanelListings } from "@/lib/panel-queries";
 import { esPanel, listingStatusLabel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -20,8 +21,15 @@ export const dynamic = "force-dynamic";
 // The statuses an agency can set from the dashboard (mirrors actions.ts).
 const AGENCY_STATUS_OPTIONS = ["draft", "published", "paused", "sold", "rented"];
 
-export default async function AgencyListingsPage() {
-  const { user, agencyId } = await requireAgencyContext();
+export default async function AgencyListingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ msg?: string }>;
+}) {
+  const { msg } = await searchParams;
+  const ctx = await requireAgencyContext();
+  const { user, agencyId } = ctx;
+  const scope = panelScope(ctx);
 
   return (
     <>
@@ -32,20 +40,26 @@ export default async function AgencyListingsPage() {
         tabs={agencyTabs("listings")}
       />
       <main className="panel site-main">
+        {msg === "welcome" ? (
+          <p className="panel-flash">{esPanel.agencyWelcome}</p>
+        ) : null}
+
         <h2 className="panel-section__title">{esPanel.agencyListingsTitle}</h2>
 
-        {agencyId == null ? (
+        {/* An agency account with no agencies row is a setup slip worth
+            flagging; an independent agent is simply scoped to their own rows. */}
+        {agencyId == null && user.role === "agency_admin" ? (
           <p className="panel-empty">{esPanel.agencyNoLink}</p>
         ) : (
-          <AgencyListings agencyId={agencyId} />
+          <AgencyListings scope={scope} />
         )}
       </main>
     </>
   );
 }
 
-async function AgencyListings({ agencyId }: { agencyId: number }) {
-  const rows = await getAgencyListings(agencyId);
+async function AgencyListings({ scope }: { scope: EditScope }) {
+  const rows = await getPanelListings(scope);
   if (rows.length === 0) {
     return <p className="panel-empty">{esPanel.agencyListingsEmpty}</p>;
   }

@@ -36,6 +36,56 @@ export const esPanel = {
   loginSubmit: "Entrar",
   loginError: "Email o contraseña incorrectos.",
   logout: "Salir",
+  loginToRegister: "¿Todavía no tenés cuenta? Registrate",
+
+  // Registro (inmobiliarias y agentes)
+  registerTitle: "Creá tu cuenta",
+  registerSubtitle:
+    "Cargá tus propiedades vos mismo. Es gratis: revisamos cada aviso antes de publicarlo.",
+  registerKindLabel: "¿Cómo trabajás?",
+  registerKindAgency: "Tengo una inmobiliaria",
+  registerKindIndependent: "Soy agente independiente",
+  registerAgencyNameLabel: "Nombre de la inmobiliaria",
+  registerYourNameLabel: "Tu nombre y apellido",
+  registerWhatsappLabel: "WhatsApp (opcional)",
+  registerPasswordLabel: "Contraseña",
+  registerPasswordHint: "Mínimo 8 caracteres.",
+  registerSubmit: "Crear cuenta",
+  registerToLogin: "¿Ya tenés cuenta? Ingresá",
+  registerPendingNote:
+    "Tu cuenta queda activa al instante. La verificación (el ✓ en tu perfil) la aprobamos a mano después de revisar tus datos.",
+  registerErrorName: "Escribí tu nombre completo.",
+  registerErrorEmail: "Revisá el email.",
+  registerErrorEmailTaken:
+    "Ya existe una cuenta con ese email. Probá ingresando.",
+  registerErrorPassword: "La contraseña necesita al menos 8 caracteres.",
+  registerErrorAgencyName: "Escribí el nombre de la inmobiliaria.",
+  registerErrorGeneric: "No pudimos crear la cuenta. Probá de nuevo.",
+
+  // Perfil (agencia + agente)
+  profileTab: "Tu perfil",
+  profileAgencyTitle: "Datos de la inmobiliaria",
+  profileAgencyReadOnly:
+    "Solo la cuenta administradora de la inmobiliaria puede cambiar estos datos.",
+  profileAgentTitle: "Tu perfil público",
+  profileAccountTitle: "Tu cuenta",
+  profileNoAgency:
+    "Trabajás como agente independiente, así que no hay datos de inmobiliaria para editar.",
+  profileLogoLabel: "Logo (URL)",
+  profilePhotoLabel: "Foto (URL)",
+  profileWhatsappLabel: "WhatsApp",
+  profileEmailLabel: "Email de contacto",
+  profileSave: "Guardar",
+  profileSaved: "Datos actualizados.",
+  profileAgencySaved: "Datos de la inmobiliaria actualizados.",
+  profileAccountSaved: "Tu cuenta se actualizó.",
+  profilePasswordChanged:
+    "Contraseña actualizada. Cerramos las otras sesiones abiertas.",
+  profileEmailTaken: "Ese email ya está en uso por otra cuenta.",
+  profileForbidden: "No tenés permiso para cambiar esos datos.",
+  profileInvalid: "Revisá los datos ingresados.",
+  profileVerifiedNote: "Perfil verificado por Homes Paraguay.",
+  profilePendingNote: "Verificación pendiente de aprobación.",
 
   // Admin
   adminReviewTitle: "Cola de revisión",
@@ -140,6 +190,8 @@ export const esPanel = {
   agencyListingsEmpty: "Todavía no tenés propiedades cargadas.",
   agencyLeadsTitle: "Consultas recibidas",
   agencyLeadsEmpty: "Todavía no recibiste consultas.",
+  agencyWelcome:
+    "¡Bienvenido! Tu cuenta ya está lista. Cargá tu primera propiedad y nosotros la revisamos antes de publicarla.",
   agencyNoLink:
     "Tu usuario todavía no está vinculado a una inmobiliaria. Escribinos para activarlo.",
   statusLabel: "Estado",

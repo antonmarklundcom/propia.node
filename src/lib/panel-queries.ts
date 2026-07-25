@@ -18,6 +18,7 @@ import {
 } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
+import { listingScopeWhere, type EditScope } from "@/lib/listing-edit";
 
 export type ListingStatus = (typeof listings.$inferSelect)["status"];
 
@@ -349,7 +350,14 @@ export interface AgencyListingRow {
 
 /** All of an agency's listings (every status), newest-touched first. Uses
  * idx_agency (agency_id, status) on the agency_id prefix. */
-export async function getAgencyListings(agencyId: number): Promise<AgencyListingRow[]> {
+/**
+ * The dashboard's own listings. Takes a scope rather than an agencyId because
+ * an independent agent has no agencies row — see listingScopeWhere().
+ */
+export async function getPanelListings(
+  scope: EditScope,
+): Promise<AgencyListingRow[]> {
+  const guard = listingScopeWhere(scope);
   return db
     .select({
       id: listings.id,
@@ -364,28 +372,28 @@ export async function getAgencyListings(agencyId: number): Promise<AgencyListing
       updatedAt: listings.updatedAt,
     })
     .from(listings)
-    .where(eq(listings.agencyId, agencyId))
+    .where(guard)
     .orderBy(desc(listings.updatedAt));
 }
 
-/** Status change scoped to the owning agency — the WHERE clause is the guard.
- * Returns rows affected (0 = not this agency's listing). */
-export async function setAgencyListingStatus(params: {
+/** Status change scoped to the caller — the WHERE clause is the guard.
+ * Returns rows affected (0 = not a listing this scope may touch). */
+export async function setPanelListingStatus(params: {
   listingId: number;
-  agencyId: number;
+  scope: EditScope;
   status: ListingStatus;
 }): Promise<number> {
   const patch: Partial<typeof listings.$inferInsert> = { status: params.status };
   // First publish stamps publishedAt so category ordering (idx_fresh) is sane.
   if (params.status === "published") patch.publishedAt = new Date();
+  const guard = listingScopeWhere(params.scope);
   const [res] = await db
     .update(listings)
     .set(patch)
     .where(
-      and(
-        eq(listings.id, params.listingId),
-        eq(listings.agencyId, params.agencyId),
-      ),
+      guard
+        ? and(eq(listings.id, params.listingId), guard)
+        : eq(listings.id, params.listingId),
     );
   return res.affectedRows;
 }
@@ -410,11 +418,11 @@ export interface LeadRow {
  * listing ids first, then read leads on idx_listing. routedTo is constrained to
  * the agency/agent lanes so internal/developer leads never leak in.
  */
-export async function getAgencyLeads(agencyId: number): Promise<LeadRow[]> {
+export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
   const owned = await db
     .select({ id: listings.id })
     .from(listings)
-    .where(eq(listings.agencyId, agencyId));
+    .where(listingScopeWhere(scope));
   const listingIds = owned.map((r) => r.id);
   if (listingIds.length === 0) return [];
 

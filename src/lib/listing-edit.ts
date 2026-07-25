@@ -56,8 +56,15 @@ export function statusesFor(scope: EditScope): readonly ListingStatusValue[] {
   return scope.kind === "admin" ? ADMIN_STATUSES : AGENCY_STATUSES;
 }
 
-/** Ownership predicate for a scope — the guard every query is built on. */
-function scopeWhere(scope: EditScope): SQL | undefined {
+/**
+ * Ownership predicate for a scope — the guard every query is built on.
+ *
+ * Exported because the agency dashboard's own queries (panel-queries.ts) must
+ * express ownership *identically*: an independent agent has no agencies row, so
+ * a dashboard that assumed `agency_id` would show them an empty panel and let
+ * them edit nothing.
+ */
+export function listingScopeWhere(scope: EditScope): SQL | undefined {
   switch (scope.kind) {
     case "admin":
       return undefined;
@@ -178,7 +185,7 @@ export async function getEditableListing(
   id: number,
   scope: EditScope,
 ): Promise<EditableListing | null> {
-  const guard = scopeWhere(scope);
+  const guard = listingScopeWhere(scope);
   const [row] = await db
     .select({
       id: listings.id,
@@ -277,7 +284,7 @@ export async function updateListing(params: {
   // First publish stamps publishedAt so category ordering (idx_fresh) is sane.
   if (input.status === "published") patch.publishedAt = new Date();
 
-  const guard = scopeWhere(scope);
+  const guard = listingScopeWhere(scope);
   const [res] = await db
     .update(listings)
     .set(patch)

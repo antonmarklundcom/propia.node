@@ -8,7 +8,7 @@
  */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAgencyContext } from "@/lib/auth/guards";
+import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   handleCover,
   handleDelete,
@@ -19,10 +19,9 @@ import {
 } from "@/lib/photo-form-input";
 import type { EditScope } from "@/lib/listing-edit";
 
-async function scope(): Promise<EditScope | null> {
-  const { agencyId } = await requireAgencyContext();
-  // An unlinked user owns no agency rows, so there is nothing to reach.
-  return agencyId == null ? null : { kind: "agency", agencyId };
+async function scope(): Promise<EditScope> {
+  // Agency rows for an agency account, own rows for an independent agent.
+  return panelScope(await requireAgencyContext());
 }
 
 async function finish(listingId: number, flash: PhotoFlash): Promise<never> {
@@ -33,24 +32,20 @@ async function finish(listingId: number, flash: PhotoFlash): Promise<never> {
 
 export async function agencyUploadPhotosAction(formData: FormData): Promise<void> {
   const s = await scope();
-  const id = readListingId(formData);
-  await finish(id, s ? await handleUpload(formData, s) : "not_found");
+  await finish(readListingId(formData), await handleUpload(formData, s));
 }
 
 export async function agencyDeletePhotoAction(formData: FormData): Promise<void> {
   const s = await scope();
-  const id = readListingId(formData);
-  await finish(id, s ? await handleDelete(formData, s) : "not_found");
+  await finish(readListingId(formData), await handleDelete(formData, s));
 }
 
 export async function agencyMovePhotoAction(formData: FormData): Promise<void> {
   const s = await scope();
-  const id = readListingId(formData);
-  await finish(id, s ? await handleMove(formData, s) : "not_found");
+  await finish(readListingId(formData), await handleMove(formData, s));
 }
 
 export async function agencySetCoverAction(formData: FormData): Promise<void> {
   const s = await scope();
-  const id = readListingId(formData);
-  await finish(id, s ? await handleCover(formData, s) : "not_found");
+  await finish(readListingId(formData), await handleCover(formData, s));
 }
