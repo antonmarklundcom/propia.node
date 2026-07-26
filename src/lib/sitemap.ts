@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { listings, locations } from "../db/schema";
 import { getIndexability } from "./indexability";
+import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl } from "./urls";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
@@ -136,6 +137,14 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
         }),
       });
     }
+  }
+
+  // 3. Price pages — only cities with a defensible sample, which is the same
+  //    rule the page's own robots meta applies. Sitemap and page must agree.
+  const priceCities = await citiesWithPrices();
+  entries.push({ path: "/precios" });
+  for (const city of priceCities) {
+    entries.push({ path: `/precios/${city.slug}` });
   }
 
   return entries;

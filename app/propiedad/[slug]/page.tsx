@@ -1,4 +1,6 @@
 import { cache } from "react";
+import { after } from "next/server";
+import { headers } from "next/headers";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -22,8 +24,11 @@ import {
   listingJsonLd,
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
-import { inquiryPrefillFor } from "@/i18n/es";
+import { esPrecios, inquiryPrefillFor } from "@/i18n/es";
 import { listingCanonicalOrigin } from "@/lib/origin";
+import { getCityPrices } from "@/lib/precios-queries";
+import { recordListingView } from "@/lib/stats-queries";
+import { isBotUserAgent } from "@/lib/view-tracking";
 import { JsonLd } from "@/components/JsonLd";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
@@ -103,6 +108,23 @@ export default async function ListingPage({ params }: Params) {
   if (!detail) notFound();
 
   const { listing, images, chain, agency, agent } = detail;
+
+  /**
+   * Count the view after the response is sent: the owner's stats must never
+   * cost the visitor latency, and a failed counter must never break a page
+   * that rendered fine. Crawlers are excluded so the number means people
+   * (see view-tracking.ts).
+   */
+  const userAgent = (await headers()).get("user-agent");
+  if (!isBotUserAgent(userAgent)) {
+    after(async () => {
+      try {
+        await recordListingView(listing.id);
+      } catch {
+        /* a dropped view is not worth an error page */
+      }
+    });
+  }
   const cuota = formatCuota(listing.cuotaGs);
   const contactWhatsapp = agent?.whatsapp ?? agency?.whatsapp ?? null;
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
@@ -166,7 +188,7 @@ export default async function ListingPage({ params }: Params) {
   // even started, so the "parallel" block was three serial round-trips.
   const similarLocationIds = city ? await subtreeIds(city.id) : null;
 
-  const [similar, fromAgency, financingProgram] = await Promise.all([
+  const [similar, fromAgency, financingProgram, cityPrices] = await Promise.all([
     city && similarLocationIds
       ? getSimilarListings({
           excludeId: listing.id,
@@ -182,7 +204,12 @@ export default async function ListingPage({ params }: Params) {
     listing.operation === "venta" && cuota
       ? getBestFinancingProgram()
       : Promise.resolve(null),
+    // Market context for the internal link module below — independent of the
+    // three above, so it belongs inside this block, not before it.
+    city ? getCityPrices(city.slug) : Promise.resolve(null),
   ]);
+
+  const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
 
   const amenities = normalizeAmenities(listing.amenities);
   const publishedAgo = listing.publishedAt
@@ -472,6 +499,18 @@ export default async function ListingPage({ params }: Params) {
           variant="panel"
         />
       </section>
+
+      {/* Market context for this city — the internal link into /precios.
+          Rendered only when the medians job has a defensible number, so we
+          never send a visitor (or a crawler) to an empty page. */}
+      {city && cityHasPrices && (
+        <aside className="precios-cta">
+          <span>{esPrecios.relatedPrices(city.name)}</span>
+          <Link className="panel-btn" href={`/precios/${city.slug}`}>
+            {esPrecios.relatedPricesCta}
+          </Link>
+        </aside>
+      )}
 
       {similar.length > 0 && (
         <section className="similar-listings">

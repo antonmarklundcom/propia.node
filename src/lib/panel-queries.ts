@@ -5,7 +5,7 @@
  * can never mutate a row it doesn't own — the agencyId comes from the session
  * (guards.ts), never from the request.
  */
-import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, like, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   agencies,
@@ -18,6 +18,7 @@ import {
 } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
+import { listingScopeWhere, type EditScope } from "@/lib/listing-edit";
 
 export type ListingStatus = (typeof listings.$inferSelect)["status"];
 
@@ -64,13 +65,13 @@ export async function getReviewQueue(): Promise<ReviewRow[]> {
     .orderBy(listings.createdAt);
 }
 
-/** How many listings are waiting — the /admin nav badge. */
+/** How many listings are waiting — the /admin nav badge, on every panel page. */
 export async function countReviewQueue(): Promise<number> {
-  const rows = await db
-    .select({ id: listings.id })
+  const [row] = await db
+    .select({ n: sql<number>`count(*)` })
     .from(listings)
     .where(eq(listings.status, "pending_review"));
-  return rows.length;
+  return Number(row?.n ?? 0);
 }
 
 /** Approve a pending listing → published. Scoped to pending_review so it can't
@@ -204,11 +205,11 @@ export async function listUsers(): Promise<PanelUserRow[]> {
 
 /** How many super-admins exist — used to refuse removing the last one. */
 export async function countSuperAdmins(): Promise<number> {
-  const rows = await db
-    .select({ id: users.id })
+  const [row] = await db
+    .select({ n: sql<number>`count(*)` })
     .from(users)
     .where(eq(users.role, "admin"));
-  return rows.length;
+  return Number(row?.n ?? 0);
 }
 
 export interface UpsertUserInput {
@@ -349,7 +350,14 @@ export interface AgencyListingRow {
 
 /** All of an agency's listings (every status), newest-touched first. Uses
  * idx_agency (agency_id, status) on the agency_id prefix. */
-export async function getAgencyListings(agencyId: number): Promise<AgencyListingRow[]> {
+/**
+ * The dashboard's own listings. Takes a scope rather than an agencyId because
+ * an independent agent has no agencies row — see listingScopeWhere().
+ */
+export async function getPanelListings(
+  scope: EditScope,
+): Promise<AgencyListingRow[]> {
+  const guard = listingScopeWhere(scope);
   return db
     .select({
       id: listings.id,
@@ -364,28 +372,28 @@ export async function getAgencyListings(agencyId: number): Promise<AgencyListing
       updatedAt: listings.updatedAt,
     })
     .from(listings)
-    .where(eq(listings.agencyId, agencyId))
+    .where(guard)
     .orderBy(desc(listings.updatedAt));
 }
 
-/** Status change scoped to the owning agency — the WHERE clause is the guard.
- * Returns rows affected (0 = not this agency's listing). */
-export async function setAgencyListingStatus(params: {
+/** Status change scoped to the caller — the WHERE clause is the guard.
+ * Returns rows affected (0 = not a listing this scope may touch). */
+export async function setPanelListingStatus(params: {
   listingId: number;
-  agencyId: number;
+  scope: EditScope;
   status: ListingStatus;
 }): Promise<number> {
   const patch: Partial<typeof listings.$inferInsert> = { status: params.status };
   // First publish stamps publishedAt so category ordering (idx_fresh) is sane.
   if (params.status === "published") patch.publishedAt = new Date();
+  const guard = listingScopeWhere(params.scope);
   const [res] = await db
     .update(listings)
     .set(patch)
     .where(
-      and(
-        eq(listings.id, params.listingId),
-        eq(listings.agencyId, params.agencyId),
-      ),
+      guard
+        ? and(eq(listings.id, params.listingId), guard)
+        : eq(listings.id, params.listingId),
     );
   return res.affectedRows;
 }
@@ -410,13 +418,88 @@ export interface LeadRow {
  * listing ids first, then read leads on idx_listing. routedTo is constrained to
  * the agency/agent lanes so internal/developer leads never leak in.
  */
-export async function getAgencyLeads(agencyId: number): Promise<LeadRow[]> {
-  const owned = await db
-    .select({ id: listings.id })
-    .from(listings)
-    .where(eq(listings.agencyId, agencyId));
-  const listingIds = owned.map((r) => r.id);
-  if (listingIds.length === 0) return [];
+export interface AdminLeadRow extends LeadRow {
+  vertical: string;
+  routedTo: (typeof leads.$inferSelect)["routedTo"];
+  agencyName: string | null;
+}
+
+/**
+ * Every lead the site captured, newest first — the super-admin view.
+ *
+ * Unscoped by design: this is the founder's own inbox, and it is the only
+ * place a lead with `routed_to = 'internal'` (valuation and seller leads,
+ * which belong to no agency) is visible at all. Optional filters narrow by
+ * type and search name / WhatsApp / email.
+ */
+export async function listAllLeads(params: {
+  type?: LeadRow["leadType"] | "all";
+  q?: string;
+  limit?: number;
+}): Promise<AdminLeadRow[]> {
+  const filters: SQL[] = [];
+  if (params.type && params.type !== "all") {
+    filters.push(eq(leads.leadType, params.type));
+  }
+  const q = params.q?.trim();
+  if (q) {
+    const term = `%${q}%`;
+    const match = or(
+      like(leads.name, term),
+      like(leads.whatsapp, term),
+      like(leads.email, term),
+    );
+    if (match) filters.push(match);
+  }
+
+  return db
+    .select({
+      id: leads.id,
+      leadType: leads.leadType,
+      name: leads.name,
+      whatsapp: leads.whatsapp,
+      email: leads.email,
+      message: leads.message,
+      createdAt: leads.createdAt,
+      listingId: leads.listingId,
+      listingTitle: listings.title,
+      listingPublicId: listings.publicId,
+      listingSlug: listings.slug,
+      vertical: leads.vertical,
+      routedTo: leads.routedTo,
+      agencyName: agencies.name,
+    })
+    .from(leads)
+    .leftJoin(listings, eq(leads.listingId, listings.id))
+    .leftJoin(agencies, eq(listings.agencyId, agencies.id))
+    .where(filters.length ? and(...filters) : undefined)
+    .orderBy(desc(leads.createdAt))
+    .limit(params.limit ?? 300);
+}
+
+/** Lead counts per type for the admin filter chips — one GROUP BY, not one query each. */
+export async function countLeadsByType(): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ leadType: leads.leadType, n: sql<number>`count(*)` })
+    .from(leads)
+    .groupBy(leads.leadType);
+  const out: Record<string, number> = {};
+  let total = 0;
+  for (const r of rows) {
+    const n = Number(r.n);
+    out[r.leadType] = n;
+    total += n;
+  }
+  out.all = total;
+  return out;
+}
+
+export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
+  // One join with the ownership predicate applied to the joined listing —
+  // the previous shape read every owned listing id into Node first and then
+  // sent them back as an IN(...) list, which grows with the agency's inventory.
+  const guard = listingScopeWhere(scope);
+  const routed = inArray(leads.routedTo, ["agency", "agent"]);
 
   return db
     .select({
@@ -433,12 +516,8 @@ export async function getAgencyLeads(agencyId: number): Promise<LeadRow[]> {
       listingSlug: listings.slug,
     })
     .from(leads)
-    .leftJoin(listings, eq(leads.listingId, listings.id))
-    .where(
-      and(
-        inArray(leads.listingId, listingIds),
-        inArray(leads.routedTo, ["agency", "agent"]),
-      ),
-    )
+    // INNER join: a lead with no listing belongs to no agency panel.
+    .innerJoin(listings, eq(leads.listingId, listings.id))
+    .where(guard ? and(routed, guard) : routed)
     .orderBy(desc(leads.createdAt));
 }

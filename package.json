@@ -12,20 +12,24 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "seed:financing": "tsx scripts/seed-financing.ts",
-    "seed:locations": "tsx scripts/seed-locations.ts",
-    "cron:cuotas": "tsx scripts/recompute-cuotas.ts",
-    "cron:medians": "tsx scripts/compute-medians.ts",
-    "import:csv": "tsx scripts/import-csv.ts",
-    "user:create": "tsx scripts/create-user.ts"
+    "seed:financing": "tsx --tsconfig scripts/tsconfig.json scripts/seed-financing.ts",
+    "seed:locations": "tsx --tsconfig scripts/tsconfig.json scripts/seed-locations.ts",
+    "cron:cuotas": "tsx --tsconfig scripts/tsconfig.json scripts/recompute-cuotas.ts",
+    "cron:medians": "tsx --tsconfig scripts/tsconfig.json scripts/compute-medians.ts",
+    "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",
+    "backfill:images": "tsx --tsconfig scripts/tsconfig.json scripts/backfill-images.ts",
+    "verify:scopes": "tsx --tsconfig scripts/tsconfig.json scripts/verify-scopes.ts",
+    "user:create": "tsx --tsconfig scripts/tsconfig.json scripts/create-user.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1095.0",
     "drizzle-orm": "^0.45.2",
     "maplibre-gl": "^5.24.0",
     "mysql2": "^3.14.1",
     "next": "^15.3.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sharp": "^0.35.3",
     "zod": "^3.25.67"
   },
   "devDependencies": {
