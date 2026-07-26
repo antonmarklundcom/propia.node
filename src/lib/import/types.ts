@@ -18,28 +18,6 @@ export type ListingSource =
 
 export type Operation = "venta" | "alquiler" | "alquiler_temporal";
 
-/**
- * The enum values as a runtime list, for validating anything that arrives as a
- * string (form bodies, query params, imported pages). Single definition on
- * purpose: this list had drifted into three separate copies.
- */
-export const OPERATIONS: readonly Operation[] = [
-  "venta",
-  "alquiler",
-  "alquiler_temporal",
-];
-
-export const PROPERTY_TYPES: readonly PropertyType[] = [
-  "casa",
-  "departamento",
-  "terreno",
-  "duplex",
-  "comercial",
-  "oficina",
-  "deposito",
-  "quinta",
-];
-
 export type PropertyType =
   | "casa"
   | "departamento"

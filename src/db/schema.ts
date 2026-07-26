@@ -19,7 +19,6 @@ import {
   mediumtext,
   mysqlEnum,
   mysqlTable,
-  primaryKey,
   smallint,
   text,
   tinyint,
@@ -119,34 +118,12 @@ export const listings = mysqlTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    /**
-     * Category search. Column order follows how the URL scheme actually
-     * queries (ARCHITECTURE.md §4): operation and location are always present,
-     * property_type only on /{operacion}/{ciudad}/{tipo}.
-     *
-     * property_type used to sit *before* location_id, which meant a city
-     * landing page — no type in the path — could only use the (status,
-     * operation) prefix and scanned every listing of that operation
-     * (verified with EXPLAIN: key_len 2, ~1 800 rows at 3 000 listings).
-     * With location_id third, the optional column is the one at the end.
-     */
     index("idx_search").on(
       t.status,
       t.operation,
-      t.locationId,
       t.propertyType,
-      t.priceUsd,
-    ),
-    /**
-     * The default category ordering is `published_at desc`, which no index
-     * covered — every category page paid a filesort. Same prefix as
-     * idx_search so the planner can seek, then read the sort from the index.
-     */
-    index("idx_recent").on(
-      t.status,
-      t.operation,
       t.locationId,
-      t.publishedAt,
+      t.priceUsd,
     ),
     index("idx_location").on(t.locationId, t.status, t.publishedAt),
     index("idx_geo").on(t.status, t.lat, t.lng),
@@ -433,36 +410,4 @@ export const sessions = mysqlTable(
     createdAt: createdAt(),
   },
   (t) => [index("idx_user").on(t.userId)],
-);
-
-/* ------------------------------------------------------------------ */
-/* 2.9 Listing views — the "is my ad working?" number                  */
-/* ------------------------------------------------------------------ */
-
-/**
- * Daily view counts per listing (ARCHITECTURE.md M5 §3.3).
- *
- * Aggregated per day rather than one row per view: an owner asks "how many
- * people saw my ad this week", never "who saw it at 14:03", and a row per view
- * would be the fastest-growing table in the schema for an answer nobody needs.
- * One small upsert per detail-page render instead, written after the response
- * (see recordListingView) so it never sits in the visitor's critical path.
- *
- * The composite primary key IS the uniqueness rule — one row per listing per
- * day, so the counter cannot fork.
- */
-export const listingViewsDaily = mysqlTable(
-  "listing_views_daily",
-  {
-    listingId: fk("listing_id").notNull(),
-    // mode "string": a day key is 'YYYY-MM-DD', not an instant — mapping it to
-    // a Date would invite a timezone bug in a column that has no time at all.
-    day: date("day", { mode: "string" }).notNull(),
-    views: int("views", { unsigned: true }).notNull().default(0),
-  },
-  (t) => [
-    primaryKey({ columns: [t.listingId, t.day] }),
-    // Reads are always "this listing, recent days first".
-    index("idx_listing_day").on(t.listingId, t.day),
-  ],
 );

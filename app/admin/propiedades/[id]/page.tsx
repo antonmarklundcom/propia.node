@@ -3,28 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { ListingForm } from "@/components/panel/ListingForm";
-import { PhotoManager } from "@/components/panel/PhotoManager";
-import { ListingStats } from "@/components/panel/ListingStats";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { ADMIN_STATUSES, getEditableListing } from "@/lib/listing-edit";
-import { listListingImages } from "@/lib/listing-images";
-import {
-  getListingDailyViews,
-  getPanelListingStats,
-} from "@/lib/stats-queries";
-import { isR2Configured } from "@/lib/r2";
 import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../../tabs";
 import { adminDeleteListingAction, adminUpdateListingAction } from "../actions";
-import {
-  adminDeletePhotoAction,
-  adminMovePhotoAction,
-  adminSetCoverAction,
-  adminUploadPhotosAction,
-} from "./photo-actions";
 
 export const metadata: Metadata = {
   title: "Editar aviso — Homes Paraguay",
@@ -37,12 +23,6 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   saved: { text: esPanel.listingSaved },
   invalid: { text: esPanel.listingInvalid, error: true },
   not_found: { text: esPanel.listingNotFound, error: true },
-  photos_uploaded: { text: esPanel.photosUploaded },
-  photos_rejected: { text: esPanel.photosRejected, error: true },
-  photos_deleted: { text: esPanel.photosDeleted },
-  photos_reordered: { text: esPanel.photosReordered },
-  photos_none: { text: esPanel.photosNoFiles, error: true },
-  photos_unconfigured: { text: esPanel.photosNotConfigured, error: true },
 };
 
 export default async function AdminListingEditPage({
@@ -61,19 +41,12 @@ export default async function AdminListingEditPage({
   const listingId = Number(id);
   if (!Number.isInteger(listingId) || listingId <= 0) notFound();
 
-  const [reviewCount, listing, locations, images, daily] = await Promise.all([
+  const [reviewCount, listing, locations] = await Promise.all([
     countReviewQueue(),
     getEditableListing(listingId, { kind: "admin" }),
     listPublishLocations(),
-    listListingImages(listingId, { kind: "admin" }),
-    getListingDailyViews(listingId, { kind: "admin" }),
   ]);
   if (!listing) notFound();
-
-  // Lead count for this one listing, from the same scoped aggregate the
-  // listings table uses.
-  const leadCount =
-    (await getPanelListingStats({ kind: "admin" })).get(listing.id)?.leads ?? 0;
 
   const flash = msg ? FLASH[msg] : undefined;
 
@@ -107,12 +80,6 @@ export default async function AdminListingEditPage({
           {listing.reviewNotes ? <span>· {listing.reviewNotes}</span> : null}
         </p>
 
-        <ListingStats
-          views={daily.reduce((sum, d) => sum + d.views, 0)}
-          leads={leadCount}
-          daily={daily}
-        />
-
         <article className="panel-card">
           <ListingForm
             listing={listing}
@@ -123,17 +90,6 @@ export default async function AdminListingEditPage({
             deleteAction={adminDeleteListingAction}
           />
         </article>
-
-
-        <PhotoManager
-          listingId={listing.id}
-          images={images}
-          storageReady={isR2Configured()}
-          uploadAction={adminUploadPhotosAction}
-          deleteAction={adminDeletePhotoAction}
-          moveAction={adminMovePhotoAction}
-          coverAction={adminSetCoverAction}
-        />
       </main>
     </>
   );

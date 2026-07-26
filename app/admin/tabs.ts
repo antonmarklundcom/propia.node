@@ -3,7 +3,7 @@ import { esPanel } from "@/i18n/es";
 
 /** The /admin tabs, with the active one flagged and the review count badged. */
 export function adminTabs(
-  active: "review" | "agencies" | "users" | "listings" | "leads",
+  active: "review" | "agencies" | "users" | "listings",
   reviewCount: number,
 ): PanelTab[] {
   return [
@@ -17,11 +17,6 @@ export function adminTabs(
       href: "/admin/propiedades",
       label: esPanel.adminListingsTitle,
       active: active === "listings",
-    },
-    {
-      href: "/admin/leads",
-      label: esPanel.adminLeadsTitle,
-      active: active === "leads",
     },
     {
       href: "/admin/inmobiliarias",

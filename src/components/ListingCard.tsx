@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPrice, formatCuota, imageThumbUrl } from "@/lib/format";
+import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
 import type { Operation } from "@/lib/import/types";
@@ -19,12 +19,7 @@ const OPERATION_BADGE: Record<Operation, string> = {
  * differentiator, so it gets the amber chip when we have it cached.
  */
 export function ListingCard({ card }: { card: Card }) {
-  // Thumb, not the full 1600px original: a category page renders ~20 of these
-  // on Paraguayan mobile data. Falls back to the stored key for imported rows
-  // that have no derivative yet (see imageThumbUrl).
-  const cover = isPlaceholderPhoto(card.coverKey)
-    ? null
-    : imageThumbUrl(card.coverKey);
+  const cover = isPlaceholderPhoto(card.coverKey) ? null : imageUrl(card.coverKey);
   const cuota = formatCuota(card.cuotaGs);
   const area = card.areaM2 ?? card.landM2;
   const isAlquiler = card.operation !== "venta";

@@ -4,19 +4,7 @@
  * price_usd — no MySQL-only cleverness, so the Postgres escape hatch stays
  * open. JSON columns are display-only and never filtered here.
  */
-import { cache } from "react";
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  gte,
-  inArray,
-  lte,
-  ne,
-  sql,
-  type SQL,
-} from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   agencies,
@@ -70,41 +58,25 @@ export async function resolveBarrio(
   return row ?? null;
 }
 
-/**
- * City + its barrio children — the location set a city page covers. Served from
- * the same one-read map as locationChain(), so a category page no longer pays a
- * query per subtree lookup.
- */
-export async function citySubtreeIds(cityId: number): Promise<number[]> {
-  const byId = await locationsById();
-  const children: number[] = [];
-  for (const row of byId.values()) {
-    if (row.parentId === cityId) children.push(row.id);
-  }
-  return [cityId, ...children];
+/** City + its barrio children — the location set a city page covers. */
+async function citySubtreeIds(cityId: number): Promise<number[]> {
+  const children = await db
+    .select({ id: locations.id })
+    .from(locations)
+    .where(eq(locations.parentId, cityId));
+  return [cityId, ...children.map((c) => c.id)];
 }
 
-/**
- * The whole `locations` table, keyed by id, loaded once per request.
- *
- * It is a small, slow-changing table (país → departamento → ciudad → barrio;
- * tens of rows, not thousands), and walking a parent chain used to cost one
- * round-trip per level. One read serves every chain on the page instead —
- * cache() dedupes it across generateMetadata and the page body.
- */
-const locationsById = cache(async (): Promise<Map<number, LocationRow>> => {
-  const rows: LocationRow[] = await db.select().from(locations);
-  return new Map(rows.map((row) => [row.id, row]));
-});
-
+/** Walk parentId up to the root — for breadcrumbs. Locations table is small. */
 export async function locationChain(locationId: number): Promise<LocationRow[]> {
-  const byId = await locationsById();
   const chain: LocationRow[] = [];
   let currentId: number | null = locationId;
-  // The depth guard also stops a cycle from hanging the request, which a
-  // hand-edited parent_id could otherwise cause.
   for (let guard = 0; guard < 6 && currentId != null; guard++) {
-    const row = byId.get(currentId);
+    const [row]: LocationRow[] = await db
+      .select()
+      .from(locations)
+      .where(eq(locations.id, currentId))
+      .limit(1);
     if (!row) break;
     chain.unshift(row);
     currentId = row.parentId;
@@ -192,60 +164,44 @@ export async function getFilteredCategoryListings(
   filters: CategoryFilters = {},
 ): Promise<{ listings: ListingCard[]; filteredCount: number }> {
   const where = filterConds(q, filters);
-
-  // The grid page and its "no matches" counter do not depend on each other,
-  // so they go out together rather than one after the other.
-  const [rows, filteredCount] = await Promise.all([
-    db
-      .select({
-        id: listings.id,
-        publicId: listings.publicId,
-        slug: listings.slug,
-        title: listings.title,
-        operation: listings.operation,
-        propertyType: listings.propertyType,
-        priceUsd: listings.priceUsd,
-        priceAmount: listings.priceAmount,
-        priceCurrency: listings.priceCurrency,
-        cuotaGs: listings.cuotaGs,
-        bedrooms: listings.bedrooms,
-        bathrooms: listings.bathrooms,
-        areaM2: listings.areaM2,
-        landM2: listings.landM2,
-        locationId: listings.locationId,
-        isVerified: listings.isVerified,
-        featuredUntil: listings.featuredUntil,
-      })
-      .from(listings)
-      .where(where)
-      .orderBy(sortOrder(filters.sort))
-      .limit(q.limit ?? 48)
-      .offset(q.offset ?? 0),
-    countRows(where),
-  ]);
-
-  const cards = await attachCovers(rows);
-  return { listings: cards, filteredCount };
-}
-
-/**
- * One COUNT(*) on `listings`. Every counter in this file goes through here:
- * the previous shape selected every matching id and took `rows.length`, which
- * means MySQL streamed the whole result set to Node so we could throw it away —
- * fine at 200 listings, a real cost at 20 000, and it never used the index-only
- * path a COUNT can.
- */
-async function countRows(where: SQL | undefined): Promise<number> {
-  const [row] = await db
-    .select({ n: sql<number>`count(*)` })
+  const rows = await db
+    .select({
+      id: listings.id,
+      publicId: listings.publicId,
+      slug: listings.slug,
+      title: listings.title,
+      operation: listings.operation,
+      propertyType: listings.propertyType,
+      priceUsd: listings.priceUsd,
+      priceAmount: listings.priceAmount,
+      priceCurrency: listings.priceCurrency,
+      cuotaGs: listings.cuotaGs,
+      bedrooms: listings.bedrooms,
+      bathrooms: listings.bathrooms,
+      areaM2: listings.areaM2,
+      landM2: listings.landM2,
+      locationId: listings.locationId,
+      isVerified: listings.isVerified,
+      featuredUntil: listings.featuredUntil,
+    })
     .from(listings)
-    .where(where);
-  return Number(row?.n ?? 0);
+    .where(where)
+    .orderBy(sortOrder(filters.sort))
+    .limit(q.limit ?? 48)
+    .offset(q.offset ?? 0);
+
+  const filteredCountRows = await db.select({ id: listings.id }).from(listings).where(where);
+  const cards = await attachCovers(rows);
+  return { listings: cards, filteredCount: filteredCountRows.length };
 }
 
 /** COUNT for indexability — the single number getIndexability() consumes. */
 export async function countCategory(q: CategoryQuery): Promise<number> {
-  return countRows(categoryConds(q));
+  const rows = await db
+    .select({ id: listings.id })
+    .from(listings)
+    .where(categoryConds(q));
+  return rows.length;
 }
 
 /** Attach cover image (position 0) to a set of listing cards in one query. */
@@ -273,7 +229,11 @@ async function attachCovers(
 
 /** Total published listings — the homepage "propiedades activas" stat. */
 export async function countPublished(): Promise<number> {
-  return countRows(eq(listings.status, "published"));
+  const rows = await db
+    .select({ id: listings.id })
+    .from(listings)
+    .where(eq(listings.status, "published"));
+  return rows.length;
 }
 
 /**
@@ -655,3 +615,5 @@ export async function getBestFinancingProgram() {
     .limit(1);
   return row ?? null;
 }
+
+export { citySubtreeIds };

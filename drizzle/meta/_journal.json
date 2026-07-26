@@ -15,20 +15,6 @@
       "when": 1783631099911,
       "tag": "0001_complete_invaders",
       "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1784969984907,
-      "tag": "0002_flaky_penance",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1784978760101,
-      "tag": "0003_new_kang",
-      "breakpoints": true
     }
   ]
 }

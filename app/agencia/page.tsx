@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
-import type { EditScope } from "@/lib/listing-edit";
-import { getPanelListings } from "@/lib/panel-queries";
-import {
-  getPanelListingStats,
-  STATS_WINDOW_DAYS,
-  totalsFrom,
-} from "@/lib/stats-queries";
+import { requireAgencyContext } from "@/lib/auth/guards";
+import { getAgencyListings } from "@/lib/panel-queries";
 import { esPanel, listingStatusLabel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -26,15 +20,8 @@ export const dynamic = "force-dynamic";
 // The statuses an agency can set from the dashboard (mirrors actions.ts).
 const AGENCY_STATUS_OPTIONS = ["draft", "published", "paused", "sold", "rented"];
 
-export default async function AgencyListingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ msg?: string }>;
-}) {
-  const { msg } = await searchParams;
-  const ctx = await requireAgencyContext();
-  const { user, agencyId } = ctx;
-  const scope = panelScope(ctx);
+export default async function AgencyListingsPage() {
+  const { user, agencyId } = await requireAgencyContext();
 
   return (
     <>
@@ -45,49 +32,26 @@ export default async function AgencyListingsPage({
         tabs={agencyTabs("listings")}
       />
       <main className="panel site-main">
-        {msg === "welcome" ? (
-          <p className="panel-flash">{esPanel.agencyWelcome}</p>
-        ) : null}
-
         <h2 className="panel-section__title">{esPanel.agencyListingsTitle}</h2>
 
-        {/* An agency account with no agencies row is a setup slip worth
-            flagging; an independent agent is simply scoped to their own rows. */}
-        {agencyId == null && user.role === "agency_admin" ? (
+        {agencyId == null ? (
           <p className="panel-empty">{esPanel.agencyNoLink}</p>
         ) : (
-          <AgencyListings scope={scope} />
+          <AgencyListings agencyId={agencyId} />
         )}
       </main>
     </>
   );
 }
 
-async function AgencyListings({ scope }: { scope: EditScope }) {
-  // Both are scope-guarded reads and neither depends on the other.
-  const [rows, stats] = await Promise.all([
-    getPanelListings(scope),
-    getPanelListingStats(scope),
-  ]);
+async function AgencyListings({ agencyId }: { agencyId: number }) {
+  const rows = await getAgencyListings(agencyId);
   if (rows.length === 0) {
     return <p className="panel-empty">{esPanel.agencyListingsEmpty}</p>;
   }
 
-  const totals = totalsFrom(stats);
-
   return (
-    <>
-      {/* The headline answer to "is this working?", before the table detail. */}
-      <p className="panel-stats-summary">
-        {esPanel.statsSummary}:{" "}
-        <strong>{totals.views}</strong> {esPanel.statsViews.toLowerCase()} ·{" "}
-        <strong>{totals.leads}</strong> {esPanel.statsLeads.toLowerCase()}{" "}
-        <span className="panel-stats-summary__hint">
-          ({STATS_WINDOW_DAYS} días — {esPanel.statsViewsHint})
-        </span>
-      </p>
-
-      <div className="panel-table__wrap">
+    <div className="panel-table__wrap">
       <table className="panel-table">
         <thead>
           <tr>
@@ -95,8 +59,6 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
             <th>Tipo</th>
             <th>Precio</th>
             <th>{esPanel.statusLabel}</th>
-            <th title={esPanel.statsViewsHint}>{esPanel.statsViews}</th>
-            <th>{esPanel.statsLeads}</th>
             <th>Cambiar estado</th>
           </tr>
         </thead>
@@ -124,9 +86,6 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
                   {listingStatusLabel[row.status] ?? row.status}
                 </span>
               </td>
-              {/* A listing with no activity is absent from the map, not 0 in it. */}
-              <td className="panel-table__num">{stats.get(row.id)?.views ?? 0}</td>
-              <td className="panel-table__num">{stats.get(row.id)?.leads ?? 0}</td>
               <td>
                 <div className="panel-actions">
                   <form
@@ -164,9 +123,8 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
               </td>
             </tr>
           ))}
-          </tbody>
-        </table>
-      </div>
-    </>
+        </tbody>
+      </table>
+    </div>
   );
 }
