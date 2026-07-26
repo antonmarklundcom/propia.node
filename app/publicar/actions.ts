@@ -11,23 +11,16 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { agents, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth/guards";
-import { getCrm } from "@/lib/crm";
+import { getCrm, isMessagingConfigured } from "@/lib/crm";
 import { canonPhone } from "@/lib/import/normalize";
-import type { Operation, PropertyType } from "@/lib/import/types";
+import {
+  OPERATIONS,
+  PROPERTY_TYPES,
+  type Operation,
+  type PropertyType,
+} from "@/lib/import/types";
 import { createOtp, verifyOtp } from "@/lib/otp";
 import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
-
-const OPERATIONS: Operation[] = ["venta", "alquiler", "alquiler_temporal"];
-const PROPERTY_TYPES: PropertyType[] = [
-  "casa",
-  "departamento",
-  "terreno",
-  "duplex",
-  "comercial",
-  "oficina",
-  "deposito",
-  "quinta",
-];
 
 /** Which agency (if any) a publisher belongs to — never read from the client. */
 async function resolveAgencyId(userId: number): Promise<number | null> {
@@ -130,9 +123,17 @@ export async function saveDraftAction(
 
 export type RequestOtpResult =
   | { ok: true }
-  | { ok: false; error: "invalid_number" | "cooldown"; cooldownMs?: number };
+  | {
+      ok: false;
+      error: "invalid_number" | "cooldown" | "undeliverable";
+      cooldownMs?: number;
+    };
 
-/** Issue and deliver a WhatsApp OTP for the publisher's number (via GHL). */
+/**
+ * Issue and deliver a WhatsApp OTP for the publisher's number. Only reachable
+ * when a messaging provider exists — see publishDraftAction for the path that
+ * runs when none does.
+ */
 export async function requestOtpAction(
   rawWhatsapp: string,
 ): Promise<RequestOtpResult> {
@@ -140,22 +141,32 @@ export async function requestOtpAction(
   const whatsapp = canonPhone(rawWhatsapp);
   if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
 
+  if (!isMessagingConfigured()) return { ok: false, error: "undeliverable" };
+
   const created = await createOtp(whatsapp);
   if (!created.ok)
     return { ok: false, error: "cooldown", cooldownMs: created.cooldownMs };
 
-  await getCrm().sendOtp(whatsapp, created.code);
+  // A provider that fails to deliver must not look like a sent code.
+  const sent = await getCrm().sendOtp(whatsapp, created.code);
+  if (!sent.ok) return { ok: false, error: "undeliverable" };
   return { ok: true };
 }
 
 export type PublishResult =
   | { ok: true }
-  | { ok: false; error: "invalid_number" | "otp" | "too_many" | "not_found" };
+  | {
+      ok: false;
+      error: "invalid_number" | "otp" | "too_many" | "not_found" | "otp_required";
+    };
 
 /**
  * Verify the OTP and submit the draft for review (draft → pending_review). On
  * success the publisher's WhatsApp is recorded and stamped verified, and the
  * listing carries the verified-publisher flag (the ✓ badge basis).
+ *
+ * Requires a messaging provider by definition — a code cannot be verified if it
+ * could never be sent. Without one the wizard calls publishDraftAction instead.
  */
 export async function verifyAndPublishAction(params: {
   draftId: number;
@@ -163,6 +174,8 @@ export async function verifyAndPublishAction(params: {
   code: string;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
+  if (!isMessagingConfigured()) return { ok: false, error: "otp_required" };
+
   const whatsapp = canonPhone(params.whatsapp);
   if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
 
@@ -181,6 +194,43 @@ export async function verifyAndPublishAction(params: {
     userId: user.id,
     draftId: params.draftId,
     verified: true,
+  });
+  if (affected === 0) return { ok: false, error: "not_found" };
+  return { ok: true };
+}
+
+/**
+ * Publish without phone verification, for the case where no messaging provider
+ * is configured and an OTP could never arrive.
+ *
+ * This is not a weaker door than it looks. /publicar already requires a login,
+ * and since /registro exists that login is a real account with a password; the
+ * draft is scoped to `owner_user_id`, so a publisher can only submit their own.
+ * The listing still lands in `pending_review` and a human approves it. What is
+ * genuinely missing is proof the *phone number* is real, so the row is NOT
+ * flagged verified — the ✓ badge stays something you grant deliberately.
+ *
+ * The guard is server-side: if messaging IS configured, this refuses and the
+ * OTP path is the only way through. A client cannot opt out of verification.
+ */
+export async function publishDraftAction(params: {
+  draftId: number;
+  whatsapp?: string;
+}): Promise<PublishResult> {
+  const user = await requireUser("/publicar");
+  if (isMessagingConfigured()) return { ok: false, error: "otp_required" };
+
+  // Keep the number if given — the agency still needs to be reachable — but
+  // record it as unverified.
+  const whatsapp = params.whatsapp ? canonPhone(params.whatsapp) : "";
+  if (whatsapp.length >= 9) {
+    await db.update(users).set({ whatsapp }).where(eq(users.id, user.id));
+  }
+
+  const affected = await submitDraftForReview({
+    userId: user.id,
+    draftId: params.draftId,
+    verified: false,
   });
   if (affected === 0) return { ok: false, error: "not_found" };
   return { ok: true };
