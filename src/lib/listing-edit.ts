@@ -11,7 +11,7 @@
  * the SEO contract and are not recomputed for an existing row.
  */
 import "server-only";
-import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, like, or, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies, listings, locations } from "@/db/schema";
 import { toPriceUsd } from "@/lib/import/normalize";
@@ -20,18 +20,10 @@ import type { Operation, PropertyType } from "@/lib/import/types";
 
 export type ListingStatusValue = (typeof listings.$inferSelect)["status"];
 
-/**
- * Who is editing, and therefore which rows they may touch.
- *
- * `owner` is the publish wizard's scope: an FSBO publisher has no agency, so
- * their claim on a listing is `owner_user_id`. It is intentionally the
- * narrowest of the three — it can reach a row no matter which agency the row
- * was later assigned to, but only ever a row this user created.
- */
+/** Who is editing, and therefore which rows they may touch. */
 export type EditScope =
   | { kind: "admin" }
-  | { kind: "agency"; agencyId: number }
-  | { kind: "owner"; userId: number };
+  | { kind: "agency"; agencyId: number };
 
 /** Statuses each scope may set. Admin owns the full lifecycle. */
 export const ADMIN_STATUSES: readonly ListingStatusValue[] = [
@@ -56,23 +48,11 @@ export function statusesFor(scope: EditScope): readonly ListingStatusValue[] {
   return scope.kind === "admin" ? ADMIN_STATUSES : AGENCY_STATUSES;
 }
 
-/**
- * Ownership predicate for a scope — the guard every query is built on.
- *
- * Exported because the agency dashboard's own queries (panel-queries.ts) must
- * express ownership *identically*: an independent agent has no agencies row, so
- * a dashboard that assumed `agency_id` would show them an empty panel and let
- * them edit nothing.
- */
-export function listingScopeWhere(scope: EditScope): SQL | undefined {
-  switch (scope.kind) {
-    case "admin":
-      return undefined;
-    case "agency":
-      return eq(listings.agencyId, scope.agencyId);
-    case "owner":
-      return eq(listings.ownerUserId, scope.userId);
-  }
+/** Ownership predicate for a scope — the guard every query is built on. */
+function scopeWhere(scope: EditScope): SQL | undefined {
+  return scope.kind === "admin"
+    ? undefined
+    : eq(listings.agencyId, scope.agencyId);
 }
 
 /* ------------------------------------------------------------------ */
@@ -140,22 +120,16 @@ export async function listAllListings(params: {
     .limit(params.limit ?? 200);
 }
 
-/** Status counts for the filter chips — one GROUP BY, not a full table read. */
+/** Status counts for the filter chips — one grouped pass, not one query each. */
 export async function countListingsByStatus(): Promise<
   Record<string, number>
 > {
   const rows = await db
-    .select({ status: listings.status, n: sql<number>`count(*)` })
-    .from(listings)
-    .groupBy(listings.status);
+    .select({ status: listings.status, id: listings.id })
+    .from(listings);
   const out: Record<string, number> = {};
-  let total = 0;
-  for (const r of rows) {
-    const n = Number(r.n);
-    out[r.status] = n;
-    total += n;
-  }
-  out.all = total;
+  for (const r of rows) out[r.status] = (out[r.status] ?? 0) + 1;
+  out.all = rows.length;
   return out;
 }
 
@@ -191,7 +165,7 @@ export async function getEditableListing(
   id: number,
   scope: EditScope,
 ): Promise<EditableListing | null> {
-  const guard = listingScopeWhere(scope);
+  const guard = scopeWhere(scope);
   const [row] = await db
     .select({
       id: listings.id,
@@ -290,7 +264,7 @@ export async function updateListing(params: {
   // First publish stamps publishedAt so category ordering (idx_fresh) is sane.
   if (input.status === "published") patch.publishedAt = new Date();
 
-  const guard = listingScopeWhere(scope);
+  const guard = scopeWhere(scope);
   const [res] = await db
     .update(listings)
     .set(patch)

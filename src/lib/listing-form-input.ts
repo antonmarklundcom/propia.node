@@ -8,12 +8,24 @@
  */
 import type { ListingEditInput, ListingStatusValue } from "@/lib/listing-edit";
 import { ADMIN_STATUSES } from "@/lib/listing-edit";
-import {
-  OPERATIONS,
-  PROPERTY_TYPES,
-  type Operation,
-  type PropertyType,
-} from "@/lib/import/types";
+import type { Operation, PropertyType } from "@/lib/import/types";
+
+const OPERATIONS: readonly Operation[] = [
+  "venta",
+  "alquiler",
+  "alquiler_temporal",
+];
+
+const PROPERTY_TYPES: readonly PropertyType[] = [
+  "casa",
+  "departamento",
+  "terreno",
+  "duplex",
+  "comercial",
+  "oficina",
+  "deposito",
+  "quinta",
+];
 
 function str(v: FormDataEntryValue | null): string {
   return String(v ?? "").trim();

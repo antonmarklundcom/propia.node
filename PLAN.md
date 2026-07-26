@@ -22,10 +22,9 @@ _Last updated: 2026-07-24 (session: shared-edit-admin-pages)._
   `listings.review_notes` are all present — verified with `SHOW COLUMNS`. The
   "listing detail pages return 500" incident recorded in earlier versions of
   this file is **resolved**; do not re-diagnose it.
-- **Photos are still `picsum.photos` placeholders in the data**, but the
-  pipeline to replace them now exists (1.1). The rows hold *source URLs*, so
-  the site hotlinks them until `npm run backfill:images` runs — which needs
-  the R2 envs below.
+- **Photos are `picsum.photos` placeholders.** `next.config.ts` now whitelists
+  that host so listing cards render instead of crashing the page, but no real
+  photo pipeline exists (see 1.1).
 
 ### Post-mortem worth keeping
 
@@ -67,46 +66,13 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       placeholder Che Róga Porã / AFD numbers. Every venta card currently
       advertises a monthly cuota derived from invented terms.
 - [ ] **D4 — USD→PYG rate** to quote (`USD_TO_PYG`, currently 6082).
-- [ ] **D5 — Featured-listing pricing, and how money arrives.** In-app payment
-      (an integration to pick and build) or invoice/transfer with an admin
-      toggle? The toggle is a small build on the existing `featured_until`
-      column; the integration is not. Blocks the rest of M7.
 
 ## [YOU] — production items code cannot reach
 
-- [ ] ⚠️ **Run `npm run db:migrate` against prod when you merge.** Two
-      migrations are generated but not applied:
-      • `drizzle/0002` reorders `idx_search` and adds `idx_recent` on
-        `listings` (the EXPLAIN audit in step 4). No risk, no rush — the app
-        runs fine without it, category pages just keep the slower plan.
-      • `drizzle/0003` creates `listing_views_daily`. **This one the code does
-        touch:** without the table, every listing detail page render tries to
-        count a view and fails. The failure is swallowed (the counter is
-        wrapped in try/catch and runs after the response, so pages still
-        render) but the panel will report zero views until it exists.
-      Both are fast — one DROP/CREATE INDEX pair and one small CREATE TABLE.
-      Standing rule: a schema change is not done until the migration has run
-      against prod.
-- [x] ~~`GHL_WEBHOOK_URL` + `GHL_API_KEY`~~ **No longer required — GHL is
-      optional.** Leads were always written to MySQL *before* the CRM push, so
-      the push was a copy and nothing is lost without it; `/admin/leads` is now
-      the founder's inbox and `/agencia/leads` the agency's. The one thing GHL
-      really carried was OTP delivery, and that had a trap: with no key
-      configured the provider logged the code server-side and returned
-      **success**, so production told publishers "we sent you a code" that could
-      never arrive. Now `isMessagingConfigured()` decides: no provider → the
-      wizard publishes straight to `pending_review` (login + review are the
-      gate) and the row is *not* flagged phone-verified; a provider that fails
-      → an honest error, never a fake send.
-      Optional later: set `LEAD_WEBHOOK_URL` to any endpoint (n8n, your own
-      CRM, GHL) to get lead pushes and re-enable OTP.
-- [ ] **Cloudflare R2 bucket + `R2_*` envs + image host mapping.** Now the
-      blocker rather than a companion task: 1.1 is written and builds, but
-      until `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and
-      `R2_BUCKET` exist in the production env, every upload button says
-      "storage not configured". Also map `R2_PUBLIC_BASE_URL`
-      (img.propia.com.py) to the bucket's public URL, then run
-      `npm run backfill:images` once to stop hotlinking the import sources.
+- [ ] `GHL_WEBHOOK_URL` + `GHL_API_KEY` in the production env. **Until these
+      are set, WhatsApp OTP never sends and no lead reaches the CRM** — the
+      publish wizard and every contact form are effectively dead.
+- [ ] Cloudflare R2 bucket + `R2_*` envs + image host mapping (pairs with 1.1).
 - [ ] GA4 + Search Console properties.
 - [ ] hPanel cron jobs: `cron:cuotas`, `cron:medians` (nightly).
 - [ ] **Security hygiene from the migration session:** rotate the MySQL
@@ -124,14 +90,14 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 
 | Milestone | Code | Gate cleared? |
 | --- | --- | --- |
-| M0 Rails (deploy, DB, R2) | ✅ deploy + DB + R2 pipeline built | ⏳ R2 envs not set, so no photo has been stored yet |
+| M0 Rails (deploy, DB, R2) | ⚠️ deploy + DB done; **R2 never built** | ❌ |
 | M1 Schema + seeds | ✅ done | ⚠️ financing rates are placeholders (D3) |
 | M2 Minimum supply (importer, review queue) | ✅ done | ⏳ 50 hand-audited listings not confirmed |
 | M3 Public launch surface | ✅ done | ✅ canonical host is per-request (1.2) |
-| M4 Search, filters & map | ✅ filters, search, EXPLAIN audit (index fixed, migration 0002), bbox map API + split list/map view | ⏳ one typed facet builder still to share between category and map queries |
-| M5 Wizard, OTP & accounts | ✅ wizard, auth, admin user management, self-registration, profile editing; publishing no longer needs OTP | ✅ no external provider required |
-| M6 Scrape importers + SEO at scale | 🔶 link-import (3.5) + `/precios` pages and internal link modules done; barrio guides remain | ⏳ Screaming Frog crawl not run |
-| M7 Monetization & feeders | 🔶 valuation magnet done | ⏳ featured/preventa need a pricing decision (D5) |
+| M4 Search, filters & map | 🔶 filters + search bar exist; map API, split list/map view, EXPLAIN audit remain | ❌ |
+| M5 Wizard, OTP & accounts | 🔶 wizard + auth merged, but **no account management at all** and OTP undeliverable | ❌ |
+| M6 Scrape importers + SEO at scale | ❌ not started | — |
+| M7 Monetization & feeders | ❌ not started | — |
 
 ---
 
@@ -142,24 +108,15 @@ the product more usable than the last.
 
 ### Step 1 — Make the portal genuinely usable
 
-- [x] **1.1 R2 image pipeline.** ✅ Code done — **waiting on the `[YOU]` R2
-      envs to actually run.** `src/lib/r2.ts` (S3 client pointed at R2),
-      `src/lib/images.ts` (sharp: EXIF-oriented, downscaled to 1600px + a
-      480px thumb, re-encoded to WebP) and `src/lib/listing-images.ts` (the
-      same `EditScope` guard the edit layer uses, extended with an `owner`
-      scope for FSBO publishers). Upload/delete/reorder/set-cover in both
-      panels via one shared `PhotoManager`, photo upload in the publish
-      wizard as soon as a draft row exists, and
-      `npm run backfill:images [--dry-run] [--limit N]` to pull the importer's
-      remote URLs into the bucket and rewrite `r2_key`.
-      Two things worth knowing: re-encoding is what makes the upload path
-      safe — a file that only claims to be an image never gets stored, and
-      **EXIF GPS is dropped** rather than served (schema §2.1 says precise
-      coordinates are never public). And cards now request the thumb, so a
-      category page stops pulling ~20 full-size photos over mobile data.
-      Until the envs are set the panel shows "photo storage is not
-      configured" instead of failing — missing config is a disabled feature,
-      never a crash.
+- [ ] **1.1 R2 image pipeline.** The single biggest gap: no one can upload a
+      photo. Today `src/lib/format.ts` only prefixes a stored key with
+      `R2_PUBLIC_BASE_URL`; there is no S3/R2 client in the repo at all, and
+      the importer parks the source URL in `listing_images.r2_key` with a
+      comment deferring the real fetch to M6. Build: upload helper (presigned
+      PUT or server-side put), `sharp` thumbnails, wire it into the publish
+      wizard and the agency panel, and a backfill script that pulls existing
+      remote URLs into R2 and rewrites `r2_key`. Needs the `[YOU]` R2 envs to
+      run, but the code can land first.
 - [x] **1.2 Per-request canonical host.** ✅ Done — `src/lib/origin.ts` derives
       the origin from the `Host` header, the way `middleware.ts` already
       resolves the vertical, and every absolute URL (canonical, OG, JSON-LD,
@@ -180,7 +137,7 @@ the product more usable than the last.
       edits every field, not just status. Shares one form component and one
       parser with the admin edit (`src/components/panel/ListingForm.tsx`,
       `src/lib/listing-form-input.ts`) so the two can never validate
-      differently. Photos included as of 1.1 (shared `PhotoManager`).
+      differently. Photos still excluded — they need 1.1.
 
 ### Step 2 — Admin control plane
 
@@ -204,116 +161,22 @@ the product more usable than the last.
 
 ### Step 3 — Supply-side self-service
 
-- [x] **3.1 Registration for agents and agencies.** ✅ Done — `/registro`
-      creates the login plus its profile rows in one call
-      (`src/lib/registration.ts`): an *inmobiliaria* gets a `users` row
-      (`agency_admin`), an `agencies` row and the `agents` row that links them;
-      an *agente independiente* gets a `users` row (`agent`) and an `agents`
-      row with `agency_id` NULL. Both start `is_verified = false`, so sign-up
-      grants a login and never trust — the ✓ badge is still your manual call,
-      and listings still pass the review queue. The new account is logged in
-      immediately, and the form has no `role` field to forge: role, agency link
-      and verification state are all decided server-side.
-      **This exposed a real gap it had to fix:** the whole `/agencia` panel
-      assumed an `agency_id`, so an independent agent would have logged in to
-      an empty dashboard and been unable to edit the listing they just
-      published. `panelScope()` (auth/guards.ts) now resolves an agency account
-      to its agency and an independent to `owner_user_id` — the same `owner`
-      scope the wizard uses — and the dashboard listings, leads inbox, status
-      changes, edit form and photo actions all run through it.
-- [x] **3.2 Profile editing.** ✅ Done — `/agencia/perfil` (fourth tab) edits
-      the company record (name, logo, WhatsApp, contact email), the caller's own
-      public agent profile (name, photo, WhatsApp) and their own login (name,
-      email, password). Three separate permissions, not one form: the company
-      record is **agency-admin only** — an `agent` inside the agency sees it
-      read-only and a forged POST is refused — while every user owns their agent
-      profile and their login. Changing a password revokes every session for
-      that user and reissues one for the browser doing it, so a stolen cookie
-      cannot outlive the change. Slugs are never rewritten on a rename, same SEO
-      contract as listings.
-      _Not included:_ a **description/bio** field. The plan assumed the schema
-      had one; it does not (`agencies` has name/logo/whatsapp/email, `agents`
-      name/photo/whatsapp). Adding it is a one-column migration — say the word
-      and it lands with MIGRATION REQUIRED. Logo and photo are URL fields for
-      now rather than uploads, even though 1.1 could power an upload.
-- [x] **3.3 Per-listing stats for the owner.** ✅ Done — **MIGRATION REQUIRED
-      (`drizzle/0003`, new `listing_views_daily` table).** Views and leads per
-      listing over a rolling 30 days: totals across the top of `/agencia`, two
-      columns in the listings table, and a figures-plus-30-day-bars card at the
-      top of every edit page (admin and agency, same component).
-      Four decisions worth keeping:
-      **(a) One row per listing per day, not per view** — an owner asks "how
-      many people saw my ad this week", never "who saw it at 14:03", and a
-      row-per-view would be the fastest-growing table in the schema for an
-      answer nobody wants. **(b) Counted after the response** via Next's
-      `after()`, so stats never cost the visitor latency and a failed counter
-      never breaks a page that rendered fine. **(c) Crawlers excluded**
-      (`view-tracking.ts`) — an owner who sees "420 views" and gets no calls
-      concludes the portal is broken; if most of those were Googlebot the
-      number lied. **(d) UPDATE-then-INSERT, not `ON DUPLICATE KEY UPDATE`**,
-      which is MySQL-only and the schema's first rule is that the Postgres
-      escape hatch stays open; the insert race is caught and retried as an
-      update.
-      Verified against a real database and a real browser: 3 human views
-      counted and 3 bot views ignored end-to-end, 8 concurrent first-views of
-      the same listing produce one row and lose none of the 8, views older than
-      the window excluded, another agency's scope sees nothing, and the panel
-      renders 188 views / 3 leads with a 30-bar trend.
-- [x] **3.4 `/admin/leads` — every lead the site captured.** ✅ Done — third
-      `/admin` tab: type filter chips with counts, search by name / WhatsApp /
-      email, the owning agency (or “Interno” when the lead is yours), which
-      vertical captured it, the listing it came from, and a one-tap WhatsApp
-      reply. This is the only place `routed_to = 'internal'` leads (valuation,
-      seller) are visible at all — no agency panel shows them.
-      Note: `/admin` now has five tabs, which is past what fits one row on a
-      phone; the next addition should group rather than append.
+- [ ] **3.1 Registration for agents and agencies.** There is no `/registro`
+      route; every account is founder-created. Add sign-up that creates the
+      user plus its `agents`/`agencies` rows in a pending state, reusing the
+      existing `isVerified` flag for your approval.
+- [ ] **3.2 Profile editing.** Agencies and agents cannot edit their own name,
+      logo, contact details or description — the data model supports it
+      (`agencies`, `agents`), the UI does not exist.
+- [ ] **3.3 Per-listing stats for the owner** (views, leads) so the panel is
+      worth logging into.
 
 ### Step 4 — Finish M4 (search, filters & map)
 
-- [x] **Map API: bounding-box endpoint.** ✅ `GET /api/mapa?bbox=…` plus the
-      same filter vocabulary the category URLs use, so pins and grid can never
-      disagree. `src/lib/map-queries.ts` owns the rule that matters:
-      **coordinates are rounded to 3 decimals (~110 m) before they leave the
-      module**, because `lat`/`lng` and `address_text` are "never shown publicly
-      at full precision" (schema §2.1) — a pin on the exact building tells a
-      stranger which house is empty and for sale. A listing with no coordinates
-      of its own borrows its barrio/city centroid and is flagged
-      `approximate: true` (dashed pin) rather than being invented into a
-      position or dropped. Capped at 400 pins, and a box wider than 12° is
-      refused (422) rather than answered with the country.
-- [x] **Split list/map UI, mobile map.** ✅ `?vista=mapa` on any category page —
-      a query param, not a route, so the canonical URL is untouched and no thin
-      duplicate gets indexed. Price pills + cluster chips, filters carried
-      across the switch, maplibre still lazy-loaded so the list view (what
-      crawlers and most visitors see) never downloads the map engine.
-      **Clustering is ~50 lines of screen-space grid bucketing, not
-      `supercluster`:** MapLibre's built-in clustering draws counts with a
-      `symbol` layer, which needs a `glyphs` font URL the free raster OSM style
-      does not have — so the "cheap" path was a dependency on someone else's
-      font server. HTML markers style with plain CSS instead.
-- [ ] Typed query layer over `idx_search` covering every facet combination
-      (the audit and the index fix are done; the remaining piece is one shared
-      typed builder so the category, map and future saved-search queries can't
-      drift apart).
-- [x] **EXPLAIN audit — done, and it found a real index bug.** ⚠️ **MIGRATION
-      REQUIRED (`drizzle/0002`).** `idx_search` was
-      `(status, operation, property_type, location_id, price_usd)`, but the URL
-      scheme queries operation + location *always* and property_type only on
-      `/{operacion}/{ciudad}/{tipo}` — so a city landing page could use only
-      the `(status, operation)` prefix and scanned every listing of that
-      operation (`key_len 2`, ~1 800 rows at 3 000 listings). Reordered to
-      `(status, operation, location_id, property_type, price_usd)` so the
-      optional column is last, and added `idx_recent`
-      `(status, operation, location_id, published_at)` for the default
-      `published_at desc` ordering, which no index covered.
-      Verified on a local DB with 3 000 listings spread across the seeded
-      locations: rows examined on a city page **1 800 → 163**, and the query
-      itself **1.50 ms → 0.75 ms** (A/B on the same data, with a control run).
-      Remaining honestly: an `IN (...)` location list plus `ORDER BY` still
-      filesorts — inherent to a range predicate, and cheap now that the range
-      is small.
-      _Left for the map work:_ a typed facet layer and the bounding-box
-      endpoint below.
+- [ ] Typed query layer over `idx_search` covering every facet combination.
+- [ ] Map API: bounding-box endpoint + client-side supercluster.
+- [ ] Split list/map UI, mobile full-screen map.
+- [ ] EXPLAIN audit — every combination hits an index, <200ms.
 
 ### Step 5 — Performance (already diagnosed, just needs doing)
 
@@ -332,156 +195,27 @@ the product more usable than the last.
       `await citySubtreeIds(city.id)` sat *inside* the `Promise.all` array
       literal, so it ran to completion before the other two branches started.
       Hoisted above the block.
-- [x] In `getFilteredCategoryListings` the rows select and the count select do
-      not depend on each other — ✅ now issued together in one `Promise.all`.
-- [x] Load the small `locations` table once and walk the parent chain in
-      memory — ✅ done. One cached read per request serves every
-      `locationChain()` *and* `citySubtreeIds()` call, replacing one round-trip
-      per hierarchy level plus one per subtree lookup.
-- [x] **Counters were reading whole result sets.** ✅ Fixed — `countCategory`,
-      `countPublished`, the filtered count, `countReviewQueue`,
-      `countSuperAdmins`, `countListingsByStatus` and `countLeadsByType` all
-      selected every matching row and took `rows.length` in JavaScript, so
-      MySQL streamed the full result to Node to be thrown away. Now `COUNT(*)`
-      and `GROUP BY`, index-only per EXPLAIN. Measured ~2× faster at 3 000
-      listings, and it stops scaling with inventory.
-- [x] `getPanelLeads` read every owned listing id into Node and sent them back
-      as an `IN (...)` list — ✅ now one inner join with the scope predicate.
+- [ ] In `getFilteredCategoryListings` (`src/lib/queries.ts:162`) the rows
+      select and the count select do not depend on each other — run them
+      together.
+- [ ] Consider loading the small `locations` table once and walking the
+      parent chain in memory instead of one query per level.
 
 ### Step 6 — M6 (scale supply + SEO)
 
-- [x] **3.5 Import one listing from its link — the agent claims it.** ✅ Done at
-      `/agencia/importar` (fourth agency tab).
-      **This replaces the "InfoCasas / Clasipar scrape adapters" item below, on
-      purpose.** Crawling a competitor's catalogue and republishing it breaches
-      their terms, copies listing text and photos that belong to the agency or
-      the portal, and fills the site with duplicates carrying someone else's
-      watermarks — and the risk lands on us, not them. Pulling *one* listing, at
-      the request of the agent who owns it, who ticks an attestation, is the same
-      utility with none of that: it is a migration tool for supply we are
-      recruiting anyway.
-      How it works: paste a link → we fetch and parse → **a review form**
-      pre-filled with what we read, blanks left blank on purpose → the
-      attestation → a `draft` in that agent's own scope that still goes through
-      the review queue. Nothing is published from a URL, and `is_verified` stays
-      false. The source URL lands on `listing_sources` and in `review_notes`, so
-      when you approve it you can see where it came from.
-      Parsing is JSON-LD first, then OpenGraph, then generic text patterns —
-      **no per-site CSS selectors**, which is both more robust and the part that
-      would make this feel like scraping. Amount parsing follows PY convention
-      (`Gs. 1.250.000.000`, `US$ 85.000` — dots are thousands).
-      **Photos are not copied.** The agent uploads their own from the edit page;
-      that keeps other portals' watermarks off the site.
-      The security-critical piece is `src/lib/safe-fetch.ts`: fetching a
-      user-supplied URL server-side is SSRF, so http/https only, DNS resolved
-      and every address checked public, re-checked after each redirect hop, 2 MB
-      cap, 10 s timeout. Verified against loopback, link-local (cloud metadata),
-      all three RFC1918 ranges, IPv6 loopback, `file://`, `gopher://` and
-      `0.0.0.0` — all refused.
-      _Known limit:_ no per-user rate limit on the fetcher yet. It needs a login
-      and only ever returns parsed listing fields (never raw HTML), so the abuse
-      ceiling is low, but a cooldown is worth adding before you have many
-      accounts.
-- [ ] ~~InfoCasas / Clasipar scrape adapters~~ — **deliberately not built**, see
-      3.5 above. If you ever want bulk supply from a portal, the route is a
-      *partnership* with a feed, not a crawler.
-- [ ] Watermark scoring for imported photos (still relevant once photos arrive
-      from anywhere but a direct upload).
-- [x] **`/precios` pages + internal link modules.** ✅ Done, and **no API key
-      needed** — this half of the SEO surface is built from medians we compute
-      ourselves (`cron:medians`), so it works the moment that cron runs.
-      `/precios` lists cities with defensible data; `/precios/{ciudad}` shows
-      median price and price/m² per (type × operation) with a link into the
-      matching category page, plus a plain-language method note.
-      The honesty rule is load-bearing: a city aggregate is a
-      **sample-weighted** mean of its barrio medians (not a median of medians,
-      which would treat a barrio with 40 listings and one with 2 as equals), a
-      group under 8 listings renders **with a caveat** rather than silently, and
-      a page whose every group is thin is `noindex`. The sitemap uses the same
-      rule, so page and sitemap can never disagree — that agreement is what
-      keeps programmatic pages out of doorway territory, and it matters more
-      here than on a category page because a median *looks* authoritative.
-      Link modules: category page → its city's prices, listing detail → same,
-      price row → the category page it summarises, footer → `/precios`.
-- [ ] Barrio guides via the Claude API (top 30). Needs `ANTHROPIC_API_KEY` in
-      prod `[YOU]`. Note the guides are the *only* part of §4.4 that needs it.
+- [ ] InfoCasas / Clasipar import adapters + watermark scoring.
+- [ ] Barrio guides via the Claude API (top 30), `/precios` pages, internal
+      link modules. Needs `ANTHROPIC_API_KEY` in prod `[YOU]`.
 - [ ] **[YOU]** GATE: Screaming Frog crawl — zero indexable thin pages, zero
       canonical conflicts.
 
 ### Step 7 — M7 (monetization & feeders)
 
-- [x] **Valuation lead magnet (`/tasacion`).** ✅ Done, no key or price decision
-      needed — it runs on the medians `cron:medians` already computes, and it
-      produces *seller* leads, which are future listings.
-      Four restraints are the design, because this is the one screen that puts a
-      number on a property nobody has seen:
-      **(a) A range, never a single number** — a point estimate off a median
-      price/m² is false precision, and an owner who anchors on it and lists 20%
-      high sits unsold for months. **(b) The band widens as data thins** (±12%
-      at 60+ comparables, ±25% under 15). **(c) Under 8 comparables it refuses
-      outright** and offers a human instead — no estimate beats one we would not
-      defend. **(d)** The copy states it is built from *asking* prices, not
-      closing prices, and is not an official appraisal.
-      The estimate is free and shown *before* any contact field: gating the
-      number behind a phone number earns one lead and loses the trust that
-      brings someone back to publish. The lead is created only if they ask,
-      lands as `routed_to = 'internal'` (yours, in `/admin/leads`), and carries
-      the full valuation context so the follow-up starts informed.
-      Also repointed the homepage's "¿Cuánto vale tu casa?" card, which until now
-      pointed at the same outbound WhatsApp link as the publish card because no
-      tool existed.
-- [ ] Featured listings + preventa promotion — **needs you first**: pricing, and
-      a decision on whether money changes hands in-app (a payment integration)
-      or by invoice/transfer with an admin toggle. The toggle version is a small
-      build on top of `listings.featured_until`, which already exists.
+- [ ] Valuation lead magnet, featured listings, preventa promotion.
 - [ ] **[YOU]** Decide the first feeder domain to switch on and the pricing for
       featured placement.
 
 ---
-
-## Known dialect dependency
-
-`scripts/compute-medians.ts` uses `.onDuplicateKeyUpdate()`, which is
-MySQL-only, against the standing "no MySQL-only tricks" rule. It is one call in
-a nightly cron (not a request path), so it is cheap to port when needed — but it
-is the one place the Postgres escape hatch is currently nailed shut. The views
-counter deliberately avoids the same trick; see `recordListingView`.
-
-## Verification you can re-run
-
-- **The map was driven in a real browser (Playwright + Chromium), not just
-  typechecked — and that is the only reason it works.** Two bugs were invisible
-  from the code: (1) `maplibre-gl.css` sets `.maplibregl-map { position:
-  relative }` and its stylesheet is injected *after* `globals.css`, so
-  `inset: 0` silently stopped sizing the map container — it collapsed to
-  height 0 and, because maplibre also sets `overflow: hidden`, every marker
-  inside became unclickable (`document.elementFromPoint` at a cluster chip
-  returned the wrapper, and a real mouse click did nothing); (2) on a phone the
-  search and filter cards filled the entire first screen, so tapping "Mapa"
-  showed no map until you scrolled past both. Both fixed and re-verified:
-  container 1098×620, hit test lands on the chip, a genuine click zooms
-  (chips 33 → 11, pins 10 → 31), price pill links to the right listing.
-  Note OSM raster tiles cannot load from inside the dev sandbox (the proxy
-  blocks `tile.openstreetmap.org`), so screenshots show pins over a blank
-  backdrop; pins and clustering are ours and work regardless.
-
-- `npm run verify:scopes` — exercises the panel's ownership guards against a
-  local database: sign-up shape (roles, unverified flags, the `agents` link),
-  the validation refusals, **cross-tenant isolation** (an agency cannot read,
-  edit or restatus an independent's listing), slug immutability on rename, and
-  that a password change revokes only that user's sessions. It refuses to run
-  unless `DATABASE_URL` points at localhost, and it cleans up its own rows.
-  This is the only automated check in the repo — if you touch
-  `listingScopeWhere`, `panelScope` or any panel query, run it.
-
-## Pending migration
-
-**`drizzle/0002` is generated but NOT applied to production.** It reorders
-`idx_search` and adds `idx_recent` on `listings` (see the EXPLAIN audit in step
-4). Deployed code does not select new columns, so the app runs fine either way
-— the only cost of waiting is that category pages keep the slower plan. Run
-`npm run db:migrate` against prod when convenient; it is a DROP INDEX plus two
-CREATE INDEX on a small table, so it completes immediately.
 
 ## Standing rules
 

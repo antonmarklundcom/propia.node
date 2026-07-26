@@ -23,76 +23,6 @@ export const es = {
   quickQuestions: ["¿Disponible?", "¿Puedo visitar?", "¿Requisitos?"],
 } as const;
 
-/** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
-export const esTasacion = {
-  title: "¿Cuánto vale tu propiedad?",
-  subtitle:
-    "Te damos un rango estimado en base a los precios publicados en Homes Paraguay. Gratis, sin registrarte y sin que te llame nadie salvo que vos lo pidas.",
-  cityLabel: "Ciudad",
-  typeLabel: "Tipo de propiedad",
-  operationLabel: "Querés",
-  operationSale: "Vender",
-  operationRent: "Alquilar",
-  areaLabel: "Superficie (m²)",
-  areaHint:
-    "Superficie construida. Si es un terreno, poné los m² del lote.",
-  submit: "Calcular",
-  calculating: "Calculando…",
-  resultTitle: "Rango estimado",
-  resultRange: (low: string, high: string) => `Entre ${low} y ${high}`,
-  resultBasis: (n: number, perM2: string, city: string, period: string) =>
-    `Calculado sobre ${n} avisos comparables en ${city} (${period}), a una mediana de ${perM2} por m².`,
-  resultBandNote: (pct: number) =>
-    `El rango es de ±${pct}%: cuantos menos avisos comparables hay, más ancho lo dejamos. Preferimos ser honestos antes que precisos.`,
-  disclaimer:
-    "Importante: es una referencia calculada con precios de publicación, no con precios de cierre, y no es una tasación oficial. Lo que define el valor real es el estado de la propiedad, su ubicación exacta y el momento del mercado.",
-  errorBadArea: "Revisá los m²: poné un número entre 10 y 100.000.",
-  errorUnknownCity: "Elegí una ciudad de la lista.",
-  errorNoData:
-    "Todavía no tenemos avisos comparables para ese tipo de propiedad en esa ciudad. Escribinos y lo vemos a mano.",
-  errorThinData:
-    "Tenemos muy pocos avisos comparables ahí para darte un número que podamos defender. Escribinos y lo vemos a mano.",
-  errorGeneric: "No pudimos calcular el rango. Probá de nuevo.",
-  nextTitle: "¿Querés publicarla o que te asesoremos?",
-  nextBody:
-    "Dejanos tu WhatsApp y te contactamos. También podés publicarla vos mismo, gratis.",
-  nameLabel: "Tu nombre",
-  whatsappLabel: "Tu WhatsApp",
-  contactSubmit: "Quiero que me contacten",
-  contactSent:
-    "¡Listo! Te vamos a escribir por WhatsApp. Mientras tanto podés publicar tu propiedad vos mismo.",
-  contactError: "No pudimos enviar tus datos. Probá de nuevo.",
-  publishCta: "Publicar mi propiedad",
-  seePrices: "Ver precios de la zona",
-} as const;
-
-/** Price pages (/precios) — market data in plain voseo, caveats included. */
-export const esPrecios = {
-  indexTitle: "Precios de propiedades en Paraguay",
-  indexSubtitle:
-    "Precio mediano por ciudad, calculado con los avisos publicados en Homes Paraguay. Elegí una ciudad para ver el detalle por tipo de propiedad.",
-  indexEmpty:
-    "Todavía no tenemos suficientes avisos publicados para calcular precios confiables.",
-  cityTitle: (city: string) => `Precios de propiedades en ${city}`,
-  citySubtitle: (city: string, period: string) =>
-    `Precio mediano de venta y alquiler en ${city}, según los avisos publicados en Homes Paraguay${period ? ` (${period})` : ""}.`,
-  tableType: "Tipo",
-  tableOperation: "Operación",
-  tableMedian: "Precio mediano",
-  tableMedianM2: "Por m²",
-  tableSample: "Avisos",
-  seeListings: "Ver avisos",
-  fewSamples: "Pocos avisos — tomalo como referencia, no como precio de mercado.",
-  methodTitle: "Cómo calculamos esto",
-  methodBody:
-    "Usamos la mediana (no el promedio) de los precios publicados en Homes Paraguay, por ciudad y tipo de propiedad. La mediana aguanta mejor los avisos con precios extremos. Un grupo con menos de 8 avisos se muestra con aviso: es una referencia, no un precio de mercado. Los precios publicados no son precios de cierre.",
-  emptyCity:
-    "Todavía no tenemos avisos suficientes en esta ciudad para calcular un precio.",
-  backToPrices: "← Todos los precios",
-  relatedPrices: (city: string) => `¿Cuánto vale una propiedad en ${city}?`,
-  relatedPricesCta: "Ver precios medianos",
-} as const;
-
 /**
  * Panel / auth copy (admin + agency). Voseo, same register as `es`. This is the
  * internal surface (login, review queue, agency dashboard) — never indexed, but
@@ -106,56 +36,6 @@ export const esPanel = {
   loginSubmit: "Entrar",
   loginError: "Email o contraseña incorrectos.",
   logout: "Salir",
-  loginToRegister: "¿Todavía no tenés cuenta? Registrate",
-
-  // Registro (inmobiliarias y agentes)
-  registerTitle: "Creá tu cuenta",
-  registerSubtitle:
-    "Cargá tus propiedades vos mismo. Es gratis: revisamos cada aviso antes de publicarlo.",
-  registerKindLabel: "¿Cómo trabajás?",
-  registerKindAgency: "Tengo una inmobiliaria",
-  registerKindIndependent: "Soy agente independiente",
-  registerAgencyNameLabel: "Nombre de la inmobiliaria",
-  registerYourNameLabel: "Tu nombre y apellido",
-  registerWhatsappLabel: "WhatsApp (opcional)",
-  registerPasswordLabel: "Contraseña",
-  registerPasswordHint: "Mínimo 8 caracteres.",
-  registerSubmit: "Crear cuenta",
-  registerToLogin: "¿Ya tenés cuenta? Ingresá",
-  registerPendingNote:
-    "Tu cuenta queda activa al instante. La verificación (el ✓ en tu perfil) la aprobamos a mano después de revisar tus datos.",
-  registerErrorName: "Escribí tu nombre completo.",
-  registerErrorEmail: "Revisá el email.",
-  registerErrorEmailTaken:
-    "Ya existe una cuenta con ese email. Probá ingresando.",
-  registerErrorPassword: "La contraseña necesita al menos 8 caracteres.",
-  registerErrorAgencyName: "Escribí el nombre de la inmobiliaria.",
-  registerErrorGeneric: "No pudimos crear la cuenta. Probá de nuevo.",
-
-  // Perfil (agencia + agente)
-  profileTab: "Tu perfil",
-  profileAgencyTitle: "Datos de la inmobiliaria",
-  profileAgencyReadOnly:
-    "Solo la cuenta administradora de la inmobiliaria puede cambiar estos datos.",
-  profileAgentTitle: "Tu perfil público",
-  profileAccountTitle: "Tu cuenta",
-  profileNoAgency:
-    "Trabajás como agente independiente, así que no hay datos de inmobiliaria para editar.",
-  profileLogoLabel: "Logo (URL)",
-  profilePhotoLabel: "Foto (URL)",
-  profileWhatsappLabel: "WhatsApp",
-  profileEmailLabel: "Email de contacto",
-  profileSave: "Guardar",
-  profileSaved: "Datos actualizados.",
-  profileAgencySaved: "Datos de la inmobiliaria actualizados.",
-  profileAccountSaved: "Tu cuenta se actualizó.",
-  profilePasswordChanged:
-    "Contraseña actualizada. Cerramos las otras sesiones abiertas.",
-  profileEmailTaken: "Ese email ya está en uso por otra cuenta.",
-  profileForbidden: "No tenés permiso para cambiar esos datos.",
-  profileInvalid: "Revisá los datos ingresados.",
-  profileVerifiedNote: "Perfil verificado por Homes Paraguay.",
-  profilePendingNote: "Verificación pendiente de aprobación.",
 
   // Admin
   adminReviewTitle: "Cola de revisión",
@@ -198,13 +78,6 @@ export const esPanel = {
     "Contraseña actualizada. Se cerraron las sesiones abiertas de ese usuario.",
   userAgencyLinked: "Vínculo con la inmobiliaria actualizado.",
 
-  // Admin — todas las consultas
-  adminLeadsTitle: "Consultas",
-  adminLeadsHint:
-    "Todas las consultas que entran por el sitio, de cualquier inmobiliaria o agente. Las marcadas como “Interno” son tuyas para trabajar.",
-  adminLeadsEmpty: "No hay consultas con ese filtro.",
-  adminLeadsSearchLabel: "Buscar por nombre, WhatsApp o email",
-
   // Admin — todas las propiedades
   adminListingsTitle: "Propiedades",
   adminListingsEmpty: "No hay propiedades con ese filtro.",
@@ -239,82 +112,14 @@ export const esPanel = {
   listingNotFound: "No encontramos ese aviso.",
   listingInvalid: "Revisá los datos: faltan campos obligatorios.",
 
-  // Fotos (shared: admin + agency)
-  photosTitle: "Fotos",
-  photosEmpty: "Este aviso todavía no tiene fotos.",
-  photosHint:
-    "La primera foto es la portada: es la que se ve en los listados. Podés subir varias a la vez (JPG, PNG, WebP o HEIC, hasta 12 MB cada una).",
-  photosAddLabel: "Agregar fotos",
-  photosUpload: "Subir",
-  photosCover: "Portada",
-  photosMakeCover: "Hacer portada",
-  photosMoveUp: "Mover antes",
-  photosMoveDown: "Mover después",
-  photosDelete: "Borrar",
-  photosDeleteConfirm: "¿Borrar esta foto? No se puede deshacer.",
-  photosUploaded: "Fotos subidas.",
-  photosDeleted: "Foto borrada.",
-  photosReordered: "Orden actualizado.",
-  photosNoFiles: "No elegiste ninguna foto.",
-  photosRejected: "Algunas fotos no se pudieron subir.",
-  photosNotConfigured:
-    "El almacenamiento de fotos todavía no está configurado (faltan las claves de R2). Avisale al administrador.",
-  photosPlaceholderNote:
-    "Foto de muestra del importador — reemplazala por fotos reales de la propiedad.",
-
   // Agency
   agencyListingsTitle: "Tus propiedades",
   agencyListingsEmpty: "Todavía no tenés propiedades cargadas.",
   agencyLeadsTitle: "Consultas recibidas",
   agencyLeadsEmpty: "Todavía no recibiste consultas.",
-  agencyWelcome:
-    "¡Bienvenido! Tu cuenta ya está lista. Cargá tu primera propiedad y nosotros la revisamos antes de publicarla.",
   agencyNoLink:
     "Tu usuario todavía no está vinculado a una inmobiliaria. Escribinos para activarlo.",
   statusLabel: "Estado",
-
-  // Importar desde un enlace (3.5)
-  importTab: "Importar",
-  importTitle: "Traé tu aviso desde otro portal",
-  importSubtitle:
-    "Pegá el enlace de TU aviso y llenamos el formulario por vos. Queda como borrador: revisás los datos, agregás fotos y lo enviás a publicación.",
-  importUrlLabel: "Enlace de tu aviso",
-  importFetch: "Leer el enlace",
-  importReading: "Leyendo…",
-  importOwnershipLabel:
-    "Declaro que este aviso es mío (o que la inmobiliaria me autorizó a publicarlo) y que puedo usar su texto y sus fotos.",
-  importOwnershipRequired:
-    "Necesitamos que confirmes que el aviso es tuyo antes de importarlo.",
-  importReviewTitle: "Revisá lo que leímos",
-  importReviewHint:
-    "Corregí lo que haga falta. Lo que no pudimos leer quedó vacío a propósito: preferimos un campo en blanco a un dato inventado.",
-  importCreate: "Crear borrador",
-  importPhotosNote:
-    "Las fotos no se copian automáticamente. Subilas desde la edición del aviso — así te quedás con tus propias imágenes, sin marcas de agua de otro portal.",
-  importCreated:
-    "Borrador creado. Revisalo, agregá fotos y mandalo a publicación.",
-  importDuplicate: "Ese enlace ya fue importado antes:",
-  importLocationLabel: "Ubicación (confirmá o corregí)",
-  importErrorBadUrl: "Ese enlace no parece válido. Copialo completo, con https://",
-  importErrorBlocked:
-    "Solo podemos leer enlaces públicos de internet.",
-  importErrorUnreachable:
-    "No pudimos abrir esa página. Puede estar caída o bloquear lectores externos — cargá el aviso a mano.",
-  importErrorNotHtml: "Ese enlace no es una página web con un aviso.",
-  importErrorTooLarge: "Esa página es demasiado grande para leerla.",
-  importErrorGeneric: "No pudimos leer ese enlace. Probá cargar el aviso a mano.",
-  importLegalNote:
-    "Importamos un aviso a la vez, a pedido de su titular. No copiamos catálogos de otros portales.",
-
-  // Estadísticas por aviso (3.3)
-  statsViews: "Visitas",
-  statsLeads: "Consultas",
-  statsWindow: "Últimos 30 días",
-  statsSummary: "En los últimos 30 días",
-  statsNoData:
-    "Todavía no hay visitas registradas. Las estadísticas empiezan a contar desde que el aviso está publicado.",
-  statsViewsHint:
-    "Visitas de personas: excluimos buscadores y bots para que el número signifique algo.",
   saveStatus: "Guardar",
   contactLead: "Responder por WhatsApp",
 } as const;
@@ -353,24 +158,10 @@ export const esPublish = {
   priceLabel: "Precio",
   cuotaWith: "con",
   videoLabel: "Video (opcional)",
-  photosTitle: "Fotos",
   photosHint:
-    "La primera foto es la portada. Podés agregarlas ahora o después, desde tu panel.",
-  photosPickLabel: "Elegí las fotos",
-  photosUploading: "Subiendo…",
-  photosDelete: "Borrar",
-  photosDraftFirst:
-    "Completá los datos de la propiedad y seguí adelante: apenas se guarda el borrador vas a poder subir fotos.",
-  photosStorageOff:
-    "El almacenamiento de fotos todavía no está disponible. Podés publicar igual y agregarlas después.",
-  photosFailed: "No pudimos subir algunas fotos. Probá de nuevo.",
+    "Las fotos se agregan después de publicar, desde tu panel. Podés cargar hasta 20.",
   foreignExposureLabel:
     "Mostrar también a compradores del exterior (realestateinparaguay.com) — próximamente",
-
-  // Publicación sin verificación (no hay proveedor de mensajería configurado)
-  publishTitle: "Publicá tu aviso",
-  publishSubtitle:
-    "Dejanos tu WhatsApp para que te contacten los interesados. Revisamos el aviso antes de que salga publicado.",
 
   // OTP
   otpTitle: "Verificá tu WhatsApp para publicar",
