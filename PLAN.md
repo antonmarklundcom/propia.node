@@ -27,6 +27,35 @@ _Last updated: 2026-07-24 (session: shared-edit-admin-pages)._
   the site hotlinks them until `npm run backfill:images` runs — which needs
   the R2 envs below.
 
+### Post-mortem: the 503 spiral (2026-07-26)
+
+The site went 503, then started hanging, then 503 again. `Max Processes` sat
+pinned at the account's 200 cap (189/200 average) for an hour. Killing all
+processes brought it back immediately.
+
+**Mechanism.** A request that never resolves keeps its process alive. Processes
+accumulate, the account-wide cap fills, and then *every* site on the account
+answers 503 — including requests that would have been fine. The reason requests
+never resolved: `src/db/index.ts` used mysql2's defaults, i.e. an unbounded
+queue and **no acquire timeout**, so once the 6–8 pool connections were busy the
+next request waited forever.
+
+**What made it easy to hit.** The per-request canonical work (1.2) cost the
+listing detail page its ISR cache, and the `/precios` link modules then added
+three uncached queries to both hot page types. Measured: 12 queries per view on
+the category and detail pages, now 9 with the medians cached.
+
+**Fixed by** bounding the pool queue and adding timeouts (a stuck request now
+fails in milliseconds and releases its process), caching the medians reads for
+an hour, and adding `/api/health` (process alive?) plus `/api/health/db`
+(MySQL alive, and how fast?) so the next incident is diagnosable in seconds
+instead of hours.
+
+**Still true, and the real risk:** this app shares a 200-process cap with ~90
+other sites on an account at ~96% of plan resources. The code no longer *causes*
+the spiral, but it cannot survive the neighbours either. Moving this site to its
+own plan is the durable fix; everything above is damage control.
+
 ### Post-mortem worth keeping
 
 The multi-hour outage during the domain migration had one root cause that is

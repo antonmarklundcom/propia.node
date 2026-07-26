@@ -16,6 +16,7 @@
  *     price and not an official appraisal. The copy says that too.
  */
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { marketMedians } from "@/db/schema";
@@ -69,7 +70,7 @@ function bandFor(sampleSize: number): number {
   return 0.25;
 }
 
-export async function estimateValue(
+async function estimateValueUncached(
   req: ValuationRequest,
 ): Promise<ValuationResult> {
   if (
@@ -152,3 +153,14 @@ export async function estimateValue(
     bandPct: Math.round(band * 100),
   };
 }
+
+/**
+ * Cached for an hour, keyed by the request shape. The inputs are a short list
+ * of cities × types × operations × a rounded area, so the cache actually hits;
+ * the underlying medians only change when the nightly job runs.
+ */
+export const estimateValue = unstable_cache(
+  estimateValueUncached,
+  ["valuation-estimate"],
+  { revalidate: 3600, tags: ["market-medians"] },
+);

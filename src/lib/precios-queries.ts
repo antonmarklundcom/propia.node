@@ -13,6 +13,7 @@
  * indexability rule exists to prevent.
  */
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { locations, marketMedians } from "@/db/schema";
@@ -61,7 +62,9 @@ export async function latestPeriod(): Promise<string | null> {
  * another has two. It is an approximation of the true city median, and it is
  * labelled as an estimate in the copy rather than dressed up as exact.
  */
-export async function getCityPrices(citySlug: string): Promise<CityPrices | null> {
+async function getCityPricesUncached(
+  citySlug: string,
+): Promise<CityPrices | null> {
   const city = await resolveCity(citySlug);
   if (!city) return null;
 
@@ -148,7 +151,7 @@ export async function getCityPrices(citySlug: string): Promise<CityPrices | null
  * sits on either a ciudad or one of its barrios). The obvious shape — loop the
  * cities and call getCityPrices() per city — was 45 round-trips for a list.
  */
-export async function citiesWithPrices(): Promise<
+async function citiesWithPricesUncached(): Promise<
   { slug: string; name: string; reliableSample: number }[]
 > {
   const period = await latestPeriod();
@@ -209,3 +212,31 @@ export async function citiesWithPrices(): Promise<
     })
     .sort((a, b) => b.reliableSample - a.reliableSample);
 }
+
+/* ------------------------------------------------------------------ */
+/* Caching                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Medians change once a night (`cron:medians`), but these reads sit on the
+ * *hottest* paths in the app: the category page and the listing detail page both
+ * link to a city's prices, and both are rendered per request. Uncached, that
+ * added several queries to every page view — which is what turned a host
+ * already at its process cap into a 503 spiral.
+ *
+ * So the results are cached across requests for an hour. React's `cache()`
+ * would only dedupe within one render, which is not the problem here.
+ */
+const PRICES_TTL_SECONDS = 3600;
+
+export const getCityPrices = unstable_cache(
+  getCityPricesUncached,
+  ["city-prices"],
+  { revalidate: PRICES_TTL_SECONDS, tags: ["market-medians"] },
+);
+
+export const citiesWithPrices = unstable_cache(
+  citiesWithPricesUncached,
+  ["cities-with-prices"],
+  { revalidate: PRICES_TTL_SECONDS, tags: ["market-medians"] },
+);
