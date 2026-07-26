@@ -23,6 +23,49 @@ export const es = {
   quickQuestions: ["¿Disponible?", "¿Puedo visitar?", "¿Requisitos?"],
 } as const;
 
+/** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
+export const esTasacion = {
+  title: "¿Cuánto vale tu propiedad?",
+  subtitle:
+    "Te damos un rango estimado en base a los precios publicados en Homes Paraguay. Gratis, sin registrarte y sin que te llame nadie salvo que vos lo pidas.",
+  cityLabel: "Ciudad",
+  typeLabel: "Tipo de propiedad",
+  operationLabel: "Querés",
+  operationSale: "Vender",
+  operationRent: "Alquilar",
+  areaLabel: "Superficie (m²)",
+  areaHint:
+    "Superficie construida. Si es un terreno, poné los m² del lote.",
+  submit: "Calcular",
+  calculating: "Calculando…",
+  resultTitle: "Rango estimado",
+  resultRange: (low: string, high: string) => `Entre ${low} y ${high}`,
+  resultBasis: (n: number, perM2: string, city: string, period: string) =>
+    `Calculado sobre ${n} avisos comparables en ${city} (${period}), a una mediana de ${perM2} por m².`,
+  resultBandNote: (pct: number) =>
+    `El rango es de ±${pct}%: cuantos menos avisos comparables hay, más ancho lo dejamos. Preferimos ser honestos antes que precisos.`,
+  disclaimer:
+    "Importante: es una referencia calculada con precios de publicación, no con precios de cierre, y no es una tasación oficial. Lo que define el valor real es el estado de la propiedad, su ubicación exacta y el momento del mercado.",
+  errorBadArea: "Revisá los m²: poné un número entre 10 y 100.000.",
+  errorUnknownCity: "Elegí una ciudad de la lista.",
+  errorNoData:
+    "Todavía no tenemos avisos comparables para ese tipo de propiedad en esa ciudad. Escribinos y lo vemos a mano.",
+  errorThinData:
+    "Tenemos muy pocos avisos comparables ahí para darte un número que podamos defender. Escribinos y lo vemos a mano.",
+  errorGeneric: "No pudimos calcular el rango. Probá de nuevo.",
+  nextTitle: "¿Querés publicarla o que te asesoremos?",
+  nextBody:
+    "Dejanos tu WhatsApp y te contactamos. También podés publicarla vos mismo, gratis.",
+  nameLabel: "Tu nombre",
+  whatsappLabel: "Tu WhatsApp",
+  contactSubmit: "Quiero que me contacten",
+  contactSent:
+    "¡Listo! Te vamos a escribir por WhatsApp. Mientras tanto podés publicar tu propiedad vos mismo.",
+  contactError: "No pudimos enviar tus datos. Probá de nuevo.",
+  publishCta: "Publicar mi propiedad",
+  seePrices: "Ver precios de la zona",
+} as const;
+
 /** Price pages (/precios) — market data in plain voseo, caveats included. */
 export const esPrecios = {
   indexTitle: "Precios de propiedades en Paraguay",

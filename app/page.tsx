@@ -79,18 +79,31 @@ function publishHref(): string {
     : "mailto:hola@propia.com.py?subject=Quiero%20publicar%20una%20propiedad";
 }
 
-const DISCOVER_CARDS = [
+/**
+ * Both cards used to point at the same outbound WhatsApp link, because neither
+ * destination existed yet. The valuation card now has a real one.
+ */
+const DISCOVER_CARDS: {
+  icon: string;
+  title: string;
+  text: string;
+  cta: string;
+  href: string;
+  external?: boolean;
+}[] = [
   {
     icon: "🏡",
     title: "Publicá tu propiedad gratis",
     text: "Cargá fotos, precio y ubicación en minutos. Sin comisión, sin costo de publicación.",
     cta: "Publicar ahora",
+    href: "/publicar",
   },
   {
     icon: "💰",
     title: es.valuationMagnet,
-    text: "Contanos sobre tu propiedad y te ayudamos a estimar su valor de mercado en Paraguay.",
-    cta: "Consultar gratis",
+    text: "Te damos un rango estimado con los precios publicados en la zona. Gratis y sin registrarte.",
+    cta: "Calcular gratis",
+    href: "/tasacion",
   },
 ];
 
@@ -382,9 +395,10 @@ export default async function Home() {
               <a
                 key={c.title}
                 className="home-discover__card"
-                href={publishHref()}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={c.href}
+                {...(c.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
               >
                 <span className="home-discover__icon" aria-hidden>
                   {c.icon}
