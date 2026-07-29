@@ -1,17 +1,24 @@
 /**
- * propia design tokens v1 (ARCHITECTURE.md §3.3).
- * Warm/ownership-coded, distinct from Tu Lugar's teal. Mobile-first:
+ * propia design tokens v2 — "Puerto Navy" (ARCHITECTURE.md §3.3).
+ * Semi-dark navy + antique gold, distinct from Tu Lugar's teal. Mobile-first:
  * Paraguayan traffic is overwhelmingly Android + WhatsApp.
+ *
+ * accent (#C9A227) is 2.4:1 on white — below WCAG AA for text. Use it only
+ * for fills, chips, hairlines, and large numerals; never for body text or
+ * links (use `primary` for those).
  */
 export const tokens = {
   color: {
-    primary: "#1A5D3A", // deep green — ownership, trust
-    accent: "#E8A13D", // warm amber — CTAs, cuota highlights, "Destacado"
+    primary: "#14294A", // deep navy — trust, permanence
+    primaryDark: "#0C1A30",
+    accent: "#C9A227", // antique gold — CTAs, cuota highlights, "Destacado"
+    accentSoft: "#F4E9C7",
     whatsapp: "#25D366", // never repurposed; it means one thing
-    ink: "#1B1F24",
-    inkSecondary: "#5B6470",
+    ink: "#101823",
+    inkSecondary: "#56637A",
     surface: "#FFFFFF",
-    background: "#F6F7F5",
+    background: "#F4F6FA",
+    border: "#DFE5EE",
     success: "#1E8E4E",
     error: "#C4453B",
   },

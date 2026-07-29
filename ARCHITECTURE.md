@@ -126,7 +126,7 @@ translation ≠ duplicate).
 
 ## 3. Design system & UX
 
-Tokens in `src/design/tokens.ts` (deep green #1A5D3A + amber #E8A13D;
+Tokens in `src/design/tokens.ts` (navy #14294A + antique gold #C9A227;
 WhatsApp green never repurposed). Voseo strings in `src/i18n/es.ts` — the
 canonical set; never generate neutral-Spanish variants. Mobile-first (Android
 + WhatsApp is the market).

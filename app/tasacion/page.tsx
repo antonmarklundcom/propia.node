@@ -33,7 +33,7 @@ export default async function TasacionPage() {
       />
 
       <h1 style={{ fontSize: 26 }}>{esTasacion.title}</h1>
-      <p style={{ color: "#5B6470" }}>{esTasacion.subtitle}</p>
+      <p style={{ color: "#56637A" }}>{esTasacion.subtitle}</p>
 
       <ValuationTool
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
