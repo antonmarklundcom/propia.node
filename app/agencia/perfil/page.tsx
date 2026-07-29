@@ -81,7 +81,7 @@ export default async function AgencyProfilePage({
             </h2>
 
             {agency == null ? (
-              <p style={{ color: "#5B6470", margin: 0 }}>
+              <p style={{ color: "#56637A", margin: 0 }}>
                 {esPanel.profileNoAgency}
               </p>
             ) : (
@@ -91,7 +91,7 @@ export default async function AgencyProfilePage({
                 </p>
 
                 {!canEditAgency && (
-                  <p style={{ color: "#5B6470", fontSize: 13 }}>
+                  <p style={{ color: "#56637A", fontSize: 13 }}>
                     {esPanel.profileAgencyReadOnly}
                   </p>
                 )}

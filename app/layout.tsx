@@ -19,8 +19,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           margin: 0,
           fontFamily:
             "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-          background: "#F6F7F5",
-          color: "#1B1F24",
+          background: "#F4F6FA",
+          color: "#101823",
         }}
       >
         <SiteHeader />
