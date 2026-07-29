@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { tokens } from "@/design/tokens";
 import {
   getListingByPublicId,
   getSimilarListings,
@@ -19,6 +18,7 @@ import {
 } from "@/lib/urls";
 import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
+import { BRAND_NAME } from "@/lib/brand";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import {
   listingJsonLd,
@@ -57,12 +57,12 @@ const subtreeIds = cache(citySubtreeIds);
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await load(slug);
-  if (!detail) return { title: "Propiedad no encontrada — Homes Paraguay" };
+  if (!detail) return { title: `Propiedad no encontrada — ${BRAND_NAME}` };
   const { listing } = detail;
   const canonical = `${await listingCanonicalOrigin()}${listingUrl(listing)}`;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: `${listing.title} — ${formatPrice(listing)} | Homes Paraguay`,
+    title: `${listing.title} — ${formatPrice(listing)} | ${BRAND_NAME}`,
     description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
     alternates: { canonical },
     openGraph: {
@@ -230,7 +230,7 @@ export default async function ListingPage({ params }: Params) {
   if (listing.parking != null)
     details.push({ icon: "🚗", label: "Cocheras", value: String(listing.parking) });
 
-  const sellerName = agency?.name ?? agent?.name ?? "Publicado en Homes Paraguay";
+  const sellerName = agency?.name ?? agent?.name ?? `Publicado en ${BRAND_NAME}`;
   const sellerInitials = sellerName
     .split(/\s+/)
     .slice(0, 2)
@@ -238,7 +238,7 @@ export default async function ListingPage({ params }: Params) {
     .join("");
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
+    <main className="listing-main">
       <JsonLd
         data={[
           listingJsonLd(origin, detail),
@@ -287,7 +287,9 @@ export default async function ListingPage({ params }: Params) {
           <span className="detail-gallery__empty-label">Fotos próximamente</span>
         </div>
       ) : (
-        <div className="detail-gallery">
+        <div
+          className={`detail-gallery${visibleThumbs.length === 0 ? " detail-gallery--single" : ""}`}
+        >
           <div
             className="detail-gallery__main"
             style={{ backgroundImage: `url(${imageUrl(realImages[0].r2Key)})` }}
@@ -387,20 +389,7 @@ export default async function ListingPage({ params }: Params) {
             </div>
           )}
           {cuota && !financingProgram && (
-            <div
-              style={{
-                display: "inline-block",
-                marginTop: 8,
-                padding: "6px 12px",
-                borderRadius: tokens.radius.chip,
-                background: "#FCF3E4",
-                color: tokens.color.accent,
-                fontWeight: 700,
-                fontSize: 14,
-              }}
-            >
-              💳 {cuota}
-            </div>
+            <div className="cuota-chip">💳 {cuota}</div>
           )}
 
           {details.length > 0 && (
@@ -436,9 +425,7 @@ export default async function ListingPage({ params }: Params) {
           {listing.descriptionEs && (
             <section className="listing-section">
               <h2 className="listing-section__title">📄 Descripción</h2>
-              <p style={{ lineHeight: 1.6, color: tokens.color.ink, whiteSpace: "pre-line", margin: 0 }}>
-                {listing.descriptionEs}
-              </p>
+              <p className="listing-description">{listing.descriptionEs}</p>
             </section>
           )}
 
@@ -470,7 +457,7 @@ export default async function ListingPage({ params }: Params) {
                 )}
               </div>
               <div className="seller-card__kind">
-                {agency ? "Inmobiliaria" : agent ? "Agente" : "propia.com.py"}
+                {agency ? "Inmobiliaria" : agent ? "Agente" : BRAND_NAME}
               </div>
             </div>
           </div>
@@ -486,7 +473,7 @@ export default async function ListingPage({ params }: Params) {
 
       {/* Full-width contact panel, mirrors the sticky card for visitors
           who scrolled past it without noticing. */}
-      <section className="contact-panel">
+      <section className="contact-panel" id="contacto">
         <h2 className="contact-panel__title">¿Interesado en esta propiedad?</h2>
         <p className="contact-panel__subtitle">
           Contactanos hoy para más información o para agendar una visita.
@@ -558,6 +545,35 @@ export default async function ListingPage({ params }: Params) {
           </Link>
         </div>
       )}
+
+      {/* Mobile-only contact bar. Below 860px the sidebar card is in the flow
+          (globals.css), so this keeps the price and a one-tap contact within
+          reach without covering the page the way the old sticky card did. */}
+      <div className="listing-cta-bar">
+        <div className="listing-cta-bar__price">
+          <span className="listing-cta-bar__amount">
+            {formatPrice(listing)}
+            {listing.operation !== "venta" && "/mes"}
+          </span>
+          {cuota && <span className="listing-cta-bar__cuota">💳 {cuota}</span>}
+        </div>
+        <div className="listing-cta-bar__actions">
+          {contactWhatsapp && (
+            <a
+              className="listing-cta-bar__btn listing-cta-bar__btn--whatsapp"
+              href={`https://wa.me/${contactWhatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(waMessage)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Contactar por WhatsApp"
+            >
+              💬
+            </a>
+          )}
+          <a className="listing-cta-bar__btn listing-cta-bar__btn--primary" href="#contacto">
+            Consultar
+          </a>
+        </div>
+      </div>
     </main>
   );
 }

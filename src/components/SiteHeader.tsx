@@ -32,8 +32,11 @@ export function SiteHeader() {
           ))}
         </nav>
 
+        {/* Two labels, one shown at a time — on a 320px screen the full label
+            plus the brand no longer fit on one line (globals.css @560px). */}
         <Link className="site-header__cta" href="/publicar">
-          Publicar propiedad
+          <span className="site-header__cta-full">Publicar propiedad</span>
+          <span className="site-header__cta-short">Publicar</span>
         </Link>
       </div>
     </header>
