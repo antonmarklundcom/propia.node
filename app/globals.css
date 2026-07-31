@@ -1912,12 +1912,16 @@ body {
 
 /* ---- Agency public profile (/inmobiliaria/{slug}) ------------------------- */
 
-.agency-profile__header {
+.agency-profile__header,
+.agent-profile__header {
   display: flex;
   align-items: center;
   gap: 18px;
   margin: 8px 0 32px;
   flex-wrap: wrap;
+  /* min-width: 0 lets the text column shrink and wrap instead of forcing
+     the header wider than the viewport (320px/375px overflow check). */
+  max-width: 100%;
 }
 
 .agency-profile__logo {
@@ -1930,13 +1934,25 @@ body {
   flex-shrink: 0;
 }
 
-.agency-profile__avatar {
+/* Agent photos are portraits, not logos — round crop instead of the
+   agency's rounded-square logo box. */
+.agent-profile__logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.agency-profile__avatar,
+.agent-profile__avatar {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 72px;
   height: 72px;
-  border-radius: 14px;
+  border-radius: 50%;
   background: var(--color-primary);
   color: #fff;
   font-size: 26px;
@@ -1944,14 +1960,21 @@ body {
   flex-shrink: 0;
 }
 
-.agency-profile__name {
+.agency-profile__avatar {
+  border-radius: 14px;
+}
+
+.agency-profile__name,
+.agent-profile__name {
   margin: 0;
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
 }
 
-.agency-profile__verified {
+.agency-profile__verified,
+.agent-profile__verified {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1965,33 +1988,46 @@ body {
   vertical-align: middle;
 }
 
-.agency-profile__meta {
+.agency-profile__meta,
+.agent-profile__meta {
   margin: 4px 0 0;
   font-size: 14px;
   color: var(--color-ink-secondary);
 }
 
-.agency-profile__contact {
+.agent-profile__agency {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.agency-profile__contact,
+.agent-profile__contact {
   display: flex;
   gap: 16px;
   margin-top: 8px;
+  flex-wrap: wrap;
 }
 
-.agency-profile__empty {
+.agency-profile__empty,
+.agent-profile__empty {
   color: var(--color-ink-secondary);
   font-size: 14.5px;
 }
 
 @media (max-width: 560px) {
-  .agency-profile__header {
+  .agency-profile__header,
+  .agent-profile__header {
     gap: 12px;
   }
   .agency-profile__logo,
-  .agency-profile__avatar {
+  .agency-profile__avatar,
+  .agent-profile__logo,
+  .agent-profile__avatar {
     width: 56px;
     height: 56px;
   }
-  .agency-profile__name {
+  .agency-profile__name,
+  .agent-profile__name {
     font-size: 20px;
   }
 }

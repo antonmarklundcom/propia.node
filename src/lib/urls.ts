@@ -87,6 +87,11 @@ export function agencyUrl(slug: string): string {
   return `/inmobiliaria/${slug}`;
 }
 
+/** Public agent profile URL. agents.slug is already unique (schema.ts). */
+export function agentUrl(slug: string): string {
+  return `/agente/${slug}`;
+}
+
 /**
  * Interpret the segments after /{operacion}/. Pure structure check — the
  * caller still resolves slugs against the DB (and 404s on unknown locations).

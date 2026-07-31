@@ -10,10 +10,10 @@
  */
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../db";
-import { agencies, listings, locations } from "../db/schema";
+import { agencies, agents, listings, locations } from "../db/schema";
 import { getIndexability } from "./indexability";
 import { citiesWithPrices } from "./precios-queries";
-import { categoryUrl, agencyUrl } from "./urls";
+import { categoryUrl, agencyUrl, agentUrl } from "./urls";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 
@@ -42,6 +42,7 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
       operation: listings.operation,
       propertyType: listings.propertyType,
       agencyId: listings.agencyId,
+      agentId: listings.agentId,
     })
     .from(listings)
     .where(eq(listings.status, "published"));
@@ -166,6 +167,26 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
       .where(inArray(agencies.id, indexableAgencyIds));
     for (const a of agencySlugs) {
       entries.push({ path: agencyUrl(a.slug) });
+    }
+  }
+
+  // 5. Agent profile pages — same MIN_INDEXABLE rule, same reasoning as
+  //    agencies above (§4 keeps sitemap and page in agreement).
+  const agentCount = new Map<number, number>();
+  for (const l of pub) {
+    if (l.agentId == null) continue;
+    agentCount.set(l.agentId, (agentCount.get(l.agentId) ?? 0) + 1);
+  }
+  const indexableAgentIds = [...agentCount.entries()]
+    .filter(([, n]) => getIndexability({ listingCount: n }).state === "index")
+    .map(([id]) => id);
+  if (indexableAgentIds.length > 0) {
+    const agentSlugs = await db
+      .select({ slug: agents.slug })
+      .from(agents)
+      .where(inArray(agents.id, indexableAgentIds));
+    for (const a of agentSlugs) {
+      entries.push({ path: agentUrl(a.slug) });
     }
   }
 
