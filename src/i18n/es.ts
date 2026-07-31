@@ -27,7 +27,7 @@ export const es = {
 export const esTasacion = {
   title: "¿Cuánto vale tu propiedad?",
   subtitle:
-    "Te damos un rango estimado en base a los precios publicados en Homes Paraguay. Gratis, sin registrarte y sin que te llame nadie salvo que vos lo pidas.",
+    `Te damos un rango estimado en base a los precios publicados en ${BRAND_NAME}. Gratis, sin registrarte y sin que te llame nadie salvo que vos lo pidas.`,
   cityLabel: "Ciudad",
   typeLabel: "Tipo de propiedad",
   operationLabel: "Querés",
@@ -70,12 +70,12 @@ export const esTasacion = {
 export const esPrecios = {
   indexTitle: "Precios de propiedades en Paraguay",
   indexSubtitle:
-    "Precio mediano por ciudad, calculado con los avisos publicados en Homes Paraguay. Elegí una ciudad para ver el detalle por tipo de propiedad.",
+    `Precio mediano por ciudad, calculado con los avisos publicados en ${BRAND_NAME}. Elegí una ciudad para ver el detalle por tipo de propiedad.`,
   indexEmpty:
     "Todavía no tenemos suficientes avisos publicados para calcular precios confiables.",
   cityTitle: (city: string) => `Precios de propiedades en ${city}`,
   citySubtitle: (city: string, period: string) =>
-    `Precio mediano de venta y alquiler en ${city}, según los avisos publicados en Homes Paraguay${period ? ` (${period})` : ""}.`,
+    `Precio mediano de venta y alquiler en ${city}, según los avisos publicados en ${BRAND_NAME}${period ? ` (${period})` : ""}.`,
   tableType: "Tipo",
   tableOperation: "Operación",
   tableMedian: "Precio mediano",
@@ -85,7 +85,7 @@ export const esPrecios = {
   fewSamples: "Pocos avisos — tomalo como referencia, no como precio de mercado.",
   methodTitle: "Cómo calculamos esto",
   methodBody:
-    "Usamos la mediana (no el promedio) de los precios publicados en Homes Paraguay, por ciudad y tipo de propiedad. La mediana aguanta mejor los avisos con precios extremos. Un grupo con menos de 8 avisos se muestra con aviso: es una referencia, no un precio de mercado. Los precios publicados no son precios de cierre.",
+    `Usamos la mediana (no el promedio) de los precios publicados en ${BRAND_NAME}, por ciudad y tipo de propiedad. La mediana aguanta mejor los avisos con precios extremos. Un grupo con menos de 8 avisos se muestra con aviso: es una referencia, no un precio de mercado. Los precios publicados no son precios de cierre.`,
   emptyCity:
     "Todavía no tenemos avisos suficientes en esta ciudad para calcular un precio.",
   backToPrices: "← Todos los precios",
@@ -156,7 +156,7 @@ export const esPanel = {
   profileEmailTaken: "Ese email ya está en uso por otra cuenta.",
   profileForbidden: "No tenés permiso para cambiar esos datos.",
   profileInvalid: "Revisá los datos ingresados.",
-  profileVerifiedNote: "Perfil verificado por Homes Paraguay.",
+  profileVerifiedNote: `Perfil verificado por ${BRAND_NAME}.`,
   profilePendingNote: "Verificación pendiente de aprobación.",
 
   // Admin

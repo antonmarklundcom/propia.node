@@ -5,6 +5,7 @@ import { getProjectBySlug } from "@/lib/queries";
 import { listingUrl, categoryUrl } from "@/lib/urls";
 import { formatUsd, formatPrice } from "@/lib/format";
 import { inquiryPrefillFor } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { ContactForm } from "@/components/ContactForm";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
@@ -45,10 +46,10 @@ function deliveryLabel(d: string | Date | null): string | null {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await getProjectBySlug(slug);
-  if (!detail) return { title: "Proyecto no encontrado — Homes Paraguay" };
+  if (!detail) return { title: `Proyecto no encontrado — ${BRAND_NAME}` };
   const { project, developer } = detail;
   return {
-    title: `${project.name}${developer ? ` — ${developer.name}` : ""} | Homes Paraguay`,
+    title: `${project.name}${developer ? ` — ${developer.name}` : ""} | ${BRAND_NAME}`,
     description:
       project.descriptionEs?.slice(0, 160) ??
       `${project.name}: proyecto inmobiliario en Paraguay.`,
@@ -236,7 +237,7 @@ export default async function ProjectPage({ params }: Params) {
             )}
             <div>
               <div className="seller-card__name">
-                {developer?.name ?? "Publicado en Homes Paraguay"}
+                {developer?.name ?? `Publicado en ${BRAND_NAME}`}
               </div>
               <div className="seller-card__kind">
                 {developer ? "Desarrolladora" : "propia.com.py"}

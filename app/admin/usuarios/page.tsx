@@ -8,6 +8,7 @@ import {
   type PanelUserRow,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { roleLabel } from "@/lib/auth/roles";
 import { adminTabs } from "../tabs";
 import {
@@ -18,7 +19,7 @@ import {
 } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Usuarios — Homes Paraguay",
+  title: `Usuarios — ${BRAND_NAME}`,
   robots: { index: false, follow: false },
 };
 

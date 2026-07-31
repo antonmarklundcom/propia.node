@@ -10,13 +10,14 @@ import {
   type ListingStatusValue,
 } from "@/lib/listing-edit";
 import { esPanel, listingStatusLabel } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: "Propiedades — Homes Paraguay",
+  title: `Propiedades — ${BRAND_NAME}`,
   robots: { index: false, follow: false },
 };
 

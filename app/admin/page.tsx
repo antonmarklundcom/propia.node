@@ -3,13 +3,14 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { getReviewQueue } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
 import { approveAction, rejectAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Cola de revisión — Homes Paraguay",
+  title: `Cola de revisión — ${BRAND_NAME}`,
   robots: { index: false, follow: false },
 };
 

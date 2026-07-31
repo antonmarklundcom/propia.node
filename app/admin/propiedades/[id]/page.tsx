@@ -16,6 +16,7 @@ import {
 import { isR2Configured } from "@/lib/r2";
 import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../../tabs";
 import { adminDeleteListingAction, adminUpdateListingAction } from "../actions";
@@ -27,7 +28,7 @@ import {
 } from "./photo-actions";
 
 export const metadata: Metadata = {
-  title: "Editar aviso — Homes Paraguay",
+  title: `Editar aviso — ${BRAND_NAME}`,
   robots: { index: false, follow: false },
 };
 
