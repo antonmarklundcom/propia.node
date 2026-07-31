@@ -1,111 +1,116 @@
 import Link from "next/link";
-import { POPULAR_SEARCHES } from "@/config/popular-searches";
-import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
-import { categoryUrl } from "@/lib/urls";
+import {
+  FOOTER_BUY,
+  FOOTER_COMPANY,
+  FOOTER_LOCATIONS,
+  FOOTER_PRO,
+  FOOTER_TOOLS,
+  FOOTER_TYPES,
+} from "@/config/site-nav";
 import { BRAND_NAME } from "@/lib/brand";
 
 /**
- * Global footer (portal shell). Popular searches double as internal links for
- * SEO; the columns give the page a finished base instead of a floating grid.
+ * Global footer (portal shell). Two jobs at once: it is the site's second
+ * navigation (every hand-authored page is reachable from here, so nothing is
+ * orphaned) and it is the "is this a real business?" answer — contact details,
+ * company pages and legal links, which a marketplace asking people to hand
+ * over a property listing has to show.
  *
  * Locations are a fixed curated list (not a DB query) — the footer renders on
  * every page via the root layout, and a handful of known-good cities beats
  * coupling every page render to the locations table.
  */
-const EXPLORE = [
-  { label: "Comprar", href: "/venta/asuncion" },
-  { label: "Alquilar", href: "/alquiler/asuncion" },
-  { label: "Terrenos", href: "/venta/asuncion/terrenos" },
-  // Market data is a genuine entry point, not just a cross-link from a
-  // category page — otherwise /precios is reachable only sideways.
-  { label: "Precios por ciudad", href: "/precios" },
-  { label: "¿Cuánto vale tu propiedad?", href: "/tasacion" },
-];
-
-const LOCATIONS = [
-  { label: "Casas en Asunción", slug: "asuncion" },
-  { label: "Departamentos en Luque", slug: "luque" },
-  { label: "Alquileres en Lambaré", slug: "lambare" },
-  { label: "Terrenos en Encarnación", slug: "encarnacion" },
-  { label: "Propiedades en Ciudad del Este", slug: "ciudad-del-este" },
-];
-
-const TYPE_LINKS = PROPERTY_TYPE_OPTIONS.slice(0, 5).map((t) => ({
-  label: t.label,
-  href: categoryUrl({ operation: "venta", citySlug: "asuncion", type: t.value }),
-}));
+function Column({
+  title,
+  links,
+}: {
+  title: string;
+  links: { label: string; href: string }[];
+}) {
+  return (
+    <div>
+      <div className="site-footer__col-title">{title}</div>
+      <ul className="site-footer__links">
+        {links.map((l) => (
+          <li key={l.href + l.label}>
+            <Link className="site-footer__link" href={l.href}>
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
+  const whatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP;
+  const waDigits = whatsapp?.replace(/\D/g, "");
+
   return (
     <footer className="site-footer">
       <div className="site-footer__inner">
-        <div>
+        <div className="site-footer__about">
           <div className="site-footer__brand">{BRAND_NAME}</div>
           <p className="site-footer__tagline">
-            Casas, departamentos y terrenos en venta y alquiler en todo
-            Paraguay — con cuota estimada y financiamiento.
+            El portal inmobiliario de Paraguay. Casas, departamentos, terrenos y
+            proyectos nuevos en venta y alquiler — con precios de referencia por
+            zona y cuota estimada en cada aviso.
           </p>
-        </div>
 
-        <div>
-          <div className="site-footer__col-title">Búsquedas populares</div>
-          <ul className="site-footer__links">
-            {POPULAR_SEARCHES.map((l) => (
-              <li key={l.href}>
-                <Link className="site-footer__link" href={l.href}>
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <div className="site-footer__col-title">Explorar</div>
-          <ul className="site-footer__links">
-            {EXPLORE.map((l) => (
-              <li key={l.href}>
-                <Link className="site-footer__link" href={l.href}>
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <div className="site-footer__col-title">Ubicaciones</div>
-          <ul className="site-footer__links">
-            {LOCATIONS.map((l) => (
-              <li key={l.slug}>
-                <Link
+          <ul className="site-footer__contact">
+            {waDigits && (
+              <li>
+                <a
                   className="site-footer__link"
-                  href={categoryUrl({ operation: "venta", citySlug: l.slug })}
+                  href={`https://wa.me/${waDigits}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  {l.label}
-                </Link>
+                  💬 WhatsApp {whatsapp}
+                </a>
               </li>
-            ))}
+            )}
+            <li>
+              <a className="site-footer__link" href="mailto:hola@propia.com.py">
+                ✉️ hola@propia.com.py
+              </a>
+            </li>
+            <li>
+              <span className="site-footer__muted">📍 Asunción, Paraguay</span>
+            </li>
           </ul>
         </div>
 
-        <div>
-          <div className="site-footer__col-title">Por tipo de propiedad</div>
-          <ul className="site-footer__links">
-            {TYPE_LINKS.map((l) => (
-              <li key={l.href}>
-                <Link className="site-footer__link" href={l.href}>
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Column title="Comprar y alquilar" links={FOOTER_BUY} />
+        <Column title="Herramientas" links={FOOTER_TOOLS} />
+        <Column title="Para profesionales" links={FOOTER_PRO} />
+        <Column title="Ubicaciones" links={FOOTER_LOCATIONS} />
+        <Column title="Por tipo" links={FOOTER_TYPES} />
       </div>
 
       <div className="site-footer__bottom">
-        © {year} {BRAND_NAME} — Encontrá tu propiedad en Paraguay.
+        <span>
+          © {year} {BRAND_NAME} — Encontrá tu propiedad en Paraguay.
+        </span>
+        <span className="site-footer__legal">
+          {FOOTER_COMPANY.map((l) => (
+            <Link key={l.href} className="site-footer__link" href={l.href}>
+              {l.label}
+            </Link>
+          ))}
+        </span>
+      </div>
+
+      <div className="site-footer__disclaimer">
+        Los precios de referencia, las cuotas estimadas y las tasaciones
+        publicadas son cálculos orientativos elaborados a partir de los avisos
+        del portal y de las condiciones vigentes de los programas de
+        financiamiento. No constituyen una tasación oficial, una oferta de
+        crédito ni asesoramiento financiero. {BRAND_NAME} no participa de las
+        negociaciones entre las partes ni verifica de forma independiente la
+        titularidad de cada inmueble publicado.
       </div>
     </footer>
   );

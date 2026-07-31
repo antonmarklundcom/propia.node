@@ -16,7 +16,11 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { SearchBar } from "@/components/SearchBar";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
+import { JsonLd } from "@/components/JsonLd";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
+import { FAQ_HOME } from "@/config/faq";
+import { faqJsonLd } from "@/lib/jsonld";
+import { citiesWithPrices } from "@/lib/precios-queries";
 import { categoryUrl } from "@/lib/urls";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -105,32 +109,38 @@ const DISCOVER_CARDS: {
     cta: "Calcular gratis",
     href: "/tasacion",
   },
+  {
+    icon: "📊",
+    title: "Precios del mercado",
+    text: "Mediana de precio por m² en cada ciudad, calculada sobre los avisos publicados del portal.",
+    cta: "Ver precios",
+    href: "/precios",
+  },
+  {
+    icon: "🏦",
+    title: "Financiamiento y cuotas",
+    text: "Qué programas existen en Paraguay, qué piden y cómo calculamos la cuota estimada de cada aviso.",
+    cta: "Leer la guía",
+    href: "/financiamiento",
+  },
 ];
 
-const FAQ: { q: string; a: string }[] = [
+/** Three-step explainer — the "what is this site" answer above the fold fold. */
+const HOW_STEPS = [
   {
-    q: `¿Qué es ${BRAND_NAME}?`,
-    a: `${BRAND_NAME} es un portal inmobiliario de Paraguay donde podés buscar casas, departamentos y terrenos en venta y alquiler, comparar precios y contactar directamente a vendedores e inmobiliarias por WhatsApp.`,
+    icon: "🔎",
+    title: "Buscá por zona y presupuesto",
+    text: "Filtrá por ciudad, barrio, tipo de propiedad y rango de precio. Mirá los resultados en lista o sobre el mapa.",
   },
   {
-    q: "¿Es gratis buscar propiedades?",
-    a: "Sí, buscar y contactar es 100% gratis. No cobramos comisión al comprador ni al inquilino.",
+    icon: "📊",
+    title: "Compará con el mercado",
+    text: "Cada propiedad en venta muestra su cuota estimada, y publicamos la mediana de precio por m² de cada ciudad.",
   },
   {
-    q: "¿Cómo publico mi propiedad?",
-    a: "Tocá «Publicar propiedad» y contanos qué querés publicar. Es gratis y te ayudamos a cargar fotos, precio y ubicación.",
-  },
-  {
-    q: "¿Cómo contacto a un vendedor o inmobiliaria?",
-    a: "Cada aviso tiene un botón de WhatsApp que abre un chat directo con quien publicó, con el enlace de la propiedad ya incluido en el mensaje.",
-  },
-  {
-    q: "¿Qué es la cuota estimada?",
-    a: "Para propiedades en venta mostramos una cuota mensual estimada según los programas de financiamiento vigentes en Paraguay, para que sepas de entrada si te cierra el número.",
-  },
-  {
-    q: "¿Puedo publicar como inmobiliaria o agente?",
-    a: "Sí. Las inmobiliarias y agentes pueden publicar su cartera completa y aparecer verificados en cada aviso. Escribinos por WhatsApp para activar tu cuenta.",
+    icon: "💬",
+    title: "Contactá directo",
+    text: "Escribile por WhatsApp a quien publicó, desde la misma ficha y sin intermediarios ni costo.",
   },
 ];
 
@@ -173,6 +183,7 @@ export default async function Home() {
     terrenos,
     featuredProjects,
     featuredDevelopers,
+    priceCities,
   ] = await Promise.all([
     getRecentListings(8),
     listCities(),
@@ -183,6 +194,7 @@ export default async function Home() {
     getRecentListingsBy({ operation: "venta", type: "terreno" }, 8),
     getFeaturedProjects(6),
     getFeaturedDevelopers(8),
+    citiesWithPrices(),
   ]);
 
   const cityShortcuts = CITY_SHORTCUTS.map((name) =>
@@ -191,6 +203,8 @@ export default async function Home() {
 
   return (
     <main>
+      <JsonLd data={[faqJsonLd(FAQ_HOME)]} />
+
       {/* Hero */}
       <section className="home-hero">
         <div className="home-hero__inner">
@@ -243,6 +257,33 @@ export default async function Home() {
           </a>
         </div>
       </div>
+
+      {/* Cómo funciona — the "what is this site" answer, before any listing */}
+      <section className="home-how">
+        <div className="home-how__inner">
+          <h2 className="home-how__title">Cómo funciona</h2>
+          <p className="home-how__subtitle">
+            Buscar, comparar y contactar. Gratis, sin registro y sin comisión.
+          </p>
+          <div className="home-how__grid">
+            {HOW_STEPS.map((s, i) => (
+              <div key={s.title} className="home-how__step">
+                <span className="home-how__num" aria-hidden>
+                  {i + 1}
+                </span>
+                <span className="home-how__icon" aria-hidden>
+                  {s.icon}
+                </span>
+                <h3 className="home-how__step-title">{s.title}</h3>
+                <p className="home-how__step-text">{s.text}</p>
+              </div>
+            ))}
+          </div>
+          <Link className="home-how__more" href="/como-funciona">
+            Ver la guía completa →
+          </Link>
+        </div>
+      </section>
 
       {/* Nuevos proyectos — renders only once real projects exist */}
       {featuredProjects.length > 0 && (
@@ -353,6 +394,42 @@ export default async function Home() {
         </section>
       )}
 
+      {/* Market data — the reason to come back between searches. Renders only
+          when the medians job has produced a defensible sample. */}
+      {priceCities.length > 0 && (
+        <section className="home-prices">
+          <div className="home-prices__inner">
+            <div className="home-section__head">
+              <h2 className="home-section__title">
+                📊 Precios de referencia por ciudad
+              </h2>
+              <Link className="home-section__more" href="/precios">
+                Ver todos →
+              </Link>
+            </div>
+            <p className="home-prices__subtitle">
+              Medianas de precio por m² calculadas sobre los avisos publicados.
+              Para saber si un aviso está en línea con su zona antes de
+              negociar.
+            </p>
+            <div className="home-prices__row">
+              {priceCities.slice(0, 8).map((c) => (
+                <Link
+                  key={c.slug}
+                  className="home-prices__card"
+                  href={`/precios/${c.slug}`}
+                >
+                  <span className="home-prices__city">{c.name}</span>
+                  <span className="home-prices__sample">
+                    {c.reliableSample.toLocaleString("es-PY")} avisos analizados
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Value proposition strip */}
       <section className="home-values">
         <div className="home-values__inner">
@@ -412,6 +489,63 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Professional lane — the revenue side of the marketplace. Guests see
+          what publishing a whole portfolio gets them, not just one property. */}
+      <section className="home-pro">
+        <div className="home-pro__inner">
+          <div className="home-pro__copy">
+            <div className="home-pro__kicker">Para inmobiliarias y agentes</div>
+            <h2 className="home-pro__title">
+              ¿Vendés propiedades todos los días?
+            </h2>
+            <p className="home-pro__text">
+              Publicá tu cartera completa, mostrá tu inmobiliaria con perfil
+              verificado y recibí las consultas directo en tu WhatsApp. Sin
+              costo por aviso, sin costo por lead y sin comisión sobre tus
+              operaciones.
+            </p>
+            <ul className="home-pro__list">
+              <li>✓ Avisos ilimitados en el plan gratuito</li>
+              <li>✓ Perfil público de la inmobiliaria y de cada agente</li>
+              <li>✓ Importación de cartera desde planilla o enlace</li>
+              <li>✓ Panel con las consultas de cada propiedad</li>
+            </ul>
+            <div className="home-pro__actions">
+              <Link className="home-pro__button" href="/para-inmobiliarias">
+                Conocer más
+              </Link>
+              <Link className="home-pro__link" href="/planes">
+                Ver planes →
+              </Link>
+            </div>
+          </div>
+          <div className="home-pro__aside">
+            <Link className="home-pro__card" href="/inmobiliarias">
+              <span className="home-pro__card-icon" aria-hidden>
+                🏢
+              </span>
+              <span className="home-pro__card-title">
+                Directorio de inmobiliarias
+              </span>
+              <span className="home-pro__card-text">
+                Mirá quiénes ya publican su cartera en el portal.
+              </span>
+            </Link>
+            <Link className="home-pro__card" href="/proyectos">
+              <span className="home-pro__card-icon" aria-hidden>
+                🏗
+              </span>
+              <span className="home-pro__card-title">
+                Desarrolladoras y proyectos
+              </span>
+              <span className="home-pro__card-text">
+                Obra nueva, en pozo y entrega inmediata.
+              </span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Publish CTA banner */}
       <section className="home-cta">
         <div className="home-cta__inner">
@@ -420,14 +554,19 @@ export default async function Home() {
             Llegá a miles de compradores e inquilinos en todo Paraguay. Simple,
             rápido y sin costo.
           </p>
-          <a
-            className="home-cta__button"
-            href={publishHref()}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Publicar ahora
-          </a>
+          <div className="home-cta__actions">
+            <Link className="home-cta__button" href="/publicar">
+              Publicar ahora
+            </Link>
+            <a
+              className="home-cta__alt"
+              href={publishHref()}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              o escribinos por WhatsApp
+            </a>
+          </div>
         </div>
       </section>
 
@@ -454,12 +593,15 @@ export default async function Home() {
           <p className="home-faq__subtitle">
             Todo lo que necesitás saber sobre {BRAND_NAME}.
           </p>
-          {FAQ.map((f) => (
+          {FAQ_HOME.map((f) => (
             <details key={f.q} className="home-faq__item">
               <summary className="home-faq__q">{f.q}</summary>
               <p className="home-faq__a">{f.a}</p>
             </details>
           ))}
+          <Link className="home-faq__more" href="/preguntas-frecuentes">
+            Ver todas las preguntas →
+          </Link>
         </div>
       </section>
     </main>
