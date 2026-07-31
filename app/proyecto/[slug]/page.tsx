@@ -99,14 +99,17 @@ export default async function ProjectPage({ params }: Params) {
       {/* Hero */}
       <div
         className={`project-hero${project.heroImageUrl ? "" : " project-hero--empty"}`}
-        style={
-          project.heroImageUrl
-            ? { backgroundImage: `url(${project.heroImageUrl})` }
-            : undefined
-        }
-        role="img"
-        aria-label={project.name}
       >
+        {project.heroImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className="media-cover-img"
+            src={project.heroImageUrl}
+            alt={project.name}
+            loading="eager"
+            fetchPriority="high"
+          />
+        )}
         {!project.heroImageUrl && (
           <>
             <span className="project-hero__icon" aria-hidden>

@@ -290,22 +290,33 @@ export default async function ListingPage({ params }: Params) {
         <div
           className={`detail-gallery${visibleThumbs.length === 0 ? " detail-gallery--single" : ""}`}
         >
-          <div
-            className="detail-gallery__main"
-            style={{ backgroundImage: `url(${imageUrl(realImages[0].r2Key)})` }}
-            role="img"
-            aria-label={listing.title}
-          />
+          <div className="detail-gallery__main">
+            {/* eslint-disable-next-line @next/next/no-img-element -- the LCP
+                element on the page that matters most for SEO; eager + high
+                priority so the browser fetches it before it even reaches this
+                point in the markup, instead of after CSS/JS discover it. */}
+            <img
+              className="media-cover-img"
+              src={imageUrl(realImages[0].r2Key) ?? ""}
+              alt={listing.title}
+              loading="eager"
+              fetchPriority="high"
+            />
+          </div>
           {visibleThumbs.length > 0 && (
             <div className="detail-gallery__thumbs">
               {visibleThumbs.map((im, i) => {
                 const isLast = i === visibleThumbs.length - 1;
                 return (
-                  <div
-                    key={im.id}
-                    className="detail-gallery__thumb"
-                    style={{ backgroundImage: `url(${imageUrl(im.r2Key)})` }}
-                  >
+                  <div key={im.id} className="detail-gallery__thumb">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      className="media-cover-img"
+                      src={imageUrl(im.r2Key) ?? ""}
+                      alt={`${listing.title} — foto ${i + 2}`}
+                      loading="lazy"
+                      decoding="async"
+                    />
                     {isLast && extraCount > 0 && (
                       <div className="detail-gallery__more">+{extraCount} fotos</div>
                     )}
