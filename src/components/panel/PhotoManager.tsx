@@ -38,7 +38,7 @@ export function PhotoManager({
       <h2 style={{ fontSize: 18, margin: "0 0 .25rem" }}>
         {esPanel.photosTitle}
       </h2>
-      <p style={{ color: "#56637A", fontSize: 13, margin: "0 0 1rem" }}>
+      <p style={{ color: "#55655F", fontSize: 13, margin: "0 0 1rem" }}>
         {esPanel.photosHint}
       </p>
 
@@ -72,7 +72,7 @@ export function PhotoManager({
       </form>
 
       {images.length === 0 ? (
-        <p style={{ color: "#56637A", marginTop: "1rem" }}>
+        <p style={{ color: "#55655F", marginTop: "1rem" }}>
           {esPanel.photosEmpty}
         </p>
       ) : (

@@ -89,7 +89,7 @@ export default async function AdminLeadsPage({
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.adminLeadsTitle}</h2>
-        <p style={{ color: "#56637A", fontSize: 13, marginTop: 0 }}>
+        <p style={{ color: "#55655F", fontSize: 13, marginTop: 0 }}>
           {esPanel.adminLeadsHint}
         </p>
 

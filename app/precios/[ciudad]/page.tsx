@@ -74,7 +74,7 @@ export default async function CityPricesPage({ params }: Params) {
       </p>
 
       <h1 style={{ fontSize: 24 }}>{esPrecios.cityTitle(city.name)}</h1>
-      <p style={{ color: "#56637A" }}>
+      <p style={{ color: "#55655F" }}>
         {esPrecios.citySubtitle(city.name, period)}
       </p>
 

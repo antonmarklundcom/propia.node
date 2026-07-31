@@ -32,7 +32,7 @@ export default async function PreciosIndexPage() {
       />
 
       <h1 style={{ fontSize: 24 }}>{esPrecios.indexTitle}</h1>
-      <p style={{ color: "#56637A" }}>{esPrecios.indexSubtitle}</p>
+      <p style={{ color: "#55655F" }}>{esPrecios.indexSubtitle}</p>
 
       {cities.length === 0 ? (
         <p className="panel-empty">{esPrecios.indexEmpty}</p>
