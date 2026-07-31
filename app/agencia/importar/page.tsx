@@ -41,7 +41,7 @@ export default async function ImportPage({
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.importTitle}</h2>
-        <p style={{ color: "#56637A", fontSize: 14, marginTop: 0 }}>
+        <p style={{ color: "#55655F", fontSize: 14, marginTop: 0 }}>
           {esPanel.importSubtitle}
         </p>
 

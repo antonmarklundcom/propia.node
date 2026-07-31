@@ -8,17 +8,17 @@
  */
 
 :root {
-  --color-primary: #14294A;
-  --color-primary-dark: #0C1A30;
-  --color-accent: #C9A227;
-  /* accent is 2.4:1 on white (below WCAG AA for text) — fills/chips/hairlines/
+  --color-primary: #0D3B4D;
+  --color-primary-dark: #06212C;
+  --color-accent: #D4A24C;
+  /* accent is 2.3:1 on white (below WCAG AA for text) — fills/chips/hairlines/
      numerals only, never body text or links. */
-  --color-accent-soft: #F4E9C7;
-  --color-ink: #101823;
-  --color-ink-secondary: #56637A;
+  --color-accent-soft: #EEE2CE;
+  --color-ink: #12201F;
+  --color-ink-secondary: #55655F;
   --color-surface: #ffffff;
-  --color-background: #F4F6FA;
-  --color-border: #DFE5EE;
+  --color-background: #F6F8F7;
+  --color-border: #DCE3E1;
 }
 
 /* Padding/border must never add to a declared width. Without this, every
@@ -119,7 +119,7 @@ body {
 }
 
 .site-header__link:hover {
-  background: #E8ECF4;
+  background: #E8F0F2;
   color: var(--color-primary);
 }
 
@@ -259,7 +259,7 @@ body {
 /* ---- Homepage ------------------------------------------------------------ */
 
 .home-hero {
-  background: linear-gradient(160deg, #0C1A30 0%, #14294A 55%, #1E3F63 100%);
+  background: linear-gradient(160deg, #06212C 0%, #0D3B4D 55%, #0E6881 100%);
   color: #fff;
   padding: 56px 16px 40px;
 }
@@ -280,7 +280,7 @@ body {
 .home-hero__subtitle {
   margin: 10px 0 0;
   font-size: 17px;
-  color: #C7D4E8;
+  color: #9FC5D0;
   max-width: 56ch;
 }
 
@@ -356,7 +356,7 @@ body {
 .home-hero__tile-sub {
   display: block;
   font-size: 12px;
-  color: #C7D4E8;
+  color: #9FC5D0;
 }
 
 .home-stats {
@@ -843,7 +843,7 @@ body {
 
 .home-cta {
   margin-top: 48px;
-  background: linear-gradient(160deg, #0C1A30 0%, #14294A 100%);
+  background: linear-gradient(160deg, #06212C 0%, #0D3B4D 100%);
   color: #fff;
 }
 
@@ -864,7 +864,7 @@ body {
 .home-cta__text {
   margin: 10px auto 20px;
   max-width: 52ch;
-  color: #C7D4E8;
+  color: #9FC5D0;
   font-size: 16px;
 }
 
@@ -1120,7 +1120,7 @@ body {
   flex-shrink: 0;
   margin-top: 48px;
   background: var(--color-primary-dark);
-  color: #DCE6F0;
+  color: #BDD5DB;
 }
 
 .site-footer__inner {
@@ -1155,7 +1155,7 @@ body {
   margin-top: 8px;
   font-size: 14px;
   line-height: 1.6;
-  color: #A9B7C9;
+  color: #83ADB9;
   max-width: 32ch;
 }
 
@@ -1164,7 +1164,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #8FA0B8;
+  color: #61919E;
   margin-bottom: 12px;
 }
 
@@ -1180,7 +1180,7 @@ body {
 .site-footer__link {
   text-decoration: none;
   font-size: 14px;
-  color: #DCE6F0;
+  color: #BDD5DB;
   transition: color 0.14s ease;
 }
 
@@ -1195,7 +1195,7 @@ body {
   padding: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 13px;
-  color: #7C8FA6;
+  color: #52727A;
 }
 
 /* ---- Listing card ------------------------------------------------------- */
@@ -1291,7 +1291,7 @@ body {
 }
 
 .listing-card__badge--featured {
-  background: #C9A227;
+  background: #D4A24C;
   color: #3a2a08;
 }
 
@@ -1750,7 +1750,7 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #E3EAF5;
+  background: #EEF5F6;
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 800;
@@ -1846,7 +1846,7 @@ body {
 .units-table__state {
   padding: 3px 10px;
   border-radius: 999px;
-  background: #E3EAF5;
+  background: #EEF5F6;
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
@@ -2013,7 +2013,7 @@ body {
 }
 
 .contact-form__chip--on {
-  background: #E3EAF5;
+  background: #EEF5F6;
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
@@ -2401,7 +2401,7 @@ body {
 .panel-bar__role {
   padding: 3px 10px;
   border-radius: 999px;
-  background: #E3EAF5;
+  background: #EEF5F6;
   color: var(--color-primary);
   font-weight: 700;
 }
@@ -2587,7 +2587,7 @@ body {
 }
 
 .panel-status--published {
-  background: #E3EAF5;
+  background: #EEF5F6;
   color: var(--color-success);
 }
 .panel-status--pending_review {
@@ -2618,7 +2618,7 @@ body {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: #E3EAF5;
+  background: #EEF5F6;
   color: var(--color-primary);
 }
 
@@ -2950,7 +2950,7 @@ summary.panel-btn::-webkit-details-marker {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: #E3EAF5;
+  background: #EEF5F6;
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 800;
@@ -3121,7 +3121,7 @@ summary.panel-btn::-webkit-details-marker {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #E3EAF5;
+  background: #EEF5F6;
   color: var(--color-primary);
   font-size: 28px;
   font-weight: 800;
@@ -3171,7 +3171,7 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .panel-photos__item {
-  border: 1px solid var(--color-hairline, #DFE5EE);
+  border: 1px solid var(--color-hairline, #DCE3E1);
   border-radius: 10px;
   overflow: hidden;
   background: #fff;
@@ -3198,8 +3198,8 @@ summary.panel-btn::-webkit-details-marker {
 .panel-photos__badge {
   font-size: 11.5px;
   font-weight: 700;
-  color: #14294A;
-  background: #E3EAF5;
+  color: #0D3B4D;
+  background: #EEF5F6;
   border-radius: 999px;
   padding: 2px 9px;
 }
@@ -3278,7 +3278,7 @@ summary.panel-btn::-webkit-details-marker {
 /* ------------------------------------------------------------------ */
 
 .auth-choice {
-  border: 1px solid var(--color-hairline, #DFE5EE);
+  border: 1px solid var(--color-hairline, #DCE3E1);
   border-radius: 10px;
   padding: 10px 12px 12px;
   margin: 0 0 14px;
@@ -3295,7 +3295,7 @@ summary.panel-btn::-webkit-details-marker {
 
 .auth-field__hint,
 .auth-note {
-  color: var(--color-ink-secondary, #56637A);
+  color: var(--color-ink-secondary, #55655F);
   font-size: 12.5px;
   margin: 6px 0 0;
 }
@@ -3325,8 +3325,8 @@ summary.panel-btn::-webkit-details-marker {
   font-weight: 700;
   border-radius: 999px;
   padding: 2px 10px;
-  background: #E3EAF5;
-  color: #14294A;
+  background: #EEF5F6;
+  color: #0D3B4D;
 }
 
 .panel-profile__badge--pending {
@@ -3342,7 +3342,7 @@ summary.panel-btn::-webkit-details-marker {
   position: relative;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--color-hairline, #DFE5EE);
+  border: 1px solid var(--color-hairline, #DCE3E1);
   /* Tall enough to be usable on a phone without hiding the toggle. */
   height: min(70vh, 620px);
   background: #EFF1EE;
@@ -3376,7 +3376,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 6px 12px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #101823;
+  color: #12201F;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
   max-width: calc(100% - 90px);
 }
@@ -3385,12 +3385,12 @@ summary.panel-btn::-webkit-details-marker {
 .map-pin {
   display: inline-block;
   background: #fff;
-  color: #14294A;
+  color: #0D3B4D;
   font-size: 12.5px;
   font-weight: 800;
   padding: 4px 9px;
   border-radius: 999px;
-  border: 1.5px solid #14294A;
+  border: 1.5px solid #0D3B4D;
   text-decoration: none;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
@@ -3398,7 +3398,7 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .map-pin:hover {
-  background: #14294A;
+  background: #0D3B4D;
   color: #fff;
 }
 
@@ -3414,7 +3414,7 @@ summary.panel-btn::-webkit-details-marker {
   height: 34px;
   padding: 0 8px;
   border-radius: 999px;
-  background: #14294A;
+  background: #0D3B4D;
   color: #fff;
   font-size: 13px;
   font-weight: 800;
@@ -3424,7 +3424,7 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .map-chip:hover {
-  background: #0A1526;
+  background: #04262F;
 }
 
 /* Lista / Mapa switch */
@@ -3434,7 +3434,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 3px;
   border-radius: 999px;
   background: #EFF1EE;
-  border: 1px solid var(--color-hairline, #DFE5EE);
+  border: 1px solid var(--color-hairline, #DCE3E1);
   margin: 0 0 14px;
 }
 
@@ -3443,13 +3443,13 @@ summary.panel-btn::-webkit-details-marker {
   border-radius: 999px;
   font-size: 13.5px;
   font-weight: 700;
-  color: #56637A;
+  color: #55655F;
   text-decoration: none;
 }
 
 .view-switch__option--active {
   background: #fff;
-  color: #14294A;
+  color: #0D3B4D;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
@@ -3468,11 +3468,11 @@ summary.panel-btn::-webkit-details-marker {
 .panel-stats-summary {
   margin: 0 0 1rem;
   font-size: 14px;
-  color: #101823;
+  color: #12201F;
 }
 
 .panel-stats-summary__hint {
-  color: var(--color-ink-secondary, #56637A);
+  color: var(--color-ink-secondary, #55655F);
   font-size: 12.5px;
 }
 
@@ -3495,14 +3495,14 @@ summary.panel-btn::-webkit-details-marker {
   font-size: 28px;
   font-weight: 800;
   line-height: 1.1;
-  color: #14294A;
+  color: #0D3B4D;
   font-variant-numeric: tabular-nums;
 }
 
 .panel-stats__label {
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--color-ink-secondary, #56637A);
+  color: var(--color-ink-secondary, #55655F);
 }
 
 /* 30 bars from divs — a trend shape does not justify a chart library. */
@@ -3527,7 +3527,7 @@ summary.panel-btn::-webkit-details-marker {
   display: block;
   width: 100%;
   border-radius: 2px 2px 0 0;
-  background: #14294A;
+  background: #0D3B4D;
   opacity: 0.85;
 }
 
@@ -3550,22 +3550,22 @@ summary.panel-btn::-webkit-details-marker {
   align-items: baseline;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--color-hairline, #DFE5EE);
+  border: 1px solid var(--color-hairline, #DCE3E1);
   border-radius: 10px;
   background: #fff;
   text-decoration: none;
-  color: #101823;
+  color: #12201F;
   font-weight: 700;
 }
 
 .precios-city-link:hover {
-  border-color: #14294A;
+  border-color: #0D3B4D;
 }
 
 .precios-city-link__count {
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--color-ink-secondary, #56637A);
+  color: var(--color-ink-secondary, #55655F);
 }
 
 .precios-table {
@@ -3575,7 +3575,7 @@ summary.panel-btn::-webkit-details-marker {
 /* A group we would not defend as a market price is dimmed, not hidden: the
    number is still information, it just carries a caveat. */
 .precios-row--thin {
-  color: var(--color-ink-secondary, #56637A);
+  color: var(--color-ink-secondary, #55655F);
 }
 
 .precios-caveat {
@@ -3595,7 +3595,7 @@ summary.panel-btn::-webkit-details-marker {
   border-radius: 10px;
   background: #F3F5F2;
   font-size: 13px;
-  color: var(--color-ink-secondary, #56637A);
+  color: var(--color-ink-secondary, #55655F);
   line-height: 1.5;
 }
 
@@ -3607,11 +3607,11 @@ summary.panel-btn::-webkit-details-marker {
   flex-wrap: wrap;
   margin: 28px 0 0;
   padding: 14px 16px;
-  border: 1px solid var(--color-hairline, #DFE5EE);
+  border: 1px solid var(--color-hairline, #DCE3E1);
   border-radius: 12px;
   background: #F3F5F2;
   font-weight: 700;
-  color: #101823;
+  color: #12201F;
 }
 
 /* ------------------------------------------------------------------ */
@@ -3621,7 +3621,7 @@ summary.panel-btn::-webkit-details-marker {
 .tasacion-card {
   margin-top: 18px;
   padding: 18px;
-  border: 1px solid var(--color-hairline, #DFE5EE);
+  border: 1px solid var(--color-hairline, #DCE3E1);
   border-radius: 12px;
   background: #fff;
 }
@@ -3647,12 +3647,12 @@ summary.panel-btn::-webkit-details-marker {
 .tasacion-label {
   font-size: 12.5px;
   font-weight: 700;
-  color: #101823;
+  color: #12201F;
 }
 
 .tasacion-hint {
   font-size: 12px;
-  color: var(--color-ink-secondary, #56637A);
+  color: var(--color-ink-secondary, #55655F);
 }
 
 .tasacion-submit {
@@ -3663,8 +3663,8 @@ summary.panel-btn::-webkit-details-marker {
   margin-top: 18px;
   padding: 20px;
   border-radius: 12px;
-  border: 1.5px solid #14294A;
-  background: #EEF2F8;
+  border: 1.5px solid #0D3B4D;
+  background: #D1E1E6;
 }
 
 .tasacion-result__label {
@@ -3672,14 +3672,14 @@ summary.panel-btn::-webkit-details-marker {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #14294A;
+  color: #0D3B4D;
 }
 
 /* The range is the headline; there is deliberately no single-number variant. */
 .tasacion-result__range {
   font-size: 26px;
   font-weight: 800;
-  color: #14294A;
+  color: #0D3B4D;
   line-height: 1.2;
   margin: 4px 0 12px;
 }
@@ -3696,9 +3696,9 @@ summary.panel-btn::-webkit-details-marker {
   padding: 10px 12px;
   border-radius: 8px;
   background: #fff;
-  border: 1px solid var(--color-hairline, #DFE5EE);
+  border: 1px solid var(--color-hairline, #DCE3E1);
   font-size: 12.5px;
-  color: var(--color-ink-secondary, #56637A);
+  color: var(--color-ink-secondary, #55655F);
   line-height: 1.5;
 }
 

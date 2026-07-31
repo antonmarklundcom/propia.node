@@ -103,7 +103,7 @@ export function ImportByUrl({
             {error}
           </p>
         )}
-        <p style={{ color: "#56637A", fontSize: 12.5, marginTop: 14 }}>
+        <p style={{ color: "#55655F", fontSize: 12.5, marginTop: 14 }}>
           {esPanel.importLegalNote}
         </p>
       </div>
@@ -113,7 +113,7 @@ export function ImportByUrl({
           <h2 style={{ fontSize: 18, margin: "0 0 .25rem" }}>
             {esPanel.importReviewTitle}
           </h2>
-          <p style={{ color: "#56637A", fontSize: 13, margin: "0 0 1rem" }}>
+          <p style={{ color: "#55655F", fontSize: 13, margin: "0 0 1rem" }}>
             {esPanel.importReviewHint}
           </p>
 
@@ -296,7 +296,7 @@ export function ImportByUrl({
             </label>
           </div>
 
-          <p style={{ color: "#56637A", fontSize: 12.5, marginTop: 4 }}>
+          <p style={{ color: "#55655F", fontSize: 12.5, marginTop: 4 }}>
             {esPanel.importPhotosNote}
           </p>
 

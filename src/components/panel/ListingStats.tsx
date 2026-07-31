@@ -28,7 +28,7 @@ export function ListingStats({
       <h2 style={{ fontSize: 18, margin: "0 0 .25rem" }}>
         {esPanel.statsViews} · {esPanel.statsLeads}
       </h2>
-      <p style={{ color: "#56637A", fontSize: 13, margin: "0 0 1rem" }}>
+      <p style={{ color: "#55655F", fontSize: 13, margin: "0 0 1rem" }}>
         {esPanel.statsWindow} — {esPanel.statsViewsHint}
       </p>
 
@@ -44,7 +44,7 @@ export function ListingStats({
       </div>
 
       {peak === 0 ? (
-        <p style={{ color: "#56637A", fontSize: 13, marginTop: "1rem" }}>
+        <p style={{ color: "#55655F", fontSize: 13, marginTop: "1rem" }}>
           {esPanel.statsNoData}
         </p>
       ) : (
