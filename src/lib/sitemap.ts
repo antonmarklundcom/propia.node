@@ -8,12 +8,12 @@
  * listings this is trivial; chunked child sitemaps (Next generateSitemaps)
  * are an M6 scale concern, not a launch one.
  */
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../db";
-import { listings, locations } from "../db/schema";
+import { agencies, listings, locations } from "../db/schema";
 import { getIndexability } from "./indexability";
 import { citiesWithPrices } from "./precios-queries";
-import { categoryUrl } from "./urls";
+import { categoryUrl, agencyUrl } from "./urls";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 
@@ -41,6 +41,7 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
       locationId: listings.locationId,
       operation: listings.operation,
       propertyType: listings.propertyType,
+      agencyId: listings.agencyId,
     })
     .from(listings)
     .where(eq(listings.status, "published"));
@@ -145,6 +146,27 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
   entries.push({ path: "/precios" });
   for (const city of priceCities) {
     entries.push({ path: `/precios/${city.slug}` });
+  }
+
+  // 4. Agency profile pages — same MIN_INDEXABLE rule as everything else
+  //    (src/lib/indexability.ts), so a brand-new agency with 1-2 listings
+  //    isn't a thin page in the sitemap even though its own page still renders.
+  const agencyCount = new Map<number, number>();
+  for (const l of pub) {
+    if (l.agencyId == null) continue;
+    agencyCount.set(l.agencyId, (agencyCount.get(l.agencyId) ?? 0) + 1);
+  }
+  const indexableAgencyIds = [...agencyCount.entries()]
+    .filter(([, n]) => getIndexability({ listingCount: n }).state === "index")
+    .map(([id]) => id);
+  if (indexableAgencyIds.length > 0) {
+    const agencySlugs = await db
+      .select({ slug: agencies.slug })
+      .from(agencies)
+      .where(inArray(agencies.id, indexableAgencyIds));
+    for (const a of agencySlugs) {
+      entries.push({ path: agencyUrl(a.slug) });
+    }
   }
 
   return entries;

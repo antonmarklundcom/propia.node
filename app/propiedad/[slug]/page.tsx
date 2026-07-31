@@ -15,6 +15,7 @@ import {
   parseListingPublicId,
   listingUrl,
   categoryUrl,
+  agencyUrl,
 } from "@/lib/urls";
 import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
@@ -462,7 +463,11 @@ export default async function ListingPage({ params }: Params) {
             )}
             <div>
               <div className="seller-card__name">
-                {sellerName}
+                {agency ? (
+                  <Link href={agencyUrl(agency.slug)}>{sellerName}</Link>
+                ) : (
+                  sellerName
+                )}
                 {(agency?.isVerified || agent?.isVerified) && (
                   <span className="seller-card__verified" title="Verificado">✓</span>
                 )}
@@ -523,7 +528,14 @@ export default async function ListingPage({ params }: Params) {
 
       {fromAgency.length > 0 && (
         <section className="similar-listings">
-          <h2 className="similar-listings__title">Más de {agency?.name ?? "esta inmobiliaria"}</h2>
+          <h2 className="similar-listings__title">
+            Más de{" "}
+            {agency ? (
+              <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
+            ) : (
+              "esta inmobiliaria"
+            )}
+          </h2>
           <div className="similar-listings__grid">
             {fromAgency.map((card) => (
               <ListingCard key={card.id} card={card} />
