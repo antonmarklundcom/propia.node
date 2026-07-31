@@ -105,6 +105,8 @@ export const esPanel = {
   passwordLabel: "Contraseña",
   loginSubmit: "Entrar",
   loginError: "Email o contraseña incorrectos.",
+  loginLocked:
+    "Demasiados intentos. Esperá unos minutos antes de volver a intentar.",
   logout: "Salir",
   loginToRegister: "¿Todavía no tenés cuenta? Registrate",
 
