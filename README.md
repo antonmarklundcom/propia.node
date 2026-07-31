@@ -1,7 +1,9 @@
 # propia — Paraguay real-estate portal
 
-One Next.js engine, multiple branded doors. propia.com.py launches first.
-Read `ARCHITECTURE.md` before building anything — it is the contract.
+One Next.js engine, multiple branded doors. Read `ARCHITECTURE.md` before
+building anything — it is the contract — and `CLAUDE.md` for the current state
+of the world (live domain, undecided brand name, verified backlog), which
+supersedes the contract wherever they disagree.
 
 ## Stack
 
