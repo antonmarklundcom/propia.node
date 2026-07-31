@@ -82,6 +82,11 @@ export function parseListingPublicId(slugParam: string): string | null {
   return m ? m[1] : null;
 }
 
+/** Public agency profile URL. agencies.slug is already unique (schema.ts). */
+export function agencyUrl(slug: string): string {
+  return `/inmobiliaria/${slug}`;
+}
+
 /**
  * Interpret the segments after /{operacion}/. Pure structure check — the
  * caller still resolves slugs against the DB (and 404s on unknown locations).
