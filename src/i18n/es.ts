@@ -431,3 +431,31 @@ export const listingStatusLabel: Record<string, string> = {
 export function inquiryPrefillFor(title: string, url: string): string {
   return `Hola, vi esta propiedad en ${BRAND_NAME} y me interesa: ${title}\n${url}`;
 }
+
+/** Public agent profile page (/agente/[slug]) — mirrors the agency profile. */
+export const esAgentProfile = {
+  notFoundTitle: `Agente no encontrado — ${BRAND_NAME}`,
+  kind: "Agente",
+  verified: "Verificado",
+  listingsTitle: "Propiedades publicadas",
+  listingCount: (n: number) =>
+    n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`,
+  noListings: "Sin propiedades publicadas por el momento",
+  empty: "Este agente todavía no tiene propiedades publicadas.",
+  contactTitle: "¿Querés contactar a este agente?",
+  contactSubtitle: "Dejale un mensaje y te responde directamente por WhatsApp.",
+  whatsappLink: "💬 WhatsApp",
+  agencyPrefix: "Trabaja en",
+  metaTitle: (agentName: string) =>
+    `${agentName} — Propiedades en venta y alquiler | ${BRAND_NAME}`,
+  metaDescription: (agentName: string, n: number) =>
+    `${n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`} por ${agentName} en ${BRAND_NAME}.`,
+} as const;
+
+/**
+ * Agent-profile WhatsApp prefill: names the agent and links back to their
+ * profile, mirroring inquiryPrefillFor above for listings.
+ */
+export function agentInquiryPrefillFor(agentName: string, url: string): string {
+  return `Hola, vi tu perfil en ${BRAND_NAME} y quiero contactarte: ${agentName}\n${url}`;
+}

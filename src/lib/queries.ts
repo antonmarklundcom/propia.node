@@ -341,6 +341,61 @@ export async function countAgencyListings(agencyId: number): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
+export type AgentRow = typeof agents.$inferSelect;
+
+/** Public agent profile lookup by slug — null if unknown. */
+export async function getAgentBySlug(slug: string): Promise<AgentRow | null> {
+  const [row] = await db
+    .select()
+    .from(agents)
+    .where(eq(agents.slug, slug))
+    .limit(1);
+  return row ?? null;
+}
+
+/** How many published listings an agent has — drives the profile page's indexability. */
+export async function countAgentListings(agentId: number): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(listings)
+    .where(and(eq(listings.status, "published"), eq(listings.agentId, agentId)));
+  return Number(row?.n ?? 0);
+}
+
+/**
+ * Published listings for an agent's own public profile — mirrors
+ * getAgencyListings above (no excludeId there either, for the same reason:
+ * there's no one listing to leave out on a profile page).
+ */
+export async function getAgentListings(params: {
+  agentId: number;
+  excludeId?: number;
+  limit?: number;
+}): Promise<ListingCard[]> {
+  const conds = [
+    eq(listings.status, "published"),
+    eq(listings.agentId, params.agentId),
+  ];
+  if (params.excludeId != null) conds.push(ne(listings.id, params.excludeId));
+  const rows = await db
+    .select(cardColumns())
+    .from(listings)
+    .where(and(...conds))
+    .orderBy(desc(listings.publishedAt))
+    .limit(params.limit ?? 4);
+  return attachCovers(rows);
+}
+
+/** The agency an agent belongs to (for linking back), or null if independent. */
+export async function getAgencyById(agencyId: number): Promise<AgencyRow | null> {
+  const [row] = await db
+    .select()
+    .from(agencies)
+    .where(eq(agencies.id, agencyId))
+    .limit(1);
+  return row ?? null;
+}
+
 /** The card-shaped column set — shared by every query that feeds <ListingCard>. */
 function cardColumns() {
   return {
