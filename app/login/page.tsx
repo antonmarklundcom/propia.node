@@ -32,7 +32,11 @@ export default async function LoginPage({
           <h1 className="auth-card__title">{esPanel.loginTitle}</h1>
           <p className="auth-card__subtitle">{esPanel.loginSubtitle}</p>
 
-          {error ? <p className="auth-error">{esPanel.loginError}</p> : null}
+          {error === "locked" ? (
+            <p className="auth-error">{esPanel.loginLocked}</p>
+          ) : error ? (
+            <p className="auth-error">{esPanel.loginError}</p>
+          ) : null}
 
           <form action={loginAction}>
             {next ? <input type="hidden" name="next" value={next} /> : null}
