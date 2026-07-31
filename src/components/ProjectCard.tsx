@@ -24,14 +24,11 @@ export function ProjectCard({ card }: { card: Card }) {
     <Link className="project-card" href={`/proyecto/${card.slug}`}>
       <div
         className={`project-card__media${card.heroImageUrl ? "" : " project-card__media--empty"}`}
-        style={
-          card.heroImageUrl
-            ? { backgroundImage: `url(${card.heroImageUrl})` }
-            : undefined
-        }
-        role="img"
-        aria-label={card.name}
       >
+        {card.heroImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="media-cover-img" src={card.heroImageUrl} alt={card.name} loading="lazy" decoding="async" />
+        )}
         {card.stage && (
           <span className="project-card__badge">{STAGE_LABEL[card.stage] ?? card.stage}</span>
         )}

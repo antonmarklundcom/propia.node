@@ -44,10 +44,12 @@ export function ListingCard({ card }: { card: Card }) {
     <Link className="listing-card" href={listingUrl(card)}>
       <div
         className={`listing-card__media ${cover ? "listing-card__media--photo" : "listing-card__media--empty"}`}
-        style={cover ? { backgroundImage: `url(${cover})` } : undefined}
-        role="img"
-        aria-label={card.title}
       >
+        {cover && (
+          // eslint-disable-next-line @next/next/no-img-element -- pre-sized R2
+          // thumb derivative (imageThumbUrl); next/image would only add a proxy hop.
+          <img className="media-cover-img" src={cover} alt={card.title} loading="lazy" decoding="async" />
+        )}
         <div className="listing-card__badge-row">
           <span
             className={`listing-card__badge${isAlquiler ? " listing-card__badge--alquiler" : ""}`}
