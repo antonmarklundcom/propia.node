@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { tokens } from "@/design/tokens";
 import Link from "next/link";
 import { es, esPrecios } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import {
   resolveCity,
   resolveBarrio,
@@ -160,7 +161,7 @@ const resolve = cache(async function resolve(
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { operacion, segments } = await params;
   const r = await resolve(operacion, segments);
-  if (!r) return { title: "No encontrado — Homes Paraguay" };
+  if (!r) return { title: `No encontrado — ${BRAND_NAME}` };
 
   const count = await countFor(r.operation, r.locationIds, r.type);
   const parentIndexable = r.barrio
@@ -173,8 +174,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   });
 
   return {
-    title: `${r.title} — Homes Paraguay`,
-    description: `${count} ${r.title.toLowerCase()} en Homes Paraguay. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
+    title: `${r.title} — ${BRAND_NAME}`,
+    description: `${count} ${r.title.toLowerCase()} en ${BRAND_NAME}. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
     alternates: { canonical: `${await siteOrigin()}${r.canonicalPath}` },
     robots:
       ix.state === "index"

@@ -7,6 +7,7 @@ import {
   listAgents,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../tabs";
 import {
   toggleAgencyVerifiedAction,
@@ -14,7 +15,7 @@ import {
 } from "../actions";
 
 export const metadata: Metadata = {
-  title: "Inmobiliarias y agentes — Homes Paraguay",
+  title: `Inmobiliarias y agentes — ${BRAND_NAME}`,
   robots: { index: false, follow: false },
 };
 

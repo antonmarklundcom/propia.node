@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { esPrecios } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { formatUsd } from "@/lib/format";
 import { getCityPrices, MIN_RELIABLE_SAMPLE } from "@/lib/precios-queries";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -28,7 +29,7 @@ const load = cache(getCityPrices);
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { ciudad } = await params;
   const prices = await load(ciudad);
-  if (!prices) return { title: "No encontrado — Homes Paraguay" };
+  if (!prices) return { title: `No encontrado — ${BRAND_NAME}` };
 
   /**
    * Indexable only once at least one group is defensible. A price page with
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const indexable = prices.reliableSample > 0;
 
   return {
-    title: `${esPrecios.cityTitle(prices.city.name)} — Homes Paraguay`,
+    title: `${esPrecios.cityTitle(prices.city.name)} — ${BRAND_NAME}`,
     description: esPrecios.citySubtitle(prices.city.name, prices.period),
     alternates: { canonical: `${await siteOrigin()}/precios/${prices.city.slug}` },
     robots: indexable

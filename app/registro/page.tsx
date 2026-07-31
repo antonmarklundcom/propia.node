@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { esPanel } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
 import { MIN_PASSWORD_LENGTH } from "@/lib/registration";
 import { registerAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Creá tu cuenta — Homes Paraguay",
-  description:
-    "Publicá tus propiedades en Homes Paraguay. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.",
+  title: `Creá tu cuenta — ${BRAND_NAME}`,
+  description: `Publicá tus propiedades en ${BRAND_NAME}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
 };
 
 // Session state is per-request; never statically cache the sign-up page.

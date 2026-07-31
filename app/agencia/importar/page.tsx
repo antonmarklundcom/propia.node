@@ -4,11 +4,12 @@ import { ImportByUrl } from "@/components/panel/ImportByUrl";
 import { requireAgencyContext } from "@/lib/auth/guards";
 import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { agencyTabs } from "../tabs";
 import { confirmImportAction, readListingUrlAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Importar aviso — Homes Paraguay",
+  title: `Importar aviso — ${BRAND_NAME}`,
   robots: { index: false, follow: false },
 };
 

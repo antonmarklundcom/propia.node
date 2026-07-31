@@ -6,6 +6,7 @@ import {
   getOwnAgentProfile,
 } from "@/lib/profile-queries";
 import { esPanel } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { agencyTabs } from "../tabs";
 import {
   updateAccountAction,
@@ -14,7 +15,7 @@ import {
 } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Tu perfil — Homes Paraguay",
+  title: `Tu perfil — ${BRAND_NAME}`,
   robots: { index: false, follow: false },
 };
 

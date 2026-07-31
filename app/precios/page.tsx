@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { esPrecios } from "@/i18n/es";
+import { BRAND_NAME } from "@/lib/brand";
 import { citiesWithPrices } from "@/lib/precios-queries";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `${esPrecios.indexTitle} — Homes Paraguay`,
+    title: `${esPrecios.indexTitle} — ${BRAND_NAME}`,
     description: esPrecios.indexSubtitle,
     alternates: { canonical: `${await siteOrigin()}/precios` },
   };
