@@ -1,0 +1,59 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { PanelBar } from "@/components/panel/PanelBar";
+import { PostForm } from "@/components/panel/PostForm";
+import { requireSuperAdmin } from "@/lib/auth/guards";
+import { countReviewQueue } from "@/lib/panel-queries";
+import { countDraftPosts } from "@/lib/post-queries";
+import { BRAND_NAME } from "@/lib/brand";
+import { adminTabs } from "../../tabs";
+import { createPostAction } from "../actions";
+
+export const metadata: Metadata = {
+  title: `Nueva nota — ${BRAND_NAME}`,
+  robots: { index: false, follow: false },
+};
+
+export const dynamic = "force-dynamic";
+
+export default async function NewPostPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ msg?: string }>;
+}) {
+  const [params, user] = await Promise.all([searchParams, requireSuperAdmin()]);
+  const [reviewCount, drafts] = await Promise.all([
+    countReviewQueue(),
+    countDraftPosts(),
+  ]);
+
+  return (
+    <>
+      <PanelBar
+        title="Panel de administración"
+        role={user.role}
+        userName={user.name}
+        tabs={adminTabs("posts", reviewCount, drafts)}
+      />
+      <main className="panel site-main">
+        <Link className="panel-post__back" href="/admin/guias">
+          ← Volver a guías y notas
+        </Link>
+        <h2 className="panel-section__title">Nueva nota</h2>
+
+        {params.msg === "invalid" && (
+          <p className="panel-flash panel-flash--error">
+            La nota necesita al menos un título y contenido.
+          </p>
+        )}
+
+        <p className="panel-post__intro">
+          Guardá como borrador cuantas veces quieras — nadie la ve hasta que
+          toques «Publicar». La imagen de portada se agrega después de guardar.
+        </p>
+
+        <PostForm action={createPostAction} />
+      </main>
+    </>
+  );
+}

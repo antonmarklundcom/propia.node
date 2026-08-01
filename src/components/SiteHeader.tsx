@@ -32,10 +32,13 @@ export function SiteHeader() {
             <div key={group.label} className="site-header__group">
               <Link className="site-header__link" href={group.href}>
                 {group.label}
-                <span className="site-header__caret" aria-hidden>
-                  ▾
-                </span>
+                {group.links.length > 0 && (
+                  <span className="site-header__caret" aria-hidden>
+                    ▾
+                  </span>
+                )}
               </Link>
+              {group.links.length > 0 && (
               <div className="site-header__panel">
                 {group.links.map((l) => (
                   <Link
@@ -50,6 +53,7 @@ export function SiteHeader() {
                   </Link>
                 ))}
               </div>
+              )}
             </div>
           ))}
         </nav>

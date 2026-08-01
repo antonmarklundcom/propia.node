@@ -22,6 +22,7 @@ export interface NavGroup {
   label: string;
   /** Where the group label itself points (a real page, never "#"). */
   href: string;
+  /** Empty = a plain top-level link with no dropdown. */
   links: NavLink[];
 }
 
@@ -181,6 +182,9 @@ export const HEADER_NAV: NavGroup[] = [
       },
     ],
   },
+  // No dropdown: the editorial section is one destination, the same way the
+  // incumbents' "Noticias" is a plain tab.
+  { label: "Guías", href: "/guias", links: [] },
 ];
 
 /** Footer column: buying and renting entry points. */
@@ -200,6 +204,7 @@ export const FOOTER_TOOLS: NavLink[] = [
   { label: "Tasación gratis", href: "/tasacion" },
   { label: "Financiamiento y cuotas", href: "/financiamiento" },
   { label: "Cómo funciona", href: "/como-funciona" },
+  { label: "Guías y notas", href: "/guias" },
   { label: "Preguntas frecuentes", href: "/preguntas-frecuentes" },
 ];
 
@@ -254,6 +259,7 @@ export const STATIC_SITEMAP_PATHS: string[] = [
   "/inmobiliarias",
   "/agentes",
   "/datos",
+  "/guias",
   "/precios",
   "/tasacion",
   "/financiamiento",

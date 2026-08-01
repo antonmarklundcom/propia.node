@@ -22,6 +22,7 @@ import { getIndexability } from "./indexability";
 import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl, agencyUrl, agentUrl } from "./urls";
 import { STATIC_SITEMAP_PATHS } from "../config/site-nav";
+import { listPublishedPostSlugs } from "./post-queries";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 
@@ -226,6 +227,16 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     for (const d of devSlugs) {
       entries.push({ path: `/desarrolladora/${d.slug}` });
     }
+  }
+
+  // 7. Editorial posts. listPublishedPostSlugs() is fail-soft on a missing
+  //    table, so a sitemap request between deploy and `db:migrate` returns the
+  //    rest of the site rather than erroring.
+  for (const post of await listPublishedPostSlugs()) {
+    entries.push({
+      path: `/guias/${post.slug}`,
+      lastmod: post.updatedAt ?? undefined,
+    });
   }
 
   return entries;

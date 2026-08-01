@@ -76,15 +76,19 @@ export function MobileMenu() {
                 <Link className="mobile-menu__group-title" href={group.href}>
                   {group.label}
                 </Link>
-                <ul className="mobile-menu__list">
-                  {group.links.map((l) => (
-                    <li key={l.href + l.label}>
-                      <Link className="mobile-menu__link" href={l.href}>
-                        {l.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                {/* A group with no children is a destination, not a section:
+                    its title above is already the link. */}
+                {group.links.length > 0 && (
+                  <ul className="mobile-menu__list">
+                    {group.links.map((l) => (
+                      <li key={l.href + l.label}>
+                        <Link className="mobile-menu__link" href={l.href}>
+                          {l.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))}
 

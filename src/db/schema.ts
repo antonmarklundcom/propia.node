@@ -466,3 +466,51 @@ export const listingViewsDaily = mysqlTable(
     index("idx_listing_day").on(t.listingId, t.day),
   ],
 );
+
+/* ------------------------------------------------------------------ */
+/* 2.10 Editorial: posts — guides and market notes                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Editorial content, written in the super-admin panel (/admin/guias) and
+ * served at /guias.
+ *
+ * Deliberately one flat table rather than a CMS: the founder writes these,
+ * there is no editorial workflow to model, and a post is a title, a body and
+ * a date. Body is stored as the plain text the author typed — a small
+ * markdown subset (see src/lib/markdown.ts) rendered to React elements at
+ * request time, never to raw HTML, so no stored value can inject markup.
+ *
+ * `category` exists so the same table can hold evergreen guides and dated
+ * market notes without a second table; the public index groups on it.
+ */
+export const posts = mysqlTable(
+  "posts",
+  {
+    id: id(),
+    slug: varchar("slug", { length: 200 }).notNull().unique(),
+    title: varchar("title", { length: 200 }).notNull(),
+    // Shown on cards and used as the meta description when set.
+    excerpt: varchar("excerpt", { length: 400 }),
+    body: mediumtext("body").notNull(),
+    // Same R2 key convention as listing photos (posts/{slug}/{rand}.webp).
+    coverR2Key: varchar("cover_r2_key", { length: 500 }),
+    category: mysqlEnum("category", ["guia", "mercado", "noticia"])
+      .notNull()
+      .default("guia"),
+    status: mysqlEnum("status", ["draft", "published"])
+      .notNull()
+      .default("draft"),
+    authorUserId: fk("author_user_id"),
+    // Set on first publish and kept thereafter, so re-publishing an edited
+    // post does not reshuffle the index or churn the sitemap's lastmod.
+    publishedAt: datetime("published_at"),
+    updatedAt: datetime("updated_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    // The public index's only query: published, newest first.
+    index("idx_status_published").on(t.status, t.publishedAt),
+    index("idx_category").on(t.category, t.status),
+  ],
+);
