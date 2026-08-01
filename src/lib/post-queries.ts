@@ -34,10 +34,25 @@ export const POST_CATEGORY_LABEL: Record<PostRow["category"], string> = {
   noticia: "Noticia",
 };
 
-/** True when the failure is "the table isn't there yet", not a real fault. */
+/**
+ * True when the failure is "the table isn't there yet", not a real fault.
+ *
+ * Drizzle wraps driver errors in its own `Failed query: …` Error and hangs the
+ * mysql2 error off `cause`, so the code is never on the top-level object —
+ * checking only there silently disabled the whole fail-soft path. Walk the
+ * chain, and match on the message too: `ER_NO_SUCH_TABLE` is the code, but a
+ * wrapper that only carries a message still has "doesn't exist" in it.
+ */
 function isMissingTable(err: unknown): boolean {
-  const code = (err as { code?: string })?.code;
-  return code === "ER_NO_SUCH_TABLE";
+  for (let e: unknown = err, hops = 0; e && hops < 5; hops++) {
+    const node = e as { code?: string; message?: string; cause?: unknown };
+    if (node.code === "ER_NO_SUCH_TABLE") return true;
+    if (node.message && /doesn't exist|no such table/i.test(node.message)) {
+      return true;
+    }
+    e = node.cause;
+  }
+  return false;
 }
 
 function toCard(row: PostRow): PostCard {

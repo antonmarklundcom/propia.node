@@ -4,7 +4,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { PostForm } from "@/components/panel/PostForm";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
-import { countDraftPosts } from "@/lib/post-queries";
+import { countDraftPosts, isPostsTableReady } from "@/lib/post-queries";
 import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../../tabs";
 import { createPostAction } from "../actions";
@@ -22,9 +22,10 @@ export default async function NewPostPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [params, user] = await Promise.all([searchParams, requireSuperAdmin()]);
-  const [reviewCount, drafts] = await Promise.all([
+  const [reviewCount, drafts, ready] = await Promise.all([
     countReviewQueue(),
     countDraftPosts(),
+    isPostsTableReady(),
   ]);
 
   return (
@@ -41,6 +42,16 @@ export default async function NewPostPage({
         </Link>
         <h2 className="panel-section__title">Nueva nota</h2>
 
+        {/* Without this the editor would render fine and only fail on submit,
+            which is a 500 the author has to read logs to understand. */}
+        {!ready && (
+          <p className="panel-flash panel-flash--error">
+            La tabla de notas todavía no existe en esta base de datos. Ejecutá{" "}
+            <code>npm run db:migrate</code> con el DATABASE_URL de producción
+            antes de escribir la primera nota.
+          </p>
+        )}
+
         {params.msg === "invalid" && (
           <p className="panel-flash panel-flash--error">
             La nota necesita al menos un título y contenido.
@@ -52,7 +63,7 @@ export default async function NewPostPage({
           toques «Publicar». La imagen de portada se agrega después de guardar.
         </p>
 
-        <PostForm action={createPostAction} />
+        {ready && <PostForm action={createPostAction} />}
       </main>
     </>
   );
