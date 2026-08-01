@@ -13,6 +13,7 @@ import {
   toggleAgencyVerifiedAction,
   toggleAgentVerifiedAction,
 } from "../actions";
+import { createAgencyAction } from "./actions";
 
 export const metadata: Metadata = {
   title: `Inmobiliarias y agentes — ${BRAND_NAME}`,
@@ -29,13 +30,36 @@ function VerifiedPill({ on }: { on: boolean }) {
   );
 }
 
-export default async function AdminAgenciesPage() {
-  const user = await requireSuperAdmin();
+/** Plan values as the founder reads them, not as the enum spells them. */
+const PLAN_OPTIONS: { value: "free" | "destacado" | "partner"; label: string }[] = [
+  { value: "free", label: "Gratis" },
+  { value: "destacado", label: "Destacado" },
+  { value: "partner", label: "Partner" },
+];
+
+function planLabel(plan: string): string {
+  return PLAN_OPTIONS.find((p) => p.value === plan)?.label ?? plan;
+}
+
+/** Flash messages keyed by the ?msg= code createAgencyAction redirects with. */
+const FLASH: Record<string, { text: string; error?: boolean }> = {
+  agency_created: { text: esPanel.agencyCreated },
+  invalid: { text: esPanel.agencyInvalid, error: true },
+};
+
+export default async function AdminAgenciesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ msg?: string }>;
+}) {
+  const [{ msg }, user] = await Promise.all([searchParams, requireSuperAdmin()]);
   const [reviewCount, agencies, agents] = await Promise.all([
     countReviewQueue(),
     listAgencies(),
     listAgents(),
   ]);
+
+  const flash = msg ? FLASH[msg] : undefined;
 
   return (
     <>
@@ -46,7 +70,53 @@ export default async function AdminAgenciesPage() {
         tabs={adminTabs("agencies", reviewCount)}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">Inmobiliarias</h2>
+        {flash ? (
+          <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p>
+        ) : null}
+
+        <h2 className="panel-section__title">{esPanel.adminAgencyNewTitle}</h2>
+        <article className="panel-card">
+          <p className="panel-card__meta">{esPanel.adminAgencyNewHint}</p>
+          <form action={createAgencyAction} className="panel-form">
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esPanel.agencyNameLabel}</span>
+              <input
+                className="auth-field__input"
+                name="name"
+                type="text"
+                required
+                minLength={2}
+              />
+            </label>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esPanel.agencyEmailLabel}</span>
+              <input className="auth-field__input" name="email" type="email" />
+            </label>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esPanel.agencyWhatsappLabel}</span>
+              <input className="auth-field__input" name="whatsapp" type="tel" />
+            </label>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esPanel.planLabel}</span>
+              <select className="panel-select" name="plan" defaultValue="free">
+                {PLAN_OPTIONS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="panel-form__field panel-form__field--action">
+              <button className="panel-btn panel-btn--primary" type="submit">
+                {esPanel.createAgency}
+              </button>
+            </div>
+          </form>
+        </article>
+
+        <h2 className="panel-section__title" style={{ marginTop: 32 }}>
+          Inmobiliarias
+        </h2>
         {agencies.length === 0 ? (
           <p className="panel-empty">Todavía no hay inmobiliarias.</p>
         ) : (
@@ -65,7 +135,7 @@ export default async function AdminAgenciesPage() {
                 {agencies.map((a) => (
                   <tr key={a.id}>
                     <td className="panel-table__name">{a.name}</td>
-                    <td>{a.plan}</td>
+                    <td>{planLabel(a.plan)}</td>
                     <td>{a.whatsapp ?? a.email ?? "—"}</td>
                     <td>
                       <VerifiedPill on={a.isVerified} />
