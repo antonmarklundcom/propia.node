@@ -16,6 +16,7 @@ import {
   sessions,
   users,
 } from "@/db/schema";
+import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
 import { listingScopeWhere, type EditScope } from "@/lib/listing-edit";
@@ -144,6 +145,46 @@ export async function listAgents(): Promise<AgentRow[]> {
     .from(agents)
     .leftJoin(agencies, eq(agents.agencyId, agencies.id))
     .orderBy(agents.name);
+}
+
+export interface CreateAgencyInput {
+  name: string;
+  email: string | null;
+  whatsapp: string | null;
+  plan: AgencyRow["plan"];
+}
+
+/**
+ * Create an agency from the admin panel — the white-glove counterpart to
+ * public self-registration, for inmobiliarias the founder onboards himself.
+ *
+ * Deliberately the same trust level as a self-registered one: `is_verified`
+ * starts false, and the ✓ badge only appears once you flip it with the toggle
+ * on this page. Unlike registration this creates *no* login — the agency's
+ * users are created and linked from /admin/usuarios.
+ *
+ * Returns the new id, or null if the insert produced no readable row.
+ */
+export async function createPanelAgency(
+  input: CreateAgencyInput,
+): Promise<number | null> {
+  const slug = await uniqueAgencySlug(input.name);
+
+  await db.insert(agencies).values({
+    name: input.name,
+    slug,
+    email: input.email,
+    whatsapp: input.whatsapp,
+    plan: input.plan,
+    isVerified: false,
+  });
+
+  const [row] = await db
+    .select({ id: agencies.id })
+    .from(agencies)
+    .where(eq(agencies.slug, slug))
+    .limit(1);
+  return row?.id ?? null;
 }
 
 export async function setAgencyVerified(id: number, verified: boolean): Promise<void> {

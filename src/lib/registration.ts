@@ -10,9 +10,10 @@
  * review queue before they are public. Sign-up creates a *login*, not trust.
  */
 import "server-only";
-import { eq, like } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies, agents, users } from "@/db/schema";
+import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
 
@@ -46,31 +47,6 @@ export const MIN_PASSWORD_LENGTH = 8;
 /** Deliberately permissive: real addresses vary more than any regex allows. */
 function looksLikeEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
-}
-
-/**
- * A unique agencies.slug for a display name. The column is unique and slugs
- * are never recomputed later, so a collision has to be resolved *here* —
- * "Inmobiliaria Central" twice becomes central and central-2, and the second
- * agency keeps that URL for good.
- */
-async function uniqueAgencySlug(name: string): Promise<string> {
-  const base = slugify(name) || "inmobiliaria";
-  const taken = new Set(
-    (
-      await db
-        .select({ slug: agencies.slug })
-        .from(agencies)
-        .where(like(agencies.slug, `${base}%`))
-    ).map((r) => r.slug),
-  );
-  if (!taken.has(base)) return base;
-  for (let n = 2; n < 1000; n += 1) {
-    const candidate = `${base}-${n}`;
-    if (!taken.has(candidate)) return candidate;
-  }
-  // Pathological case only; the timestamp keeps the insert from failing.
-  return `${base}-${Date.now()}`;
 }
 
 /** Same idea for agents.slug, which is also unique. */
