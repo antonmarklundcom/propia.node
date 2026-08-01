@@ -606,6 +606,17 @@ export async function getFeaturedProjects(limit = 6): Promise<ProjectCard[]> {
     .leftJoin(locations, eq(projects.locationId, locations.id))
     .orderBy(desc(projects.id))
     .limit(limit);
+  return projectCardsFrom(rows);
+}
+
+/**
+ * Attach unit stats to project rows already selected with the ProjectCard
+ * columns. Shared so the /proyectos index (directory-queries.ts) produces
+ * cards identical to the homepage carousel's.
+ */
+export async function projectCardsFrom(
+  rows: Omit<ProjectCard, "minPriceUsd" | "availableUnits">[],
+): Promise<ProjectCard[]> {
   const stats = await projectUnitStats(rows.map((r) => r.id));
   return rows.map((r) => ({
     ...r,

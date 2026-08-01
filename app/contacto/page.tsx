@@ -1,0 +1,143 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { BRAND_NAME } from "@/lib/brand";
+import { siteOrigin } from "@/lib/origin";
+import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
+import { JsonLd } from "@/components/JsonLd";
+import { LeadForm } from "@/components/LeadForm";
+import { PageHero, Section } from "@/components/MarketingUI";
+
+export const dynamic = "force-dynamic";
+
+const TITLE = "Contacto";
+const DESCRIPTION = `Escribinos por WhatsApp o dejanos tu consulta: publicación de propiedades, cuentas para inmobiliarias, proyectos y soporte de ${BRAND_NAME}.`;
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: `${TITLE} — ${BRAND_NAME}`,
+    description: DESCRIPTION,
+    alternates: { canonical: `${await siteOrigin()}/contacto` },
+    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+  };
+}
+
+/**
+ * Contact routing note: this page never handles a question about a specific
+ * property. Those go to whoever published the aviso, through the form on the
+ * listing page — so the copy sends people there instead of creating a support
+ * queue we can't answer.
+ */
+export default async function ContactoPage() {
+  const origin = await siteOrigin();
+  const whatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP ?? null;
+  const waDigits = whatsapp?.replace(/\D/g, "");
+
+  return (
+    <main>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd(origin, [
+            { name: "Inicio", url: "/" },
+            { name: TITLE, url: "/contacto" },
+          ]),
+          organizationJsonLd(origin, {
+            name: BRAND_NAME,
+            whatsapp,
+            email: "hola@propia.com.py",
+          }),
+        ]}
+      />
+
+      <PageHero
+        kicker="Contacto"
+        title="Hablemos"
+        subtitle="Respondemos consultas sobre publicación, cuentas de inmobiliaria, proyectos y todo lo que tenga que ver con el portal."
+      />
+
+      <Section>
+        <div className="mk-contact">
+          <div className="mk-contact__form">
+            <h2 className="mk-section__title mk-section__title--sub">
+              Dejanos tu consulta
+            </h2>
+            <LeadForm
+              leadType="seller"
+              reasons={[
+                { value: "seller", label: "Quiero publicar una propiedad" },
+                {
+                  value: "agent_signup",
+                  label: "Soy inmobiliaria o agente",
+                },
+                {
+                  value: "developer",
+                  label: "Soy desarrolladora / tengo un proyecto",
+                },
+                { value: "buyer", label: "Otra consulta" },
+              ]}
+              companyField
+            />
+          </div>
+
+          <aside className="mk-contact__aside">
+            <div className="mk-card">
+              <h3 className="mk-card__title">Canales directos</h3>
+              <ul className="mk-card__list">
+                {waDigits && (
+                  <li>
+                    <a
+                      href={`https://wa.me/${waDigits}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      💬 WhatsApp {whatsapp}
+                    </a>
+                  </li>
+                )}
+                <li>
+                  <a href="mailto:hola@propia.com.py">✉️ hola@propia.com.py</a>
+                </li>
+                <li>📍 Asunción, Paraguay</li>
+                <li>🕘 Lunes a viernes, 8:00 a 18:00</li>
+              </ul>
+            </div>
+
+            <div className="mk-card">
+              <h3 className="mk-card__title">
+                ¿Consulta sobre una propiedad puntual?
+              </h3>
+              <p className="mk-card__text">
+                Las consultas sobre un aviso las responde quien lo publicó, no
+                nosotros. Entrá a la propiedad y usá el formulario o el botón de
+                WhatsApp que están en la ficha — así te contesta directamente el
+                vendedor o la inmobiliaria.
+              </p>
+              <Link className="mk-card__link" href="/venta/asuncion">
+                Ver propiedades →
+              </Link>
+            </div>
+
+            <div className="mk-card">
+              <h3 className="mk-card__title">Atajos útiles</h3>
+              <ul className="mk-card__list">
+                <li>
+                  <Link href="/publicar">Publicar una propiedad</Link>
+                </li>
+                <li>
+                  <Link href="/para-inmobiliarias">
+                    Cuenta para inmobiliarias
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tasacion">Tasar mi propiedad gratis</Link>
+                </li>
+                <li>
+                  <Link href="/preguntas-frecuentes">Preguntas frecuentes</Link>
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </Section>
+    </main>
+  );
+}

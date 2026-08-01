@@ -14,6 +14,7 @@ import { agencies, agents, listings, locations } from "../db/schema";
 import { getIndexability } from "./indexability";
 import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl, agencyUrl, agentUrl } from "./urls";
+import { STATIC_SITEMAP_PATHS } from "../config/site-nav";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 
@@ -47,7 +48,10 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     .from(listings)
     .where(eq(listings.status, "published"));
 
-  const entries: SitemapEntry[] = [];
+  // 0. Hand-authored pages (home, company, sales, guides, legal). Listed in
+  //    src/config/site-nav.ts next to the nav that links them, so a new page
+  //    can't be added to the menu and forgotten by the sitemap.
+  const entries: SitemapEntry[] = STATIC_SITEMAP_PATHS.map((path) => ({ path }));
 
   // 1. Listing detail pages — always indexable when published.
   for (const l of pub) {
@@ -144,7 +148,6 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
   // 3. Price pages — only cities with a defensible sample, which is the same
   //    rule the page's own robots meta applies. Sitemap and page must agree.
   const priceCities = await citiesWithPrices();
-  entries.push({ path: "/precios" });
   for (const city of priceCities) {
     entries.push({ path: `/precios/${city.slug}` });
   }

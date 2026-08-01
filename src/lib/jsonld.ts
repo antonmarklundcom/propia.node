@@ -103,6 +103,60 @@ export function itemListJsonLd(
   };
 }
 
+/**
+ * FAQPage — emitted by the homepage and /preguntas-frecuentes from the same
+ * FAQ_SECTIONS source, so the markup can never claim an answer the page
+ * doesn't show (which is what gets rich results revoked).
+ */
+export function faqJsonLd(items: { q: string; a: string }[]): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((it) => ({
+      "@type": "Question",
+      name: it.q,
+      acceptedAnswer: { "@type": "Answer", text: it.a },
+    })),
+  };
+}
+
+/**
+ * Organization — the entity behind the portal. Only fields we can stand
+ * behind: name, site URL, contact channel. No invented address, founding
+ * date, employee count or aggregate rating.
+ */
+export function organizationJsonLd(
+  origin: string,
+  opts: { name: string; whatsapp?: string | null; email?: string },
+): object {
+  const contactPoint: Record<string, unknown>[] = [];
+  if (opts.whatsapp) {
+    contactPoint.push({
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      telephone: opts.whatsapp,
+      areaServed: "PY",
+      availableLanguage: ["es"],
+    });
+  }
+  if (opts.email) {
+    contactPoint.push({
+      "@type": "ContactPoint",
+      contactType: "sales",
+      email: opts.email,
+      areaServed: "PY",
+      availableLanguage: ["es"],
+    });
+  }
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: opts.name,
+    url: origin,
+    ...(contactPoint.length > 0 ? { contactPoint } : {}),
+  };
+}
+
 /** Breadcrumb items from a location chain + operation label. */
 export function locationBreadcrumb(
   chain: LocationRow[],
