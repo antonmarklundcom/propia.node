@@ -962,8 +962,15 @@ body {
   }
   .newsletter__input {
     flex: 1;
+    /* min-width:0 lets the input actually shrink inside the flex row — without
+       it the input keeps its 240px intrinsic width and pushes the submit
+       button off-screen below ~360px. */
+    min-width: 0;
     width: auto;
     max-width: none;
+  }
+  .newsletter__submit {
+    flex: 0 0 auto;
   }
 }
 
@@ -5403,4 +5410,207 @@ summary.panel-btn::-webkit-details-marker {
   margin: 0;
   color: var(--color-ink-secondary);
   line-height: 1.6;
+}
+
+/* ---- Operation hubs (/venta, /alquiler) ---------------------------------- */
+
+.hub-hero {
+  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+}
+
+.hub-hero__inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 46px 16px;
+  text-align: center;
+}
+
+.hub-hero__title {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .hub-hero__title {
+    font-size: 25px;
+  }
+}
+
+.hub-hero__lead {
+  margin: 12px auto 0;
+  max-width: 62ch;
+  line-height: 1.65;
+  color: #C6DCE1;
+}
+
+.hub-hero__count {
+  display: inline-block;
+  margin: 16px 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 13.5px;
+  font-weight: 650;
+  color: #fff;
+}
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.hub-grid--cities {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+  .hub-grid,
+  .hub-grid--cities {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .hub-grid,
+  .hub-grid--cities {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hub-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: border-color 0.14s ease, transform 0.14s ease;
+}
+
+.mk-section--muted .hub-tile {
+  background: var(--color-background);
+}
+
+.hub-tile:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.hub-tile__label {
+  font-size: 14.5px;
+  font-weight: 650;
+  color: var(--color-primary);
+}
+
+.hub-tile__count {
+  flex: 0 0 auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6B4E14;
+}
+
+/* ---- Chips (directory cards) --------------------------------------------- */
+
+.mk-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mk-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-ink-secondary);
+}
+
+.mk-agency__logo--round {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ---- Profile hero (developer) -------------------------------------------- */
+
+.profile-hero {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profile-hero__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px 16px;
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+
+@media (max-width: 620px) {
+  .profile-hero__inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+}
+
+.profile-hero__logo {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 84px;
+  border-radius: 16px;
+  object-fit: contain;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+}
+
+.profile-hero__logo--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.profile-hero__kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8A6A22;
+}
+
+.profile-hero__title {
+  margin: 6px 0 8px;
+  font-size: 28px;
+  letter-spacing: -0.01em;
+  color: var(--color-primary);
+}
+
+.profile-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--color-ink-secondary);
+}
+
+.profile-hero__actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }

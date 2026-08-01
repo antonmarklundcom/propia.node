@@ -25,11 +25,26 @@ export interface NavGroup {
   links: NavLink[];
 }
 
+/**
+ * Top level mirrors how buyers in this market already read a portal — the
+ * same shape as the incumbents (Venta / Alquiler / Proyectos / Empresas /
+ * Datos), so nobody has to learn our vocabulary. What differs is what sits
+ * behind each tab: "Datos" is a real market-data hub rather than a blog
+ * category, because published medians and cuota maths are the thing this
+ * portal has and they don't.
+ *
+ * Every group label links to a real page — no dead "#" parents.
+ */
 export const HEADER_NAV: NavGroup[] = [
   {
-    label: "Comprar",
-    href: "/venta/asuncion",
+    label: "Venta",
+    href: "/venta",
     links: [
+      {
+        label: "Todo en venta",
+        href: "/venta",
+        desc: "Todas las ciudades y tipos",
+      },
       {
         label: "Casas en venta",
         href: "/venta/asuncion/casas",
@@ -46,21 +61,21 @@ export const HEADER_NAV: NavGroup[] = [
         desc: "Lotes y loteamientos",
       },
       {
-        label: "Duplex",
+        label: "Dúplex",
         href: "/venta/asuncion/duplex",
-        desc: "Duplex y townhouses",
-      },
-      {
-        label: "Proyectos nuevos",
-        href: "/proyectos",
-        desc: "Obra nueva, en pozo y preventa",
+        desc: "Dúplex y townhouses",
       },
     ],
   },
   {
-    label: "Alquilar",
-    href: "/alquiler/asuncion",
+    label: "Alquiler",
+    href: "/alquiler",
     links: [
+      {
+        label: "Todo en alquiler",
+        href: "/alquiler",
+        desc: "Todas las ciudades y tipos",
+      },
       {
         label: "Departamentos en alquiler",
         href: "/alquiler/asuncion/departamentos",
@@ -93,6 +108,11 @@ export const HEADER_NAV: NavGroup[] = [
         desc: "Edificios, condominios y loteamientos",
       },
       {
+        label: "Desarrolladoras",
+        href: "/desarrolladoras",
+        desc: "Quién construye cada proyecto",
+      },
+      {
         label: "Departamentos en pozo",
         href: "/venta/asuncion/departamentos",
         desc: "Preventa con plan de pagos",
@@ -100,9 +120,45 @@ export const HEADER_NAV: NavGroup[] = [
     ],
   },
   {
-    label: "Herramientas",
-    href: "/precios",
+    label: "Empresas",
+    href: "/inmobiliarias",
     links: [
+      {
+        label: "Inmobiliarias",
+        href: "/inmobiliarias",
+        desc: "Directorio con cartera activa",
+      },
+      {
+        label: "Agentes",
+        href: "/agentes",
+        desc: "Perfiles y zonas donde trabajan",
+      },
+      {
+        label: "Desarrolladoras",
+        href: "/desarrolladoras",
+        desc: "Constructoras y obra nueva",
+      },
+      {
+        label: "Publicá tu cartera",
+        href: "/para-inmobiliarias",
+        desc: "Cuenta profesional gratuita",
+      },
+      {
+        label: "Planes y precios",
+        href: "/planes",
+        desc: "Gratis para empezar",
+      },
+    ],
+  },
+  {
+    label: "Datos",
+    href: "/datos",
+    links: [
+      {
+        label: "Datos del mercado",
+        href: "/datos",
+        desc: "Todos los números en un lugar",
+      },
       {
         label: "Precios por ciudad",
         href: "/precios",
@@ -125,45 +181,21 @@ export const HEADER_NAV: NavGroup[] = [
       },
     ],
   },
-  {
-    label: "Profesionales",
-    href: "/para-inmobiliarias",
-    links: [
-      {
-        label: "Para inmobiliarias y agentes",
-        href: "/para-inmobiliarias",
-        desc: "Publicá tu cartera completa",
-      },
-      {
-        label: "Planes y precios",
-        href: "/planes",
-        desc: "Gratis para empezar",
-      },
-      {
-        label: "Directorio de inmobiliarias",
-        href: "/inmobiliarias",
-        desc: "Quiénes ya publican con nosotros",
-      },
-      {
-        label: "Ingresar al panel",
-        href: "/login",
-        desc: "Gestioná tus avisos y consultas",
-      },
-    ],
-  },
 ];
 
 /** Footer column: buying and renting entry points. */
 export const FOOTER_BUY: NavLink[] = [
+  { label: "Todo en venta", href: "/venta" },
+  { label: "Todo en alquiler", href: "/alquiler" },
   { label: "Casas en venta", href: "/venta/asuncion/casas" },
   { label: "Departamentos en venta", href: "/venta/asuncion/departamentos" },
   { label: "Terrenos", href: "/venta/asuncion/terrenos" },
-  { label: "Alquileres en Asunción", href: "/alquiler/asuncion" },
   { label: "Proyectos nuevos", href: "/proyectos" },
 ];
 
 /** Footer column: the tools, i.e. the reasons to come back between searches. */
 export const FOOTER_TOOLS: NavLink[] = [
+  { label: "Datos del mercado", href: "/datos" },
   { label: "Precios por ciudad", href: "/precios" },
   { label: "Tasación gratis", href: "/tasacion" },
   { label: "Financiamiento y cuotas", href: "/financiamiento" },
@@ -176,7 +208,9 @@ export const FOOTER_PRO: NavLink[] = [
   { label: "Publicar una propiedad", href: "/publicar" },
   { label: "Para inmobiliarias y agentes", href: "/para-inmobiliarias" },
   { label: "Planes y precios", href: "/planes" },
-  { label: "Directorio de inmobiliarias", href: "/inmobiliarias" },
+  { label: "Inmobiliarias", href: "/inmobiliarias" },
+  { label: "Agentes", href: "/agentes" },
+  { label: "Desarrolladoras", href: "/desarrolladoras" },
   { label: "Crear cuenta", href: "/registro" },
   { label: "Ingresar", href: "/login" },
 ];
@@ -213,16 +247,22 @@ export const FOOTER_TYPES: NavLink[] = PROPERTY_TYPE_OPTIONS.slice(0, 6).map(
  */
 export const STATIC_SITEMAP_PATHS: string[] = [
   "/",
-  "/nosotros",
-  "/contacto",
+  "/venta",
+  "/alquiler",
+  "/proyectos",
+  "/desarrolladoras",
+  "/inmobiliarias",
+  "/agentes",
+  "/datos",
+  "/precios",
+  "/tasacion",
+  "/financiamiento",
   "/como-funciona",
+  "/preguntas-frecuentes",
   "/para-inmobiliarias",
   "/planes",
-  "/inmobiliarias",
-  "/proyectos",
-  "/financiamiento",
-  "/preguntas-frecuentes",
-  "/tasacion",
+  "/nosotros",
+  "/contacto",
   "/terminos",
   "/privacidad",
 ];
