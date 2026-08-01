@@ -10,11 +10,19 @@
  */
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../db";
-import { agencies, agents, listings, locations } from "../db/schema";
+import {
+  agencies,
+  agents,
+  developers,
+  listings,
+  locations,
+  projects,
+} from "../db/schema";
 import { getIndexability } from "./indexability";
 import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl, agencyUrl, agentUrl } from "./urls";
 import { STATIC_SITEMAP_PATHS } from "../config/site-nav";
+import { listPublishedPostSlugs } from "./post-queries";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 
@@ -191,6 +199,44 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     for (const a of agentSlugs) {
       entries.push({ path: agentUrl(a.slug) });
     }
+  }
+
+  // 6. Projects and developers. Unlike listings and categories these have no
+  //    thin-page risk to gate on — a project page carries its own units and a
+  //    developer page its own projects — but a developer with no project at
+  //    all is excluded, matching the noindex its page sets for that case.
+  const projectRows = await db
+    .select({ slug: projects.slug, developerId: projects.developerId })
+    .from(projects);
+  for (const p of projectRows) {
+    entries.push({ path: `/proyecto/${p.slug}` });
+  }
+
+  const developerIds = [
+    ...new Set(
+      projectRows
+        .map((p) => p.developerId)
+        .filter((id): id is number => id != null),
+    ),
+  ];
+  if (developerIds.length > 0) {
+    const devSlugs = await db
+      .select({ slug: developers.slug })
+      .from(developers)
+      .where(inArray(developers.id, developerIds));
+    for (const d of devSlugs) {
+      entries.push({ path: `/desarrolladora/${d.slug}` });
+    }
+  }
+
+  // 7. Editorial posts. listPublishedPostSlugs() is fail-soft on a missing
+  //    table, so a sitemap request between deploy and `db:migrate` returns the
+  //    rest of the site rather than erroring.
+  for (const post of await listPublishedPostSlugs()) {
+    entries.push({
+      path: `/guias/${post.slug}`,
+      lastmod: post.updatedAt ?? undefined,
+    });
   }
 
   return entries;

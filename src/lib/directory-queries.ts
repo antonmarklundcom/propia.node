@@ -180,6 +180,282 @@ export async function listFinancingPrograms(): Promise<FinancingProgramRow[]> {
     .orderBy(asc(financingPrograms.annualRate));
 }
 
+export interface DeveloperDirectoryRow {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  website: string | null;
+  projectCount: number;
+  unitCount: number;
+  cities: string[];
+  stages: string[];
+}
+
+/** Developers with at least one project — the /desarrolladoras index. */
+export async function listDevelopersForDirectory(): Promise<
+  DeveloperDirectoryRow[]
+> {
+  const rows = await db
+    .select({
+      id: developers.id,
+      name: developers.name,
+      slug: developers.slug,
+      logoUrl: developers.logoUrl,
+      website: developers.website,
+      projectId: projects.id,
+      stage: projects.stage,
+      cityName: locations.name,
+    })
+    .from(developers)
+    .innerJoin(projects, eq(projects.developerId, developers.id))
+    .leftJoin(locations, eq(projects.locationId, locations.id))
+    .orderBy(asc(developers.name));
+
+  if (rows.length === 0) return [];
+
+  // Published units per project, so a card can say "3 proyectos · 48 unidades".
+  const unitRows = await db
+    .select({ projectId: listings.projectId, n: sql<number>`COUNT(*)` })
+    .from(listings)
+    .where(eq(listings.status, "published"))
+    .groupBy(listings.projectId);
+  const unitsByProject = new Map(
+    unitRows
+      .filter((r) => r.projectId != null)
+      .map((r) => [r.projectId as number, Number(r.n)]),
+  );
+
+  const byId = new Map<number, DeveloperDirectoryRow>();
+  for (const r of rows) {
+    const entry = byId.get(r.id) ?? {
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      logoUrl: r.logoUrl,
+      website: r.website,
+      projectCount: 0,
+      unitCount: 0,
+      cities: [],
+      stages: [],
+    };
+    entry.projectCount += 1;
+    entry.unitCount += unitsByProject.get(r.projectId) ?? 0;
+    if (r.cityName && !entry.cities.includes(r.cityName))
+      entry.cities.push(r.cityName);
+    if (r.stage && !entry.stages.includes(r.stage)) entry.stages.push(r.stage);
+    byId.set(r.id, entry);
+  }
+
+  return [...byId.values()].sort((a, b) => b.projectCount - a.projectCount);
+}
+
+export type DeveloperRow = typeof developers.$inferSelect;
+
+/** Public developer profile: the row plus every project it is building. */
+export async function getDeveloperBySlug(
+  slug: string,
+): Promise<{ developer: DeveloperRow; projects: ProjectCard[] } | null> {
+  const [developer] = await db
+    .select()
+    .from(developers)
+    .where(eq(developers.slug, slug))
+    .limit(1);
+  if (!developer) return null;
+
+  const rows = await db
+    .select({
+      id: projects.id,
+      name: projects.name,
+      slug: projects.slug,
+      projectType: projects.projectType,
+      stage: projects.stage,
+      deliveryDate: projects.deliveryDate,
+      heroImageUrl: projects.heroImageUrl,
+      developerName: developers.name,
+      cityName: locations.name,
+    })
+    .from(projects)
+    .innerJoin(developers, eq(projects.developerId, developers.id))
+    .leftJoin(locations, eq(projects.locationId, locations.id))
+    .where(eq(projects.developerId, developer.id))
+    .orderBy(desc(projects.id));
+
+  return { developer, projects: await projectCardsFrom(rows) };
+}
+
+export interface AgentDirectoryRow {
+  id: number;
+  name: string;
+  slug: string;
+  photoUrl: string | null;
+  isVerified: boolean;
+  agencyName: string | null;
+  agencySlug: string | null;
+  listingCount: number;
+  cities: string[];
+}
+
+/**
+ * Agents with published inventory — the /agentes index. Same rule as the
+ * agency directory: an agent with nothing live is not listed, because a
+ * directory of empty profiles helps nobody and dilutes crawl budget.
+ */
+export async function listAgentsForDirectory(): Promise<AgentDirectoryRow[]> {
+  const rows = await db
+    .select({
+      id: agents.id,
+      name: agents.name,
+      slug: agents.slug,
+      photoUrl: agents.photoUrl,
+      isVerified: agents.isVerified,
+      agencyName: agencies.name,
+      agencySlug: agencies.slug,
+      listingCount: sql<number>`COUNT(DISTINCT ${listings.id})`,
+    })
+    .from(agents)
+    .innerJoin(
+      listings,
+      and(eq(listings.agentId, agents.id), eq(listings.status, "published")),
+    )
+    .leftJoin(agencies, eq(agents.agencyId, agencies.id))
+    .groupBy(
+      agents.id,
+      agents.name,
+      agents.slug,
+      agents.photoUrl,
+      agents.isVerified,
+      agencies.name,
+      agencies.slug,
+    )
+    .orderBy(desc(sql`COUNT(DISTINCT ${listings.id})`));
+
+  if (rows.length === 0) return [];
+
+  const [locRows, listingLocRows] = await Promise.all([
+    db
+      .select({
+        id: locations.id,
+        name: locations.name,
+        level: locations.level,
+        parentId: locations.parentId,
+      })
+      .from(locations),
+    db
+      .select({
+        agentId: listings.agentId,
+        locationId: listings.locationId,
+        n: sql<number>`COUNT(*)`,
+      })
+      .from(listings)
+      .where(eq(listings.status, "published"))
+      .groupBy(listings.agentId, listings.locationId),
+  ]);
+
+  const locById = new Map(locRows.map((l) => [l.id, l]));
+  const cityTotals = new Map<number, Map<string, number>>();
+  for (const r of listingLocRows) {
+    if (r.agentId == null) continue;
+    const loc = locById.get(r.locationId);
+    if (!loc) continue;
+    const city =
+      loc.level === "ciudad"
+        ? loc.name
+        : loc.parentId != null && locById.get(loc.parentId)?.level === "ciudad"
+          ? locById.get(loc.parentId)!.name
+          : null;
+    if (!city) continue;
+    const totals = cityTotals.get(r.agentId) ?? new Map<string, number>();
+    totals.set(city, (totals.get(city) ?? 0) + Number(r.n));
+    cityTotals.set(r.agentId, totals);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    listingCount: Number(r.listingCount),
+    cities: [...(cityTotals.get(r.id) ?? new Map())]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name]) => name),
+  }));
+}
+
+export interface OperationHubData {
+  total: number;
+  cities: { name: string; slug: string; count: number }[];
+  types: { type: string; count: number }[];
+}
+
+/**
+ * Counts behind the national /venta and /alquiler hubs: one pass over the
+ * published rows of that operation, bucketed by city and by property type.
+ * The hubs are the entry point competitors have at /venta and /alquiler and
+ * this portal simply 404'd on, since the category route needs a city segment.
+ */
+export async function getOperationHubData(
+  operation: string,
+): Promise<OperationHubData> {
+  const [locRows, rows] = await Promise.all([
+    db
+      .select({
+        id: locations.id,
+        name: locations.name,
+        slug: locations.slug,
+        level: locations.level,
+        parentId: locations.parentId,
+      })
+      .from(locations),
+    db
+      .select({
+        locationId: listings.locationId,
+        propertyType: listings.propertyType,
+        n: sql<number>`COUNT(*)`,
+      })
+      .from(listings)
+      .where(
+        and(
+          eq(listings.status, "published"),
+          eq(listings.operation, operation as "venta" | "alquiler"),
+        ),
+      )
+      .groupBy(listings.locationId, listings.propertyType),
+  ]);
+
+  const locById = new Map(locRows.map((l) => [l.id, l]));
+  const cityCounts = new Map<number, number>();
+  const typeCounts = new Map<string, number>();
+  let total = 0;
+
+  for (const r of rows) {
+    const n = Number(r.n);
+    total += n;
+    typeCounts.set(r.propertyType, (typeCounts.get(r.propertyType) ?? 0) + n);
+    const loc = locById.get(r.locationId);
+    if (!loc) continue;
+    const city =
+      loc.level === "ciudad"
+        ? loc
+        : loc.parentId != null && locById.get(loc.parentId)?.level === "ciudad"
+          ? locById.get(loc.parentId)!
+          : null;
+    if (!city) continue;
+    cityCounts.set(city.id, (cityCounts.get(city.id) ?? 0) + n);
+  }
+
+  return {
+    total,
+    cities: [...cityCounts.entries()]
+      .map(([id, count]) => {
+        const loc = locById.get(id)!;
+        return { name: loc.name, slug: loc.slug, count };
+      })
+      .sort((a, b) => b.count - a.count),
+    types: [...typeCounts.entries()]
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count),
+  };
+}
+
 export interface PortalStats {
   listings: number;
   agencies: number;
