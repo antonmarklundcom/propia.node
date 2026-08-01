@@ -4,6 +4,11 @@ Paraguay real-estate portal. One engine, multiple branded doors. Target: 15k
 listings at launch maturity, 50–100k ceiling, solo founder + Claude Code
 maintaining it.
 
+> **Read `CLAUDE.md` first.** This document is the design contract, and parts
+> of it are aspirational: `propia.com.py` is **not owned**, the live site runs
+> on `realestateinparaguay.com`, and the brand name is undecided. `CLAUDE.md`
+> records the current state of the world and wins wherever the two disagree.
+
 **v2 amendments (2026-07-04), superseding the original brief where they conflict:**
 
 1. **propia.com.py launches FIRST and alone.** The terreno.com.py beachhead is
