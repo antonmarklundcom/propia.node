@@ -2590,6 +2590,19 @@ body {
   font-weight: 800;
 }
 
+/* Title + primary action on the same row (e.g. "Tus propiedades" + "Publicar propiedad"). */
+.panel-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.panel-section__header .panel-section__title {
+  margin-bottom: 0;
+}
+
 .panel-empty {
   padding: 32px;
   text-align: center;
