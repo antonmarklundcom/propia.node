@@ -50,7 +50,12 @@ export default async function AgencyListingsPage({
           <p className="panel-flash">{esPanel.agencyWelcome}</p>
         ) : null}
 
-        <h2 className="panel-section__title">{esPanel.agencyListingsTitle}</h2>
+        <div className="panel-section__header">
+          <h2 className="panel-section__title">{esPanel.agencyListingsTitle}</h2>
+          <Link className="panel-btn panel-btn--primary" href="/publicar">
+            {esPanel.agencyAddListingCta}
+          </Link>
+        </div>
 
         {/* An agency account with no agencies row is a setup slip worth
             flagging; an independent agent is simply scoped to their own rows. */}

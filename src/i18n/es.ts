@@ -276,6 +276,7 @@ export const esPanel = {
 
   // Agency
   agencyListingsTitle: "Tus propiedades",
+  agencyAddListingCta: "Publicar propiedad",
   agencyListingsEmpty: "Todavía no tenés propiedades cargadas.",
   agencyLeadsTitle: "Consultas recibidas",
   agencyLeadsEmpty: "Todavía no recibiste consultas.",
