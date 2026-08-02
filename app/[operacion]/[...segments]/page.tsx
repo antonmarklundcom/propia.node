@@ -22,6 +22,7 @@ import {
   categoryUrl,
   operationSlug,
   typePlural,
+  parseTypePlural,
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
 import { getCityPrices as cityPricesFor } from "@/lib/precios-queries";
@@ -85,6 +86,8 @@ interface Resolved {
   locationIds: number[];
   canonicalPath: string;
   parentUrl?: string;
+  /** True only when parentUrl (the 0-result redirect target) drops the tipo filter. */
+  parentDropsType: boolean;
   title: string;
 }
 
@@ -118,6 +121,7 @@ const resolve = cache(async function resolve(
   let type: PropertyType | null = null;
   let locationIds: number[];
   let parentUrl: string | undefined;
+  let parentDropsType = false;
 
   if (shape.kind === "city") {
     locationIds = await subtreeIds(city.id);
@@ -125,6 +129,7 @@ const resolve = cache(async function resolve(
     type = shape.type;
     locationIds = await subtreeIds(city.id);
     parentUrl = categoryUrl({ operation, citySlug: city.slug });
+    parentDropsType = true;
   } else {
     type = shape.type;
     barrio = await resolveBarrio(city.id, shape.barrioSlug);
@@ -154,6 +159,7 @@ const resolve = cache(async function resolve(
       type: type ?? undefined,
     }),
     parentUrl,
+    parentDropsType,
     title,
   };
 });
@@ -210,9 +216,23 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   });
 
   if (ix.state === "gone") {
-    if (ix.redirectTo) redirect(ix.redirectTo);
+    if (ix.redirectTo) {
+      // Tell the parent page which sub-category was empty so it can explain
+      // the bounce instead of silently swapping what the visitor asked for.
+      const to =
+        r.type && r.parentDropsType
+          ? `${ix.redirectTo}?tipo_vacio=${typePlural(r.type)}`
+          : ix.redirectTo;
+      redirect(to);
+    }
     notFound();
   }
+
+  // Set only when we just redirected here from an empty city+tipo URL
+  // (see the "gone" branch above) — explains the bounce instead of
+  // silently swapping what the visitor asked for.
+  const tipoVacio =
+    typeof sp.tipo_vacio === "string" ? parseTypePlural(sp.tipo_vacio) : null;
 
   const filters = parseFilters(sp);
   const hasActiveFilters = Boolean(
@@ -314,6 +334,14 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           ? `${count} ${count === 1 ? "propiedad" : "propiedades"} disponibles.`
           : es.emptyState}
       </p>
+
+      {tipoVacio && (
+        <p className="category-redirect-notice">
+          No hay {TYPE_LABEL[tipoVacio].toLowerCase()} en {OP_LABEL[r.operation]}{" "}
+          en {r.city.name} por el momento. Te mostramos todas las propiedades
+          en {r.city.name}.
+        </p>
+      )}
 
       {/* In map view the controls go BELOW the map: on a phone the search and
           filter cards fill the whole first screen, so a visitor who tapped
