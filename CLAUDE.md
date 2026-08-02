@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-07-31.
+Last verified against the code: 2026-08-02.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -54,10 +54,9 @@ Until he decides:
    Blocked purely on the founder creating the Cloudflare account/bucket and
    setting `R2_*` env vars. **Do not build around it or re-implement it.**
 2. **`NEXT_PUBLIC_CANONICAL_HOST`** — see the domain trap above.
-3. **Individual agent profile pages** — no `/agente/[slug]` route yet.
-   Agencies got `/inmobiliaria/[slug]` (PR #28). The `agents` table already has
-   `slug`, `photo_url`, `whatsapp`, `is_verified` and a nullable `agency_id`
-   (`NULL` = independent), so **no schema change is required**.
+3. **Individual agent profile pages** — done (`/agente/[slug]`, PR #32,
+   2026-07-31). Mirrors `/inmobiliaria/[slug]` (PR #28): same indexability
+   rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
 4. **Reviews/ratings** — does not exist. Needs a migration and a moderation /
    anti-fake-review design. **Ask the founder before starting.**
 5. **Financing rates** — `che_roga_pora` (6.50%) and `afd_primera_vivienda`
