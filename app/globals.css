@@ -1121,6 +1121,18 @@ body {
   color: var(--color-primary);
 }
 
+/* Shown when a city+tipo URL had zero listings and redirected to the city
+   page — explains the bounce instead of silently swapping the search. */
+.category-redirect-notice {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-ink-secondary);
+  font-size: 14px;
+}
+
 /* ---- Site footer -------------------------------------------------------- */
 
 .site-footer {
