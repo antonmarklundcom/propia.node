@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
+import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import type { EditScope } from "@/lib/listing-edit";
 import { getPanelLeads } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
@@ -51,7 +51,7 @@ export default async function AgencyLeadsPage() {
         title="Panel de la inmobiliaria"
         role={user.role}
         userName={user.name}
-        tabs={agencyTabs("leads")}
+        tabs={agencyTabs("leads", canManageTeam(ctx))}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.agencyLeadsTitle}</h2>

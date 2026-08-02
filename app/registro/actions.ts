@@ -18,8 +18,16 @@ import {
   type RegistrationError,
 } from "@/lib/registration";
 
-function bounce(error: RegistrationError | "generic", kind: string): never {
-  redirect(`/registro?error=${error}&kind=${encodeURIComponent(kind)}`);
+function bounce(
+  error: RegistrationError | "generic",
+  kind: string,
+  invite: string,
+): never {
+  const q = new URLSearchParams({ error, kind });
+  // Keep the invitation across a failed submit, or the second attempt would
+  // quietly create an unaffiliated account instead of joining the agency.
+  if (invite) q.set("invite", invite);
+  redirect(`/registro?${q.toString()}`);
 }
 
 export async function registerAction(formData: FormData): Promise<void> {
@@ -29,7 +37,15 @@ export async function registerAction(formData: FormData): Promise<void> {
   if (current) redirect(homeForRole(current));
 
   const rawKind = String(formData.get("kind") ?? "");
-  const kind: AccountKind = rawKind === "agency" ? "agency" : "independent";
+  const invite = String(formData.get("invite") ?? "").trim();
+  // "invite" only counts with a token to back it; registerAccount re-validates
+  // that token and refuses the sign-up if it is spent, expired or forged.
+  const kind: AccountKind =
+    rawKind === "invite" && invite
+      ? "invite"
+      : rawKind === "agency"
+        ? "agency"
+        : "independent";
 
   const result = await registerAccount({
     kind,
@@ -38,9 +54,10 @@ export async function registerAction(formData: FormData): Promise<void> {
     password: String(formData.get("password") ?? ""),
     whatsapp: String(formData.get("whatsapp") ?? "") || null,
     agencyName: String(formData.get("agencyName") ?? "") || null,
+    inviteToken: invite || null,
   });
 
-  if (!result.ok) bounce(result.error, kind);
+  if (!result.ok) bounce(result.error, kind, invite);
 
   await createSession(result.userId);
   redirect("/agencia?msg=welcome");

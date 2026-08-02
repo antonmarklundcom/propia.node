@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { requireAgencyContext } from "@/lib/auth/guards";
+import { canManageTeam, requireAgencyContext } from "@/lib/auth/guards";
 import {
   getAgencyProfile,
   getOwnAgentProfile,
@@ -65,7 +65,7 @@ export default async function AgencyProfilePage({
         title="Panel de la inmobiliaria"
         role={ctx.user.role}
         userName={ctx.user.name}
-        tabs={agencyTabs("profile")}
+        tabs={agencyTabs("profile", canManageTeam(ctx))}
       />
       <main className="panel site-main">
         {flash ? (

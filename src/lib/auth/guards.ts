@@ -74,6 +74,21 @@ export async function requireAgencyContext(): Promise<AgencyContext> {
  * without this fallback they would log in to an empty panel and be unable to
  * edit the listings they just published.
  */
+/**
+ * May this caller manage the agency's team (/agencia/equipo)?
+ *
+ * "Responsable de la inmobiliaria" is not a new column: it is `users.role ===
+ * "agency_admin"` on an account that actually belongs to an agency. Both halves
+ * matter — an agency_admin with no agencies row (an independent who registered
+ * as a company that was later unlinked) has no team to manage.
+ *
+ * The page and every team action re-check this themselves; this exists so the
+ * nav and the UI agree with them instead of guessing.
+ */
+export function canManageTeam(ctx: AgencyContext): boolean {
+  return ctx.user.role === "agency_admin" && ctx.agencyId != null;
+}
+
 export function panelScope(ctx: AgencyContext): EditScope {
   return ctx.agencyId != null
     ? { kind: "agency", agencyId: ctx.agencyId }

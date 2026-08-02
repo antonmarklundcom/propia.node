@@ -3,7 +3,14 @@ import { esPanel } from "@/i18n/es";
 
 /** The /admin tabs, with the active one flagged and the review count badged. */
 export function adminTabs(
-  active: "review" | "agencies" | "users" | "listings" | "leads" | "posts",
+  active:
+    | "review"
+    | "agencies"
+    | "agents"
+    | "users"
+    | "listings"
+    | "leads"
+    | "posts",
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
   draftPostCount?: number,
@@ -35,6 +42,11 @@ export function adminTabs(
       href: "/admin/inmobiliarias",
       label: esPanel.adminAgenciesTitle,
       active: active === "agencies",
+    },
+    {
+      href: "/admin/agentes",
+      label: esPanel.adminAgentsTitle,
+      active: active === "agents",
     },
     {
       href: "/admin/usuarios",
