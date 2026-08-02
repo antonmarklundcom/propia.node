@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { ImportByUrl } from "@/components/panel/ImportByUrl";
-import { requireAgencyContext } from "@/lib/auth/guards";
+import { canManageTeam, requireAgencyContext } from "@/lib/auth/guards";
 import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
 import { BRAND_NAME } from "@/lib/brand";
@@ -38,7 +38,7 @@ export default async function ImportPage({
         title="Panel de la inmobiliaria"
         role={ctx.user.role}
         userName={ctx.user.name}
-        tabs={agencyTabs("import")}
+        tabs={agencyTabs("import", canManageTeam(ctx))}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.importTitle}</h2>

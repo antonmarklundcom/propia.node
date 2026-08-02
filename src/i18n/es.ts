@@ -134,6 +134,30 @@ export const esPanel = {
   registerErrorAgencyName: "Escribí el nombre de la inmobiliaria.",
   registerErrorGeneric: "No pudimos crear la cuenta. Probá de nuevo.",
 
+  // Registro por invitación de una inmobiliaria
+  registerKindInvite: (agencyName: string) => `Unirme a ${agencyName}`,
+  registerInviteNote: (agencyName: string, role: string) =>
+    `${agencyName} te invitó a sumarte a su equipo como ${role}. Creá tu cuenta y tus avisos van a quedar dentro de esa inmobiliaria.`,
+  registerErrorInvite:
+    "Esa invitación ya no sirve: puede estar vencida o ya usada. Pedile a la inmobiliaria que te mande una nueva.",
+
+  // Invitación aceptada con una cuenta que ya existe
+  inviteTitle: "Invitación a una inmobiliaria",
+  inviteJoinBody: (agencyName: string, role: string) =>
+    `${agencyName} te invita a sumarte a su equipo como ${role}.`,
+  inviteJoinNote:
+    "Tus avisos publicados hasta ahora siguen siendo tuyos. Los nuevos van a quedar a nombre de la inmobiliaria.",
+  inviteJoinSubmit: (agencyName: string) => `Unirme a ${agencyName}`,
+  inviteBackToPanel: "← Volver a tu panel",
+  inviteInvalid:
+    "Esa invitación ya no sirve: puede estar vencida o ya usada. Pedile a la inmobiliaria que te mande una nueva.",
+  inviteAlreadyInAgency:
+    "Ya pertenecés a una inmobiliaria. Pediles que te den de baja antes de sumarte a otra.",
+  inviteNotForAdmin:
+    "Estás usando la cuenta de administración del sitio; no se suma a inmobiliarias.",
+  inviteNoProfile:
+    "Tu cuenta todavía no tiene perfil de agente. Escribinos para activarlo.",
+
   // Perfil (agencia + agente)
   profileTab: "Tu perfil",
   profileAgencyTitle: "Datos de la inmobiliaria",
@@ -158,6 +182,44 @@ export const esPanel = {
   profileInvalid: "Revisá los datos ingresados.",
   profileVerifiedNote: `Perfil verificado por ${BRAND_NAME}.`,
   profilePendingNote: "Verificación pendiente de aprobación.",
+
+  // Equipo de la inmobiliaria (/agencia/equipo) — solo para el responsable
+  teamTab: "Tu equipo",
+  teamTitle: "Tu equipo",
+  teamHint:
+    "Los que aparecen acá comparten los avisos y las consultas de la inmobiliaria. El responsable es el único que puede invitar, ascender o dar de baja.",
+  teamEmpty: "Todavía no hay nadie más en tu equipo.",
+  teamRoleLabel: "Rol",
+  teamRoleAgent: "Agente",
+  teamRoleAdmin: "Responsable",
+  teamRoleSuperAdmin: "Administrador del sitio",
+  teamRoleNoLogin: "Sin cuenta",
+  teamNoLoginHint: "Perfil sin cuenta: lo maneja el administrador del sitio.",
+  teamPromote: "Hacer responsable",
+  teamDemote: "Pasar a agente",
+  teamRemove: "Sacar del equipo",
+  teamRemoveWarning:
+    "Deja de ver los avisos y las consultas de la inmobiliaria y vuelve a trabajar como agente independiente. No se borra su cuenta, y los avisos que cargó quedan con la inmobiliaria.",
+  teamRemoveConfirm: "Sí, sacar del equipo",
+  teamRoleSaved: "Rol actualizado.",
+  teamMemberRemoved: "Esa persona ya no forma parte de tu equipo.",
+  teamJoined: "¡Listo! Ya formás parte del equipo.",
+  teamLastAdminError:
+    "La inmobiliaria tiene que tener al menos un responsable. Nombrá a otro antes de hacer este cambio.",
+  teamSelfRoleError: "No podés cambiarte el rol a vos mismo.",
+  teamSelfRemoveError: "No podés sacarte a vos mismo del equipo.",
+
+  // Invitaciones
+  teamInviteTitle: "Invitar a un agente",
+  teamInviteHint: (days: number) =>
+    `Generá un enlace y mandáselo por WhatsApp. Sirve una sola vez y vence a los ${days} días. Quien lo abra ve el nombre de tu inmobiliaria antes de crear la cuenta.`,
+  teamInviteCreate: "Generar enlace",
+  teamInviteCreated: "Enlace generado. Copialo y mandáselo a la persona.",
+  teamInviteRevoke: "Anular",
+  teamInviteRevoked: "Enlace anulado.",
+  teamInvitesEmpty: "No hay invitaciones pendientes.",
+  teamInviteUrlLabel: (role: string, expires: string) =>
+    `Enlace para sumar a un ${role.toLowerCase()} — vence el ${expires}`,
 
   // Admin
   adminReviewTitle: "Cola de revisión",
@@ -209,6 +271,25 @@ export const esPanel = {
   userPasswordReset:
     "Contraseña actualizada. Se cerraron las sesiones abiertas de ese usuario.",
   userAgencyLinked: "Vínculo con la inmobiliaria actualizado.",
+
+  // Admin — agentes e inmobiliarias
+  adminAgentsTitle: "Agentes",
+  adminAgentsHint:
+    "Movés un agente de una inmobiliaria a otra, o lo dejás como independiente. Los avisos que ya cargó quedan con la inmobiliaria que los publicó.",
+  adminAgentsEmpty: "Todavía no hay agentes.",
+  adminAgentMove: "Mover",
+  adminAgentMoved: "Agente actualizado.",
+  adminAgentLastAdminError:
+    "Ese agente es el único responsable de su inmobiliaria. Nombrá a otro antes de moverlo.",
+  adminAgentProtectedError:
+    "Esa cuenta es de administración del sitio: no se mueve entre inmobiliarias.",
+  adminAgentProtectedHint:
+    "Cuenta de administración del sitio. Su rol se cambia desde Usuarios.",
+  adminAgentNoLoginHint:
+    "Este perfil no tiene cuenta todavía: podés moverlo de inmobiliaria, pero el rol se aplica recién cuando tenga login.",
+  adminAgencyNoAdminOption: (name: string) => `${name} (sin responsable)`,
+  adminAgenciesWithoutAdmin: (names: string) =>
+    `Estas inmobiliarias no tienen responsable: ${names}. Mové a alguien con el rol “Responsable” para que puedan manejar su equipo.`,
 
   // Admin — todas las consultas
   adminLeadsTitle: "Consultas",

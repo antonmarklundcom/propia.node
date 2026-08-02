@@ -5,7 +5,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { ListingForm } from "@/components/panel/ListingForm";
 import { PhotoManager } from "@/components/panel/PhotoManager";
 import { ListingStats } from "@/components/panel/ListingStats";
-import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
+import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   AGENCY_STATUSES,
   getEditableListing,
@@ -88,7 +88,7 @@ export default async function AgencyListingEditPage({
         title="Panel de la inmobiliaria"
         role={ctx.user.role}
         userName={ctx.user.name}
-        tabs={agencyTabs("listings")}
+        tabs={agencyTabs("listings", canManageTeam(ctx))}
       />
       <main className="panel site-main">
         <p>

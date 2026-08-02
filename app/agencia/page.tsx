@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
+import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import type { EditScope } from "@/lib/listing-edit";
 import { getPanelListings } from "@/lib/panel-queries";
 import {
@@ -43,11 +43,14 @@ export default async function AgencyListingsPage({
         title="Panel de la inmobiliaria"
         role={user.role}
         userName={user.name}
-        tabs={agencyTabs("listings")}
+        tabs={agencyTabs("listings", canManageTeam(ctx))}
       />
       <main className="panel site-main">
         {msg === "welcome" ? (
           <p className="panel-flash">{esPanel.agencyWelcome}</p>
+        ) : null}
+        {msg === "joined" ? (
+          <p className="panel-flash">{esPanel.teamJoined}</p>
         ) : null}
 
         <div className="panel-section__header">

@@ -236,6 +236,41 @@ export const agents = mysqlTable(
   ],
 );
 
+/**
+ * Invitations that let an agency add a colleague without the founder wiring
+ * rows by hand (the /agencia/equipo flow).
+ *
+ * The token IS the credential — it is the only thing the recipient presents —
+ * so it is 64 hex chars of crypto randomness, unique, single-use (`used_at`)
+ * and short-lived (`expires_at`). `role` is decided by the inviter, never by
+ * the person accepting: the sign-up form has no role field, exactly as
+ * lib/registration.ts refuses one.
+ *
+ * There is no `email` column on purpose: v1 hands the link over on WhatsApp by
+ * hand, and storing an address here would imply a delivery the app does not do.
+ */
+export const agencyInvites = mysqlTable(
+  "agency_invites",
+  {
+    id: id(),
+    token: char("token", { length: 64 }).notNull().unique(),
+    agencyId: fk("agency_id").notNull(),
+    invitedByUserId: fk("invited_by_user_id").notNull(),
+    // Only an agency_admin may mint an agency_admin invite (enforced server-side).
+    role: mysqlEnum("role", ["agent", "agency_admin"]).notNull().default("agent"),
+    expiresAt: datetime("expires_at").notNull(),
+    /** NULL = still open. Set once, in a WHERE-guarded UPDATE, so it can't be
+     * redeemed twice by two concurrent submits. */
+    usedAt: datetime("used_at"),
+    usedByUserId: fk("used_by_user_id"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    // The panel's only query: this agency's invites, newest first.
+    index("idx_agency_created").on(t.agencyId, t.createdAt),
+  ],
+);
+
 export const developers = mysqlTable("developers", {
   id: id(),
   name: varchar("name", { length: 160 }).notNull(),

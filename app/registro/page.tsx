@@ -6,6 +6,7 @@ import { BRAND_NAME } from "@/lib/brand";
 import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
 import { MIN_PASSWORD_LENGTH } from "@/lib/registration";
+import { getUsableInvite } from "@/lib/agency-invites";
 import { registerAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -22,23 +23,36 @@ const ERRORS: Record<string, string> = {
   email_taken: esPanel.registerErrorEmailTaken,
   password: esPanel.registerErrorPassword,
   agency_name: esPanel.registerErrorAgencyName,
+  invite: esPanel.registerErrorInvite,
   generic: esPanel.registerErrorGeneric,
 };
 
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; kind?: string }>;
+  searchParams: Promise<{ error?: string; kind?: string; invite?: string }>;
 }) {
-  const { error, kind } = await searchParams;
+  const { error, kind, invite } = await searchParams;
 
-  // Already signed in → straight to the right home.
+  // Already signed in → straight to the right home, unless they arrived with an
+  // invitation: an existing account should be able to *join* that agency rather
+  // than be told to create a second login (see /agencia/invite/[token]).
   const user = await getSessionUser();
-  if (user) redirect(homeForRole(user));
+  if (user) {
+    if (invite) redirect(`/agencia/invite/${encodeURIComponent(invite)}`);
+    redirect(homeForRole(user));
+  }
+
+  // Resolve the invitation before rendering, so the visitor sees *which*
+  // inmobiliaria they are joining before they type anything — and so a guessed
+  // or expired token simply falls back to the ordinary sign-up form.
+  const invitation = invite ? await getUsableInvite(invite) : null;
+  const inviteFailed = Boolean(invite) && invitation == null;
 
   // Keep the chosen account type across a failed submit, so an agency that
   // mistyped its email doesn't come back as an independent agent.
-  const isAgency = kind !== "independent";
+  const isInvite = invitation != null && kind !== "agency" && kind !== "independent";
+  const isAgency = !isInvite && kind !== "independent";
 
   return (
     <main className="site-main">
@@ -51,11 +65,43 @@ export default async function RegisterPage({
             <p className="auth-error">{ERRORS[error] ?? ERRORS.generic}</p>
           ) : null}
 
+          {inviteFailed ? (
+            <p className="auth-error">{esPanel.registerErrorInvite}</p>
+          ) : null}
+
+          {invitation ? (
+            <p className="auth-note">
+              {esPanel.registerInviteNote(
+                invitation.agencyName,
+                invitation.role === "agency_admin"
+                  ? esPanel.teamRoleAdmin
+                  : esPanel.teamRoleAgent,
+              )}
+            </p>
+          ) : null}
+
           <form action={registerAction}>
+            {/* The token carries the agency and the role. The form asks for
+                neither — same rule as the missing `role` field. */}
+            {invitation ? (
+              <input type="hidden" name="invite" value={invitation.token} />
+            ) : null}
+
             <fieldset className="auth-choice">
               <legend className="auth-field__label">
                 {esPanel.registerKindLabel}
               </legend>
+              {invitation ? (
+                <label className="auth-choice__option">
+                  <input
+                    type="radio"
+                    name="kind"
+                    value="invite"
+                    defaultChecked={isInvite}
+                  />
+                  <span>{esPanel.registerKindInvite(invitation.agencyName)}</span>
+                </label>
+              ) : null}
               <label className="auth-choice__option">
                 <input
                   type="radio"
@@ -70,7 +116,7 @@ export default async function RegisterPage({
                   type="radio"
                   name="kind"
                   value="independent"
-                  defaultChecked={!isAgency}
+                  defaultChecked={!isAgency && !isInvite}
                 />
                 <span>{esPanel.registerKindIndependent}</span>
               </label>

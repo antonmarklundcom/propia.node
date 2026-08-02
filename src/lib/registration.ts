@@ -16,9 +16,18 @@ import { agencies, agents, users } from "@/db/schema";
 import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
+import {
+  consumeInvite,
+  getUsableInvite,
+  stampInviteUser,
+} from "@/lib/agency-invites";
 
-/** Registering as a company creates an agencies row; an agent stands alone. */
-export type AccountKind = "agency" | "independent";
+/**
+ * Registering as a company creates an agencies row; an agent stands alone;
+ * "invite" joins an agency that already exists, and is the only kind whose
+ * agency and role come from somewhere other than the form.
+ */
+export type AccountKind = "agency" | "independent" | "invite";
 
 export interface RegistrationInput {
   kind: AccountKind;
@@ -29,6 +38,8 @@ export interface RegistrationInput {
   whatsapp: string | null;
   /** Company name — required for kind === "agency", ignored otherwise. */
   agencyName: string | null;
+  /** Invite token — required for kind === "invite", ignored otherwise. */
+  inviteToken?: string | null;
 }
 
 export type RegistrationError =
@@ -36,7 +47,8 @@ export type RegistrationError =
   | "email"
   | "email_taken"
   | "password"
-  | "agency_name";
+  | "agency_name"
+  | "invite";
 
 export type RegistrationResult =
   | { ok: true; userId: number }
@@ -94,7 +106,27 @@ export async function registerAccount(
 
   // An agency owner administers the company; an independent agent is an agent.
   // Both are agency roles, so both land in /agencia (see auth/roles.ts).
-  const role = input.kind === "agency" ? "agency_admin" : "agent";
+  let role: "agency_admin" | "agent" =
+    input.kind === "agency" ? "agency_admin" : "agent";
+
+  /**
+   * Joining an existing agency. The token decides the agency *and* the role —
+   * the form carries neither — and it is claimed before anything is written:
+   * consumeInvite() is a WHERE-guarded UPDATE, so of two people submitting the
+   * same link at the same moment exactly one gets past this line. Everything
+   * that could still fail (a bad email, a short password) was already rejected
+   * above, so a claimed invite is not burned on an invalid form.
+   */
+  let invitedAgencyId: number | null = null;
+  let inviteId: number | null = null;
+  if (input.kind === "invite") {
+    const invite = await getUsableInvite(input.inviteToken?.trim() ?? "");
+    if (!invite) return { ok: false, error: "invite" };
+    if (!(await consumeInvite(invite.id))) return { ok: false, error: "invite" };
+    invitedAgencyId = invite.agencyId;
+    inviteId = invite.id;
+    role = invite.role;
+  }
 
   await db.insert(users).values({
     name,
@@ -114,7 +146,7 @@ export async function registerAccount(
     .limit(1);
   if (!created) return { ok: false, error: "email" };
 
-  let agencyId: number | null = null;
+  let agencyId: number | null = invitedAgencyId;
   if (input.kind === "agency") {
     const slug = await uniqueAgencySlug(agencyName);
     await db.insert(agencies).values({
@@ -143,6 +175,10 @@ export async function registerAccount(
     whatsapp: input.whatsapp?.trim() || null,
     isVerified: false,
   });
+
+  // Bookkeeping only — the invite was already spent above, so this cannot
+  // decide whether the link is still usable.
+  if (inviteId != null) await stampInviteUser(inviteId, created.id);
 
   return { ok: true, userId: created.id };
 }
