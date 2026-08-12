@@ -155,12 +155,19 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
   };
 
   const now = new Date();
+  // 0 = unscoped, which is what an independent agent's claim is.
+  const scopeAgencyId = input.agencyId ?? 0;
   await db.insert(listingSources).values({
     listingId: created.id,
     source: sourceForHost(input.parsed.sourceUrl),
+    scopeAgencyId,
     sourceUrl: input.parsed.sourceUrl.slice(0, 600),
     contentHash: contentHash(raw, priceUsd),
-    dedupKey: dedupKey(raw, priceUsd, input.locationId),
+    // NULL when the claimed page carried no phone — the claim flow never sets
+    // one, so this is the normal case. A claim is already identified by its
+    // source URL (findExistingClaim), which is a far stronger signal than the
+    // fuzzy key, so nothing is lost by not having one.
+    dedupKey: dedupKey(raw, priceUsd, input.locationId, scopeAgencyId),
     firstSeenAt: now,
     lastSeenAt: now,
   });

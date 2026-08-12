@@ -327,16 +327,140 @@ export const listingSources = mysqlTable(
       "import_agency_site",
       "api",
     ]).notNull(),
+    /**
+     * Which agency's id-space this row belongs to. NOT an FK and NOT nullable
+     * on purpose: it is half of `uq_source`, and MySQL treats NULLs in a unique
+     * index as all-distinct — a nullable column here would silently switch the
+     * "re-importing the same file changes nothing" guarantee off for every
+     * unscoped row. **0 means unscoped** (an independent agent's claim, or a
+     * white-glove batch not yet attributed to an agency).
+     *
+     * Without it, two agencies exporting rows numbered 1, 2, 3 under the same
+     * `source` collide, and agency B's row 1 overwrites agency A's listing.
+     */
+    scopeAgencyId: bigint("scope_agency_id", { mode: "number", unsigned: true })
+      .notNull()
+      .default(0),
     sourceUrl: varchar("source_url", { length: 600 }),
     sourceExternalId: varchar("source_external_id", { length: 120 }),
     contentHash: char("content_hash", { length: 40 }).notNull(), // sha1(normalized title|price|m2|barrio) → change detection
-    dedupKey: char("dedup_key", { length: 40 }).notNull(), // sha1(normalized phone|price_bucket|m2_bucket|location_id)
+    /**
+     * sha1(scope|normalized phone|price_bucket|m2_bucket|location_id|…) — the
+     * fuzzy "is this the same property?" key. **Nullable**: NULL means we had
+     * too little identity to fuzzy-match this row (in practice, no contact
+     * phone), and the pipeline then refuses to merge it into anything. See
+     * `dedupKey()` in lib/import/normalize.ts for why that matters.
+     */
+    dedupKey: char("dedup_key", { length: 40 }),
     firstSeenAt: datetime("first_seen_at").notNull(),
     lastSeenAt: datetime("last_seen_at").notNull(), // importer pauses listings whose source disappears
   },
   (t) => [
-    uniqueIndex("uq_source").on(t.source, t.sourceExternalId),
+    uniqueIndex("uq_source").on(t.source, t.scopeAgencyId, t.sourceExternalId),
     index("idx_dedup").on(t.dedupKey),
+    index("idx_listing").on(t.listingId),
+  ],
+);
+
+/* ------------------------------------------------------------------ */
+/* 2.4b Import batches: import_jobs + import_rows                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One intake batch — a spreadsheet upload, or a re-sync run.
+ *
+ * This exists so a bad import is survivable. `ImportReport` used to be printed
+ * to a console and then lost, which meant there was no way to answer "what did
+ * that upload actually do" or to undo it. The job row is also where the
+ * permission trail lives: who at the agency granted it, when, and in what
+ * words. That is a column rather than prose in `review_notes` so it can be
+ * queried and shown next to the listings it produced.
+ */
+export const importJobs = mysqlTable(
+  "import_jobs",
+  {
+    id: id(),
+    agencyId: fk("agency_id"), // NULL = not attributed to an agency
+    source: mysqlEnum("source", [
+      "manual",
+      "fsbo_ads",
+      "whiteglove",
+      "import_tulugar",
+      "import_infocasas",
+      "import_clasipar",
+      "import_agency_site",
+      "api",
+    ]).notNull(),
+    kind: mysqlEnum("kind", ["csv", "xlsx", "url", "resync"]).notNull(),
+    filename: varchar("filename", { length: 255 }),
+    /**
+     * `dry_run` never wrote anything and is kept only as a record of what was
+     * checked. `committed` is the only state rollback accepts.
+     */
+    status: mysqlEnum("status", [
+      "dry_run",
+      "committed",
+      "rolled_back",
+      "failed",
+    ]).notNull(),
+
+    totalRows: int("total_rows").notNull().default(0),
+    createdCount: int("created_count").notNull().default(0),
+    updatedCount: int("updated_count").notNull().default(0),
+    unchangedCount: int("unchanged_count").notNull().default(0),
+    dedupedCount: int("deduped_count").notNull().default(0),
+    skippedCount: int("skipped_count").notNull().default(0),
+
+    /** The permission trail the caution paragraph in the brief asks for. */
+    permissionGranted: boolean("permission_granted").notNull().default(false),
+    permissionGrantedBy: varchar("permission_granted_by", { length: 160 }),
+    permissionNote: varchar("permission_note", { length: 500 }),
+    permissionGrantedAt: datetime("permission_granted_at"),
+
+    createdByUserId: fk("created_by_user_id"),
+    createdAt: createdAt(),
+    finishedAt: datetime("finished_at"),
+    rolledBackAt: datetime("rolled_back_at"),
+    /** Why a rollback left rows behind (leads attached, listing published…). */
+    rollbackNote: varchar("rollback_note", { length: 500 }),
+  },
+  (t) => [
+    index("idx_agency_created").on(t.agencyId, t.createdAt),
+    index("idx_status").on(t.status, t.createdAt),
+  ],
+);
+
+/**
+ * What one row of the batch did, and what it overwrote.
+ *
+ * `previousJson` is the undo buffer: for an `updated` row it holds the listing
+ * columns as they were *before* the import touched them, so a rollback can put
+ * them back rather than just deleting whatever the import made. Without it,
+ * "rollback" would only be honest about rows the job created.
+ */
+export const importRows = mysqlTable(
+  "import_rows",
+  {
+    id: id(),
+    jobId: fk("job_id").notNull(),
+    rowNumber: int("row_number").notNull(), // 1-based, as the spreadsheet shows it
+    outcome: mysqlEnum("outcome", [
+      "created",
+      "updated",
+      "unchanged",
+      "deduped",
+      "skipped",
+      "paused", // resync jobs only
+    ]).notNull(),
+    listingId: fk("listing_id"),
+    title: varchar("title", { length: 200 }),
+    error: varchar("error", { length: 500 }),
+    previousJson: json("previous_json"),
+    /** Cleared when a rollback has already put this row back. */
+    revertedAt: datetime("reverted_at"),
+  },
+  (t) => [
+    index("idx_job").on(t.jobId, t.rowNumber),
     index("idx_listing").on(t.listingId),
   ],
 );

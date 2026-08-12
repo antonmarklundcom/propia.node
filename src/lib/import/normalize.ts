@@ -77,19 +77,43 @@ export function contentHash(raw: RawListing, priceUsd: number): string {
 }
 
 /**
- * dedupKey — cross-source identity of a property. Same phone + same coarse
- * price + same coarse area + same location ⇒ treated as the same listing.
- * locationId is resolved against the DB before this is called.
+ * dedupKey — cross-source identity of a property, or NULL when we do not have
+ * enough identity to claim two rows are the same thing.
+ *
+ * Returns NULL when the contact phone is missing, and that is the whole point.
+ * The key is bucketed on purpose (5k USD, 10 m²) so a flat re-listed at a
+ * slightly different price still collapses, and the phone is what stops those
+ * coarse buckets from over-matching. Drop the phone and the key degenerates to
+ * "price bucket + area bucket + location + operation + type" — which is a
+ * perfect description of *every unit in the same building*. An agency
+ * spreadsheet typically carries one phone for the whole agency or none at all,
+ * so twenty 60 m² flats at $85k in Villa Morra hashed identically, and rows
+ * 2–20 were silently absorbed into row 1 as extra `listing_sources` entries.
+ * The import reported success and 200 rows became 40.
+ *
+ * A NULL key means "create it and let the review queue judge", which is the
+ * recoverable failure. A false merge is not recoverable — the data is gone.
+ *
+ * `scopeAgencyId` keeps the fuzzy match inside one agency (0 = unscoped). Two
+ * agencies co-broking the same property is a real thing, but resolving it by
+ * silently folding agency B's listing into agency A's row would take listings
+ * out of B's panel and misattribute B's leads. Cross-agency duplicates belong
+ * in the review queue, not in a hash collision.
  */
 export function dedupKey(
   raw: RawListing,
   priceUsd: number,
   locationId: number,
-): string {
+  scopeAgencyId: number = 0,
+): string | null {
+  const phone = canonPhone(raw.contactPhone);
+  if (!phone) return null;
+
   const area = raw.areaM2 ?? raw.landM2;
   return sha1(
     [
-      canonPhone(raw.contactPhone),
+      scopeAgencyId,
+      phone,
       priceBucket(priceUsd),
       areaBucket(area),
       locationId,

@@ -389,6 +389,19 @@ export const esPanel = {
     "Borrador creado. Revisalo, agregá fotos y mandalo a publicación.",
   importDuplicate: "Ese enlace ya fue importado antes:",
   importLocationLabel: "Ubicación (confirmá o corregí)",
+
+  // Importación masiva (/admin/importar)
+  adminImportTitle: "Importar planilla",
+  adminImportSubtitle:
+    "Subí la planilla de una inmobiliaria (.csv o .xlsx). Primero te mostramos qué va a pasar con cada fila; recién después se escribe algo.",
+  importRollbackHint:
+    "Todo lote se puede revertir después: se borran las propiedades que creó y se restauran las que modificó. Las que ya recibieron consultas o están publicadas se conservan y te avisamos cuáles.",
+  importJobsTitle: "Lotes importados",
+  importJobsEmpty: "Todavía no importaste ninguna planilla.",
+  importJobRollback: "Revertir este lote",
+  importJobRolledBack: "Lote revertido.",
+  importJobRollbackFailed: "No pudimos revertir ese lote.",
+  importPermissionMissing: "Sin autorización registrada",
   importErrorBadUrl: "Ese enlace no parece válido. Copialo completo, con https://",
   importErrorBlocked:
     "Solo podemos leer enlaces públicos de internet.",

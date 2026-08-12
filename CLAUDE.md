@@ -47,6 +47,46 @@ Until he decides:
 - The site is **Spanish-only** for now. The English vertical waits until the
   Spanish site is finished.
 
+## Import pipeline — read before touching intake or dedup
+
+Two intakes exist and they are different products, not two versions of one:
+
+| Path | What it is |
+| --- | --- |
+| `/agencia/importar` | An agent pastes a link to **their own** listing, attests to it, gets a draft. One page, structured data only, no per-site selectors. |
+| `/admin/importar` | Super-admin uploads an agency's spreadsheet (.csv/.xlsx), previews, commits, can roll the whole batch back. |
+
+Rules that are load-bearing:
+
+- **`dedupKey()` returns `null` when there is no contact phone, and that is
+  correct.** The key is bucketed (5k USD, 10 m²) so a re-listed flat still
+  collapses; the phone is the only thing stopping those buckets from describing
+  every unit in a building. A phone-less batch used to fold twenty flats into
+  one and report success. Never "fix" the null by inventing a fallback key.
+- **`listing_sources.scope_agency_id` is `NOT NULL DEFAULT 0`, 0 = unscoped.**
+  It is half of `uq_source`; MySQL treats NULLs in a unique index as
+  all-distinct, so making it nullable silently switches off the "re-importing
+  the same file changes nothing" guarantee. Both `dedupKey()` and the
+  external-id lookup are scoped by it.
+- **Always pass an agency.** `importListings({ agencyId })` stamps ownership;
+  without it the listings belong to nobody and their leads are unattributable.
+  The CLI warns when you omit `--agency`.
+- **The dry run and the commit share one planner** (`planImport` /
+  `commitImport`). Do not add a separate validation path — it will drift from
+  what actually runs, and the preview is the only reason the feature is safe.
+- Every batch writes `import_jobs` + `import_rows`, with the pre-update values
+  in `previous_json`. That is what makes rollback real rather than a delete.
+- Permission is a **column**, and `commitImportAction` refuses to write without
+  it. Scraping a competitor's catalogue wholesale is the thing this must not
+  become; the gate is in the server action, not the form.
+
+Verify with `npm run verify:import` (pure checks, no DB). With a local database
+up it also exercises plan → commit → re-run → rollback:
+`docker compose up -d && npm run db:migrate && DATABASE_URL="mysql://propia:propia@127.0.0.1:3306/propia" npm run verify:import`
+
+`npm run cron:resync` pauses listings whose sources have gone quiet (30 days by
+default, `--dry` first). It records itself as a revertible import job.
+
 ## Backlog state (verified, not remembered)
 
 1. **R2 image storage** — code is complete (`src/lib/r2.ts`,
@@ -59,7 +99,12 @@ Until he decides:
    rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
 4. **Reviews/ratings** — does not exist. Needs a migration and a moderation /
    anti-fake-review design. **Ask the founder before starting.**
-5. **Financing rates** — `che_roga_pora` (6.50%) and `afd_primera_vivienda`
+5. **Import image pipeline** — **not built, on purpose.** `syncImages()` writes
+   the *remote source URL* into `listing_images.r2_key` as an interim, and
+   `imageUrl()` passes it through while `R2_PUBLIC_BASE_URL` is unset. Fetching,
+   deduping, WebP-converting and resizing imported photos waits on backlog item
+   1 above. **Do not build a stub around it** — the R2 code is written.
+6. **Financing rates** — `che_roga_pora` (6.50%) and `afd_primera_vivienda`
    (9.00%) in `scripts/seed-financing.ts` are **placeholders**. They feed
    `npm run cron:cuotas`, which caches `listings.cuota_gs`, which is printed on
    every venta card. Wrong rates = wrong money sitewide. Verifying them against
