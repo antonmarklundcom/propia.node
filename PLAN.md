@@ -334,6 +334,30 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       "storage not configured". Also map `R2_PUBLIC_BASE_URL`
       (img.propia.com.py) to the bucket's public URL, then run
       `npm run backfill:images` once to stop hotlinking the import sources.
+- [ ] ⚠️ **Sign the lawyer agreement — before inmobiliaria.com.py launches.**
+      (session: 2026-08-16.) The pre-license operating model is: founder does
+      marketing/lead-gen only, all leads go to the licensed lawyer, she pays
+      commission afterwards. A contract for this was drafted earlier but the
+      founder is **not sure it was ever signed**. Confirm; if it can't be
+      confirmed, sign a fresh one-page version covering: who sends leads,
+      commission %, and when it's paid. This is the actual legal protection —
+      an under-construction banner or popup on the site is not, and isn't
+      worth building. The one site change worth making later: a short footer
+      line identifying who brokers the deals, with wording from the lawyer,
+      as part of the inmobiliaria.com.py design pass.
+- [ ] **Attach inmobiliaria.com.py to the existing Node.js site (Hostinger
+      support confirmed this works, 2026-08-16 — alias/parked domain, NOT a
+      second Node.js app):**
+      1. At the external registrar, point inmobiliaria.com.py's
+         nameservers/DNS at this Hostinger account.
+      2. In hPanel, on realestateinparaguay.com's site, add
+         inmobiliaria.com.py as a **parked domain/alias** — do not "Add
+         Website".
+      3. Enable SSL for the new domain.
+      4. Test both http and https after propagation. The app already routes
+         by hostname (middleware.ts); no code change needed.
+      5. Then: Search Console property + sitemap submission for the new
+         domain (folds into the GA4/GSC item below).
 - [ ] GA4 + Search Console properties.
 - [ ] hPanel cron jobs: `cron:cuotas`, `cron:medians` (nightly).
 - [ ] **Security hygiene from the migration session:** rotate the MySQL
