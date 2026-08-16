@@ -23,6 +23,16 @@ export const es = {
   quickQuestions: ["¿Disponible?", "¿Puedo visitar?", "¿Requisitos?"],
 } as const;
 
+/**
+ * Pre-launch notice (src/config/site-status.ts). Says the two things a
+ * visitor needs: the listings are samples, and nothing here is an offer.
+ * Deliberately plain — a disclosure that reads as marketing isn't one.
+ */
+export const esSiteNotice = {
+  label: "Sitio en construcción",
+  body: `Estamos preparando el lanzamiento de ${BRAND_NAME}. Las propiedades que ves son ejemplos de prueba: no son inmuebles reales en venta ni ofertas comerciales, y los datos y las fotos pueden no corresponder a ninguna propiedad existente.`,
+} as const;
+
 /** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
 export const esTasacion = {
   title: "¿Cuánto vale tu propiedad?",
