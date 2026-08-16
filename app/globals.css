@@ -57,6 +57,38 @@ body {
   width: 100%;
 }
 
+/* ---- Pre-launch notice --------------------------------------------------- */
+/* Sits above the sticky header and scrolls away with the page: it must be
+   impossible to miss on arrival, not permanently in the way. Accent-soft fill
+   with ink text — the accent itself is 2.3:1 on white and never carries text
+   (see the token note above). */
+.site-notice {
+  background: var(--color-accent-soft);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-ink);
+}
+
+.site-notice__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 16px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.site-notice__label {
+  margin-right: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+}
+
+.site-notice__label::after {
+  content: "·";
+  margin-left: 8px;
+  opacity: 0.5;
+}
+
 /* ---- Site header -------------------------------------------------------- */
 
 .site-header {

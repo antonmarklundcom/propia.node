@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { SiteNotice } from "@/components/SiteNotice";
 import { BRAND_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           color: "#12201F",
         }}
       >
+        <SiteNotice />
         <SiteHeader />
         <div className="site-main">{children}</div>
         <SiteFooter />

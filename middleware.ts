@@ -11,6 +11,11 @@ export function middleware(req: NextRequest) {
   const headers = new Headers(req.headers);
   headers.set("x-vertical", vertical.key);
   headers.set("x-locale", vertical.locale);
+  // Server components can't read the pathname (no usePathname outside client
+  // components), and the root layout needs it to keep the pre-launch notice off
+  // /admin and /agencia. Carrying it as a header keeps that decision on the
+  // server — a client-side check would render the strip and then hide it.
+  headers.set("x-pathname", req.nextUrl.pathname);
   return NextResponse.next({ request: { headers } });
 }
 
