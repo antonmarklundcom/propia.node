@@ -345,19 +345,17 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       worth building. The one site change worth making later: a short footer
       line identifying who brokers the deals, with wording from the lawyer,
       as part of the inmobiliaria.com.py design pass.
-- [ ] **Attach inmobiliaria.com.py to the existing Node.js site (Hostinger
-      support confirmed this works, 2026-08-16 — alias/parked domain, NOT a
-      second Node.js app):**
-      1. At the external registrar, point inmobiliaria.com.py's
-         nameservers/DNS at this Hostinger account.
-      2. In hPanel, on realestateinparaguay.com's site, add
-         inmobiliaria.com.py as a **parked domain/alias** — do not "Add
-         Website".
-      3. Enable SSL for the new domain.
-      4. Test both http and https after propagation. The app already routes
-         by hostname (middleware.ts); no code change needed.
-      5. Then: Search Console property + sitemap submission for the new
-         domain (folds into the GA4/GSC item below).
+- [ ] **inmobiliaria.com.py is PARKED on the realestateinparaguay.com
+      Node.js site as of 2026-08-16** (alias/parked domain, NOT a second
+      app — the setup Hostinger support recommended). Both domains now hit
+      the same deployment; the app routes by hostname (middleware.ts) and
+      the merged canonical + sitemap protections (PR #42) are what makes
+      serving identical Spanish rows on two hosts safe. Still to do:
+      1. Verify https://inmobiliaria.com.py loads with valid SSL (and www),
+         and that a /propiedad page there emits a canonical pointing at
+         realestateinparaguay.com and /sitemap.xml omits /propiedad URLs.
+      2. Search Console property + sitemap submission for the new domain
+         (folds into the GA4/GSC item below).
 - [ ] GA4 + Search Console properties.
 - [ ] hPanel cron jobs: `cron:cuotas`, `cron:medians` (nightly).
 - [ ] **Security hygiene from the migration session:** rotate the MySQL
