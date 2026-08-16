@@ -126,6 +126,22 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
         `listings.description_en` already exists for exactly this
         ("filled lazily (Claude API) for realestateinparaguay.com" —
         `src/db/schema.ts:76`); no batch job writes it yet.
+      - **Refinement beyond the original plan (session: 2026-08-16,
+        follow-up): all three domains get distinct positioning and visual
+        identity, not just inmobiliaria.com.py.** The original architecture
+        only ever specified realestateinparaguay.com as a *translated*,
+        same-shell, hreflang'd copy of the primary ("translation ≠
+        duplicate" in the `verticals.ts` comment). Founder now wants real
+        design/copy/color-scheme divergence there too, driven by different
+        target buyers:
+        - `inmobiliaria.com.py` — Spanish, pitched at Paraguayan sellers.
+        - `realestateinparaguay.com` — English, pitched at foreign investors.
+        Same mechanism as the inmobiliaria.com.py design work already noted
+        below (per-vertical theme tokens + copy dictionary + shell
+        components, branching on the resolved vertical) — still one repo,
+        one DB, one admin, listing data and translation pipeline shared.
+        Just confirms the "different design per domain" ask applies to all
+        non-primary domains, not only the new one. Not started.
       - **Translation scope (decided):** everything a visitor reads —
         title, description, property-type/amenity labels, not just the
         free-text description. Barrio/location names are assumed
