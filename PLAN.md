@@ -100,6 +100,30 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       (an integration to pick and build) or invoice/transfer with an admin
       toggle? The toggle is a small build on the existing `featured_until`
       column; the integration is not. Blocks the rest of M7.
+- [ ] **D6 — Second production domain: `inmobiliaria.com.py`.** (session:
+      2026-08-16). Decided so far:
+      - Same app, same database as `realestateinparaguay.com`. Founder lists
+        his own agency's inventory there and, until his EAS/SERPLAID license
+        issues (~Oct 2026), also takes listings from other realtors/agencies
+        case-by-case.
+      - Routing groundwork done (uncommitted, local only):
+        `inmobiliaria.com.py` added to `src/config/verticals.ts` as an
+        `enabled: true` vertical, `ownsListingDetail: true` (own canonical
+        `/propiedad` pages, not a feeder). New `VerticalKey: "inmobiliaria"`.
+      - Design/copy: founder wants **fully separate visual identity** for
+        inmobiliaria.com.py — not a reskin, closer to a second frontend on
+        the same backend/admin. Not started.
+      - **What should be finished:** a per-listing publish-target toggle —
+        two boolean columns on `listings` (default both `true`, i.e. publish
+        everywhere), a checkbox pair in the panel/admin listing form, and the
+        public queries (home, search, sitemap, detail page) filtered by
+        host. This is a DB migration against the live prod database, so it
+        needs a deliberate go-ahead before it's built, not folded in
+        silently with the design work.
+      - Founder wants to talk through the build more (and possibly use a
+        different model for the design-heavy part) before continuing. Paused
+        here — do not resume the schema change or the visual build without
+        checking in first.
 
 ## [YOU] — production items code cannot reach
 

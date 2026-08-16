@@ -14,7 +14,8 @@ export type VerticalKey =
   | "alquiler"
   | "agents"
   | "devs"
-  | "en";
+  | "en"
+  | "inmobiliaria";
 
 export interface VerticalConfig {
   key: VerticalKey;
@@ -96,6 +97,22 @@ export const VERTICALS: Record<string, VerticalConfig> = {
    */
   "realestateinparaguay.com": {
     key: "en",
+    locale: "es",
+    copy: "ownership",
+    enabled: true,
+    ownsListingDetail: true,
+  },
+  /**
+   * SECOND production host (see CLAUDE.md) — same app, same database as
+   * realestateinparaguay.com. Owned by the founder for his own individual
+   * agency brand; he lists his own inventory here directly and, until his
+   * EAS/SERPLAID license is issued (~Oct 2026), also takes listings from
+   * other realtors/agencies on a case-by-case basis. Not a feeder: it owns
+   * its own /propiedad canonical pages rather than pointing back at
+   * realestateinparaguay.com.
+   */
+  "inmobiliaria.com.py": {
+    key: "inmobiliaria",
     locale: "es",
     copy: "ownership",
     enabled: true,
