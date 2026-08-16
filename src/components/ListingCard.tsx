@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { formatPrice, formatCuota, imageThumbUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
-import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
+import { isPlaceholderPhoto } from "@/lib/photos";
 import type { Operation } from "@/lib/import/types";
 import type { ListingCard as Card } from "@/lib/queries";
 
-/** Short badge label per operation. Alquiler variants share the amber badge. */
+/** Short badge label per operation. Alquiler variants share one label. */
 const OPERATION_BADGE: Record<Operation, string> = {
   venta: "Venta",
   alquiler: "Alquiler",
@@ -13,10 +13,16 @@ const OPERATION_BADGE: Record<Operation, string> = {
 };
 
 /**
- * Category-grid / homepage card. The whole card is a single <Link> to the
- * listing detail page. Visual hierarchy: photo → price (loudest) → cuota
- * accent → title → a specs row separated by a hairline rule. Cuota is the
- * differentiator, so it gets the amber chip when we have it cached.
+ * Category-grid / homepage card, in the editorial system: **the photo is the
+ * card**. No white frame, no soft shadow, no body panel — the image fills the
+ * tile and the text sits on it over a bottom-up gradient. Hover pushes the
+ * photo to 1.06 over 1.1s; nothing else moves.
+ *
+ * A listing with no usable photo gets the house image rather than an icon on a
+ * grey rectangle: in a grid where every neighbour is a photograph, an empty
+ * tile reads as broken. `listing-fallback.webp` is deliberately abstract (a
+ * wall and a palm shadow) so it can't be mistaken for the property itself, and
+ * "Foto próximamente" stays on top of it.
  */
 export function ListingCard({ card }: { card: Card }) {
   // Thumb, not the full 1600px original: a category page renders ~20 of these
@@ -27,71 +33,64 @@ export function ListingCard({ card }: { card: Card }) {
     : imageThumbUrl(card.coverKey);
   const cuota = formatCuota(card.cuotaGs);
   const area = card.areaM2 ?? card.landM2;
-  const isAlquiler = card.operation !== "venta";
-  const isFeatured = card.featuredUntil != null && card.featuredUntil > new Date();
+  const isFeatured =
+    card.featuredUntil != null && card.featuredUntil > new Date();
 
   const specs = [
-    card.bedrooms != null
-      ? { icon: "🛏", label: `${card.bedrooms} dorm` }
-      : null,
+    card.bedrooms != null ? `${card.bedrooms} dorm.` : null,
     card.bathrooms != null
-      ? { icon: "🚿", label: `${card.bathrooms} ${card.bathrooms === 1 ? "baño" : "baños"}` }
+      ? `${card.bathrooms} ${card.bathrooms === 1 ? "baño" : "baños"}`
       : null,
-    area ? { icon: "📐", label: `${Math.round(Number(area))} m²` } : null,
-  ].filter((s): s is { icon: string; label: string } => s !== null);
+    area ? `${Math.round(Number(area))} m²` : null,
+  ].filter((s): s is string => s !== null);
 
   return (
-    <Link className="listing-card" href={listingUrl(card)}>
-      <div
-        className={`listing-card__media ${cover ? "listing-card__media--photo" : "listing-card__media--empty"}`}
-      >
-        {cover && (
-          // eslint-disable-next-line @next/next/no-img-element -- pre-sized R2
-          // thumb derivative (imageThumbUrl); next/image would only add a proxy hop.
-          <img className="media-cover-img" src={cover} alt={card.title} loading="lazy" decoding="async" />
-        )}
-        <div className="listing-card__badge-row">
-          <span
-            className={`listing-card__badge${isAlquiler ? " listing-card__badge--alquiler" : ""}`}
-          >
-            {OPERATION_BADGE[card.operation]}
-          </span>
-          {isFeatured && (
-            <span className="listing-card__badge listing-card__badge--featured">
-              ★ Destacado
-            </span>
-          )}
+    <Link className="ds-photo-card listing-card" href={listingUrl(card)}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- pre-sized R2
+          thumb derivative (imageThumbUrl); next/image would only add a proxy hop. */}
+      <img
+        className="ds-photo-card__img"
+        src={cover ?? "/img/listing-fallback.webp"}
+        alt={card.title}
+        loading="lazy"
+        decoding="async"
+      />
+      <div className="ds-photo-card__scrim" />
+
+      <span className="ds-photo-card__chip">
+        {OPERATION_BADGE[card.operation]}
+      </span>
+      {(isFeatured || card.isVerified) && (
+        <span className="listing-card__flags">
+          {isFeatured && <span className="listing-card__flag">Destacado</span>}
           {card.isVerified && (
-            <span className="listing-card__badge listing-card__badge--verified">
-              ✓ Verificado
-            </span>
+            <span className="listing-card__flag">Verificado</span>
           )}
-        </div>
-        {!cover && (
-          <>
-            <span className="listing-card__placeholder-icon" aria-hidden>
-              {TYPE_ICON[card.propertyType]}
-            </span>
-            <span className="listing-card__placeholder-label">
-              Foto próximamente
-            </span>
-          </>
-        )}
-      </div>
+        </span>
+      )}
+      {!cover && (
+        <span className="listing-card__nophoto">Foto próximamente</span>
+      )}
 
-      <div className="listing-card__body">
-        <div className="listing-card__price">{formatPrice(card)}</div>
-        {cuota && <div className="listing-card__cuota">💳 {cuota}</div>}
+      <div className="ds-photo-card__body">
+        {/* No location line: ListingCard carries locationId, not a name, and
+            resolving it here would add a query per grid. The title already
+            names the barrio in practice. */}
         <div className="listing-card__title">{card.title}</div>
-
-        {specs.length > 0 && (
+        <div className="ds-photo-card__price">{formatPrice(card)}</div>
+        {(specs.length > 0 || cuota) && (
           <div className="listing-card__specs">
             {specs.map((s) => (
-              <span className="listing-card__spec" key={s.label}>
-                <span aria-hidden>{s.icon}</span>
-                {s.label}
+              <span className="listing-card__spec" key={s}>
+                <span className="listing-card__tick" aria-hidden />
+                {s}
               </span>
             ))}
+            {cuota && (
+              <span className="listing-card__spec listing-card__spec--cuota">
+                {cuota}
+              </span>
+            )}
           </div>
         )}
       </div>
