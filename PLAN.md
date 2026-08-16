@@ -100,6 +100,204 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       (an integration to pick and build) or invoice/transfer with an admin
       toggle? The toggle is a small build on the existing `featured_until`
       column; the integration is not. Blocks the rest of M7.
+- [ ] **D6 — Second production domain: `inmobiliaria.com.py`, and
+      `realestateinparaguay.com`'s role flips.** (session: 2026-08-16).
+      This is a bigger architecture decision than it first looked —
+      capturing it in full so it isn't re-litigated:
+      - **One repo, one deployment, one database. Never fork the codebase.**
+        Founder floated copying the repo into a second, independently-edited
+        site; decided against it once we worked through the alternative
+        below — it would mean hand-syncing every future fix across two
+        copies and hand-syncing listing data across two databases forever.
+      - **Admin/auth/import stay unforked too (decided, session:
+        2026-08-16, second follow-up).** Founder floated a second full
+        admin for realestateinparaguay.com, then a read-only site instead;
+        landed on the actual default of the one-repo approach: `/admin` and
+        `/agencia` are ordinary pages in this one app, so they are already
+        reachable — same login, same data, same edit rights — from either
+        domain's `/admin` or `/agencia` with **no extra build**. An agent
+        can add/edit a property via `realestateinparaguay.com/admin` or
+        `inmobiliaria.com.py/admin` and it's the same row either way. Only
+        the public-facing pages (home, search, listing cards, nav, colors,
+        copy) branch by resolved vertical for the different look/buyer
+        positioning — the admin surface does not need or get a second
+        identity.
+      - **New primary/source-of-truth: `inmobiliaria.com.py` (Spanish).**
+        Nearly all publishing happens here going forward — founder's own
+        agency inventory plus other realtors' listings he takes on
+        case-by-case until his EAS/SERPLAID license issues (~Oct 2026).
+        This is also the `.com.py` domain `propia.com.py`'s `CANONICAL_HOST`
+        placeholder was always meant to become. CLAUDE.md's domain table
+        has been updated to match (session: 2026-08-16, fourth follow-up):
+        the "his own agency brand only / never wire it into this app" line
+        is gone, because the founder reversed that call. Do not restore it
+        from memory of an older session.
+      - **`realestateinparaguay.com` reverts to its originally-designed
+        role: the English feeder, auto-translated from the Spanish rows.**
+        This is literally what `src/config/verticals.ts`'s comment on that
+        host already described as the eventual reversion once a `.com.py`
+        domain existed — `inmobiliaria.com.py` is that domain.
+        `listings.description_en` already exists for exactly this
+        ("filled lazily (Claude API) for realestateinparaguay.com" —
+        `src/db/schema.ts:76`); no batch job writes it yet.
+      - **Refinement beyond the original plan (session: 2026-08-16,
+        follow-up): all three domains get distinct positioning and visual
+        identity, not just inmobiliaria.com.py.** The original architecture
+        only ever specified realestateinparaguay.com as a *translated*,
+        same-shell, hreflang'd copy of the primary ("translation ≠
+        duplicate" in the `verticals.ts` comment). Founder now wants real
+        design/copy/color-scheme divergence there too, driven by different
+        target buyers:
+        - `inmobiliaria.com.py` — Spanish, pitched at Paraguayan sellers.
+        - `realestateinparaguay.com` — English, pitched at foreign investors.
+        Same mechanism as the inmobiliaria.com.py design work already noted
+        below (per-vertical theme tokens + copy dictionary + shell
+        components, branching on the resolved vertical) — still one repo,
+        one DB, one admin, listing data and translation pipeline shared.
+        Just confirms the "different design per domain" ask applies to all
+        non-primary domains, not only the new one. Not started.
+      - **Translation scope (decided):** everything a visitor reads —
+        title, description, property-type/amenity labels, not just the
+        free-text description. Barrio/location names are assumed
+        identical in Spanish and English and are NOT translated (confirm
+        this holds for every barrio in the DB before relying on it — some
+        neighborhood names may not be). Needs new `*_en` columns beyond
+        `description_en` (e.g. title) plus a batch job (Claude API,
+        `.env.example` already reserves this) that runs on publish/edit,
+        not per-request.
+      - **Flip timing (decided): wait.** `realestateinparaguay.com` is
+        live and Spanish-indexed today — do not touch its `locale`/
+        `filters` in `verticals.ts` yet. Sequence: (1) launch
+        `inmobiliaria.com.py` in Spanish, same as realestateinparaguay.com
+        is today: (2) build + verify the translation batch job against it;
+        (3) only once translation coverage looks solid, flip
+        `realestateinparaguay.com`'s vertical entry to
+        `locale: "en", filters: { foreign_exposure: true }, copy: "foreign"`
+        per the plan already written in its `verticals.ts` comment.
+      - Routing groundwork already committed:
+        `inmobiliaria.com.py` added to `src/config/verticals.ts` as an
+        `enabled: true` vertical. New `VerticalKey: "inmobiliaria"`. Its
+        `locale`/`copy` there is currently a placeholder copy of
+        realestateinparaguay.com's and will need revisiting once the roles
+        above are actually built.
+      - **SEO — duplicate-content risk while both hosts are Spanish
+        (fixed, session: 2026-08-16, third follow-up).** Both hosts serve
+        the same DB rows; `ownsListingDetail` controls whether a host's
+        `/propiedad` pages self-canonicalise or point back at the primary
+        (`src/lib/origin.ts`). Originally set `true` on both, which would
+        have had Google see two domains publishing identical listing pages
+        — duplicate content, ranking cannibalisation, before translation
+        even exists. Fixed: `inmobiliaria.com.py` ships with
+        `ownsListingDetail: false` for now, so its listing detail pages
+        canonicalise to realestateinparaguay.com like any other feeder;
+        its other pages (home, search, guías) are unique content and index
+        normally. Flip it to `true` — together with flipping
+        realestateinparaguay.com to `locale: "en"` — only once
+        inmobiliaria.com.py is the real primary and the EN content is
+        genuinely translated, not a mirror. Not yet built: hreflang tags
+        between the ES/EN listing pages (the `verticals.ts` comment on
+        realestateinparaguay.com already calls this out as needed) and
+        Search Console verification + sitemap submission for the new domain
+        (new domain = zero history/authority with Google, won't rank on day
+        one regardless of content quality).
+      - **Sitemap is now host-aware (fixed, session: 2026-08-16, fourth
+        follow-up).** The canonical fix above was only half the job:
+        `app/sitemap.ts` built its origin per-host but still listed *every*
+        URL for whichever domain asked, so inmobiliaria.com.py's sitemap
+        would have submitted `/propiedad/...` URLs that canonicalise to
+        realestateinparaguay.com — "submitted URL not selected as canonical"
+        in Search Console, i.e. crawl budget and trust spent on URLs Google
+        is told to ignore. Now `buildSitemapEntries({ includeListingDetail })`
+        takes the flag and `app/sitemap.ts` passes
+        `hostOwnsListingDetail()` (`src/lib/origin.ts`), which shares its
+        predicate with `listingCanonicalOrigin()` so the sitemap and the
+        canonical tag cannot disagree. The published rows are still read on
+        every host — the category, agency and agent sections count them to
+        decide what is indexable *there*. Rule for any future page type that
+        one host owns and another doesn't: gate it in the sitemap the same
+        way, in the same commit as the canonical rule.
+      - **The vertical system is write-only today — the "consumption
+        layer" is unbuilt, and it BLOCKS the English flip (documented,
+        session: 2026-08-16, fourth follow-up).** `middleware.ts` resolves
+        the host and sets `x-vertical` / `x-locale`, and that is where it
+        ends. Nothing in the render path acts on either header:
+        - `currentVertical()` (`src/lib/vertical-context.ts`) is called in
+          exactly one place (`app/page.tsx:175`) and its result is
+          discarded — the value is awaited, never read.
+        - There is **no `src/i18n/en.ts`**. `src/i18n/es.ts` is the only
+          dictionary and is imported directly, so `locale: "en"` currently
+          changes nothing a visitor sees.
+        - There is **no per-vertical theming** — no token set, no shell
+          variant, no `copy` branch. `VerticalConfig.copy` ("ownership" |
+          "foreign" | ...) is declared and never read.
+        - **`VerticalConfig.filters` is never applied to a query.** Grep it:
+          the field is typed and set on terreno/alquiler/en, and no query
+          builder consults it. The data side exists —
+          `listings.foreign_exposure` is a real column (`src/db/schema.ts`,
+          default `true`) — but nothing reads it either, so
+          `filters: { foreign_exposure: true }` on realestateinparaguay.com
+          would silently do nothing.
+        Consequence for sequencing: flipping `realestateinparaguay.com` to
+        `locale: "en"` today would produce a Spanish site that merely
+        *claims* to be English — worse than the status quo, since hreflang
+        and Search Console would both be lied to. The consumption layer
+        (locale-aware copy + `en.ts`, per-vertical theme/shell, filter
+        application in the query builders) is a **build task that must land
+        before the flip is even possible**, and it is separate from the
+        translation batch job (that fills `*_en` data; this reads it).
+      - **Flip-day checklist — every item changes together, in one commit +
+        one env change.** Nothing here is safe to do alone; CLAUDE.md's
+        domain section says the same and points back at this list. When
+        `realestateinparaguay.com` goes English:
+        1. **`NEXT_PUBLIC_CANONICAL_HOST` on Hostinger** →
+           `inmobiliaria.com.py`. This is an env change in hPanel, not a
+           code change, so it is the one item a `git revert` cannot undo —
+           note the old value before touching it. It also needs a rebuild:
+           `NEXT_PUBLIC_*` is inlined at build time.
+        2. **`src/config/verticals.ts` → `realestateinparaguay.com`**:
+           `locale: "es"` → `"en"`, add
+           `filters: { foreign_exposure: true }`, `copy: "ownership"` →
+           `"foreign"`, and keep `ownsListingDetail: true` (translated
+           pages are its own content, not duplicates). Replace the INTERIM
+           comment on the entry with its real role.
+        3. **`src/config/verticals.ts` → `inmobiliaria.com.py`**:
+           `ownsListingDetail: false` → `true`, and drop the "INTENTIONAL
+           and TEMPORARY" paragraph. This is what makes its `/propiedad`
+           pages self-canonicalise *and* what puts them back into its
+           sitemap — one flag, both effects, no separate sitemap change.
+        4. **hreflang** between the two hosts' listing pages must ship in
+           the same release, or the two now-distinct language versions
+           compete instead of pairing. Not built yet.
+        5. **CLAUDE.md**: update the domain table (both hosts change role)
+           and its `CANONICAL_HOST` warning — the trap it describes is
+           precisely items 1–3 being done separately. CLAUDE.md is the file
+           the next session reads first; a stale table there is how this
+           work gets reverted.
+        6. **Search Console**: submit `inmobiliaria.com.py`'s sitemap as
+           primary; expect a re-index period on both properties.
+        Precondition for the whole list: the consumption layer above exists
+        and the translation job has filled the `*_en` columns. Do not run
+        the checklist before then.
+      - **Blog:** there is no blog in this codebase. The closest thing is
+        `/guias` (barrio guides, admin at `/admin/guias`), already
+        canonical-aware. Not addressed yet whether guides content should
+        be shared, forked per audience (Paraguayan sellers vs. foreign
+        investors likely want different topics), or is in scope at all for
+        this domain split — needs a decision before any guides work here.
+      - Design/copy: founder wants **fully separate visual identity** for
+        inmobiliaria.com.py — not a reskin, closer to a second frontend on
+        the same backend/admin/DB. Not started.
+      - **Also still needed, deferred:** a per-listing publish-target
+        toggle — two boolean columns on `listings` (default both `true`,
+        i.e. publish everywhere), a checkbox pair in the panel/admin
+        listing form, and the public queries (home, search, sitemap,
+        detail page) filtered by host. This is a DB migration against the
+        live prod database, so it needs a deliberate go-ahead before it's
+        built, not folded in silently with the design/translation work.
+      - Founder wants to talk through the build more (and possibly use a
+        different model for the design-heavy part) before continuing.
+        Paused here — do not resume the schema change, translation job, or
+        visual build without checking in first.
 
 ## [YOU] — production items code cannot reach
 

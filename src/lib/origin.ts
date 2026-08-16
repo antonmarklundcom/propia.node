@@ -66,6 +66,20 @@ export async function siteOrigin(): Promise<string> {
 }
 
 /**
+ * Whether /propiedad/{slug} is canonical on the host that served this request.
+ * The primary host always owns it (same reasoning as `isOwnHost`); an enabled
+ * vertical owns it only if its config says so; everything else — a feeder, a
+ * preview deploy, the raw *.hostingersite.com name — points back at primary.
+ * Local dev "owns" it so `next dev` doesn't emit production canonicals.
+ */
+function ownsListingDetail(p: HostParts): boolean {
+  if (p.local) return true;
+  if (p.bare === CANONICAL_HOST) return true;
+  const v = VERTICALS[p.bare];
+  return Boolean(v?.enabled && v.ownsListingDetail);
+}
+
+/**
  * Origin for /propiedad/{slug} canonicals. Detail pages exist canonically on
  * the primary host and on the EN site (its own translated pages); a feeder
  * domain that renders one canonicalises it back to the primary host rather
@@ -75,9 +89,19 @@ export async function listingCanonicalOrigin(): Promise<string> {
   const p = await hostParts();
   if (!p) return PRIMARY_ORIGIN;
   if (p.local) return `http://${p.raw}`;
-  if (p.bare === CANONICAL_HOST) return `https://${p.bare}`;
-  const v = VERTICALS[p.bare];
-  return v?.enabled && v.ownsListingDetail
-    ? `https://${p.bare}`
-    : PRIMARY_ORIGIN;
+  return ownsListingDetail(p) ? `https://${p.bare}` : PRIMARY_ORIGIN;
+}
+
+/**
+ * Same question, as a boolean, for callers that need to decide whether to
+ * emit a listing URL at all rather than which origin to put in front of it —
+ * i.e. the sitemap. A host must never submit URLs it canonicalises away:
+ * Search Console reports those as "submitted URL not selected as canonical",
+ * which is a crawl-budget and trust cost for zero indexing benefit. Sharing
+ * this one predicate with `listingCanonicalOrigin()` is what keeps the two
+ * answers from drifting apart.
+ */
+export async function hostOwnsListingDetail(): Promise<boolean> {
+  const p = await hostParts();
+  return p ? ownsListingDetail(p) : true;
 }
