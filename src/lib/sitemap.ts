@@ -31,7 +31,23 @@ export interface SitemapEntry {
   lastmod?: Date;
 }
 
-export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
+export interface SitemapOptions {
+  /**
+   * Whether to emit /propiedad/{slug} URLs. False on a host whose listing
+   * detail pages canonicalise to another domain (`ownsListingDetail: false` in
+   * `src/config/verticals.ts`): such a host still owns its home, search,
+   * category and guide pages, but submitting listing URLs it canonicalises
+   * away earns "submitted URL not selected as canonical" in Search Console.
+   * The caller passes `hostOwnsListingDetail()` from `src/lib/origin.ts`, so
+   * the sitemap and the canonical tag are decided by the same predicate.
+   */
+  includeListingDetail?: boolean;
+}
+
+export async function buildSitemapEntries(
+  opts: SitemapOptions = {},
+): Promise<SitemapEntry[]> {
+  const { includeListingDetail = true } = opts;
   const locs = await db
     .select({
       id: locations.id,
@@ -61,12 +77,17 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
   //    can't be added to the menu and forgotten by the sitemap.
   const entries: SitemapEntry[] = STATIC_SITEMAP_PATHS.map((path) => ({ path }));
 
-  // 1. Listing detail pages — always indexable when published.
-  for (const l of pub) {
-    entries.push({
-      path: listingUrl({ slug: l.slug, publicId: l.publicId }),
-      lastmod: l.updatedAt,
-    });
+  // 1. Listing detail pages — always indexable when published, but only on a
+  //    host that actually owns them. The published rows are still read either
+  //    way: the category, agency and agent sections below count them to decide
+  //    what IS indexable here, and those pages are this host's own.
+  if (includeListingDetail) {
+    for (const l of pub) {
+      entries.push({
+        path: listingUrl({ slug: l.slug, publicId: l.publicId }),
+        lastmod: l.updatedAt,
+      });
+    }
   }
 
   // 2. Aggregate category counts (city, city-type, barrio-type).

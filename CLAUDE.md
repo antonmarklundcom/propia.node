@@ -4,15 +4,15 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-08-02.
+Last verified against the code: 2026-08-16.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
 | Domain | Reality |
 | --- | --- |
-| `realestateinparaguay.com` | **This app, live, today.** Serves the Spanish marketplace. This is the only production host. |
-| `propia.com.py` | **NOT owned.** Aspirational only. It is hardcoded as the `CANONICAL_HOST` default in `src/config/verticals.ts` and appears throughout ARCHITECTURE.md, README.md and `.env.example` — all of that is a plan, not a fact. |
-| `inmobiliaria.com.py` (singular) | Owned by the founder, for his **own individual estate agency brand**. NOT this marketplace. Never wire it into this app. |
+| `realestateinparaguay.com` | **This app, live, today**, and the current `CANONICAL_HOST` default. Serves the Spanish marketplace. Slated to become the **English** site once `inmobiliaria.com.py` takes over as Spanish primary — its `verticals.ts` entry still says `locale: "es"` and must not be flipped alone (see the flip checklist in PLAN.md D6). |
+| `inmobiliaria.com.py` (singular) | **Owned, enabled, and as of 2026-08-16 the Spanish marketplace primary in waiting** — the founder reversed the earlier "his own agency brand only, never wire it in" call (PLAN.md D6). Same app, same database, same `/admin` and `/agencia`. It ships with `ownsListingDetail: false` while both hosts serve identical Spanish rows, so its `/propiedad` pages canonicalise to `realestateinparaguay.com` and its sitemap omits them; every other page type there indexes normally. |
+| `propia.com.py` | **NOT owned.** Aspirational only. Still declared (disabled) in `verticals.ts` and referenced throughout ARCHITECTURE.md, README.md and `.env.example` — all of that is a plan, not a fact. `inmobiliaria.com.py` is the `.com.py` domain it was standing in for; do **not** make it the fallback for anything. |
 | `inmobiliarios.com.py` (plural) | Not owned. The future agent-directory vertical already declared in `verticals.ts`. Distinct from the singular above — do not conflate them. |
 | `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
 
@@ -20,14 +20,20 @@ Consequences that bite:
 
 - `siteOrigin()` / `listingCanonicalOrigin()` in `src/lib/origin.ts` emit
   `PRIMARY_ORIGIN` (= `https://${CANONICAL_HOST}`) for any host that is not an
-  `enabled` vertical. With the shipped config that means the live site
-  advertises canonicals on a domain that does not resolve.
+  `enabled` vertical — preview deploys and `*.hostingersite.com` included.
+- A host's sitemap only lists URLs that host owns: `app/sitemap.ts` skips
+  `/propiedad` entries when `hostOwnsListingDetail()` is false. Keep any new
+  host-specific page type on that same rule — submitting a URL you
+  canonicalise elsewhere is a Search Console error, not a neutral extra.
 - `CANONICAL_HOST` is not just an origin string: `verticals.ts` derives
-  `DEFAULT` from it (`VERTICALS[CANONICAL_HOST]`). Pointing it at
-  `realestateinparaguay.com` while that entry still says `locale: "en"` +
-  `filters.foreign_exposure` silently switches the whole live site to English
-  and filters the listing set. **Change the env var and the vertical entry
-  together, never one alone.**
+  `DEFAULT` from it (`VERTICALS[CANONICAL_HOST]`), so it decides the locale,
+  filters and copy of every request that arrives without a known host. Moving
+  it to `inmobiliaria.com.py` and leaving `realestateinparaguay.com` at
+  `locale: "es"` leaves two Spanish primaries; flipping that entry to
+  `locale: "en"` + `filters.foreign_exposure` without moving the env var
+  silently switches the whole live site to English and filters the listing
+  set. **Change the env var and the vertical entries together, never one
+  alone** — PLAN.md D6 has the full flip checklist.
 
 ## Brand name — UNDECIDED, do not "fix" it piecemeal
 
@@ -93,7 +99,9 @@ default, `--dry` first). It records itself as a revertible import job.
    `src/lib/listing-images.ts`, both photo panels gate on `isR2Configured()`).
    Blocked purely on the founder creating the Cloudflare account/bucket and
    setting `R2_*` env vars. **Do not build around it or re-implement it.**
-2. **`NEXT_PUBLIC_CANONICAL_HOST`** — see the domain trap above.
+2. **`NEXT_PUBLIC_CANONICAL_HOST`** — see the domain trap above. It moves to
+   `inmobiliaria.com.py` on flip day, as one item in the PLAN.md D6 checklist,
+   never on its own.
 3. **Individual agent profile pages** — done (`/agente/[slug]`, PR #32,
    2026-07-31). Mirrors `/inmobiliaria/[slug]` (PR #28): same indexability
    rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
