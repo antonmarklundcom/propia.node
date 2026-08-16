@@ -24,33 +24,37 @@ import { citiesWithPrices } from "@/lib/precios-queries";
 import { categoryUrl } from "@/lib/urls";
 import { BRAND_NAME } from "@/lib/brand";
 
-/** Hero quick-access tiles under the search bar. */
-const HERO_TILES = [
+/**
+ * Zone cards on the home page. Each one needs a photograph, so this is a fixed
+ * curated list rather than a DB query — a city with no image would render an
+ * empty tile in a grid built entirely out of photographs.
+ */
+const ZONE_CARDS = [
   {
-    icon: "🏛",
-    title: "Asunción",
-    sub: "Capital — mayor oferta",
-    href: "/venta/asuncion",
+    name: "Asunción",
+    slug: "asuncion",
+    sub: "Capital — la mayor oferta",
+    img: "/img/zona-asuncion.webp",
   },
   {
-    icon: "🌆",
-    title: "Luque",
+    name: "San Bernardino",
+    slug: "san-bernardino",
+    sub: "Lago Ypacaraí, casas de fin de semana",
+    img: "/img/zona-san-bernardino.webp",
+  },
+  {
+    name: "Luque",
+    slug: "luque",
     sub: "Zona en crecimiento",
-    href: "/venta/luque",
+    img: "/img/zona-luque.webp",
   },
   {
-    icon: "🔑",
-    title: "Alquileres",
-    sub: "Tu próximo lugar",
-    href: "/alquiler/asuncion",
+    name: "Encarnación",
+    slug: "encarnacion",
+    sub: "Sobre el Paraná, calidad de vida",
+    img: "/img/zona-encarnacion.webp",
   },
-  {
-    icon: "🏗",
-    title: "Proyectos en pozo",
-    sub: "Obra nueva y preventa",
-    href: "/#proyectos",
-  },
-];
+] as const;
 
 /** Curated, high-population cities — a fixed shortcut row (avoids querying
  * every seeded city, some of which have little to no live inventory yet). */
@@ -70,6 +74,11 @@ export const metadata: Metadata = {
   title: `${BRAND_NAME} — Encontrá tu propiedad en Paraguay`,
   description:
     "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
+  // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
+  // is the size every network crops to.
+  openGraph: {
+    images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
+  },
 };
 
 /** Publish CTA — same WhatsApp/mailto fallback logic as the header button. */
@@ -205,16 +214,39 @@ export default async function Home() {
     <main>
       <JsonLd data={[faqJsonLd(FAQ_HOME)]} />
 
-      {/* Hero */}
+      {/* Hero — full-bleed photograph, text on the gradient (design system
+          §"Superposiciones sobre foto"). The search bar sits on the dark panel
+          inside the hero rather than below it. */}
       <section className="home-hero">
-        <div className="home-hero__inner">
-          <h1 className="home-hero__title">Encontrá tu propiedad en Paraguay</h1>
+        <img
+          className="home-hero__photo"
+          src="/img/hero-home.webp"
+          alt=""
+          fetchPriority="high"
+        />
+        <div className="home-hero__scrim" />
+        <div className="home-hero__inner ds-container">
+          <p className="ds-label">Asunción · Paraguay</p>
+          <h1 className="home-hero__title">
+            Encontrá tu propiedad en <span>Paraguay</span>
+          </h1>
           <p className="home-hero__subtitle">
             Casas, departamentos y terrenos en venta y alquiler — con cuota
             estimada y financiamiento.
           </p>
 
-          <SearchBar cities={cities} />
+          <div className="home-hero__actions">
+            <Link className="ds-btn ds-btn--primary" href="/venta/asuncion">
+              Ver propiedades
+            </Link>
+            <Link className="ds-btn ds-btn--on-photo" href="/publicar">
+              Vender mi propiedad
+            </Link>
+          </div>
+
+          <div className="home-hero__search">
+            <SearchBar cities={cities} />
+          </div>
 
           <div className="home-hero__chips">
             {POPULAR_SEARCHES.map((q) => (
@@ -224,39 +256,52 @@ export default async function Home() {
             ))}
           </div>
 
-          <div className="home-hero__tiles">
-            {HERO_TILES.map((t) => (
-              <Link key={t.title} href={t.href} className="home-hero__tile">
-                <span className="home-hero__tile-icon" aria-hidden>
-                  {t.icon}
-                </span>
-                <span>
-                  <span className="home-hero__tile-title">{t.title}</span>
-                  <span className="home-hero__tile-sub">{t.sub}</span>
-                </span>
-              </Link>
-            ))}
+          <div className="home-hero__stats">
+            <span>
+              {total > 0
+                ? `${total.toLocaleString("es-PY")} propiedades publicadas`
+                : "Propiedades en todo Paraguay"}
+            </span>
+            <span>Actualizado diariamente</span>
+            <a href={publishHref()} target="_blank" rel="noopener noreferrer">
+              {es.publishCta}
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Trust strip */}
-      <div className="home-stats">
-        <div className="home-stats__inner">
-          <span className="home-stats__item">
-            🏠 {total > 0 ? `${total.toLocaleString("es-PY")} propiedades activas` : "Propiedades en todo Paraguay"}
-          </span>
-          <span className="home-stats__item">🔄 Actualizado diariamente</span>
-          <a
-            className="home-stats__item home-stats__item--link"
-            href={publishHref()}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            ✏️ {es.publishCta}
-          </a>
+      {/* Zonas — four photographed cards, the design's "tarjeta de zona".
+          Cities are matched by name against the DB so a card never links to a
+          category page that doesn't exist. */}
+      <section className="ds-section ds-container" id="zonas">
+        <div className="home-section__head">
+          <div>
+            <p className="ds-label">Zonas</p>
+            <h2>Dónde querés vivir</h2>
+          </div>
+          <Link className="ds-link-underline" href="/venta/asuncion">
+            Ver todas las zonas →
+          </Link>
         </div>
-      </div>
+        <div className="ds-grid" style={{ ["--ds-track" as string]: "220px" }}>
+          {ZONE_CARDS.map((z) => (
+            <Link key={z.slug} className="ds-photo-card ds-photo-card--zone" href={`/venta/${z.slug}`}>
+              <img
+                className="ds-photo-card__img"
+                src={z.img}
+                alt={z.name}
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="ds-photo-card__scrim ds-photo-card__scrim--zone" />
+              <div className="ds-photo-card__body">
+                <div className="zone-card__name">{z.name}</div>
+                <div className="zone-card__sub">{z.sub}</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Cómo funciona — the "what is this site" answer, before any listing */}
       <section className="home-how">
@@ -282,6 +327,67 @@ export default async function Home() {
           <Link className="home-how__more" href="/como-funciona">
             Ver la guía completa →
           </Link>
+        </div>
+      </section>
+
+      {/* Editorial pair: the seller pitch on cream, the investor pitch on
+          green. Two backgrounds per page is the system's rule, and these are
+          the two. */}
+      <section className="ds-section ds-container editorial">
+        <div className="editorial__media">
+          <img
+            src="/img/editorial-vender.webp"
+            alt="Interior de una casa en Paraguay"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <div className="editorial__body">
+          <p className="ds-label">Vender</p>
+          <h2>Vendé con quien conoce el mercado</h2>
+          <p className="editorial__text">
+            Publicá tu propiedad gratis y llegá a compradores de todo Paraguay.
+            Te damos un rango de precio estimado con los avisos publicados de tu
+            zona, para que sepas dónde parás antes de decidir.
+          </p>
+          <div className="editorial__actions">
+            <Link className="ds-btn ds-btn--secondary" href="/tasacion">
+              Solicitar valuación
+            </Link>
+            <Link className="ds-link-underline" href="/publicar">
+              Publicar una propiedad →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="ds-section ds-section--dark">
+        <div className="ds-container editorial editorial--reverse">
+          <div className="editorial__media">
+            <img
+              src="/img/editorial-invertir.webp"
+              alt="Asunción al atardecer"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <div className="editorial__body">
+            <p className="ds-label">Invertir</p>
+            <h2>Invertí en Paraguay con datos, no con corazonadas</h2>
+            <p className="editorial__text">
+              Publicamos la mediana de precio por m² de cada ciudad, calculada
+              sobre los avisos del portal, y la cuota estimada de cada propiedad
+              en venta según los programas de financiamiento vigentes.
+            </p>
+            <div className="editorial__actions">
+              <Link className="ds-btn ds-btn--outline-gold" href="/precios">
+                Ver precios por zona
+              </Link>
+              <Link className="ds-link-underline ds-link-underline--dark" href="/financiamiento">
+                Cómo funciona el financiamiento →
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

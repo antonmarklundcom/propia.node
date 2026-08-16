@@ -694,132 +694,241 @@ body {
 }
 
 /* ---- Homepage ------------------------------------------------------------ */
+/* Hero: the photograph is the section. Text sits on the 95deg gradient from
+   the design system, which is dark enough on the left for white type and
+   clears the right side so the house is still visible. */
 
 .home-hero {
-  background: linear-gradient(160deg, #06212C 0%, #0D3B4D 55%, #0E6881 100%);
-  color: #fff;
-  padding: 56px 16px 40px;
+  position: relative;
+  background: var(--color-primary-dark);
+  overflow: hidden;
+}
+
+.home-hero__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
+}
+
+.home-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-hero);
 }
 
 .home-hero__inner {
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.home-hero__title {
-  margin: 0;
-  font-size: clamp(28px, 5vw, 42px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  position: relative;
+  padding-block: clamp(56px, 8vw, 104px);
   color: #fff;
 }
 
-.home-hero__subtitle {
-  margin: 10px 0 0;
-  font-size: 17px;
-  color: #9FC5D0;
-  max-width: 56ch;
+.home-hero__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(42px, 6.6vw, 92px);
+  line-height: 1.02;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  margin: 26px 0 0;
+  max-width: 15ch;
+  text-wrap: balance;
 }
 
-/* The shared search bar sits on the dark hero — give it more lift. */
-.home-hero .search-bar {
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
-  border: none;
+.home-hero__title span {
+  color: var(--color-accent-hover);
+}
+
+.home-hero__subtitle {
+  margin: 30px 0 0;
+  font-size: clamp(15px, 1.25vw, 17.5px);
+  font-weight: 300;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 42ch;
+  text-wrap: pretty;
+}
+
+.home-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 40px;
+}
+
+.home-hero__search {
+  margin-top: clamp(32px, 4vw, 48px);
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-border-accent);
+  padding: clamp(16px, 2.4vw, 26px);
+  box-shadow: 0 34px 70px rgba(14, 31, 23, 0.28);
 }
 
 .home-hero__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .home-hero__chip {
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #fff;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  font-size: 10.5px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.84);
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.14s ease;
+  transition: border-color 0.2s var(--ease), color 0.2s var(--ease);
 }
 
 .home-hero__chip:hover {
-  background: rgba(255, 255, 255, 0.22);
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
 }
 
-.home-hero__tiles {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-top: 18px;
-}
-
-@media (max-width: 720px) {
-  .home-hero__tiles {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.home-hero__tile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  text-decoration: none;
-  transition: background 0.14s ease;
-}
-
-.home-hero__tile:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.home-hero__tile-icon {
-  font-size: 22px;
-}
-
-.home-hero__tile-title {
-  display: block;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.home-hero__tile-sub {
-  display: block;
-  font-size: 12px;
-  color: #9FC5D0;
-}
-
-.home-stats {
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.home-stats__inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 12px 16px;
+.home-hero__stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 28px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-ink-secondary);
+  gap: 18px 44px;
+  margin-top: clamp(40px, 6vw, 72px);
+  font-size: 10.5px;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
 }
 
-.home-stats__item--link {
-  color: var(--color-primary);
+.home-hero__stats a {
+  color: var(--color-accent-hover);
   text-decoration: none;
+  border-bottom: 1px solid rgba(221, 188, 124, 0.4);
 }
 
-.home-stats__item--link:hover {
-  text-decoration: underline;
+/* ---- Section heads ------------------------------------------------------- */
+
+.home-section {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--section-y) var(--container-pad) 0;
+}
+
+.home-section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 44px;
+}
+
+.home-section__title,
+.home-section__head h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(28px, 3.2vw, 42px);
+  margin: 10px 0 0;
+}
+
+.home-section__more {
+  display: inline-block;
+  padding: 8px 2px;
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-ink);
+  border-bottom: 1px solid rgba(22, 33, 27, 0.25);
+}
+
+.home-section__more:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* Property rows: the same auto-fit grid as everything else, no carousel. */
+.home-row {
+  display: grid;
+  gap: var(--grid-gap);
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+}
+
+/* ---- Zone cards ---------------------------------------------------------- */
+
+.ds-photo-card--zone {
+  height: clamp(240px, 22vw, 300px);
+}
+
+.ds-photo-card__scrim--zone {
+  background: var(--overlay-zone);
+}
+
+.zone-card__name {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.zone-card__sub {
+  font-size: 11px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.68);
+  margin-top: 6px;
+}
+
+/* ---- Editorial split ----------------------------------------------------- */
+/* Image one side, text the other; reversed on the dark band so the two don't
+   read as the same block twice. */
+
+.editorial {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: clamp(24px, 4vw, 64px);
+  align-items: center;
+}
+
+.editorial--reverse .editorial__media {
+  order: 2;
+}
+
+.editorial__media img {
+  width: 100%;
+  height: clamp(320px, 34vw, 560px);
+  object-fit: cover;
+  display: block;
+}
+
+.editorial__text {
+  font-size: 14.5px;
+  font-weight: 300;
+  line-height: 1.85;
+  color: var(--color-ink-secondary);
+  margin: 18px 0 0;
+  max-width: 52ch;
+}
+
+.ds-section--dark .editorial__text {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.editorial__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  margin-top: 32px;
+}
+
+.ds-link-underline--dark {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.ds-link-underline--dark:hover {
+  color: var(--color-accent-hover);
+  border-color: var(--color-accent);
 }
 
 /* ---- Homepage: projects carousel + developers + values ------------------- */
@@ -1663,140 +1772,16 @@ body {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* ---- Listing card ------------------------------------------------------- */
-
-.listing-card {
-  display: flex;
-  flex-direction: column;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  overflow: hidden;
-  text-decoration: none;
-  color: var(--color-ink);
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
-}
-
-.listing-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.14);
-  border-color: #DBE0E8;
-}
-
-.listing-card:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.listing-card__media {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  background-color: #E3E6EC;
-  overflow: hidden;
-}
-
-/* Branded "photo coming soon" state for listings without a real cover. */
-.listing-card__media--empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.listing-card__placeholder-icon {
-  font-size: 34px;
-  line-height: 1;
-  filter: saturate(0.7) opacity(0.85);
-}
-
-.listing-card__placeholder-label {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: rgba(27, 31, 36, 0.5);
-}
-
-/* Bottom scrim so the operation badge stays legible over any photo. */
-.listing-card__media--photo::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 42%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0));
-  pointer-events: none;
-}
-
-.listing-card__badge-row {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.listing-card__badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #ffffff;
-  background: var(--color-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
-}
-
-.listing-card__badge--alquiler {
-  background: var(--color-accent);
-  color: #3a2a08;
-}
-
-.listing-card__badge--featured {
-  background: #D4A24C;
-  color: #3a2a08;
-}
-
-.listing-card__badge--verified {
-  background: #1f8a5f;
-  color: #ffffff;
-}
-
-.listing-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px 14px;
-}
-
-.listing-card__price {
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1.1;
-  color: var(--color-ink);
-}
-
-.listing-card__cuota {
-  align-self: flex-start;
-  margin-top: 2px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #fcf3e4;
-  color: #a5701c;
-  font-size: 12px;
-  font-weight: 700;
-}
+/* ---- Listing card -------------------------------------------------------- */
+/* The photo IS the card (ds-photo-card carries the frame, image, scrim and
+   hover). What's left here is the text stack that sits on the gradient and the
+   two corner flags. */
 
 .listing-card__title {
-  margin-top: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.35;
-  color: var(--color-ink);
-  /* clamp to two lines so cards keep an even height */
+  font-size: 12px;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1806,20 +1791,62 @@ body {
 .listing-card__specs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-border);
-  font-size: 13px;
-  color: var(--color-ink-secondary);
+  gap: 8px 18px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 10.5px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .listing-card__spec {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  white-space: nowrap;
+  gap: 7px;
+}
+
+/* The design's spec marker: a 6px square outline in gold, not an emoji. */
+.listing-card__tick {
+  width: 6px;
+  height: 6px;
+  border: 1px solid rgba(221, 188, 124, 0.9);
+}
+
+.listing-card__spec--cuota {
+  color: var(--color-accent-hover);
+}
+
+.listing-card__flags {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.listing-card__flag {
+  font-size: 9px;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  padding: 5px 9px;
+}
+
+/* Sits on the fallback image, which is abstract on purpose — this label is
+   what stops it reading as a photo of the property. */
+.listing-card__nophoto {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.86);
 }
 
 /* ---- Listing detail page -------------------------------------------------- */
