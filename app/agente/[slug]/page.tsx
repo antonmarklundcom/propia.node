@@ -2,7 +2,7 @@ import { cache } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import {
   getAgentBySlug,
   getAgentListings,
@@ -33,6 +33,7 @@ const resolve = cache(async function resolve(slug: string) {
 });
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const brand = await brandName();
   const { slug } = await params;
   const r = await resolve(slug);
   if (!r) return { title: esAgentProfile.notFoundTitle };
@@ -41,13 +42,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const canonical = `${await siteOrigin()}${agentUrl(agent.slug)}`;
   return {
     title: esAgentProfile.metaTitle(agent.name),
-    description: esAgentProfile.metaDescription(agent.name, listingCount),
+    description: esAgentProfile.metaDescription(brand, agent.name, listingCount),
     alternates: { canonical },
     robots: { index: ix.state === "index", follow: true },
   };
 }
 
 export default async function AgentProfilePage({ params }: Params) {
+  const brand = await brandName();
   const { slug } = await params;
   const r = await resolve(slug);
   if (!r) notFound();
@@ -164,7 +166,7 @@ export default async function AgentProfilePage({ params }: Params) {
           <ContactForm
             contactWhatsapp={agent.whatsapp}
             leadType="buyer"
-            prefillMessage={agentInquiryPrefillFor(agent.name, canonical)}
+            prefillMessage={agentInquiryPrefillFor(brand, agent.name, canonical)}
             variant="panel"
           />
         </section>

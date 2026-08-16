@@ -18,11 +18,12 @@ import { SearchBar } from "@/components/SearchBar";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { JsonLd } from "@/components/JsonLd";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
-import { FAQ_HOME } from "@/config/faq";
+import { faqHome } from "@/config/faq";
 import { faqJsonLd } from "@/lib/jsonld";
 import { citiesWithPrices } from "@/lib/precios-queries";
 import { categoryUrl } from "@/lib/urls";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandTaglineFor } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 
 /**
  * Zone cards on the home page. Each one needs a photograph, so this is a fixed
@@ -70,22 +71,25 @@ const CITY_SHORTCUTS = [
 
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `${BRAND_NAME} — Encontrá tu propiedad en Paraguay`,
-  description:
-    "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
-  // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
-  // is the size every network crops to.
-  openGraph: {
-    images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
+  return {
+    title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
+    description:
+      "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
+    // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
+    // is the size every network crops to.
+    openGraph: {
+      images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
+    },
+  };
+}
 
 /** Publish CTA — same WhatsApp/mailto fallback logic as the header button. */
-function publishHref(): string {
+function publishHref(brand: string): string {
   const wa = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP?.replace(/\D/g, "");
   const text = encodeURIComponent(
-    `Hola, quiero publicar una propiedad en ${BRAND_NAME}.`,
+    `Hola, quiero publicar una propiedad en ${brand}.`,
   );
   return wa
     ? `https://wa.me/${wa}?text=${text}`
@@ -181,6 +185,8 @@ function Row({
 }
 
 export default async function Home() {
+  const brand = await brandName();
+  const faq = faqHome(brand);
   await currentVertical();
   const [
     recent,
@@ -212,7 +218,7 @@ export default async function Home() {
 
   return (
     <main>
-      <JsonLd data={[faqJsonLd(FAQ_HOME)]} />
+      <JsonLd data={[faqJsonLd(faq)]} />
 
       {/* Hero — full-bleed photograph, text on the gradient (design system
           §"Superposiciones sobre foto"). The search bar sits on the dark panel
@@ -263,7 +269,7 @@ export default async function Home() {
                 : "Propiedades en todo Paraguay"}
             </span>
             <span>Actualizado diariamente</span>
-            <a href={publishHref()} target="_blank" rel="noopener noreferrer">
+            <a href={publishHref(brand)} target="_blank" rel="noopener noreferrer">
               {es.publishCta}
             </a>
           </div>
@@ -572,7 +578,7 @@ export default async function Home() {
       {/* Descubre más — secondary product surfaces */}
       <section className="home-discover">
         <div className="home-discover__inner">
-          <h2 className="home-discover__title">Descubre más en {BRAND_NAME}</h2>
+          <h2 className="home-discover__title">Descubre más en {brand}</h2>
           <div className="home-discover__grid">
             {DISCOVER_CARDS.map((c) => (
               <a
@@ -666,7 +672,7 @@ export default async function Home() {
             </Link>
             <a
               className="home-cta__alt"
-              href={publishHref()}
+              href={publishHref(brand)}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -697,9 +703,9 @@ export default async function Home() {
         <div className="home-faq__inner">
           <h2 className="home-faq__title">Preguntas frecuentes</h2>
           <p className="home-faq__subtitle">
-            Todo lo que necesitás saber sobre {BRAND_NAME}.
+            Todo lo que necesitás saber sobre {brand}.
           </p>
-          {FAQ_HOME.map((f) => (
+          {faq.map((f) => (
             <details key={f.q} className="home-faq__item">
               <summary className="home-faq__q">{f.q}</summary>
               <p className="home-faq__a">{f.a}</p>

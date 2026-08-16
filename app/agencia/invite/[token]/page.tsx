@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import { getSessionUser } from "@/lib/auth/session";
 import { getUsableInvite } from "@/lib/agency-invites";
 import { joinPreflight } from "@/lib/team-queries";
 import { acceptInviteAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Invitación — ${BRAND_NAME}`,
+  title: `Invitación`,
   robots: { index: false, follow: false },
 };
 

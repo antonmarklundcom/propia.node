@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -11,14 +11,15 @@ import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 export const dynamic = "force-dynamic";
 
 const TITLE = "Agentes inmobiliarios";
-const DESCRIPTION = `Agentes inmobiliarios que publican en ${BRAND_NAME}: su cartera activa, las zonas donde trabajan y su contacto directo por WhatsApp.`;
+const DESCRIPTION = (brand: string) => `Agentes inmobiliarios que publican en ${brand}: su cartera activa, las zonas donde trabajan y su contacto directo por WhatsApp.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} en Paraguay — ${BRAND_NAME}`,
-    description: DESCRIPTION,
+    title: `${TITLE} en Paraguay`,
+    description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/agentes` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 

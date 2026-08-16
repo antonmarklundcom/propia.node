@@ -4,7 +4,6 @@
  * /preguntas-frecuentes page, and the FAQPage JSON-LD both of them emit.
  * Duplicated answers with drifting wording are a rich-result liability.
  */
-import { BRAND_NAME } from "@/lib/brand";
 
 export interface FaqItem {
   q: string;
@@ -17,14 +16,21 @@ export interface FaqSection {
   items: FaqItem[];
 }
 
-export const FAQ_SECTIONS: FaqSection[] = [
+/**
+ * Brand-parameterised because the wordmark differs per host (src/lib/brand.ts)
+ * and these answers name it. Server components pass the resolved brand; the
+ * homepage accordion, /preguntas-frecuentes and the FAQPage JSON-LD all read
+ * from the same call, so the markup can never claim an answer the page does
+ * not show.
+ */
+export const faqSections = (brand: string): FaqSection[] => [
   {
     id: "general",
     title: "Sobre el portal",
     items: [
       {
-        q: `¿Qué es ${BRAND_NAME}?`,
-        a: `${BRAND_NAME} es un portal inmobiliario de Paraguay donde podés buscar casas, departamentos y terrenos en venta y alquiler, comparar precios por zona y contactar directamente a vendedores e inmobiliarias por WhatsApp.`,
+        q: `¿Qué es ${brand}?`,
+        a: `${brand} es un portal inmobiliario de Paraguay donde podés buscar casas, departamentos y terrenos en venta y alquiler, comparar precios por zona y contactar directamente a vendedores e inmobiliarias por WhatsApp.`,
       },
       {
         q: "¿Es gratis buscar propiedades?",
@@ -83,14 +89,18 @@ export const FAQ_SECTIONS: FaqSection[] = [
 ];
 
 /** Flattened — for JSON-LD and for the homepage's shorter accordion. */
-export const FAQ_ALL: FaqItem[] = FAQ_SECTIONS.flatMap((s) => s.items);
+export const faqAll = (brand: string): FaqItem[] =>
+  faqSections(brand).flatMap((s) => s.items);
 
 /** The six highest-intent questions, for the homepage. */
-export const FAQ_HOME: FaqItem[] = [
-  FAQ_SECTIONS[0].items[0],
-  FAQ_SECTIONS[0].items[1],
-  FAQ_SECTIONS[2].items[0],
-  FAQ_SECTIONS[1].items[0],
-  FAQ_SECTIONS[1].items[1],
-  FAQ_SECTIONS[2].items[1],
-];
+export const faqHome = (brand: string): FaqItem[] => {
+  const s = faqSections(brand);
+  return [
+    s[0].items[0],
+    s[0].items[1],
+    s[2].items[0],
+    s[1].items[0],
+    s[1].items[1],
+    s[2].items[1],
+  ];
+};

@@ -9,12 +9,11 @@ import {
   type AgencyAdminCount,
 } from "@/lib/team-queries";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../tabs";
 import { moveAgentAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Agentes — ${BRAND_NAME}`,
+  title: `Agentes`,
   robots: { index: false, follow: false },
 };
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -23,11 +23,12 @@ const DESCRIPTION =
   "Cómo se financia una vivienda en Paraguay: programas vigentes, tasas de referencia, plazos y cómo calculamos la cuota estimada que ves en cada aviso.";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
+    title: `${TITLE}`,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/financiamiento` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
   };
 }
 

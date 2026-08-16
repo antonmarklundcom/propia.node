@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -14,14 +14,15 @@ import {
 export const dynamic = "force-dynamic";
 
 const TITLE = "Cómo funciona";
-const DESCRIPTION = `Cómo comprar, alquilar y publicar una propiedad en ${BRAND_NAME}: buscar por zona, comparar precios de referencia, ver la cuota estimada y contactar directo por WhatsApp.`;
+const DESCRIPTION = (brand: string) => `Cómo comprar, alquilar y publicar una propiedad en ${brand}: buscar por zona, comparar precios de referencia, ver la cuota estimada y contactar directo por WhatsApp.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
-    description: DESCRIPTION,
+    title: `${TITLE}`,
+    description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/como-funciona` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 

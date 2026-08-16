@@ -2,17 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
 import { MIN_PASSWORD_LENGTH } from "@/lib/registration";
 import { getUsableInvite } from "@/lib/agency-invites";
 import { registerAction } from "./actions";
 
-export const metadata: Metadata = {
-  title: `Creá tu cuenta — ${BRAND_NAME}`,
-  description: `Publicá tus propiedades en ${BRAND_NAME}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
+  return {
+    title: `Creá tu cuenta`,
+    description: `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
+  };
+}
 
 // Session state is per-request; never statically cache the sign-up page.
 export const dynamic = "force-dynamic";

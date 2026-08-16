@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -12,9 +12,10 @@ const TITLE = "Términos y condiciones";
 const LAST_UPDATED = "julio de 2026";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
-    description: `Condiciones de uso del portal ${BRAND_NAME}.`,
+    title: `${TITLE}`,
+    description: `Condiciones de uso del portal ${brand}.`,
     alternates: { canonical: `${await siteOrigin()}/terminos` },
     robots: { index: true, follow: true },
   };
@@ -30,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * lawyer review this text — it is a reasonable starting point, not legal advice.
  */
 export default async function TerminosPage() {
+  const brand = await brandName();
   const origin = await siteOrigin();
 
   return (
@@ -52,7 +54,7 @@ export default async function TerminosPage() {
         <Prose>
           <h2>1. Quiénes somos y qué es este servicio</h2>
           <p>
-            {BRAND_NAME} es un portal de avisos inmobiliarios que opera en la
+            {brand} es un portal de avisos inmobiliarios que opera en la
             República del Paraguay. El portal pone en contacto a quienes ofrecen
             inmuebles en venta o alquiler con quienes los buscan. No somos una
             inmobiliaria, no somos corredores ni representamos a ninguna de las

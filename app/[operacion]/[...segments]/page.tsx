@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { tokens } from "@/design/tokens";
 import Link from "next/link";
 import { es, esPrecios } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import {
   resolveCity,
   resolveBarrio,
@@ -165,9 +165,10 @@ const resolve = cache(async function resolve(
 });
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const brand = await brandName();
   const { operacion, segments } = await params;
   const r = await resolve(operacion, segments);
-  if (!r) return { title: `No encontrado — ${BRAND_NAME}` };
+  if (!r) return { title: `No encontrado` };
 
   const count = await countFor(r.operation, r.locationIds, r.type);
   const parentIndexable = r.barrio
@@ -180,8 +181,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   });
 
   return {
-    title: `${r.title} — ${BRAND_NAME}`,
-    description: `${count} ${r.title.toLowerCase()} en ${BRAND_NAME}. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
+    title: `${r.title}`,
+    description: `${count} ${r.title.toLowerCase()} en ${brand}. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
     alternates: { canonical: `${await siteOrigin()}${r.canonicalPath}` },
     robots:
       ix.state === "index"

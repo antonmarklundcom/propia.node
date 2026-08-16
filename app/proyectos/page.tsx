@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -21,11 +21,12 @@ const DESCRIPTION =
   "Edificios, condominios, barrios cerrados y loteamientos en desarrollo en Paraguay: en pozo, en construcción y con entrega inmediata.";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} en Paraguay — ${BRAND_NAME}`,
+    title: `${TITLE} en Paraguay`,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/proyectos` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
   };
 }
 

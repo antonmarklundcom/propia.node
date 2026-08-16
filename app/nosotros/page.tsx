@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -16,14 +16,15 @@ import {
 export const dynamic = "force-dynamic";
 
 const TITLE = "Sobre nosotros";
-const DESCRIPTION = `${BRAND_NAME} es el portal inmobiliario de Paraguay: buscar es gratis, publicar también, y cada aviso muestra precio de referencia de la zona y cuota estimada.`;
+const DESCRIPTION = (brand: string) => `${brand} es el portal inmobiliario de Paraguay: buscar es gratis, publicar también, y cada aviso muestra precio de referencia de la zona y cuota estimada.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
-    description: DESCRIPTION,
+    title: `${TITLE}`,
+    description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/nosotros` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 
@@ -51,6 +52,7 @@ const PRINCIPLES = [
 ];
 
 export default async function NosotrosPage() {
+  const brand = await brandName();
   const [origin, stats] = await Promise.all([siteOrigin(), getPortalStats()]);
   const whatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP ?? null;
 
@@ -63,7 +65,7 @@ export default async function NosotrosPage() {
             { name: TITLE, url: "/nosotros" },
           ]),
           organizationJsonLd(origin, {
-            name: BRAND_NAME,
+            name: brand,
             whatsapp,
             email: "hola@propia.com.py",
           }),
@@ -73,7 +75,7 @@ export default async function NosotrosPage() {
       <PageHero
         kicker="Quiénes somos"
         title="Buscar propiedad en Paraguay debería ser transparente"
-        subtitle={`${BRAND_NAME} nació de una molestia concreta: buscar casa en Paraguay significa recorrer avisos repetidos, sin precio de referencia, sin saber si el número cierra con lo que uno puede pagar por mes. Armamos el portal que nos hubiera gustado usar.`}
+        subtitle={`${brand} nació de una molestia concreta: buscar casa en Paraguay significa recorrer avisos repetidos, sin precio de referencia, sin saber si el número cierra con lo que uno puede pagar por mes. Armamos el portal que nos hubiera gustado usar.`}
       />
 
       {stats.listings > 0 && (

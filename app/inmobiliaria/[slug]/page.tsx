@@ -2,7 +2,7 @@ import { cache } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import {
   getAgencyBySlug,
   getAgencyListings,
@@ -30,21 +30,23 @@ const resolve = cache(async function resolve(slug: string) {
 });
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const brand = await brandName();
   const { slug } = await params;
   const r = await resolve(slug);
-  if (!r) return { title: `Inmobiliaria no encontrada — ${BRAND_NAME}` };
+  if (!r) return { title: `Inmobiliaria no encontrada` };
   const { agency, listingCount } = r;
   const ix = getIndexability({ listingCount });
   const canonical = `${await siteOrigin()}${agencyUrl(agency.slug)}`;
   return {
-    title: `${agency.name} — Propiedades en venta y alquiler | ${BRAND_NAME}`,
-    description: `${listingCount} ${listingCount === 1 ? "propiedad" : "propiedades"} publicadas por ${agency.name} en ${BRAND_NAME}.`,
+    title: `${agency.name} — Propiedades en venta y alquiler`,
+    description: `${listingCount} ${listingCount === 1 ? "propiedad" : "propiedades"} publicadas por ${agency.name} en ${brand}.`,
     alternates: { canonical },
     robots: { index: ix.state === "index", follow: true },
   };
 }
 
 export default async function AgencyProfilePage({ params }: Params) {
+  const brand = await brandName();
   const { slug } = await params;
   const r = await resolve(slug);
   if (!r) notFound();

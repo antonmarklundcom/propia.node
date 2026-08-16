@@ -21,6 +21,14 @@ export type VerticalKey =
 export interface VerticalConfig {
   key: VerticalKey;
   locale: "es" | "en";
+  /**
+   * The public brand name for this door. The domain IS the brand (founder
+   * decision, 2026-08-16) — there is no separate wordmark to keep in sync, so
+   * every user-visible name is derived from here rather than from a single
+   * global constant. Read it through `src/lib/brand.ts`, never directly:
+   * that module is what resolves the current request's host to a name.
+   */
+  brand: string;
   /** Hard filters applied to every listing query on this domain. */
   filters?: {
     property_type?: string[];
@@ -49,6 +57,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
    */
   "propia.com.py": {
     key: "propia",
+    brand: "Propia",
     locale: "es",
     copy: "ownership",
     enabled: false,
@@ -56,6 +65,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
   },
   "terreno.com.py": {
     key: "terreno",
+    brand: "Terreno.com.py",
     locale: "es",
     filters: { property_type: ["terreno"] },
     copy: "land",
@@ -64,6 +74,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
   },
   "alquiler.com.py": {
     key: "alquiler",
+    brand: "Alquiler.com.py",
     locale: "es",
     filters: { operation: ["alquiler"] },
     copy: "rental", // "tu próximo lugar" — never ownership language
@@ -72,6 +83,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
   },
   "inmobiliarios.com.py": {
     key: "agents",
+    brand: "Inmobiliarios Paraguay",
     locale: "es",
     mode: "directory",
     copy: "directory",
@@ -80,6 +92,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
   },
   "desarrolladores.com.py": {
     key: "devs",
+    brand: "Desarrolladores Paraguay",
     locale: "es",
     mode: "projects",
     copy: "directory",
@@ -98,6 +111,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
    */
   "realestateinparaguay.com": {
     key: "en",
+    brand: "Real Estate in Paraguay",
     locale: "es",
     copy: "ownership",
     enabled: true,
@@ -136,6 +150,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
    */
   "inmobiliaria.com.py": {
     key: "inmobiliaria",
+    brand: "Inmobiliaria Paraguay",
     locale: "es",
     copy: "ownership",
     enabled: true,

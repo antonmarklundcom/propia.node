@@ -9,7 +9,6 @@ import { countReviewQueue } from "@/lib/panel-queries";
 import { countDraftPosts, getPostById } from "@/lib/post-queries";
 import { imageUrl } from "@/lib/format";
 import { isR2Configured } from "@/lib/r2";
-import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../../tabs";
 import {
   deletePostAction,
@@ -19,7 +18,7 @@ import {
 } from "../actions";
 
 export const metadata: Metadata = {
-  title: `Editar nota — ${BRAND_NAME}`,
+  title: `Editar nota`,
   robots: { index: false, follow: false },
 };
 

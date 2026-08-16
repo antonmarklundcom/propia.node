@@ -8,7 +8,7 @@ import {
   USD_TO_PYG,
 } from "@/lib/publish-queries";
 import { esPublish } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { isMessagingConfigured } from "@/lib/crm";
 import {
   PublishWizard,
@@ -17,7 +17,7 @@ import {
 import { listListingImages, type ListingImageRow } from "@/lib/listing-images";
 
 export const metadata: Metadata = {
-  title: `Publicá tu propiedad — ${BRAND_NAME}`,
+  title: `Publicá tu propiedad`,
   robots: { index: false, follow: false },
 };
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -10,14 +10,15 @@ import { PageHero, Section } from "@/components/MarketingUI";
 export const dynamic = "force-dynamic";
 
 const TITLE = "Contacto";
-const DESCRIPTION = `Escribinos por WhatsApp o dejanos tu consulta: publicación de propiedades, cuentas para inmobiliarias, proyectos y soporte de ${BRAND_NAME}.`;
+const DESCRIPTION = (brand: string) => `Escribinos por WhatsApp o dejanos tu consulta: publicación de propiedades, cuentas para inmobiliarias, proyectos y soporte de ${brand}.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
-    description: DESCRIPTION,
+    title: `${TITLE}`,
+    description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/contacto` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 
@@ -28,6 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * queue we can't answer.
  */
 export default async function ContactoPage() {
+  const brand = await brandName();
   const origin = await siteOrigin();
   const whatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP ?? null;
   const waDigits = whatsapp?.replace(/\D/g, "");
@@ -41,7 +43,7 @@ export default async function ContactoPage() {
             { name: TITLE, url: "/contacto" },
           ]),
           organizationJsonLd(origin, {
-            name: BRAND_NAME,
+            name: brand,
             whatsapp,
             email: "hola@propia.com.py",
           }),

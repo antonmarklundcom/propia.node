@@ -7,7 +7,7 @@ import {
   FOOTER_TOOLS,
   FOOTER_TYPES,
 } from "@/config/site-nav";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 
 /**
  * Global footer (portal shell). Two jobs at once: it is the site's second
@@ -43,7 +43,9 @@ function Column({
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  // Per-host wordmark: the domain is the brand (src/lib/brand.ts).
+  const brand = await brandName();
   const year = new Date().getFullYear();
   const whatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP;
   const waDigits = whatsapp?.replace(/\D/g, "");
@@ -52,7 +54,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer__inner">
         <div className="site-footer__about">
-          <div className="site-footer__brand">{BRAND_NAME}</div>
+          <div className="site-footer__brand">{brand}</div>
           <p className="site-footer__tagline">
             El portal inmobiliario de Paraguay. Casas, departamentos, terrenos y
             proyectos nuevos en venta y alquiler — con precios de referencia por
@@ -92,7 +94,7 @@ export function SiteFooter() {
 
       <div className="site-footer__bottom">
         <span>
-          © {year} {BRAND_NAME} — Encontrá tu propiedad en Paraguay.
+          © {year} {brand} — Encontrá tu propiedad en Paraguay.
         </span>
         <span className="site-footer__legal">
           {FOOTER_COMPANY.map((l) => (
@@ -108,7 +110,7 @@ export function SiteFooter() {
         publicadas son cálculos orientativos elaborados a partir de los avisos
         del portal y de las condiciones vigentes de los programas de
         financiamiento. No constituyen una tasación oficial, una oferta de
-        crédito ni asesoramiento financiero. {BRAND_NAME} no participa de las
+        crédito ni asesoramiento financiero. {brand} no participa de las
         negociaciones entre las partes ni verifica de forma independiente la
         titularidad de cada inmueble publicado.
       </div>

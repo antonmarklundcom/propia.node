@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { BRAND_NAME, BRAND_KICKER } from "@/lib/brand";
+import { BRAND_KICKER } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { HEADER_NAV } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
 
@@ -16,7 +17,10 @@ import { MobileMenu } from "@/components/MobileMenu";
  * guests to /login with next=/publicar, so the button lands everyone in the
  * right place.
  */
-export function SiteHeader() {
+export async function SiteHeader() {
+  // The wordmark IS the domain, so it has to follow the host rather than a
+  // build-time constant — see src/lib/brand.ts.
+  const brand = await brandName();
   return (
     <header className="site-header">
       <div className="site-header__inner">
@@ -38,7 +42,7 @@ export function SiteHeader() {
             <path d="M10 20.4v-5.6h4v5.6" />
           </svg>
           <span>
-            <span className="site-header__brand-name">{BRAND_NAME}</span>
+            <span className="site-header__brand-name">{brand}</span>
             <span className="site-header__brand-sub">{BRAND_KICKER}</span>
           </span>
         </Link>

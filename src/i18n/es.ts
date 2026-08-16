@@ -3,7 +3,6 @@
  * All local-facing copy is Paraguayan voseo. NEVER generate
  * neutral-Spanish variants of these.
  */
-import { BRAND_NAME } from "@/lib/brand";
 
 export const es = {
   searchPlaceholder: "¿Dónde querés vivir?",
@@ -30,14 +29,14 @@ export const es = {
  */
 export const esSiteNotice = {
   label: "Sitio en construcción",
-  body: `Estamos preparando el lanzamiento de ${BRAND_NAME}. Las propiedades que ves son ejemplos de prueba: no son inmuebles reales en venta ni ofertas comerciales, y los datos y las fotos pueden no corresponder a ninguna propiedad existente.`,
+  body: (brand: string) => `Estamos preparando el lanzamiento de ${brand}. Las propiedades que ves son ejemplos de prueba: no son inmuebles reales en venta ni ofertas comerciales, y los datos y las fotos pueden no corresponder a ninguna propiedad existente.`,
 } as const;
 
 /** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
 export const esTasacion = {
   title: "¿Cuánto vale tu propiedad?",
-  subtitle:
-    `Te damos un rango estimado en base a los precios publicados en ${BRAND_NAME}. Gratis, sin registrarte y sin que te llame nadie salvo que vos lo pidas.`,
+  subtitle: (brand: string) =>
+    `Te damos un rango estimado en base a los precios publicados en ${brand}. Gratis, sin registrarte y sin que te llame nadie salvo que vos lo pidas.`,
   cityLabel: "Ciudad",
   typeLabel: "Tipo de propiedad",
   operationLabel: "Querés",
@@ -79,13 +78,13 @@ export const esTasacion = {
 /** Price pages (/precios) — market data in plain voseo, caveats included. */
 export const esPrecios = {
   indexTitle: "Precios de propiedades en Paraguay",
-  indexSubtitle:
-    `Precio mediano por ciudad, calculado con los avisos publicados en ${BRAND_NAME}. Elegí una ciudad para ver el detalle por tipo de propiedad.`,
+  indexSubtitle: (brand: string) =>
+    `Precio mediano por ciudad, calculado con los avisos publicados en ${brand}. Elegí una ciudad para ver el detalle por tipo de propiedad.`,
   indexEmpty:
     "Todavía no tenemos suficientes avisos publicados para calcular precios confiables.",
   cityTitle: (city: string) => `Precios de propiedades en ${city}`,
-  citySubtitle: (city: string, period: string) =>
-    `Precio mediano de venta y alquiler en ${city}, según los avisos publicados en ${BRAND_NAME}${period ? ` (${period})` : ""}.`,
+  citySubtitle: (brand: string, city: string, period: string) =>
+    `Precio mediano de venta y alquiler en ${city}, según los avisos publicados en ${brand}${period ? ` (${period})` : ""}.`,
   tableType: "Tipo",
   tableOperation: "Operación",
   tableMedian: "Precio mediano",
@@ -94,8 +93,8 @@ export const esPrecios = {
   seeListings: "Ver avisos",
   fewSamples: "Pocos avisos — tomalo como referencia, no como precio de mercado.",
   methodTitle: "Cómo calculamos esto",
-  methodBody:
-    `Usamos la mediana (no el promedio) de los precios publicados en ${BRAND_NAME}, por ciudad y tipo de propiedad. La mediana aguanta mejor los avisos con precios extremos. Un grupo con menos de 8 avisos se muestra con aviso: es una referencia, no un precio de mercado. Los precios publicados no son precios de cierre.`,
+  methodBody: (brand: string) =>
+    `Usamos la mediana (no el promedio) de los precios publicados en ${brand}, por ciudad y tipo de propiedad. La mediana aguanta mejor los avisos con precios extremos. Un grupo con menos de 8 avisos se muestra con aviso: es una referencia, no un precio de mercado. Los precios publicados no son precios de cierre.`,
   emptyCity:
     "Todavía no tenemos avisos suficientes en esta ciudad para calcular un precio.",
   backToPrices: "← Todos los precios",
@@ -190,7 +189,7 @@ export const esPanel = {
   profileEmailTaken: "Ese email ya está en uso por otra cuenta.",
   profileForbidden: "No tenés permiso para cambiar esos datos.",
   profileInvalid: "Revisá los datos ingresados.",
-  profileVerifiedNote: `Perfil verificado por ${BRAND_NAME}.`,
+  profileVerifiedNote: (brand: string) => `Perfil verificado por ${brand}.`,
   profilePendingNote: "Verificación pendiente de aprobación.",
 
   // Equipo de la inmobiliaria (/agencia/equipo) — solo para el responsable
@@ -543,13 +542,13 @@ export const listingStatusLabel: Record<string, string> = {
  * the seller knows exactly which listing the message is about (and the
  * portal gets attribution in the chat itself).
  */
-export function inquiryPrefillFor(title: string, url: string): string {
-  return `Hola, vi esta propiedad en ${BRAND_NAME} y me interesa: ${title}\n${url}`;
+export function inquiryPrefillFor(brand: string, title: string, url: string): string {
+  return `Hola, vi esta propiedad en ${brand} y me interesa: ${title}\n${url}`;
 }
 
 /** Public agent profile page (/agente/[slug]) — mirrors the agency profile. */
 export const esAgentProfile = {
-  notFoundTitle: `Agente no encontrado — ${BRAND_NAME}`,
+  notFoundTitle: "Agente no encontrado",
   kind: "Agente",
   verified: "Verificado",
   listingsTitle: "Propiedades publicadas",
@@ -562,15 +561,15 @@ export const esAgentProfile = {
   whatsappLink: "💬 WhatsApp",
   agencyPrefix: "Trabaja en",
   metaTitle: (agentName: string) =>
-    `${agentName} — Propiedades en venta y alquiler | ${BRAND_NAME}`,
-  metaDescription: (agentName: string, n: number) =>
-    `${n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`} por ${agentName} en ${BRAND_NAME}.`,
+    `${agentName} — Propiedades en venta y alquiler`,
+  metaDescription: (brand: string, agentName: string, n: number) =>
+    `${n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`} por ${agentName} en ${brand}.`,
 } as const;
 
 /**
  * Agent-profile WhatsApp prefill: names the agent and links back to their
  * profile, mirroring inquiryPrefillFor above for listings.
  */
-export function agentInquiryPrefillFor(agentName: string, url: string): string {
-  return `Hola, vi tu perfil en ${BRAND_NAME} y quiero contactarte: ${agentName}\n${url}`;
+export function agentInquiryPrefillFor(brand: string, agentName: string, url: string): string {
+  return `Hola, vi tu perfil en ${brand} y quiero contactarte: ${agentName}\n${url}`;
 }

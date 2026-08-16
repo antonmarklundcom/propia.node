@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { esPrecios } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { citiesWithPrices } from "@/lib/precios-queries";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
@@ -11,14 +11,16 @@ import { JsonLd } from "@/components/JsonLd";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${esPrecios.indexTitle} — ${BRAND_NAME}`,
-    description: esPrecios.indexSubtitle,
+    title: `${esPrecios.indexTitle}`,
+    description: esPrecios.indexSubtitle(brand),
     alternates: { canonical: `${await siteOrigin()}/precios` },
   };
 }
 
 export default async function PreciosIndexPage() {
+  const brand = await brandName();
   const [cities, origin] = await Promise.all([citiesWithPrices(), siteOrigin()]);
 
   return (
@@ -33,7 +35,7 @@ export default async function PreciosIndexPage() {
       />
 
       <h1 style={{ fontSize: 24 }}>{esPrecios.indexTitle}</h1>
-      <p style={{ color: "#55655F" }}>{esPrecios.indexSubtitle}</p>
+      <p style={{ color: "#55655F" }}>{esPrecios.indexSubtitle(brand)}</p>
 
       {cities.length === 0 ? (
         <p className="panel-empty">{esPrecios.indexEmpty}</p>
@@ -56,7 +58,7 @@ export default async function PreciosIndexPage() {
         <h2 style={{ fontSize: 16, margin: "0 0 .5rem" }}>
           {esPrecios.methodTitle}
         </h2>
-        <p style={{ margin: 0 }}>{esPrecios.methodBody}</p>
+        <p style={{ margin: 0 }}>{esPrecios.methodBody(brand)}</p>
       </section>
     </main>
   );

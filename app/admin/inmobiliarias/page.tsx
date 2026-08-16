@@ -7,7 +7,6 @@ import {
   listAgents,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../tabs";
 import {
   toggleAgencyVerifiedAction,
@@ -16,7 +15,7 @@ import {
 import { createAgencyAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Inmobiliarias y agentes — ${BRAND_NAME}`,
+  title: `Inmobiliarias y agentes`,
   robots: { index: false, follow: false },
 };
 

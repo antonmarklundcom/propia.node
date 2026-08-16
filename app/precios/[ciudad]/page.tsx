@@ -3,7 +3,7 @@ import Link from "next/link";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { esPrecios } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { formatUsd } from "@/lib/format";
 import { getCityPrices, MIN_RELIABLE_SAMPLE } from "@/lib/precios-queries";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -27,9 +27,10 @@ type Params = { params: Promise<{ ciudad: string }> };
 const load = cache(getCityPrices);
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const brand = await brandName();
   const { ciudad } = await params;
   const prices = await load(ciudad);
-  if (!prices) return { title: `No encontrado — ${BRAND_NAME}` };
+  if (!prices) return { title: `No encontrado` };
 
   /**
    * Indexable only once at least one group is defensible. A price page with
@@ -40,8 +41,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const indexable = prices.reliableSample > 0;
 
   return {
-    title: `${esPrecios.cityTitle(prices.city.name)} — ${BRAND_NAME}`,
-    description: esPrecios.citySubtitle(prices.city.name, prices.period),
+    title: `${esPrecios.cityTitle(prices.city.name)}`,
+    description: esPrecios.citySubtitle(brand, prices.city.name, prices.period),
     alternates: { canonical: `${await siteOrigin()}/precios/${prices.city.slug}` },
     robots: indexable
       ? { index: true, follow: true }
@@ -50,6 +51,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function CityPricesPage({ params }: Params) {
+  const brand = await brandName();
   const { ciudad } = await params;
   const [prices, origin] = await Promise.all([load(ciudad), siteOrigin()]);
   if (!prices) notFound();
@@ -76,7 +78,7 @@ export default async function CityPricesPage({ params }: Params) {
 
       <h1 style={{ fontSize: 24 }}>{esPrecios.cityTitle(city.name)}</h1>
       <p style={{ color: "#55655F" }}>
-        {esPrecios.citySubtitle(city.name, period)}
+        {esPrecios.citySubtitle(brand, city.name, period)}
       </p>
 
       {cells.length === 0 ? (
@@ -154,7 +156,7 @@ export default async function CityPricesPage({ params }: Params) {
         <h2 style={{ fontSize: 16, margin: "0 0 .5rem" }}>
           {esPrecios.methodTitle}
         </h2>
-        <p style={{ margin: 0 }}>{esPrecios.methodBody}</p>
+        <p style={{ margin: 0 }}>{esPrecios.methodBody(brand)}</p>
       </section>
     </main>
   );

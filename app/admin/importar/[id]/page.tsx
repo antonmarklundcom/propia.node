@@ -10,12 +10,11 @@ import {
   listImportRows,
 } from "@/lib/import/jobs";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../../tabs";
 import { rollbackImportAction } from "../actions";
 
 export const metadata: Metadata = {
-  title: `Lote importado — ${BRAND_NAME}`,
+  title: `Lote importado`,
   robots: { index: false, follow: false },
 };
 

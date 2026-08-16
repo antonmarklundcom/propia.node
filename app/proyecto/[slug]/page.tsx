@@ -5,7 +5,7 @@ import { getProjectBySlug } from "@/lib/queries";
 import { listingUrl, categoryUrl } from "@/lib/urls";
 import { formatUsd, formatPrice } from "@/lib/format";
 import { inquiryPrefillFor } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { ContactForm } from "@/components/ContactForm";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
@@ -44,12 +44,13 @@ function deliveryLabel(d: string | Date | null): string | null {
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const brand = await brandName();
   const { slug } = await params;
   const detail = await getProjectBySlug(slug);
-  if (!detail) return { title: `Proyecto no encontrado — ${BRAND_NAME}` };
+  if (!detail) return { title: `Proyecto no encontrado` };
   const { project, developer } = detail;
   return {
-    title: `${project.name}${developer ? ` — ${developer.name}` : ""} | ${BRAND_NAME}`,
+    title: `${project.name}${developer ? ` — ${developer.name}` : ""} | ${brand}`,
     description:
       project.descriptionEs?.slice(0, 160) ??
       `${project.name}: proyecto inmobiliario en Paraguay.`,
@@ -60,6 +61,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function ProjectPage({ params }: Params) {
+  const brand = await brandName();
   const { slug } = await params;
   const detail = await getProjectBySlug(slug);
   if (!detail) notFound();
@@ -68,7 +70,7 @@ export default async function ProjectPage({ params }: Params) {
   const minPrice = units.length > 0 ? Number(units[0].priceUsd) : null;
   const delivery = deliveryLabel(project.deliveryDate);
   const canonical = `${await siteOrigin()}/proyecto/${project.slug}`;
-  const waMessage = inquiryPrefillFor(project.name, canonical);
+  const waMessage = inquiryPrefillFor(brand, project.name, canonical);
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
@@ -237,7 +239,7 @@ export default async function ProjectPage({ params }: Params) {
             )}
             <div>
               <div className="seller-card__name">
-                {developer?.name ?? `Publicado en ${BRAND_NAME}`}
+                {developer?.name ?? `Publicado en ${brand}`}
               </div>
               <div className="seller-card__kind">
                 {developer ? "Desarrolladora" : "propia.com.py"}
