@@ -100,30 +100,71 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       (an integration to pick and build) or invoice/transfer with an admin
       toggle? The toggle is a small build on the existing `featured_until`
       column; the integration is not. Blocks the rest of M7.
-- [ ] **D6 — Second production domain: `inmobiliaria.com.py`.** (session:
-      2026-08-16). Decided so far:
-      - Same app, same database as `realestateinparaguay.com`. Founder lists
-        his own agency's inventory there and, until his EAS/SERPLAID license
-        issues (~Oct 2026), also takes listings from other realtors/agencies
-        case-by-case.
-      - Routing groundwork done (uncommitted, local only):
+- [ ] **D6 — Second production domain: `inmobiliaria.com.py`, and
+      `realestateinparaguay.com`'s role flips.** (session: 2026-08-16).
+      This is a bigger architecture decision than it first looked —
+      capturing it in full so it isn't re-litigated:
+      - **One repo, one deployment, one database. Never fork the codebase.**
+        Founder floated copying the repo into a second, independently-edited
+        site; decided against it once we worked through the alternative
+        below — it would mean hand-syncing every future fix across two
+        copies and hand-syncing listing data across two databases forever.
+      - **New primary/source-of-truth: `inmobiliaria.com.py` (Spanish).**
+        Nearly all publishing happens here going forward — founder's own
+        agency inventory plus other realtors' listings he takes on
+        case-by-case until his EAS/SERPLAID license issues (~Oct 2026).
+        This is also the `.com.py` domain `propia.com.py`'s `CANONICAL_HOST`
+        placeholder was always meant to become — see CLAUDE.md's domain
+        table, which needs updating once this ships (the "never wire it
+        into this app" line no longer holds; the founder reversed that
+        call this session).
+      - **`realestateinparaguay.com` reverts to its originally-designed
+        role: the English feeder, auto-translated from the Spanish rows.**
+        This is literally what `src/config/verticals.ts`'s comment on that
+        host already described as the eventual reversion once a `.com.py`
+        domain existed — `inmobiliaria.com.py` is that domain.
+        `listings.description_en` already exists for exactly this
+        ("filled lazily (Claude API) for realestateinparaguay.com" —
+        `src/db/schema.ts:76`); no batch job writes it yet.
+      - **Translation scope (decided):** everything a visitor reads —
+        title, description, property-type/amenity labels, not just the
+        free-text description. Barrio/location names are assumed
+        identical in Spanish and English and are NOT translated (confirm
+        this holds for every barrio in the DB before relying on it — some
+        neighborhood names may not be). Needs new `*_en` columns beyond
+        `description_en` (e.g. title) plus a batch job (Claude API,
+        `.env.example` already reserves this) that runs on publish/edit,
+        not per-request.
+      - **Flip timing (decided): wait.** `realestateinparaguay.com` is
+        live and Spanish-indexed today — do not touch its `locale`/
+        `filters` in `verticals.ts` yet. Sequence: (1) launch
+        `inmobiliaria.com.py` in Spanish, same as realestateinparaguay.com
+        is today: (2) build + verify the translation batch job against it;
+        (3) only once translation coverage looks solid, flip
+        `realestateinparaguay.com`'s vertical entry to
+        `locale: "en", filters: { foreign_exposure: true }, copy: "foreign"`
+        per the plan already written in its `verticals.ts` comment.
+      - Routing groundwork already committed:
         `inmobiliaria.com.py` added to `src/config/verticals.ts` as an
         `enabled: true` vertical, `ownsListingDetail: true` (own canonical
         `/propiedad` pages, not a feeder). New `VerticalKey: "inmobiliaria"`.
+        Its `locale`/`copy` there is currently a placeholder copy of
+        realestateinparaguay.com's and will need revisiting once the roles
+        above are actually built.
       - Design/copy: founder wants **fully separate visual identity** for
         inmobiliaria.com.py — not a reskin, closer to a second frontend on
-        the same backend/admin. Not started.
-      - **What should be finished:** a per-listing publish-target toggle —
-        two boolean columns on `listings` (default both `true`, i.e. publish
-        everywhere), a checkbox pair in the panel/admin listing form, and the
-        public queries (home, search, sitemap, detail page) filtered by
-        host. This is a DB migration against the live prod database, so it
-        needs a deliberate go-ahead before it's built, not folded in
-        silently with the design work.
+        the same backend/admin/DB. Not started.
+      - **Also still needed, deferred:** a per-listing publish-target
+        toggle — two boolean columns on `listings` (default both `true`,
+        i.e. publish everywhere), a checkbox pair in the panel/admin
+        listing form, and the public queries (home, search, sitemap,
+        detail page) filtered by host. This is a DB migration against the
+        live prod database, so it needs a deliberate go-ahead before it's
+        built, not folded in silently with the design/translation work.
       - Founder wants to talk through the build more (and possibly use a
-        different model for the design-heavy part) before continuing. Paused
-        here — do not resume the schema change or the visual build without
-        checking in first.
+        different model for the design-heavy part) before continuing.
+        Paused here — do not resume the schema change, translation job, or
+        visual build without checking in first.
 
 ## [YOU] — production items code cannot reach
 
