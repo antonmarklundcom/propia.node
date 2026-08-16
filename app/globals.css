@@ -6447,3 +6447,118 @@ summary.panel-btn::-webkit-details-marker {
   width: 34px;
   text-align: center;
 }
+
+/* ---- Admin: content health (/admin/estado) ------------------------------ */
+/* Same flat, square panel language as .panel-card — this is a staff screen,
+   not a marketing surface. The only colour is the status, because the status
+   is the entire reason the screen exists. */
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.health-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  /* The left edge carries the status, so a column of cards can be triaged
+     without reading a single word. */
+  border-left: 3px solid var(--color-border);
+  padding: 16px;
+}
+
+.health-card--warn {
+  border-left-color: #C19A4D;
+}
+
+.health-card--blocked {
+  border-left-color: #9A5B4D;
+}
+
+.health-card--ok {
+  border-left-color: #4D8A63;
+}
+
+.health-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.health-card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.health-pill {
+  flex: none;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.health-pill--ok {
+  background: rgba(77, 138, 99, 0.14);
+  color: #2F5B41;
+}
+
+.health-pill--warn {
+  background: rgba(193, 154, 77, 0.18);
+  color: #7A5D22;
+}
+
+.health-pill--blocked {
+  background: rgba(154, 91, 77, 0.16);
+  color: #6E3A2E;
+}
+
+.health-card__value {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--color-ink);
+}
+
+.health-card__note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-ink-secondary);
+}
+
+.health-card__action {
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.health-card__action-label {
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.health-card__cmd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  padding: 7px 9px;
+  /* Commands are long and must stay copyable, so they wrap rather than
+     overflowing the card or forcing a horizontal scrollbar on the grid. */
+  overflow-wrap: anywhere;
+}
+
+.health-card__affects {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  color: var(--color-ink-muted);
+  line-height: 1.5;
+}

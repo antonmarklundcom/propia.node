@@ -11,7 +11,8 @@ export function adminTabs(
     | "listings"
     | "leads"
     | "posts"
-    | "import",
+    | "import"
+    | "health",
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
   draftPostCount?: number,
@@ -58,6 +59,11 @@ export function adminTabs(
       href: "/admin/usuarios",
       label: esPanel.adminUsersTitle,
       active: active === "users",
+    },
+    {
+      href: "/admin/estado",
+      label: "Estado del contenido",
+      active: active === "health",
     },
   ];
 }
