@@ -109,6 +109,19 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
         site; decided against it once we worked through the alternative
         below — it would mean hand-syncing every future fix across two
         copies and hand-syncing listing data across two databases forever.
+      - **Admin/auth/import stay unforked too (decided, session:
+        2026-08-16, second follow-up).** Founder floated a second full
+        admin for realestateinparaguay.com, then a read-only site instead;
+        landed on the actual default of the one-repo approach: `/admin` and
+        `/agencia` are ordinary pages in this one app, so they are already
+        reachable — same login, same data, same edit rights — from either
+        domain's `/admin` or `/agencia` with **no extra build**. An agent
+        can add/edit a property via `realestateinparaguay.com/admin` or
+        `inmobiliaria.com.py/admin` and it's the same row either way. Only
+        the public-facing pages (home, search, listing cards, nav, colors,
+        copy) branch by resolved vertical for the different look/buyer
+        positioning — the admin surface does not need or get a second
+        identity.
       - **New primary/source-of-truth: `inmobiliaria.com.py` (Spanish).**
         Nearly all publishing happens here going forward — founder's own
         agency inventory plus other realtors' listings he takes on
