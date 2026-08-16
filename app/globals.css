@@ -72,6 +72,19 @@ html {
   scroll-behavior: smooth;
 }
 
+/* No global link rule existed, so any anchor a component didn't style itself
+   fell back to the browser's blue-and-underlined default — visible on
+   /login's "Registrate" link and anywhere else a page relied on defaults.
+   --color-link is the accent darkened to 4.6:1, which passes AA on cream. */
+a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-link-hover);
+}
+
 ::selection {
   background: var(--color-accent);
   color: var(--color-primary);
@@ -624,7 +637,7 @@ body {
   padding: 16px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
 }
 
@@ -650,7 +663,7 @@ body {
   appearance: none;
   padding: 10px 32px 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 0;
   background: #fff
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" stroke="%235B6470" stroke-width="1.5" fill="none" fill-rule="evenodd"/></svg>')
     no-repeat right 12px center;
@@ -668,7 +681,7 @@ body {
 .search-bar__submit {
   padding: 10px 24px;
   border: none;
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--color-primary);
   color: #fff;
   font-size: 15px;
@@ -970,7 +983,7 @@ body {
   flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
   text-decoration: none;
   color: var(--color-ink);
@@ -986,7 +999,7 @@ body {
 .project-card__media {
   position: relative;
   aspect-ratio: 4 / 3;
-  background-color: #DCE1E8;
+  background-color: var(--color-border);
   overflow: hidden;
 }
 
@@ -994,7 +1007,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #EEF0F4 0%, #DCE1E8 100%);
+  background: linear-gradient(135deg, var(--color-accent-soft) 0%, var(--color-border) 100%);
 }
 
 .project-card__placeholder {
@@ -1007,7 +1020,7 @@ body {
   top: 10px;
   left: 10px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 700;
   color: #fff;
@@ -1019,10 +1032,10 @@ body {
   top: 10px;
   right: 10px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 700;
-  color: #3a2a08;
+  color: #12100a;
   background: var(--color-accent);
 }
 
@@ -1083,14 +1096,14 @@ body {
   gap: 6px;
   padding: 18px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
   text-align: center;
 }
 
 .home-devs__logo {
   width: 48px;
   height: 48px;
-  border-radius: 10px;
+  border-radius: 0;
   object-fit: contain;
 }
 
@@ -1164,7 +1177,7 @@ body {
   padding: 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   text-decoration: none;
   color: var(--color-ink);
   transition: transform 0.16s ease, box-shadow 0.16s ease;
@@ -1178,7 +1191,7 @@ body {
 .recent-card__badge {
   align-self: flex-start;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 11.5px;
   font-weight: 700;
   color: #fff;
@@ -1187,7 +1200,7 @@ body {
 
 .recent-card__badge--alquiler {
   background: var(--color-accent);
-  color: #3a2a08;
+  color: #12100a;
 }
 
 .recent-card__price {
@@ -1239,7 +1252,7 @@ body {
 
 .home-cities__chip {
   padding: 7px 14px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--color-border);
   background: var(--color-background);
   color: var(--color-ink);
@@ -1351,7 +1364,7 @@ body {
   padding: 22px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   text-decoration: none;
   color: inherit;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
@@ -1389,7 +1402,7 @@ body {
 
 .home-cta {
   margin-top: 48px;
-  background: linear-gradient(160deg, #06212C 0%, #0D3B4D 100%);
+  background: linear-gradient(160deg, var(--color-primary-dark) 0%, var(--color-ink) 100%);
   color: #fff;
 }
 
@@ -1417,9 +1430,9 @@ body {
 .home-cta__button {
   display: inline-block;
   padding: 12px 28px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-accent);
-  color: #3a2a08;
+  color: #12100a;
   font-size: 16px;
   font-weight: 800;
   text-decoration: none;
@@ -1471,7 +1484,7 @@ body {
 .newsletter__input {
   padding: 11px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 999px 0 0 999px;
+  border-radius: 0;
   font-size: 14px;
   width: 240px;
   max-width: 60vw;
@@ -1485,7 +1498,7 @@ body {
 .newsletter__submit {
   padding: 11px 20px;
   border: none;
-  border-radius: 0 999px 999px 0;
+  border-radius: 0;
   background: var(--color-primary);
   color: #fff;
   font-size: 14px;
@@ -1546,7 +1559,7 @@ body {
 .home-faq__item {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 0 18px;
   margin-bottom: 10px;
 }
@@ -1592,7 +1605,7 @@ body {
   padding: 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .filter-bar__field {
@@ -1613,7 +1626,7 @@ body {
 .filter-bar__select {
   padding: 8px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
   font-weight: 600;
   color: var(--color-ink);
@@ -1623,7 +1636,7 @@ body {
 .filter-bar__submit {
   padding: 9px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--color-primary);
   color: #fff;
   font-size: 14px;
@@ -1656,7 +1669,7 @@ body {
   text-align: center;
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
   color: var(--color-ink-secondary);
 }
 
@@ -1674,7 +1687,7 @@ body {
   padding: 10px 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--color-ink-secondary);
   font-size: 14px;
 }
@@ -1900,9 +1913,9 @@ body {
 .detail-gallery__main {
   position: relative;
   aspect-ratio: 4 / 3;
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
-  background-color: #E3E6EC;
+  background-color: var(--color-border);
 }
 
 .detail-gallery__thumbs {
@@ -1912,9 +1925,9 @@ body {
 
 .detail-gallery__thumb {
   position: relative;
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
-  background-color: #E3E6EC;
+  background-color: var(--color-border);
 }
 
 .detail-gallery__more {
@@ -1923,7 +1936,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: inherit;
+  border-radius: 0;
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
   font-weight: 700;
@@ -1940,8 +1953,8 @@ body {
   justify-content: center;
   gap: 8px;
   aspect-ratio: 21 / 9;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #EEF0F4 0%, #DCE1E8 100%);
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--color-accent-soft) 0%, var(--color-border) 100%);
 }
 
 .detail-gallery__empty-icon {
@@ -1995,7 +2008,7 @@ body {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   font-size: 14px;
@@ -2045,8 +2058,8 @@ body {
   margin-top: 14px;
   padding: 16px 18px;
   border: 1px solid #eadfc8;
-  border-radius: 12px;
-  background: #fcf7ec;
+  border-radius: 0;
+  background: var(--color-accent-soft);
   max-width: 480px;
 }
 
@@ -2093,7 +2106,7 @@ body {
    left-indented the button once it dropped to its own line. */
 .price-alert {
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-ink);
@@ -2124,7 +2137,7 @@ body {
 .price-alert__input {
   padding: 6px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 13px;
   width: 170px;
   max-width: 100%;
@@ -2133,7 +2146,7 @@ body {
 .price-alert__submit {
   padding: 6px 12px;
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-primary);
   color: #fff;
   font-size: 13px;
@@ -2204,8 +2217,8 @@ body {
   display: inline-block;
   margin-top: 8px;
   padding: 6px 12px;
-  border-radius: 999px;
-  background: #fcf3e4;
+  border-radius: 0;
+  background: var(--color-accent-soft);
   color: var(--color-accent);
   font-weight: 700;
   font-size: 14px;
@@ -2242,7 +2255,7 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #EEF5F6;
+  background: var(--color-accent-soft);
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 800;
@@ -2254,9 +2267,9 @@ body {
 .project-hero {
   position: relative;
   aspect-ratio: 21 / 9;
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
-  background-color: #DCE1E8;
+  background-color: var(--color-border);
   margin-bottom: 20px;
 }
 
@@ -2266,7 +2279,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #EEF0F4 0%, #DCE1E8 100%);
+  background: linear-gradient(135deg, var(--color-accent-soft) 0%, var(--color-border) 100%);
 }
 
 .project-hero__icon {
@@ -2283,7 +2296,7 @@ body {
 .units-table__wrap {
   overflow-x: auto;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .units-table {
@@ -2317,7 +2330,7 @@ body {
 }
 
 .units-table tr:hover td {
-  background: #EEF1F7;
+  background: var(--color-accent-soft);
 }
 
 .units-table__link {
@@ -2337,8 +2350,8 @@ body {
 
 .units-table__state {
   padding: 3px 10px;
-  border-radius: 999px;
-  background: #EEF5F6;
+  border-radius: 0;
+  background: var(--color-accent-soft);
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
@@ -2356,7 +2369,7 @@ body {
 .seller-card__logo {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: 0;
   object-fit: contain;
   background: #fff;
   border: 1px solid var(--color-border);
@@ -2368,7 +2381,7 @@ body {
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--color-primary);
   color: #fff;
   font-size: 16px;
@@ -2419,7 +2432,7 @@ body {
 .agency-profile__logo {
   width: 72px;
   height: 72px;
-  border-radius: 14px;
+  border-radius: 0;
   object-fit: contain;
   background: #fff;
   border: 1px solid var(--color-border);
@@ -2453,7 +2466,7 @@ body {
 }
 
 .agency-profile__avatar {
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .agency-profile__name,
@@ -2563,7 +2576,7 @@ body {
   width: 100%;
   padding: 9px 11px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
   font-family: inherit;
   color: var(--color-ink);
@@ -2592,7 +2605,7 @@ body {
   align-items: center;
   padding: 0 10px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--color-background);
   font-size: 13px;
   font-weight: 700;
@@ -2612,7 +2625,7 @@ body {
 
 .contact-form__chip {
   padding: 6px 11px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--color-border);
   background: var(--color-background);
   color: var(--color-ink);
@@ -2627,7 +2640,7 @@ body {
 }
 
 .contact-form__chip--on {
-  background: #EEF5F6;
+  background: var(--color-accent-soft);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
@@ -2635,7 +2648,7 @@ body {
 .contact-form__submit {
   padding: 0.9rem 1rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--color-ink);
   color: #fff;
   font-size: 16px;
@@ -2713,7 +2726,7 @@ body {
   padding: 28px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 0;
   /* Target of the mobile CTA bar's "Consultar" link — clear the sticky header. */
   scroll-margin-top: 72px;
 }
@@ -2755,7 +2768,7 @@ body {
 
 .listing-morelinks__chip {
   padding: 9px 16px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-ink);
@@ -2793,7 +2806,7 @@ body {
   position: static;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   padding: 16px;
   box-shadow: 0 2px 12px rgba(16, 24, 40, 0.06);
 }
@@ -2893,7 +2906,7 @@ body {
   justify-content: center;
   min-height: 44px;
   padding: 0 16px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
@@ -2948,7 +2961,7 @@ body {
 .listing-map {
   width: 100%;
   height: 280px;
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
 }
@@ -3014,8 +3027,8 @@ body {
 
 .panel-bar__role {
   padding: 3px 10px;
-  border-radius: 999px;
-  background: #EEF5F6;
+  border-radius: 0;
+  background: var(--color-accent-soft);
   color: var(--color-primary);
   font-weight: 700;
 }
@@ -3030,7 +3043,7 @@ body {
 .panel-tab {
   position: relative;
   padding: 10px 14px;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0;
   text-decoration: none;
   font-size: 14px;
   font-weight: 700;
@@ -3039,7 +3052,7 @@ body {
 
 .panel-tab:hover {
   color: var(--color-primary);
-  background: #EEF1F7;
+  background: var(--color-accent-soft);
 }
 
 .panel-tab--active {
@@ -3050,9 +3063,9 @@ body {
 .panel-tab__count {
   margin-left: 6px;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-accent);
-  color: #3a2a08;
+  color: #12100a;
   font-size: 11.5px;
   font-weight: 800;
 }
@@ -3081,7 +3094,7 @@ body {
   text-align: center;
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
   color: var(--color-ink-secondary);
 }
 
@@ -3089,7 +3102,7 @@ body {
 .panel-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 16px;
   margin-bottom: 12px;
 }
@@ -3151,7 +3164,7 @@ body {
 .panel-btn {
   padding: 8px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--color-surface);
   color: var(--color-ink);
   font-size: 14px;
@@ -3207,26 +3220,26 @@ body {
 /* Status pill */
 .panel-status {
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .panel-status--published {
-  background: #EEF5F6;
+  background: var(--color-accent-soft);
   color: var(--color-success);
 }
 .panel-status--pending_review {
-  background: #fcf3e4;
+  background: var(--color-accent-soft);
   color: #a5701c;
 }
 .panel-status--paused {
-  background: #eef1f4;
+  background: var(--color-accent-soft);
   color: var(--color-ink-secondary);
 }
 .panel-status--draft {
-  background: #eef1f4;
+  background: var(--color-accent-soft);
   color: var(--color-ink-secondary);
 }
 .panel-status--sold,
@@ -3242,15 +3255,15 @@ body {
 /* Verified pill (agency/agent management) */
 .panel-verified {
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 700;
-  background: #EEF5F6;
+  background: var(--color-accent-soft);
   color: var(--color-primary);
 }
 
 .panel-verified--off {
-  background: #eef1f4;
+  background: var(--color-accent-soft);
   color: var(--color-ink-secondary);
 }
 
@@ -3258,7 +3271,7 @@ body {
 .panel-table__wrap {
   overflow-x: auto;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--color-surface);
 }
 
@@ -3316,7 +3329,7 @@ summary.panel-btn::-webkit-details-marker {
   min-height: 64px;
   padding: 9px 11px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
   font-family: inherit;
   color: var(--color-ink);
@@ -3333,7 +3346,7 @@ summary.panel-btn::-webkit-details-marker {
 .panel-select {
   padding: 8px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
   font-weight: 600;
   color: var(--color-ink);
@@ -3395,7 +3408,7 @@ summary.panel-btn::-webkit-details-marker {
   gap: 6px;
   padding: 6px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-surface);
   color: var(--color-ink);
   font-size: 13px;
@@ -3419,7 +3432,7 @@ summary.panel-btn::-webkit-details-marker {
   margin: 0 0 16px;
   padding: 10px 12px;
   border: 1px solid var(--color-primary);
-  border-radius: 8px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--color-primary) 8%, #fff);
   color: var(--color-primary);
   font-size: 14px;
@@ -3440,7 +3453,7 @@ summary.panel-btn::-webkit-details-marker {
   max-width: 380px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 0;
   padding: 28px;
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
 }
@@ -3474,7 +3487,7 @@ summary.panel-btn::-webkit-details-marker {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 15px;
   font-family: inherit;
   color: var(--color-ink);
@@ -3492,7 +3505,7 @@ summary.panel-btn::-webkit-details-marker {
   margin-top: 6px;
   padding: 11px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--color-primary);
   color: #fff;
   font-size: 16px;
@@ -3508,7 +3521,7 @@ summary.panel-btn::-webkit-details-marker {
 .auth-error {
   margin: 0 0 14px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 0;
   background: #fbeeed;
   border: 1px solid #e3b7b3;
   color: var(--color-error);
@@ -3553,7 +3566,7 @@ summary.panel-btn::-webkit-details-marker {
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 0;
   font-size: 13px;
   font-weight: 700;
   color: var(--color-ink-secondary);
@@ -3576,8 +3589,8 @@ summary.panel-btn::-webkit-details-marker {
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 999px;
-  background: #EEF5F6;
+  border-radius: 0;
+  background: var(--color-accent-soft);
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 800;
@@ -3591,7 +3604,7 @@ summary.panel-btn::-webkit-details-marker {
 
 .wizard-panel {
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--color-surface);
   padding: 20px;
 }
@@ -3612,7 +3625,7 @@ summary.panel-btn::-webkit-details-marker {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 15px;
   font-family: inherit;
   color: var(--color-ink);
@@ -3645,7 +3658,7 @@ summary.panel-btn::-webkit-details-marker {
 .wizard-chip {
   padding: 9px 16px;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border-radius: 0;
   background: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -3736,7 +3749,7 @@ summary.panel-btn::-webkit-details-marker {
   text-align: center;
   padding: 32px 20px;
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 0;
   background: var(--color-surface);
 }
 
@@ -3747,8 +3760,8 @@ summary.panel-btn::-webkit-details-marker {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: #EEF5F6;
+  border-radius: 0;
+  background: var(--color-accent-soft);
   color: var(--color-primary);
   font-size: 28px;
   font-weight: 800;
@@ -3798,8 +3811,8 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .panel-photos__item {
-  border: 1px solid var(--color-hairline, #DCE3E1);
-  border-radius: 10px;
+  border: 1px solid var(--color-hairline, var(--color-border));
+  border-radius: 0;
   overflow: hidden;
   background: #fff;
   display: flex;
@@ -3811,7 +3824,7 @@ summary.panel-btn::-webkit-details-marker {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   display: block;
-  background: #EFF1EE;
+  background: var(--color-accent-soft);
 }
 
 .panel-photos__meta {
@@ -3825,17 +3838,17 @@ summary.panel-btn::-webkit-details-marker {
 .panel-photos__badge {
   font-size: 11.5px;
   font-weight: 700;
-  color: #0D3B4D;
-  background: #EEF5F6;
-  border-radius: 999px;
+  color: var(--color-ink);
+  background: var(--color-accent-soft);
+  border-radius: 0;
   padding: 2px 9px;
 }
 
 .panel-photos__note {
   font-size: 11.5px;
-  color: #8A6D3B;
-  background: #FBF3E2;
-  border-radius: 999px;
+  color: var(--color-link-hover);
+  background: var(--color-accent-soft);
+  border-radius: 0;
   padding: 2px 9px;
   /* Long note, small card: clip rather than push the buttons out of view. */
   overflow: hidden;
@@ -3869,9 +3882,9 @@ summary.panel-btn::-webkit-details-marker {
 
 .wizard-photos__item {
   position: relative;
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
-  background: #EFF1EE;
+  background: var(--color-accent-soft);
 }
 
 .wizard-photos__thumb {
@@ -3886,7 +3899,7 @@ summary.panel-btn::-webkit-details-marker {
   top: 6px;
   right: 6px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 3px 10px;
   font-size: 12px;
   font-weight: 600;
@@ -3905,8 +3918,8 @@ summary.panel-btn::-webkit-details-marker {
 /* ------------------------------------------------------------------ */
 
 .auth-choice {
-  border: 1px solid var(--color-hairline, #DCE3E1);
-  border-radius: 10px;
+  border: 1px solid var(--color-hairline, var(--color-border));
+  border-radius: 0;
   padding: 10px 12px 12px;
   margin: 0 0 14px;
 }
@@ -3922,7 +3935,7 @@ summary.panel-btn::-webkit-details-marker {
 
 .auth-field__hint,
 .auth-note {
-  color: var(--color-ink-secondary, #55655F);
+  color: var(--color-ink-secondary, var(--color-ink-secondary));
   font-size: 12.5px;
   margin: 6px 0 0;
 }
@@ -3950,15 +3963,15 @@ summary.panel-btn::-webkit-details-marker {
 .panel-profile__badge {
   font-size: 12px;
   font-weight: 700;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 2px 10px;
-  background: #EEF5F6;
-  color: #0D3B4D;
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
 }
 
 .panel-profile__badge--pending {
-  background: #FBF3E2;
-  color: #8A6D3B;
+  background: var(--color-accent-soft);
+  color: var(--color-link-hover);
 }
 
 /* ------------------------------------------------------------------ */
@@ -3967,12 +3980,12 @@ summary.panel-btn::-webkit-details-marker {
 
 .map-view {
   position: relative;
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
-  border: 1px solid var(--color-hairline, #DCE3E1);
+  border: 1px solid var(--color-hairline, var(--color-border));
   /* Tall enough to be usable on a phone without hiding the toggle. */
   height: min(70vh, 620px);
-  background: #EFF1EE;
+  background: var(--color-accent-soft);
 }
 
 .map-view--loading {
@@ -3999,11 +4012,11 @@ summary.panel-btn::-webkit-details-marker {
   bottom: 10px;
   z-index: 2;
   background: rgba(255, 255, 255, 0.94);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 6px 12px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #12201F;
+  color: var(--color-ink);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
   max-width: calc(100% - 90px);
 }
@@ -4012,12 +4025,12 @@ summary.panel-btn::-webkit-details-marker {
 .map-pin {
   display: inline-block;
   background: #fff;
-  color: #0D3B4D;
+  color: var(--color-ink);
   font-size: 12.5px;
   font-weight: 800;
   padding: 4px 9px;
-  border-radius: 999px;
-  border: 1.5px solid #0D3B4D;
+  border-radius: 0;
+  border: 1.5px solid var(--color-ink);
   text-decoration: none;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
@@ -4025,7 +4038,7 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .map-pin:hover {
-  background: #0D3B4D;
+  background: var(--color-ink);
   color: #fff;
 }
 
@@ -4040,8 +4053,8 @@ summary.panel-btn::-webkit-details-marker {
   min-width: 34px;
   height: 34px;
   padding: 0 8px;
-  border-radius: 999px;
-  background: #0D3B4D;
+  border-radius: 0;
+  background: var(--color-ink);
   color: #fff;
   font-size: 13px;
   font-weight: 800;
@@ -4059,24 +4072,24 @@ summary.panel-btn::-webkit-details-marker {
   display: inline-flex;
   gap: 4px;
   padding: 3px;
-  border-radius: 999px;
-  background: #EFF1EE;
-  border: 1px solid var(--color-hairline, #DCE3E1);
+  border-radius: 0;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-hairline, var(--color-border));
   margin: 0 0 14px;
 }
 
 .view-switch__option {
   padding: 6px 16px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 13.5px;
   font-weight: 700;
-  color: #55655F;
+  color: var(--color-ink-secondary);
   text-decoration: none;
 }
 
 .view-switch__option--active {
   background: #fff;
-  color: #0D3B4D;
+  color: var(--color-ink);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
@@ -4084,7 +4097,7 @@ summary.panel-btn::-webkit-details-marker {
   .map-view {
     /* Full-screen-ish map on mobile: the grid is a tap away via the switch. */
     height: calc(100vh - 210px);
-    border-radius: 10px;
+    border-radius: 0;
   }
 }
 
@@ -4095,11 +4108,11 @@ summary.panel-btn::-webkit-details-marker {
 .panel-stats-summary {
   margin: 0 0 1rem;
   font-size: 14px;
-  color: #12201F;
+  color: var(--color-ink);
 }
 
 .panel-stats-summary__hint {
-  color: var(--color-ink-secondary, #55655F);
+  color: var(--color-ink-secondary, var(--color-ink-secondary));
   font-size: 12.5px;
 }
 
@@ -4122,14 +4135,14 @@ summary.panel-btn::-webkit-details-marker {
   font-size: 28px;
   font-weight: 800;
   line-height: 1.1;
-  color: #0D3B4D;
+  color: var(--color-ink);
   font-variant-numeric: tabular-nums;
 }
 
 .panel-stats__label {
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--color-ink-secondary, #55655F);
+  color: var(--color-ink-secondary, var(--color-ink-secondary));
 }
 
 /* 30 bars from divs — a trend shape does not justify a chart library. */
@@ -4153,8 +4166,8 @@ summary.panel-btn::-webkit-details-marker {
 .panel-spark__bar {
   display: block;
   width: 100%;
-  border-radius: 2px 2px 0 0;
-  background: #0D3B4D;
+  border-radius: 0;
+  background: var(--color-ink);
   opacity: 0.85;
 }
 
@@ -4177,22 +4190,22 @@ summary.panel-btn::-webkit-details-marker {
   align-items: baseline;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--color-hairline, #DCE3E1);
-  border-radius: 10px;
+  border: 1px solid var(--color-hairline, var(--color-border));
+  border-radius: 0;
   background: #fff;
   text-decoration: none;
-  color: #12201F;
+  color: var(--color-ink);
   font-weight: 700;
 }
 
 .precios-city-link:hover {
-  border-color: #0D3B4D;
+  border-color: var(--color-ink);
 }
 
 .precios-city-link__count {
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--color-ink-secondary, #55655F);
+  color: var(--color-ink-secondary, var(--color-ink-secondary));
 }
 
 .precios-table {
@@ -4202,27 +4215,27 @@ summary.panel-btn::-webkit-details-marker {
 /* A group we would not defend as a market price is dimmed, not hidden: the
    number is still information, it just carries a caveat. */
 .precios-row--thin {
-  color: var(--color-ink-secondary, #55655F);
+  color: var(--color-ink-secondary, var(--color-ink-secondary));
 }
 
 .precios-caveat {
-  color: #8A6D3B;
+  color: var(--color-link-hover);
   cursor: help;
 }
 
 .precios-thin-note {
   margin: 12px 0 0;
   font-size: 12.5px;
-  color: #8A6D3B;
+  color: var(--color-link-hover);
 }
 
 .precios-method {
   margin: 28px 0 0;
   padding: 14px 16px;
-  border-radius: 10px;
-  background: #F3F5F2;
+  border-radius: 0;
+  background: var(--color-accent-soft);
   font-size: 13px;
-  color: var(--color-ink-secondary, #55655F);
+  color: var(--color-ink-secondary, var(--color-ink-secondary));
   line-height: 1.5;
 }
 
@@ -4234,11 +4247,11 @@ summary.panel-btn::-webkit-details-marker {
   flex-wrap: wrap;
   margin: 28px 0 0;
   padding: 14px 16px;
-  border: 1px solid var(--color-hairline, #DCE3E1);
-  border-radius: 12px;
-  background: #F3F5F2;
+  border: 1px solid var(--color-hairline, var(--color-border));
+  border-radius: 0;
+  background: var(--color-accent-soft);
   font-weight: 700;
-  color: #12201F;
+  color: var(--color-ink);
 }
 
 /* ------------------------------------------------------------------ */
@@ -4248,13 +4261,13 @@ summary.panel-btn::-webkit-details-marker {
 .tasacion-card {
   margin-top: 18px;
   padding: 18px;
-  border: 1px solid var(--color-hairline, #DCE3E1);
-  border-radius: 12px;
+  border: 1px solid var(--color-hairline, var(--color-border));
+  border-radius: 0;
   background: #fff;
 }
 
 .tasacion-card--muted {
-  background: #FBF3E2;
+  background: var(--color-accent-soft);
   border-color: #EBD9AE;
   color: #6B5426;
 }
@@ -4274,12 +4287,12 @@ summary.panel-btn::-webkit-details-marker {
 .tasacion-label {
   font-size: 12.5px;
   font-weight: 700;
-  color: #12201F;
+  color: var(--color-ink);
 }
 
 .tasacion-hint {
   font-size: 12px;
-  color: var(--color-ink-secondary, #55655F);
+  color: var(--color-ink-secondary, var(--color-ink-secondary));
 }
 
 .tasacion-submit {
@@ -4289,8 +4302,8 @@ summary.panel-btn::-webkit-details-marker {
 .tasacion-result {
   margin-top: 18px;
   padding: 20px;
-  border-radius: 12px;
-  border: 1.5px solid #0D3B4D;
+  border-radius: 0;
+  border: 1.5px solid var(--color-ink);
   background: #D1E1E6;
 }
 
@@ -4299,14 +4312,14 @@ summary.panel-btn::-webkit-details-marker {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #0D3B4D;
+  color: var(--color-ink);
 }
 
 /* The range is the headline; there is deliberately no single-number variant. */
 .tasacion-result__range {
   font-size: 26px;
   font-weight: 800;
-  color: #0D3B4D;
+  color: var(--color-ink);
   line-height: 1.2;
   margin: 4px 0 12px;
 }
@@ -4321,11 +4334,11 @@ summary.panel-btn::-webkit-details-marker {
 .tasacion-disclaimer {
   margin: 12px 0 0;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 0;
   background: #fff;
-  border: 1px solid var(--color-hairline, #DCE3E1);
+  border: 1px solid var(--color-hairline, var(--color-border));
   font-size: 12.5px;
-  color: var(--color-ink-secondary, #55655F);
+  color: var(--color-ink-secondary, var(--color-ink-secondary));
   line-height: 1.5;
 }
 
@@ -4619,7 +4632,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 22px 20px 20px;
   background: var(--color-background);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .home-how__num {
@@ -4715,7 +4728,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 14px 16px;
   background: var(--color-background);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
   text-decoration: none;
   transition: border-color 0.14s ease, transform 0.14s ease;
 }
@@ -4805,9 +4818,9 @@ summary.panel-btn::-webkit-details-marker {
 
 .home-pro__button {
   padding: 12px 22px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-accent);
-  color: #3a2a08;
+  color: #12100a;
   font-weight: 700;
   text-decoration: none;
 }
@@ -4837,7 +4850,7 @@ summary.panel-btn::-webkit-details-marker {
   flex-direction: column;
   gap: 4px;
   padding: 18px;
-  border-radius: 14px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.16);
   text-decoration: none;
@@ -4860,7 +4873,7 @@ summary.panel-btn::-webkit-details-marker {
 .home-pro__card-text {
   font-size: 13.5px;
   line-height: 1.5;
-  color: #BDD5DB;
+  color: rgba(255,255,255,0.72);
 }
 
 /* ---- Home: CTA + FAQ tweaks ---------------------------------------------- */
@@ -4922,7 +4935,7 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .mk-hero--light .mk-hero__kicker {
-  color: #8A6A22;
+  color: var(--color-link-hover);
 }
 
 .mk-hero__title {
@@ -4955,7 +4968,7 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .mk-hero--dark .mk-hero__subtitle {
-  color: #C6DCE1;
+  color: var(--color-border);
 }
 
 .mk-hero__actions {
@@ -4969,7 +4982,7 @@ summary.panel-btn::-webkit-details-marker {
 .mk-btn {
   display: inline-block;
   padding: 12px 22px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
@@ -4982,7 +4995,7 @@ summary.panel-btn::-webkit-details-marker {
 
 .mk-btn--accent {
   background: var(--color-accent);
-  color: #3a2a08;
+  color: #12100a;
 }
 
 .mk-btn--ghost {
@@ -5068,7 +5081,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 22px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .mk-section--muted .mk-feature {
@@ -5110,7 +5123,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 20px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .mk-section--muted .mk-step {
@@ -5163,7 +5176,7 @@ summary.panel-btn::-webkit-details-marker {
   text-align: center;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .mk-stat__value {
@@ -5199,7 +5212,7 @@ summary.panel-btn::-webkit-details-marker {
 
 .mk-cta__text {
   margin: 10px 0 0;
-  color: #C6DCE1;
+  color: var(--color-border);
   line-height: 1.6;
 }
 
@@ -5252,7 +5265,7 @@ summary.panel-btn::-webkit-details-marker {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-accent);
-  border-radius: 10px;
+  border-radius: 0;
   font-size: 13.5px;
   line-height: 1.65;
   color: var(--color-ink-secondary);
@@ -5278,7 +5291,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 14px 18px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .mk-section--muted .mk-faq__item {
@@ -5337,7 +5350,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 26px 22px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 0;
 }
 
 .mk-plan--featured {
@@ -5350,9 +5363,9 @@ summary.panel-btn::-webkit-details-marker {
   top: -12px;
   left: 22px;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-accent);
-  color: #3a2a08;
+  color: #12100a;
   font-size: 12px;
   font-weight: 700;
 }
@@ -5409,7 +5422,7 @@ summary.panel-btn::-webkit-details-marker {
 .mk-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--color-surface);
 }
 
@@ -5467,7 +5480,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 20px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   text-decoration: none;
   transition: border-color 0.14s ease, transform 0.14s ease;
 }
@@ -5486,7 +5499,7 @@ summary.panel-btn::-webkit-details-marker {
 .mk-agency__logo {
   width: 48px;
   height: 48px;
-  border-radius: 10px;
+  border-radius: 0;
   object-fit: contain;
   background: var(--color-background);
   border: 1px solid var(--color-border);
@@ -5580,7 +5593,7 @@ summary.panel-btn::-webkit-details-marker {
   text-align: center;
   background: var(--color-background);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .mk-dev__logo {
@@ -5588,7 +5601,7 @@ summary.panel-btn::-webkit-details-marker {
   height: 46px;
   margin: 0 auto 8px;
   display: block;
-  border-radius: 10px;
+  border-radius: 0;
   object-fit: contain;
   background: var(--color-surface);
 }
@@ -5618,7 +5631,7 @@ summary.panel-btn::-webkit-details-marker {
   text-align: center;
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   color: var(--color-ink-secondary);
 }
 
@@ -5651,7 +5664,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 20px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .mk-card__title {
@@ -5705,7 +5718,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 22px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .lead-form__row {
@@ -5740,7 +5753,7 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink);
   background: var(--color-background);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 0;
 }
 
 .lead-form__input:focus {
@@ -5758,10 +5771,10 @@ summary.panel-btn::-webkit-details-marker {
   font: inherit;
   font-size: 15px;
   font-weight: 700;
-  color: #3a2a08;
+  color: #12100a;
   background: var(--color-accent);
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   cursor: pointer;
   transition: filter 0.14s ease;
 }
@@ -5844,14 +5857,14 @@ summary.panel-btn::-webkit-details-marker {
   margin: 12px auto 0;
   max-width: 62ch;
   line-height: 1.65;
-  color: #C6DCE1;
+  color: var(--color-border);
 }
 
 .hub-hero__count {
   display: inline-block;
   margin: 16px 0;
   padding: 6px 14px;
-  border-radius: 999px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.25);
   font-size: 13.5px;
@@ -5891,7 +5904,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 14px 16px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0;
   text-decoration: none;
   transition: border-color 0.14s ease, transform 0.14s ease;
 }
@@ -5914,7 +5927,7 @@ summary.panel-btn::-webkit-details-marker {
 .hub-tile__count {
   flex: 0 0 auto;
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-accent-soft);
   font-size: 12.5px;
   font-weight: 700;
@@ -5931,7 +5944,7 @@ summary.panel-btn::-webkit-details-marker {
 
 .mk-chip {
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-background);
   border: 1px solid var(--color-border);
   font-size: 12px;
@@ -5971,7 +5984,7 @@ summary.panel-btn::-webkit-details-marker {
   flex: 0 0 auto;
   width: 84px;
   height: 84px;
-  border-radius: 16px;
+  border-radius: 0;
   object-fit: contain;
   background: var(--color-background);
   border: 1px solid var(--color-border);
@@ -5991,7 +6004,7 @@ summary.panel-btn::-webkit-details-marker {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8A6A22;
+  color: var(--color-link-hover);
 }
 
 .profile-hero__title {
@@ -6041,7 +6054,7 @@ summary.panel-btn::-webkit-details-marker {
   flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
   text-decoration: none;
   transition: border-color 0.14s ease, transform 0.14s ease;
@@ -6106,7 +6119,7 @@ summary.panel-btn::-webkit-details-marker {
   top: 10px;
   left: 10px;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-primary);
   color: #fff;
   font-size: 11.5px;
@@ -6177,7 +6190,7 @@ summary.panel-btn::-webkit-details-marker {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8A6A22;
+  color: var(--color-link-hover);
 }
 
 .post-hero__title {
@@ -6219,7 +6232,7 @@ summary.panel-btn::-webkit-details-marker {
 .post-cover__img {
   width: 100%;
   height: auto;
-  border-radius: 16px;
+  border-radius: 0;
   display: block;
 }
 
@@ -6250,7 +6263,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 14px 20px;
   border-left: 3px solid var(--color-accent);
   background: var(--color-surface);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0;
   font-size: 16.5px;
   color: var(--color-ink);
 }
@@ -6303,7 +6316,7 @@ summary.panel-btn::-webkit-details-marker {
 .panel-post__badge {
   display: inline-block;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--color-border);
   font-size: 12px;
   font-weight: 700;
@@ -6333,7 +6346,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 12px 16px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 0;
   font-size: 13.5px;
   color: var(--color-ink-secondary);
 }
@@ -6352,7 +6365,7 @@ summary.panel-btn::-webkit-details-marker {
 
 .post-cheatsheet code {
   padding: 1px 6px;
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--color-background);
   border: 1px solid var(--color-border);
   font-size: 12.5px;
@@ -6371,7 +6384,7 @@ summary.panel-btn::-webkit-details-marker {
   width: 100%;
   max-width: 460px;
   height: auto;
-  border-radius: 12px;
+  border-radius: 0;
   margin-bottom: 14px;
 }
 
@@ -6379,7 +6392,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 22px 24px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .panel-flash--error {

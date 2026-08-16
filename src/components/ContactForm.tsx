@@ -83,6 +83,7 @@ export function ContactForm({
         <span className="contact-form__label">Nombre</span>
         <input
           className="contact-form__input"
+          required
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ingresa tu nombre"
@@ -114,6 +115,8 @@ export function ContactForm({
           <input
             className="contact-form__input contact-form__input--phone"
             type="tel"
+            required
+            minLength={6}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="981 234 567"
