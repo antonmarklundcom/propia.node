@@ -175,11 +175,38 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
         per the plan already written in its `verticals.ts` comment.
       - Routing groundwork already committed:
         `inmobiliaria.com.py` added to `src/config/verticals.ts` as an
-        `enabled: true` vertical, `ownsListingDetail: true` (own canonical
-        `/propiedad` pages, not a feeder). New `VerticalKey: "inmobiliaria"`.
-        Its `locale`/`copy` there is currently a placeholder copy of
+        `enabled: true` vertical. New `VerticalKey: "inmobiliaria"`. Its
+        `locale`/`copy` there is currently a placeholder copy of
         realestateinparaguay.com's and will need revisiting once the roles
         above are actually built.
+      - **SEO — duplicate-content risk while both hosts are Spanish
+        (fixed, session: 2026-08-16, third follow-up).** Both hosts serve
+        the same DB rows; `ownsListingDetail` controls whether a host's
+        `/propiedad` pages self-canonicalise or point back at the primary
+        (`src/lib/origin.ts`). Originally set `true` on both, which would
+        have had Google see two domains publishing identical listing pages
+        — duplicate content, ranking cannibalisation, before translation
+        even exists. Fixed: `inmobiliaria.com.py` ships with
+        `ownsListingDetail: false` for now, so its listing detail pages
+        canonicalise to realestateinparaguay.com like any other feeder;
+        its other pages (home, search, guías) are unique content and index
+        normally. Flip it to `true` — together with flipping
+        realestateinparaguay.com to `locale: "en"` — only once
+        inmobiliaria.com.py is the real primary and the EN content is
+        genuinely translated, not a mirror. Sitemap generation
+        (`app/sitemap.ts`) is already per-request/per-host so it needs no
+        change for this. Not yet built: hreflang tags between the ES/EN
+        listing pages (the `verticals.ts` comment on realestateinparaguay.com
+        already calls this out as needed) and Search Console verification
+        + sitemap submission for the new domain (new domain = zero
+        history/authority with Google, won't rank on day one regardless of
+        content quality).
+      - **Blog:** there is no blog in this codebase. The closest thing is
+        `/guias` (barrio guides, admin at `/admin/guias`), already
+        canonical-aware. Not addressed yet whether guides content should
+        be shared, forked per audience (Paraguayan sellers vs. foreign
+        investors likely want different topics), or is in scope at all for
+        this domain split — needs a decision before any guides work here.
       - Design/copy: founder wants **fully separate visual identity** for
         inmobiliaria.com.py — not a reskin, closer to a second frontend on
         the same backend/admin/DB. Not started.

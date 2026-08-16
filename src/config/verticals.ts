@@ -103,20 +103,32 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     ownsListingDetail: true,
   },
   /**
-   * SECOND production host (see CLAUDE.md) — same app, same database as
-   * realestateinparaguay.com. Owned by the founder for his own individual
-   * agency brand; he lists his own inventory here directly and, until his
-   * EAS/SERPLAID license is issued (~Oct 2026), also takes listings from
-   * other realtors/agencies on a case-by-case basis. Not a feeder: it owns
-   * its own /propiedad canonical pages rather than pointing back at
-   * realestateinparaguay.com.
+   * SECOND production host (see CLAUDE.md, PLAN.md D6) — same app, same
+   * database as realestateinparaguay.com. Owned by the founder for his own
+   * individual agency brand; he lists his own inventory here directly and,
+   * until his EAS/SERPLAID license is issued (~Oct 2026), also takes
+   * listings from other realtors/agencies on a case-by-case basis.
+   *
+   * `ownsListingDetail: false` is INTENTIONAL and TEMPORARY, not the final
+   * state: this host and realestateinparaguay.com currently serve the exact
+   * same Spanish listing rows. If both self-canonicalised /propiedad pages,
+   * Google would see two domains publishing identical content — duplicate
+   * content, ranking cannibalisation. So for now this host's listing detail
+   * pages canonicalise back to the primary (realestateinparaguay.com) same
+   * as any other feeder; every other page type here (home, search, guías)
+   * is genuinely unique and indexes normally. Flip this to `true` — and
+   * simultaneously flip realestateinparaguay.com to
+   * `locale: "en", filters: { foreign_exposure: true }, copy: "foreign"` —
+   * only once inmobiliaria.com.py becomes the real publishing primary and
+   * realestateinparaguay.com's content is genuinely translated, not just a
+   * mirrored copy (PLAN.md D6 sequencing).
    */
   "inmobiliaria.com.py": {
     key: "inmobiliaria",
     locale: "es",
     copy: "ownership",
     enabled: true,
-    ownsListingDetail: true,
+    ownsListingDetail: false,
   },
 } as const;
 
