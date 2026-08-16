@@ -45,5 +45,11 @@
   "overrides": {
     "esbuild": "^0.28.1",
     "postcss": "^8.5.10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "esbuild"
+    ]
   }
 }
