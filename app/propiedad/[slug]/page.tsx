@@ -17,7 +17,7 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
-import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
+import { formatPrice, formatCuota, imageUrl, imageThumbUrl } from "@/lib/format";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
 import { BRAND_NAME } from "@/lib/brand";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -252,6 +252,9 @@ export default async function ListingPage({ params }: Params) {
           title: listing.title,
           price: formatPrice(listing),
           operation: listing.operation,
+          // realImages already excludes placeholder keys, so a listing with no
+          // real photo stores no img and the card renders the fallback.
+          img: imageThumbUrl(realImages[0]?.r2Key ?? null),
           specs: [
             listing.bedrooms != null ? `${listing.bedrooms} dorm` : null,
             listing.bathrooms != null ? `${listing.bathrooms} baño${listing.bathrooms === 1 ? "" : "s"}` : null,

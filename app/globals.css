@@ -36,6 +36,11 @@
   --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-sans: Jost, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
+  /* Height of the sticky .site-header (18px padding x2 + the stacked brand
+     lockup). Measured, not computed — it exists so the hero can subtract it
+     from 100svh. If the header's padding or brand type changes, change this. */
+  --header-h: 76px;
+
   --container: 1440px;
   --container-pad: clamp(20px, 4vw, 56px);
   --section-y: clamp(88px, 10vw, 132px);
@@ -50,11 +55,20 @@
     rgba(9, 20, 14, 0.34) 62%,
     rgba(9, 20, 14, 0.42) 100%
   );
+  /* The text on a photo card is white, but the photo underneath is not always
+     dark — the "foto próximamente" fallback is a pale beige wall, and plenty of
+     real listing photos are bright sky or white interiors. The old ramp only
+     reached 0.42 where the title sits, which left that white type at roughly
+     2:1 on those images. It now holds ~0.9 through the whole text block and
+     releases higher up, so the card still reads as a photograph rather than a
+     dark panel. */
   --overlay-card: linear-gradient(
     to top,
-    rgba(7, 15, 11, 0.94) 0%,
-    rgba(7, 15, 11, 0.42) 38%,
-    rgba(7, 15, 11, 0) 66%
+    rgba(7, 15, 11, 0.95) 0%,
+    rgba(7, 15, 11, 0.9) 24%,
+    rgba(7, 15, 11, 0.62) 46%,
+    rgba(7, 15, 11, 0.22) 70%,
+    rgba(7, 15, 11, 0) 100%
   );
   --overlay-zone: linear-gradient(
     to top,
@@ -291,6 +305,17 @@ h2 {
   inset: 0;
   background: var(--overlay-card);
   pointer-events: none;
+  transition: opacity 0.5s var(--ease);
+}
+
+/* Hover pushes the photo to 1.06, which slides a fresh (often brighter) part
+   of the image under the text. Deepening the scrim by the same gesture keeps
+   the contrast constant instead of dipping exactly when the card is being
+   read. Layered rather than a second gradient so it stays one paint. */
+.ds-photo-card:hover .ds-photo-card__scrim {
+  background:
+    linear-gradient(to top, rgba(7, 15, 11, 0.34) 0%, rgba(7, 15, 11, 0.1) 60%, rgba(7, 15, 11, 0) 100%),
+    var(--overlay-card);
 }
 
 .ds-photo-card__body {
@@ -298,6 +323,10 @@ h2 {
   left: 20px;
   right: 20px;
   bottom: 20px;
+  /* Second line of defence behind the gradient: a photo with a bright detail
+     exactly under one word still keeps that word legible. Wide and soft so it
+     reads as depth, not as an outline. */
+  text-shadow: 0 1px 14px rgba(7, 15, 11, 0.6);
 }
 
 .ds-photo-card__chip {
@@ -709,12 +738,36 @@ body {
 /* ---- Homepage ------------------------------------------------------------ */
 /* Hero: the photograph is the section. Text sits on the 95deg gradient from
    the design system, which is dark enough on the left for white type and
-   clears the right side so the house is still visible. */
+   clears the right side so the house is still visible.
+
+   The whole stack — kicker, headline, subtitle, both CTAs, the search panel,
+   the chips and the stat line — has to land inside the first screen. It only
+   does if the vertical rhythm is measured in viewport height rather than
+   width: a 1440x820 laptop and a 1440x1200 monitor have the same `vw`, so
+   `vw`-only clamps sized the hero for the widest common screen and pushed the
+   buttons under the fold on the shortest one. Every gap below therefore
+   clamps against `svh` (small viewport height — the value that ignores mobile
+   browser chrome collapsing, so the layout doesn't jump on scroll). */
 
 .home-hero {
   position: relative;
   background: var(--color-primary-dark);
   overflow: hidden;
+}
+
+/* Fill exactly one screen below the sticky header, and centre the stack in it.
+   Only from 900px up: on a phone the same content cannot fit 100svh without
+   shrinking the headline past legibility, so there it keeps its natural
+   (compact) height and the stat line is what falls below the fold. */
+@media (min-width: 900px) {
+  .home-hero {
+    min-height: calc(100svh - var(--header-h));
+    display: flex;
+    align-items: center;
+  }
+  .home-hero__inner {
+    width: 100%;
+  }
 }
 
 .home-hero__photo {
@@ -734,19 +787,22 @@ body {
 
 .home-hero__inner {
   position: relative;
-  padding-block: clamp(56px, 8vw, 104px);
+  padding-block: clamp(24px, 3.8svh, 78px);
   color: #fff;
 }
 
 .home-hero__title {
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: clamp(42px, 6.6vw, 92px);
+  /* Bounded by height as well as width: `min()` picks whichever of the two
+     is smaller, so a short window shrinks the headline instead of letting
+     three 92px lines eat the screen. */
+  font-size: clamp(38px, min(6.6vw, 7.9svh), 88px);
   line-height: 1.02;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #fff;
-  margin: 26px 0 0;
+  margin: clamp(14px, 2.2svh, 26px) 0 0;
   max-width: 15ch;
   text-wrap: balance;
 }
@@ -756,7 +812,7 @@ body {
 }
 
 .home-hero__subtitle {
-  margin: 30px 0 0;
+  margin: clamp(14px, 2.4svh, 28px) 0 0;
   font-size: clamp(15px, 1.25vw, 17.5px);
   font-weight: 300;
   line-height: 1.7;
@@ -769,14 +825,17 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  margin-top: 40px;
+  margin-top: clamp(20px, 3.2svh, 38px);
 }
 
 .home-hero__search {
-  margin-top: clamp(32px, 4vw, 48px);
+  margin-top: clamp(20px, 3.4svh, 44px);
   background: var(--color-primary-soft);
   border: 1px solid var(--color-border-accent);
-  padding: clamp(16px, 2.4vw, 26px);
+  /* Height-aware too: this panel is the tallest single block in the hero, so
+     its own padding is what decides whether the chips below it clear the fold
+     on a laptop screen. */
+  padding: clamp(14px, min(2.4vw, 2.2svh), 26px);
   box-shadow: 0 34px 70px rgba(14, 31, 23, 0.28);
 }
 
@@ -784,7 +843,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: clamp(12px, 1.9svh, 20px);
 }
 
 .home-hero__chip {
@@ -807,7 +866,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 18px 44px;
-  margin-top: clamp(40px, 6vw, 72px);
+  margin-top: clamp(18px, 3svh, 46px);
   font-size: 10.5px;
   letter-spacing: 1.7px;
   text-transform: uppercase;
@@ -1166,61 +1225,6 @@ body {
   margin-top: 2px;
   font-size: 13.5px;
   line-height: 1.5;
-  color: var(--color-ink-secondary);
-}
-
-/* Compact "vistos recientemente" card (no cover images stored client-side). */
-.recent-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 0;
-  text-decoration: none;
-  color: var(--color-ink);
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
-}
-
-.recent-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.1);
-}
-
-.recent-card__badge {
-  align-self: flex-start;
-  padding: 3px 9px;
-  border-radius: 0;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--color-primary);
-}
-
-.recent-card__badge--alquiler {
-  background: var(--color-accent);
-  color: #12100a;
-}
-
-.recent-card__price {
-  margin-top: 4px;
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.recent-card__title {
-  font-size: 13.5px;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.recent-card__specs {
-  margin-top: 2px;
-  font-size: 12.5px;
   color: var(--color-ink-secondary);
 }
 
@@ -1860,6 +1864,9 @@ body {
   letter-spacing: 2.2px;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.86);
+  /* Sits at mid-card, the one place the bottom-up scrim is still light, and
+     the fallback image is deliberately pale right there. */
+  text-shadow: 0 1px 14px rgba(7, 15, 11, 0.75);
 }
 
 /* ---- Listing detail page -------------------------------------------------- */
