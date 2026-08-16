@@ -14,7 +14,9 @@ import { BRAND_NAME } from "@/lib/brand";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
+import { BulkCount, BulkSelectAll } from "@/components/panel/BulkSelect";
 import { adminTabs } from "../tabs";
+import { bulkListingAction } from "./actions";
 
 export const metadata: Metadata = {
   title: `Propiedades — ${BRAND_NAME}`,
@@ -32,6 +34,9 @@ const OPERATION_LABEL: Record<string, string> = {
 const FLASH: Record<string, string> = {
   deleted: esPanel.listingDeleted,
 };
+
+/** The whole table is one form, so the bulk bar can live above the rows. */
+const BULK_FORM_ID = "admin-bulk";
 
 function isStatus(v: string | undefined): v is ListingStatusValue {
   return Boolean(v) && (ADMIN_STATUSES as readonly string[]).includes(v!);
@@ -109,10 +114,54 @@ export default async function AdminListingsPage({
         {rows.length === 0 ? (
           <p className="panel-empty">{esPanel.adminListingsEmpty}</p>
         ) : (
+          <form action={bulkListingAction} id={BULK_FORM_ID}>
+            {/* Preserve the current filter so the redirect lands back on the
+                same view instead of resetting to "todas". */}
+            <input type="hidden" name="status" value={status} />
+            <input type="hidden" name="q" value={q} />
+
+            <div className="panel-bulk">
+              <BulkCount formId={BULK_FORM_ID} />
+              <label className="panel-bulk__field">
+                <span className="auth-field__label">Acción</span>
+                <select className="panel-select" name="op" defaultValue="">
+                  <option value="" disabled>
+                    Elegí una acción
+                  </option>
+                  {ADMIN_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      Marcar como {listingStatusLabel[s] ?? s}
+                    </option>
+                  ))}
+                  <option value="delete">Borrar definitivamente</option>
+                </select>
+              </label>
+              <label className="panel-bulk__field">
+                <span className="auth-field__label">
+                  Escribí BORRAR para confirmar el borrado
+                </span>
+                <input className="auth-field__input" name="confirm" />
+              </label>
+              <button className="panel-btn" type="submit">
+                Aplicar
+              </button>
+            </div>
+            <p className="panel-bulk__hint">
+              Cambiar el estado es reversible: <strong>Borrador</strong> o{" "}
+              <strong>Eliminada</strong> saca la propiedad del sitio pero
+              conserva la ficha, sus fotos y sus consultas.{" "}
+              <strong>Borrar definitivamente</strong> no se puede deshacer y
+              deja huérfanas las consultas recibidas — por eso pide la palabra
+              de confirmación. Máximo 500 por vez.
+            </p>
+
           <div className="panel-table__wrap">
             <table className="panel-table">
               <thead>
                 <tr>
+                  <th className="panel-table__check">
+                    <BulkSelectAll formId={BULK_FORM_ID} />
+                  </th>
                   <th>Propiedad</th>
                   <th>Operación</th>
                   <th>Tipo</th>
@@ -125,6 +174,14 @@ export default async function AdminListingsPage({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
+                    <td className="panel-table__check">
+                      <input
+                        type="checkbox"
+                        name="ids"
+                        value={row.id}
+                        aria-label={`Seleccionar ${row.title}`}
+                      />
+                    </td>
                     <td className="panel-table__name">
                       {row.title}
                       <div className="panel-card__meta">
@@ -170,6 +227,7 @@ export default async function AdminListingsPage({
               </tbody>
             </table>
           </div>
+          </form>
         )}
       </main>
     </>
