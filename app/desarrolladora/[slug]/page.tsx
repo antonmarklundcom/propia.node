@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -20,13 +20,13 @@ const resolve = cache(getDeveloperBySlug);
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const r = await resolve(slug);
-  if (!r) return { title: `Desarrolladora no encontrada — ${BRAND_NAME}` };
+  if (!r) return { title: `Desarrolladora no encontrada` };
   const { developer, projects } = r;
   const description = `${developer.name}: ${projects.length} ${
     projects.length === 1 ? "proyecto" : "proyectos"
   } en Paraguay. Etapa de obra, fecha de entrega y unidades disponibles.`;
   return {
-    title: `${developer.name} — proyectos en Paraguay | ${BRAND_NAME}`,
+    title: `${developer.name} — proyectos en Paraguay`,
     description,
     alternates: {
       canonical: `${await siteOrigin()}/desarrolladora/${developer.slug}`,
@@ -42,6 +42,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function DesarrolladoraPage({ params }: Params) {
+  const brand = await brandName();
   const { slug } = await params;
   const r = await resolve(slug);
   if (!r) notFound();
@@ -108,7 +109,7 @@ export default async function DesarrolladoraPage({ params }: Params) {
                 <a
                   className="mk-btn mk-btn--accent"
                   href={`https://wa.me/${waDigits}?text=${encodeURIComponent(
-                    `Hola, vi los proyectos de ${developer.name} en ${BRAND_NAME}.`,
+                    `Hola, vi los proyectos de ${developer.name} en ${brand}.`,
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -152,7 +153,7 @@ export default async function DesarrolladoraPage({ params }: Params) {
         <p className="mk-note">
           Antes de reservar una unidad en pozo, pedí el permiso de
           construcción, la fecha de entrega contractual y qué pasa si la obra
-          se atrasa. {BRAND_NAME} publica los proyectos pero no verifica de
+          se atrasa. {brand} publica los proyectos pero no verifica de
           forma independiente el avance de obra ni los plazos informados.{" "}
           <Link href="/proyectos">Más sobre comprar en pozo</Link>.
         </p>

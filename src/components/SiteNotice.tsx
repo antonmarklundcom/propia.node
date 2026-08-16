@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { UNDER_CONSTRUCTION, isInternalPath } from "@/config/site-status";
 import { esSiteNotice } from "@/i18n/es";
+import { brandName } from "@/lib/brand-server";
 
 /**
  * Standing pre-launch disclosure, above the header on every public page.
@@ -17,12 +18,13 @@ export async function SiteNotice() {
   if (!UNDER_CONSTRUCTION) return null;
   const pathname = (await headers()).get("x-pathname");
   if (isInternalPath(pathname)) return null;
+  const brand = await brandName();
 
   return (
     <div className="site-notice" role="status">
       <p className="site-notice__inner">
         <strong className="site-notice__label">{esSiteNotice.label}</strong>
-        <span>{esSiteNotice.body}</span>
+        <span>{esSiteNotice.body(brand)}</span>
       </p>
     </div>
   );

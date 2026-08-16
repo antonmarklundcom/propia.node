@@ -5,12 +5,11 @@ import { PostForm } from "@/components/panel/PostForm";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { countDraftPosts, isPostsTableReady } from "@/lib/post-queries";
-import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../../tabs";
 import { createPostAction } from "../actions";
 
 export const metadata: Metadata = {
-  title: `Nueva nota — ${BRAND_NAME}`,
+  title: `Nueva nota`,
   robots: { index: false, follow: false },
 };
 

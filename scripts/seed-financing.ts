@@ -5,6 +5,16 @@
  *
  * RATES ARE PLACEHOLDERS — verify against AFD/MUVH published terms before
  * launch and whenever they change; the nightly cuota cron reads this table.
+ *
+ * Che Róga Porã ships `active: false` (see below). Applying that to a live
+ * database is two commands, in this order — the seed flips the flag, the cron
+ * clears every cuota that was quoting it:
+ *
+ *   npm run seed:financing && npm run cron:cuotas
+ *
+ * Skipping the second one leaves stale cuota_gs values cached on listings,
+ * which is worse than either state on its own: the card keeps printing a
+ * Che Róga Porã monthly payment that nothing can reproduce.
  */
 import { db } from "../src/db";
 import { financingPrograms } from "../src/db/schema";
@@ -17,7 +27,20 @@ const PROGRAMS = [
     maxTermMonths: 360,
     maxAmountGs: "900000000",
     minDownPct: "0.00",
-    active: true,
+    /**
+     * OFF BY DEFAULT (founder decision, 2026-08-16). Che Róga Porã is approved
+     * per development, not per portal: quoting it on every venta listing
+     * implies an eligibility the seller has not established. With this false,
+     * `bestCuota()` skips it entirely and listings quote AFD or no cuota at
+     * all — see src/lib/cuota.ts.
+     *
+     * The rate below stays because it is the programme's real term, not
+     * because it is in use; it is still a PLACEHOLDER pending verification
+     * against MUVH/AFD published terms (CLAUDE.md backlog 6). Re-enabling it
+     * site-wide by flipping this to true is NOT the intended path — the
+     * intended path is per-project opt-in.
+     */
+    active: false,
   },
   {
     code: "afd_primera_vivienda",

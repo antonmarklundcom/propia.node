@@ -35,23 +35,45 @@ Consequences that bite:
   set. **Change the env var and the vertical entries together, never one
   alone** — PLAN.md D6 has the full flip checklist.
 
-## Brand name — UNDECIDED, do not "fix" it piecemeal
+## Brand name — DECIDED: the domain is the brand
 
-`src/lib/brand.ts` exports `BRAND_NAME = "Homes Paraguay"`. The architecture,
-domain plan, session cookie (`propia_session`), localStorage keys and support
-email (`hola@propia.com.py`) all say *propia*. This is an unfinished rebrand,
-and **the founder has not picked the final name** — partly because
-`propia.com.py` is not owned.
+Resolved 2026-08-16. There is no separate wordmark and no "Homes Paraguay" —
+that name is gone from the codebase. **Each host is branded as its own
+domain**, declared as `brand` on the vertical:
 
-Until he decides:
+| Host | Brand |
+| --- | --- |
+| `realestateinparaguay.com` | Real Estate in Paraguay |
+| `inmobiliaria.com.py` | Inmobiliaria Paraguay |
 
-- Do **not** mass-rename to either name.
-- **Do** route every user-visible occurrence through `BRAND_NAME` so the
-  eventual decision is a one-line change. Hardcoded `"Homes Paraguay"` string
-  literals still exist in `src/i18n/es.ts` and several `app/admin/*` and
-  `app/**/page.tsx` metadata titles — those are the debt to clear.
-- The site is **Spanish-only** for now. The English vertical waits until the
-  Spanish site is finished.
+How to read it, and the one mistake to avoid:
+
+- `brandName()` / `brandMeta()` from **`src/lib/brand-server.ts`** — async,
+  request-scoped, **correct on every public page**, in `generateMetadata` and
+  in the component body alike.
+- `BRAND_NAME` from `src/lib/brand.ts` — the CANONICAL_HOST's brand, resolved
+  once at module load. Correct **only** on `/admin` and `/agencia` (staff
+  surfaces reached on one host), in client components, and in scripts. On a
+  public page it pins that page to one domain's name regardless of which
+  domain the visitor typed.
+- `brand.ts` must never import `next/headers`, directly or transitively:
+  `src/i18n/es.ts` imports it and six client components import that. The
+  request-scoped half lives in `brand-server.ts` for exactly this reason.
+- **The brand suffix on page titles is set once**, as a `title.template` in
+  `app/layout.tsx`. A page returns only its own segment (`"Casas en Asunción"`)
+  and Next appends `" — <brand>"`. Do not put the brand back into a page's own
+  title — it will double. OG titles do *not* inherit the template, so those
+  spell the brand out.
+- Copy that names the brand is brand-parameterised, not constant:
+  `faqSections(brand)`, `esSiteNotice.body(brand)`, `esPrecios.methodBody(brand)`,
+  `inquiryPrefillFor(brand, …)`, and friends.
+- Still *propia*-flavoured and untouched by this: the session cookie
+  (`propia_session`), localStorage keys, and the support email
+  `hola@propia.com.py` — **which is on a domain the founder does not own**, so
+  every contact path currently dead-ends. Fixing that needs a real mailbox
+  from the founder, not a code decision.
+- The site is **Spanish-only** for now. Both hosts serve `locale: "es"`; the
+  English vertical waits until the Spanish site is finished.
 
 ## Import pipeline — read before touching intake or dedup
 
@@ -112,11 +134,21 @@ default, `--dry` first). It records itself as a revertible import job.
    `imageUrl()` passes it through while `R2_PUBLIC_BASE_URL` is unset. Fetching,
    deduping, WebP-converting and resizing imported photos waits on backlog item
    1 above. **Do not build a stub around it** — the R2 code is written.
-6. **Financing rates** — `che_roga_pora` (6.50%) and `afd_primera_vivienda`
-   (9.00%) in `scripts/seed-financing.ts` are **placeholders**. They feed
+6. **Financing rates** — `afd_primera_vivienda` (9.00%) in
+   `scripts/seed-financing.ts` is a **placeholder**. It feeds
    `npm run cron:cuotas`, which caches `listings.cuota_gs`, which is printed on
-   every venta card. Wrong rates = wrong money sitewide. Verifying them against
+   every venta card. Wrong rates = wrong money sitewide. Verifying it against
    published AFD/MUVH terms is a research task, not a code task.
+7. **Che Róga Porã is `active: false`** (founder decision, 2026-08-16): it is
+   approved per development, not per portal, so quoting it on every venta
+   listing implied an eligibility the seller had not established. With only AFD
+   active, cuotas are ~19% higher and listings above ~US$107k show no cuota
+   line at all (AFD's 700M Gs cap). Applying it to a live database is two
+   commands in order — `npm run seed:financing && npm run cron:cuotas` — the
+   second clears cuotas still cached from the programme. **Per-project opt-in
+   is not built**: it needs a column on `projects` plus an `/admin/proyectos`
+   screen that does not exist yet. Flipping `active` back to `true` site-wide
+   is NOT the intended path.
 
 ## Working agreements with the founder
 

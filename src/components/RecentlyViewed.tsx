@@ -17,6 +17,12 @@ export interface RecentEntry {
   price: string;
   operation: string;
   specs: string[];
+  /**
+   * Cover thumbnail URL. Optional because entries written before this field
+   * existed are still in visitors' localStorage — those render on the same
+   * fallback image a photo-less listing gets, rather than being discarded.
+   */
+  img?: string | null;
   viewedAt: number;
 }
 
@@ -62,17 +68,42 @@ export function RecentlyViewed() {
       </div>
       <div className="home-row">
         {entries.map((e) => (
-          <Link key={e.href} className="recent-card" href={e.href}>
-            <span
-              className={`recent-card__badge${e.operation !== "venta" ? " recent-card__badge--alquiler" : ""}`}
-            >
+          /* Same markup as <ListingCard>: this row sits directly above
+             "Propiedades recomendadas", and a white bordered card next to a
+             row of photo cards read as a different site. It can't reuse the
+             component itself — that takes a DB row, and all this has is the
+             localStorage snapshot. */
+          <Link key={e.href} className="ds-photo-card listing-card" href={e.href}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- pre-sized
+                thumb URL captured at view time; next/image adds a proxy hop. */}
+            <img
+              className="ds-photo-card__img"
+              src={e.img || "/img/listing-fallback.webp"}
+              alt={e.title}
+              loading="lazy"
+              decoding="async"
+            />
+            <div className="ds-photo-card__scrim" />
+            <span className="ds-photo-card__chip">
               {e.operation === "venta" ? "Venta" : "Alquiler"}
             </span>
-            <span className="recent-card__price">{e.price}</span>
-            <span className="recent-card__title">{e.title}</span>
-            {e.specs.length > 0 && (
-              <span className="recent-card__specs">{e.specs.join(" · ")}</span>
+            {!e.img && (
+              <span className="listing-card__nophoto">Foto próximamente</span>
             )}
+            <div className="ds-photo-card__body">
+              <div className="listing-card__title">{e.title}</div>
+              <div className="ds-photo-card__price">{e.price}</div>
+              {e.specs.length > 0 && (
+                <div className="listing-card__specs">
+                  {e.specs.map((s) => (
+                    <span className="listing-card__spec" key={s}>
+                      <span className="listing-card__tick" aria-hidden />
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </Link>
         ))}
       </div>

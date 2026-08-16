@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -25,11 +25,12 @@ const DESCRIPTION =
   "Precios de referencia por ciudad, cuotas de financiamiento vigentes y tasación online: los números del mercado inmobiliario paraguayo, calculados sobre avisos publicados.";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} de Paraguay — ${BRAND_NAME}`,
+    title: `${TITLE} de Paraguay`,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/datos` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
   };
 }
 

@@ -10,11 +10,10 @@ import {
   POST_CATEGORY_LABEL,
 } from "@/lib/post-queries";
 import { readingMinutes } from "@/lib/markdown";
-import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: `Guías y notas — ${BRAND_NAME}`,
+  title: `Guías y notas`,
   robots: { index: false, follow: false },
 };
 

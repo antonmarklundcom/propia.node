@@ -17,9 +17,9 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
-import { formatPrice, formatCuota, imageUrl } from "@/lib/format";
+import { formatPrice, formatCuota, imageUrl, imageThumbUrl } from "@/lib/format";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import {
   listingJsonLd,
@@ -58,12 +58,12 @@ const subtreeIds = cache(citySubtreeIds);
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await load(slug);
-  if (!detail) return { title: `Propiedad no encontrada — ${BRAND_NAME}` };
+  if (!detail) return { title: `Propiedad no encontrada` };
   const { listing } = detail;
   const canonical = `${await listingCanonicalOrigin()}${listingUrl(listing)}`;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: `${listing.title} — ${formatPrice(listing)} | ${BRAND_NAME}`,
+    title: `${listing.title} — ${formatPrice(listing)}`,
     description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
     alternates: { canonical },
     openGraph: {
@@ -104,6 +104,7 @@ function normalizeAmenities(raw: unknown): string[] {
 }
 
 export default async function ListingPage({ params }: Params) {
+  const brand = await brandName();
   const { slug } = await params;
   const detail = await load(slug);
   if (!detail) notFound();
@@ -132,7 +133,7 @@ export default async function ListingPage({ params }: Params) {
   const area = listing.areaM2 ?? listing.landM2;
   const origin = await listingCanonicalOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
-  const waMessage = inquiryPrefillFor(listing.title, canonical);
+  const waMessage = inquiryPrefillFor(brand, listing.title, canonical);
 
   const city = chain.find((c) => c.level === "ciudad");
   const barrio = chain.find((c) => c.level === "barrio");
@@ -231,7 +232,7 @@ export default async function ListingPage({ params }: Params) {
   if (listing.parking != null)
     details.push({ icon: "🚗", label: "Cocheras", value: String(listing.parking) });
 
-  const sellerName = agency?.name ?? agent?.name ?? `Publicado en ${BRAND_NAME}`;
+  const sellerName = agency?.name ?? agent?.name ?? `Publicado en ${brand}`;
   const sellerInitials = sellerName
     .split(/\s+/)
     .slice(0, 2)
@@ -252,6 +253,9 @@ export default async function ListingPage({ params }: Params) {
           title: listing.title,
           price: formatPrice(listing),
           operation: listing.operation,
+          // realImages already excludes placeholder keys, so a listing with no
+          // real photo stores no img and the card renders the fallback.
+          img: imageThumbUrl(realImages[0]?.r2Key ?? null),
           specs: [
             listing.bedrooms != null ? `${listing.bedrooms} dorm` : null,
             listing.bathrooms != null ? `${listing.bathrooms} baño${listing.bathrooms === 1 ? "" : "s"}` : null,
@@ -473,7 +477,7 @@ export default async function ListingPage({ params }: Params) {
                 )}
               </div>
               <div className="seller-card__kind">
-                {agency ? "Inmobiliaria" : agent ? "Agente" : BRAND_NAME}
+                {agency ? "Inmobiliaria" : agent ? "Agente" : brand}
               </div>
             </div>
           </div>

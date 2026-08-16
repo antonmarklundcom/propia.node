@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireAgencyContext } from "@/lib/auth/guards";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import {
   invitePath,
   listAgencyInvites,
@@ -21,7 +20,7 @@ import {
 } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Tu equipo — ${BRAND_NAME}`,
+  title: `Tu equipo`,
   robots: { index: false, follow: false },
 };
 

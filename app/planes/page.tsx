@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -9,14 +9,15 @@ import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 export const dynamic = "force-dynamic";
 
 const TITLE = "Planes y precios";
-const DESCRIPTION = `Publicar en ${BRAND_NAME} es gratis, con avisos ilimitados y sin comisión sobre tus operaciones. Los planes pagos agregan destaque en las búsquedas y en la portada.`;
+const DESCRIPTION = (brand: string) => `Publicar en ${brand} es gratis, con avisos ilimitados y sin comisión sobre tus operaciones. Los planes pagos agregan destaque en las búsquedas y en la portada.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
-    description: DESCRIPTION,
+    title: `${TITLE}`,
+    description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/planes` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 

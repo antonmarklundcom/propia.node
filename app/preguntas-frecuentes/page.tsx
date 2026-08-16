@@ -1,27 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
-import { FAQ_ALL, FAQ_SECTIONS } from "@/config/faq";
+import { faqAll, faqSections } from "@/config/faq";
 import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 
 export const dynamic = "force-dynamic";
 
 const TITLE = "Preguntas frecuentes";
-const DESCRIPTION = `Todo sobre ${BRAND_NAME}: cómo buscar, cómo publicar, qué es la cuota estimada, comisiones y cómo contactar a un vendedor o inmobiliaria.`;
+const DESCRIPTION = (brand: string) => `Todo sobre ${brand}: cómo buscar, cómo publicar, qué es la cuota estimada, comisiones y cómo contactar a un vendedor o inmobiliaria.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
-    description: DESCRIPTION,
+    title: `${TITLE}`,
+    description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/preguntas-frecuentes` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 
 export default async function FaqPage() {
+  const brand = await brandName();
+  const sections = faqSections(brand);
   const origin = await siteOrigin();
 
   return (
@@ -32,7 +35,7 @@ export default async function FaqPage() {
             { name: "Inicio", url: "/" },
             { name: TITLE, url: "/preguntas-frecuentes" },
           ]),
-          faqJsonLd(FAQ_ALL),
+          faqJsonLd(faqAll(brand)),
         ]}
       />
 
@@ -42,7 +45,7 @@ export default async function FaqPage() {
         subtitle="Si tu duda no está acá, escribinos y te respondemos por WhatsApp."
       />
 
-      {FAQ_SECTIONS.map((section, i) => (
+      {sections.map((section, i) => (
         <Section
           key={section.id}
           id={section.id}

@@ -4,12 +4,11 @@ import { ImportByUrl } from "@/components/panel/ImportByUrl";
 import { canManageTeam, requireAgencyContext } from "@/lib/auth/guards";
 import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import { agencyTabs } from "../tabs";
 import { confirmImportAction, readListingUrlAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Importar aviso — ${BRAND_NAME}`,
+  title: `Importar aviso`,
   robots: { index: false, follow: false },
 };
 

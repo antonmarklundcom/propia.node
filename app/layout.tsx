@@ -4,15 +4,26 @@ import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNotice } from "@/components/SiteNotice";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandMeta } from "@/lib/brand-server";
 import { currentVertical } from "@/lib/vertical-context";
 import { themeFor } from "@/design/themes";
 
-export const metadata: Metadata = {
-  title: `${BRAND_NAME} — Encontrá tu propiedad en Paraguay`,
-  description:
-    "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay.",
-};
+/**
+ * The brand suffix on every page title is set ONCE, here, as a title template.
+ * Pages return only their own title segment ("Casas en Asunción") and Next
+ * appends " — <brand>" from whichever domain served the request. Before this,
+ * all 50 pages interpolated a global constant into their own title string,
+ * which made the brand un-varyable by host and meant renaming it touched every
+ * file. Do not put the brand back into a page's own title — it will double.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const { name, tagline } = await brandMeta();
+  return {
+    title: { default: `${name} — ${tagline}`, template: `%s — ${name}` },
+    description:
+      "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay.",
+  };
+}
 
 export default async function RootLayout({
   children,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -58,12 +58,13 @@ const COPY: Record<
 };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const brand = await brandName();
   const { operacion } = await params;
   const op = parseOperation(operacion);
-  if (!op) return { title: BRAND_NAME };
+  if (!op) return { title: brand };
   const copy = COPY[op];
   return {
-    title: `${copy.h1} — ${BRAND_NAME}`,
+    title: `${copy.h1}`,
     description: copy.lead,
     alternates: { canonical: `${await siteOrigin()}/${operationSlug(op)}` },
     openGraph: { title: copy.h1, description: copy.lead },

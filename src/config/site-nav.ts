@@ -173,7 +173,9 @@ export const HEADER_NAV: NavGroup[] = [
       {
         label: "Financiamiento y cuotas",
         href: "/financiamiento",
-        desc: "Che Roga Porã, AFD y bancos",
+        // Che Róga Porã is off by default (scripts/seed-financing.ts), so the
+        // nav must not advertise a programme no listing currently quotes.
+        desc: "AFD, bancos y cuota estimada",
       },
       {
         label: "Cómo funciona",

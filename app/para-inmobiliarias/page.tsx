@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -19,14 +19,15 @@ import {
 export const dynamic = "force-dynamic";
 
 const TITLE = "Para inmobiliarias y agentes";
-const DESCRIPTION = `Publicá tu cartera completa en ${BRAND_NAME}, recibí consultas por WhatsApp y mostrá tu inmobiliaria en el directorio. Empezar es gratis.`;
+const DESCRIPTION = (brand: string) => `Publicá tu cartera completa en ${brand}, recibí consultas por WhatsApp y mostrá tu inmobiliaria en el directorio. Empezar es gratis.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
-    description: DESCRIPTION,
+    title: `${TITLE}`,
+    description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/para-inmobiliarias` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 
@@ -106,6 +107,7 @@ const FAQ = [
 ];
 
 export default async function ParaInmobiliariasPage() {
+  const brand = await brandName();
   const [origin, stats] = await Promise.all([siteOrigin(), getPortalStats()]);
 
   return (
@@ -124,7 +126,7 @@ export default async function ParaInmobiliariasPage() {
         tone="dark"
         kicker="Para profesionales del sector"
         title="Tu cartera, frente a quien la está buscando"
-        subtitle={`Publicá todas tus propiedades en ${BRAND_NAME}, recibí las consultas directo en tu WhatsApp y mostrá tu inmobiliaria en el directorio del portal. Empezar es gratis y no pedimos tarjeta.`}
+        subtitle={`Publicá todas tus propiedades en ${brand}, recibí las consultas directo en tu WhatsApp y mostrá tu inmobiliaria en el directorio del portal. Empezar es gratis y no pedimos tarjeta.`}
         actions={
           <>
             <Link className="mk-btn mk-btn--accent" href="/registro">

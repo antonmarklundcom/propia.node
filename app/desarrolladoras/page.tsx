@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -20,11 +20,12 @@ const STAGE_LABEL: Record<string, string> = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} inmobiliarias en Paraguay — ${BRAND_NAME}`,
+    title: `${TITLE} inmobiliarias en Paraguay`,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/desarrolladoras` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
   };
 }
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -16,14 +16,15 @@ import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 export const dynamic = "force-dynamic";
 
 const TITLE = "Guías y notas";
-const DESCRIPTION = `Guías prácticas para comprar, vender y alquilar en Paraguay, y análisis del mercado inmobiliario — escritas por el equipo de ${BRAND_NAME}.`;
+const DESCRIPTION = (brand: string) => `Guías prácticas para comprar, vender y alquilar en Paraguay, y análisis del mercado inmobiliario — escritas por el equipo de ${brand}.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} sobre el mercado inmobiliario paraguayo — ${BRAND_NAME}`,
-    description: DESCRIPTION,
+    title: `${TITLE} sobre el mercado inmobiliario paraguayo`,
+    description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/guias` },
-    openGraph: { title: `${TITLE} — ${BRAND_NAME}`, description: DESCRIPTION },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 

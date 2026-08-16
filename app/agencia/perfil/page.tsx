@@ -5,8 +5,8 @@ import {
   getAgencyProfile,
   getOwnAgentProfile,
 } from "@/lib/profile-queries";
-import { esPanel } from "@/i18n/es";
 import { BRAND_NAME } from "@/lib/brand";
+import { esPanel } from "@/i18n/es";
 import { agencyTabs } from "../tabs";
 import {
   updateAccountAction,
@@ -15,7 +15,7 @@ import {
 } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Tu perfil — ${BRAND_NAME}`,
+  title: `Tu perfil`,
   robots: { index: false, follow: false },
 };
 
@@ -36,7 +36,7 @@ function VerifiedBadge({ verified }: { verified: boolean }) {
     <span
       className={`panel-profile__badge${verified ? "" : " panel-profile__badge--pending"}`}
     >
-      {verified ? esPanel.profileVerifiedNote : esPanel.profilePendingNote}
+      {verified ? esPanel.profileVerifiedNote(BRAND_NAME) : esPanel.profilePendingNote}
     </span>
   );
 }

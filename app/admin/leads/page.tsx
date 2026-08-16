@@ -8,12 +8,11 @@ import {
   listAllLeads,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: `Consultas — ${BRAND_NAME}`,
+  title: `Consultas`,
   robots: { index: false, follow: false },
 };
 

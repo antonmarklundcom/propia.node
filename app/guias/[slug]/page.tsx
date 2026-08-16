@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -30,7 +30,7 @@ function formatDate(d: Date | null): string | null {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await resolve(slug);
-  if (!detail) return { title: `Nota no encontrada — ${BRAND_NAME}` };
+  if (!detail) return { title: `Nota no encontrada` };
 
   const { post } = detail;
   const description =
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const cover = imageUrl(post.coverR2Key);
 
   return {
-    title: `${post.title} — ${BRAND_NAME}`,
+    title: `${post.title}`,
     description,
     alternates: { canonical: `${await siteOrigin()}/guias/${post.slug}` },
     openGraph: {
@@ -53,6 +53,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function GuiaPage({ params }: Params) {
+  const brand = await brandName();
   const { slug } = await params;
   const detail = await resolve(slug);
   if (!detail) notFound();
@@ -91,9 +92,9 @@ export default async function GuiaPage({ params }: Params) {
             dateModified: (post.updatedAt ?? post.publishedAt)?.toISOString(),
             author: {
               "@type": authorName ? "Person" : "Organization",
-              name: authorName ?? BRAND_NAME,
+              name: authorName ?? brand,
             },
-            publisher: { "@type": "Organization", name: BRAND_NAME },
+            publisher: { "@type": "Organization", name: brand },
             mainEntityOfPage: `${origin}/guias/${post.slug}`,
             ...(cover ? { image: cover } : {}),
           },

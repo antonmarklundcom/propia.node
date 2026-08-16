@@ -10,7 +10,6 @@ import {
   totalsFrom,
 } from "@/lib/stats-queries";
 import { esPanel, listingStatusLabel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
@@ -18,7 +17,7 @@ import { agencyTabs } from "./tabs";
 import { setListingStatusAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Tus propiedades — ${BRAND_NAME}`,
+  title: `Tus propiedades`,
   robots: { index: false, follow: false },
 };
 

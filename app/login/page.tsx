@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
 import { loginAction } from "@/lib/auth/actions";
 
 export const metadata: Metadata = {
-  title: `Ingresar — ${BRAND_NAME}`,
+  title: `Ingresar`,
   robots: { index: false, follow: false },
 };
 

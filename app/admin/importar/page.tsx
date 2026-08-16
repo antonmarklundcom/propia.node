@@ -9,12 +9,11 @@ import { recentPriceChanges } from "@/lib/import/resync";
 import { UPLOAD_SOURCES } from "@/lib/import/intake";
 import { formatUsd } from "@/lib/format";
 import { esPanel } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
 import { adminTabs } from "../tabs";
 import { commitImportAction, dryRunImportAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Importar planilla — ${BRAND_NAME}`,
+  title: `Importar planilla`,
   robots: { index: false, follow: false },
 };
 

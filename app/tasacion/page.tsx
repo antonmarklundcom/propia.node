@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { esTasacion } from "@/i18n/es";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { listCities } from "@/lib/queries";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
@@ -12,14 +12,16 @@ import { estimateAction, requestValuationContactAction } from "./actions";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${esTasacion.title} — ${BRAND_NAME}`,
-    description: esTasacion.subtitle,
+    title: `${esTasacion.title}`,
+    description: esTasacion.subtitle(brand),
     alternates: { canonical: `${await siteOrigin()}/tasacion` },
   };
 }
 
 export default async function TasacionPage() {
+  const brand = await brandName();
   const [cities, origin] = await Promise.all([listCities(), siteOrigin()]);
 
   return (
@@ -34,7 +36,7 @@ export default async function TasacionPage() {
       />
 
       <h1 style={{ fontSize: 26 }}>{esTasacion.title}</h1>
-      <p style={{ color: "#55655F" }}>{esTasacion.subtitle}</p>
+      <p style={{ color: "#55655F" }}>{esTasacion.subtitle(brand)}</p>
 
       <ValuationTool
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}

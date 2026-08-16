@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -12,9 +12,10 @@ const TITLE = "Política de privacidad";
 const LAST_UPDATED = "julio de 2026";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
   return {
-    title: `${TITLE} — ${BRAND_NAME}`,
-    description: `Cómo ${BRAND_NAME} recolecta, usa y protege tus datos personales.`,
+    title: `${TITLE}`,
+    description: `Cómo ${brand} recolecta, usa y protege tus datos personales.`,
     alternates: { canonical: `${await siteOrigin()}/privacidad` },
   };
 }
