@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
+import { BRAND_NAME, BRAND_KICKER } from "@/lib/brand";
 import { HEADER_NAV } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
 
@@ -21,10 +21,26 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="site-header__inner">
         <Link className="site-header__brand" href="/">
-          <span className="site-header__brand-mark" aria-hidden>
-            🏡
+          {/* Architectural line icon, 0.95–1.15 stroke, no fill, square corners
+              — the icon rule from the design system. */}
+          <svg
+            className="site-header__brand-mark"
+            width="30"
+            height="30"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.15"
+            aria-hidden
+          >
+            <path d="M3.2 10.4L12 3.6l8.8 6.8" />
+            <path d="M5.6 9.8v10.6h12.8V9.8" />
+            <path d="M10 20.4v-5.6h4v5.6" />
+          </svg>
+          <span>
+            <span className="site-header__brand-name">{BRAND_NAME}</span>
+            <span className="site-header__brand-sub">{BRAND_KICKER}</span>
           </span>
-          {BRAND_NAME}
         </Link>
 
         <nav className="site-header__nav" aria-label="Principal">
