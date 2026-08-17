@@ -152,6 +152,28 @@ function detectCurrency(text: string): "USD" | "PYG" | null {
   return null;
 }
 
+/**
+ * Currency marker within ~40 chars of where this exact amount is printed.
+ * Scanning the whole page instead attached USD to a Gs price because "US$"
+ * appeared *somewhere* — turning Gs 850.000.000 into price_usd 850,000,000
+ * (audit F44). No nearby marker → null, and the form asks the agent.
+ */
+function currencyNearAmount(text: string, amount: number): "USD" | "PYG" | null {
+  const re = /\d[\d.,]{2,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    const parsed = parseAmount(m[0]);
+    if (parsed == null || Math.abs(parsed - amount) > 0.5) continue;
+    const ctx = text.slice(
+      Math.max(0, m.index - 40),
+      m.index + m[0].length + 40,
+    );
+    const c = detectCurrency(ctx);
+    if (c) return c;
+  }
+  return null;
+}
+
 /** es-PY vocabulary → our enums. Order matters: "alquiler temporal" first. */
 function detectOperation(text: string): Operation | null {
   const t = text.toLowerCase();
@@ -318,12 +340,23 @@ export function parseListingHtml(html: string, sourceUrl: string): ParsedListing
     metaContent(html, "og:locality", "geo.placename"),
   );
 
+  const finalAmount = priceAmount ?? fallbackPrice;
+  // Never from the page at large: only structured data, the marker the price
+  // was matched against, or a marker printed next to the amount count (F44).
+  const finalCurrency =
+    priceCurrency ??
+    fallbackCurrency ??
+    (finalAmount != null ? currencyNearAmount(text, finalAmount) : null);
+  if (finalAmount != null && finalCurrency == null) {
+    notes.push("No pudimos determinar la moneda del precio — confirmala.");
+  }
+
   return {
     sourceUrl,
     title,
     description,
-    priceAmount: priceAmount ?? fallbackPrice,
-    priceCurrency: priceCurrency ?? fallbackCurrency ?? detectCurrency(signal),
+    priceAmount: finalAmount,
+    priceCurrency: finalCurrency,
     operation,
     propertyType,
     bedrooms: countNear(text, ["dormitorios?", "dorm\\.?", "habitaciones?", "hab\\.?", "cuartos?"]),
