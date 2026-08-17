@@ -57,6 +57,13 @@
       "when": 1786963891116,
       "tag": "0007_petite_leech",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1786974709718,
+      "tag": "0008_cold_chat",
+      "breakpoints": true
     }
   ]
 }
