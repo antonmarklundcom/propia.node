@@ -60,6 +60,16 @@ type Params = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+/** Grid page size — also the offset unit for ?page=N (F33). */
+const PAGE_SIZE = 48;
+
+/** ?page=N → N (integer ≥ 1); anything else is page 1, never an error. */
+function parsePage(v: string | string[] | undefined): number {
+  if (typeof v !== "string") return 1;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 2 ? n : 1;
+}
+
 /** Reads ?precio_min=&precio_max=&dormitorios=&orden= into typed filters. Bad/missing values are just dropped, never an error. */
 function parseFilters(sp: Record<string, string | string[] | undefined>): CategoryFilters {
   const num = (v: string | string[] | undefined) => {
@@ -164,12 +174,16 @@ const resolve = cache(async function resolve(
   };
 });
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: Params): Promise<Metadata> {
   const brand = await brandName();
   const { operacion, segments } = await params;
   const r = await resolve(operacion, segments);
   if (!r) return { title: `No encontrado` };
 
+  const page = parsePage((await searchParams).page);
   const count = await countFor(r.operation, r.locationIds, r.type);
   const parentIndexable = r.barrio
     ? (await countFor(r.operation, await subtreeIds(r.city.id), r.type)) >= 3
@@ -180,12 +194,20 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     parentUrl: r.parentUrl,
   });
 
+  // Deep pages (?page=2+) self-canonicalise and stay out of the index while
+  // their links are still followed — page 1 remains the only indexed URL for
+  // the category (F33).
+  const canonical =
+    page > 1
+      ? `${await siteOrigin()}${r.canonicalPath}?page=${page}`
+      : `${await siteOrigin()}${r.canonicalPath}`;
+
   return {
-    title: `${r.title}`,
+    title: page > 1 ? `${r.title} — página ${page}` : `${r.title}`,
     description: `${count} ${r.title.toLowerCase()} en ${brand}. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
-    alternates: { canonical: `${await siteOrigin()}${r.canonicalPath}` },
+    alternates: { canonical },
     robots:
-      ix.state === "index"
+      ix.state === "index" && page === 1
         ? { index: true, follow: true }
         : { index: false, follow: true },
   };
@@ -236,13 +258,29 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     typeof sp.tipo_vacio === "string" ? parseTypePlural(sp.tipo_vacio) : null;
 
   const filters = parseFilters(sp);
+  const page = parsePage(sp.page);
   const hasActiveFilters = Boolean(
     filters.priceMin || filters.priceMax || filters.minBedrooms || filters.sort,
   );
   const [{ listings, filteredCount }, cities] = await Promise.all([
-    getFilteredCategoryListings(baseQuery, filters),
+    getFilteredCategoryListings(
+      { ...baseQuery, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
+      filters,
+    ),
     listCities(),
   ]);
+  const totalPages = Math.max(1, Math.ceil(filteredCount / PAGE_SIZE));
+
+  /** Same URL with ?page=N; page 1 drops the param (it's the canonical). */
+  const pageHref = (n: number) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(sp)) {
+      if (typeof value === "string" && key !== "page") params.set(key, value);
+    }
+    if (n > 1) params.set("page", String(n));
+    const qs = params.toString();
+    return qs ? `${r.canonicalPath}?${qs}` : r.canonicalPath;
+  };
 
   // Does this city have a price page worth linking to? Cheap: one aggregate.
   const cityPrices = await cityPricesFor(r.city.slug);
@@ -396,6 +434,28 @@ export default async function CategoryPage({ params, searchParams }: Params) {
             <ListingCard key={card.id} card={card} />
           ))}
         </div>
+      )}
+
+      {/* Crawlable pagination (F33): before this, only the first 48 listings
+          of a category were reachable by link — the rest sat in the sitemap
+          with no internal link pointing at them. Plain <a>: pages 2+ are
+          noindex,follow, so these links pass discovery, not index weight. */}
+      {!mapView && filteredCount > PAGE_SIZE && (
+        <nav className="pagination" aria-label="Paginación">
+          {page > 1 && (
+            <a className="pagination__link" href={pageHref(page - 1)}>
+              ← Anterior
+            </a>
+          )}
+          <span className="pagination__status">
+            Página {page} de {totalPages}
+          </span>
+          {page < totalPages && (
+            <a className="pagination__link" href={pageHref(page + 1)}>
+              Siguiente →
+            </a>
+          )}
+        </nav>
       )}
 
       {/* Internal link module: market context for this city. Only rendered
