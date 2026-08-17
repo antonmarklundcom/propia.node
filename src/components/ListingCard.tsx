@@ -33,8 +33,10 @@ export function ListingCard({ card }: { card: Card }) {
     : imageThumbUrl(card.coverKey);
   const cuota = formatCuota(card.cuotaGs);
   const area = card.areaM2 ?? card.landM2;
+  // new Date() re-wrap: cards that crossed an unstable_cache boundary carry
+  // featuredUntil as an ISO string, and string > Date is silently false.
   const isFeatured =
-    card.featuredUntil != null && card.featuredUntil > new Date();
+    card.featuredUntil != null && new Date(card.featuredUntil) > new Date();
 
   const specs = [
     card.bedrooms != null ? `${card.bedrooms} dorm.` : null,

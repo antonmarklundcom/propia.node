@@ -1,6 +1,22 @@
 import type { MetadataRoute } from "next";
+import { unstable_cache } from "next/cache";
 import { buildSitemapEntries } from "@/lib/sitemap";
 import { siteOrigin, hostOwnsListingDetail } from "@/lib/origin";
+
+/**
+ * The entry list loads every published row, so concurrent Googlebot fetches
+ * used to each pay the full scan (audit F43). One cache entry per
+ * owns-listing-detail variant; the origin prefix stays per-request. lastmod
+ * survives the JSON round-trip as an ISO string, which the XML wants anyway.
+ * Chunked sitemaps (generateSitemaps) become necessary near the 50k-URL XML
+ * limit — at that point split before extending this cache.
+ */
+const cachedEntries = unstable_cache(
+  async (includeListingDetail: boolean) =>
+    buildSitemapEntries({ includeListingDetail }),
+  ["sitemap-entries"],
+  { revalidate: 3600, tags: ["listings"] },
+);
 
 // Depends on live DB — render at request time, not at build (Hostinger builds
 // before the app connects). Crawlers fetch this rarely; cost is a non-issue.
@@ -17,9 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     siteOrigin(),
     hostOwnsListingDetail(),
   ]);
-  const entries = await buildSitemapEntries({
-    includeListingDetail: ownsListingDetail,
-  });
+  const entries = await cachedEntries(ownsListingDetail);
   return entries.map((e) => ({
     url: `${origin}${e.path}`,
     lastModified: e.lastmod,

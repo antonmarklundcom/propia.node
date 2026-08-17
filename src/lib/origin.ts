@@ -16,6 +16,7 @@
  */
 import { headers } from "next/headers";
 import { CANONICAL_HOST, VERTICALS } from "@/config/verticals";
+import { rawHostFrom } from "./host";
 
 const PRIMARY_ORIGIN = `https://${CANONICAL_HOST}`;
 
@@ -29,12 +30,9 @@ interface HostParts {
 
 async function hostParts(): Promise<HostParts | null> {
   const h = await headers();
-  // x-forwarded-host wins: Hostinger's proxy sets it, and it may be a list.
-  const raw = (h.get("x-forwarded-host") ?? h.get("host") ?? "")
-    .split(",")[0]
-    .trim()
-    .toLowerCase()
-    .replace(/^www\./, "");
+  // Shared with middleware.ts (src/lib/host.ts): x-forwarded-host wins —
+  // Hostinger's proxy sets it, and it may be a list (audit F31).
+  const raw = rawHostFrom(h);
   if (!raw) return null;
   const bare = raw.split(":")[0];
   const local =
