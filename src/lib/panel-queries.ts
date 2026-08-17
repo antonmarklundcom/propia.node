@@ -387,6 +387,8 @@ export interface AgencyListingRow {
   priceAmount: string;
   priceCurrency: "USD" | "PYG";
   updatedAt: Date;
+  /** Rejection reason set by admin review (status "removed"), else null. */
+  reviewNotes: string | null;
 }
 
 /** All of an agency's listings (every status), newest-touched first. Uses
@@ -411,6 +413,7 @@ export async function getPanelListings(
       priceAmount: listings.priceAmount,
       priceCurrency: listings.priceCurrency,
       updatedAt: listings.updatedAt,
+      reviewNotes: listings.reviewNotes,
     })
     .from(listings)
     .where(guard)
