@@ -45,6 +45,14 @@ import {
 } from "./normalize";
 import type { ImportReport, RawListing } from "./types";
 
+/**
+ * The pool or a transaction handle — row writers take either, so commit can
+ * make each row's writes atomic (F46: a listing_sources insert that threw
+ * after the listing insert left a listing with no provenance, invisible to
+ * dedup, resync and rollback).
+ */
+type DbConn = typeof Db | Parameters<Parameters<(typeof Db)["transaction"]>[0]>[0];
+
 const LEVEL_RANK: Record<string, number> = {
   barrio: 4,
   ciudad: 3,
@@ -425,23 +433,25 @@ export async function commitImport(
           previous &&
           (previous.operation !== raw.operation ||
             Number(previous.priceUsd) !== row.priceUsd);
-        await db
-          .update(listings)
-          .set({
-            ...listingFields(raw, row.priceUsd!, row.locationId!),
-            ...(moneyChanged ? { cuotaGs: null } : {}),
-          })
-          .where(eq(listings.id, row.listingId!));
-        await backfillOwnership(db, row.listingId!, opts);
-        await syncImages(db, row.listingId!, raw.imageUrls);
-        await db
-          .update(listingSources)
-          .set({
-            contentHash: row.contentHash!,
-            dedupKey: row.dedupKey ?? null,
-            lastSeenAt: now,
-          })
-          .where(eq(listingSources.id, row.sourceRowId!));
+        await db.transaction(async (tx) => {
+          await tx
+            .update(listings)
+            .set({
+              ...listingFields(raw, row.priceUsd!, row.locationId!),
+              ...(moneyChanged ? { cuotaGs: null } : {}),
+            })
+            .where(eq(listings.id, row.listingId!));
+          await backfillOwnership(tx, row.listingId!, opts);
+          await syncImages(tx, row.listingId!, raw.imageUrls);
+          await tx
+            .update(listingSources)
+            .set({
+              contentHash: row.contentHash!,
+              dedupKey: row.dedupKey ?? null,
+              lastSeenAt: now,
+            })
+            .where(eq(listingSources.id, row.sourceRowId!));
+        });
 
         out.push(committed(row, row.listingId!, previous ? snapshot : null));
         continue;
@@ -501,25 +511,29 @@ export async function commitImport(
         continue;
       }
 
-      // created
-      const listingId = await insertListing(
-        db,
-        raw,
-        row.priceUsd!,
-        row.locationId!,
-        opts,
-      );
-      await syncImages(db, listingId, raw.imageUrls);
-      await db.insert(listingSources).values({
-        listingId,
-        source: raw.source,
-        scopeAgencyId,
-        sourceUrl: raw.sourceUrl,
-        sourceExternalId: raw.sourceExternalId,
-        contentHash: row.contentHash!,
-        dedupKey: row.dedupKey ?? null,
-        firstSeenAt: now,
-        lastSeenAt: now,
+      // created — one transaction, so a failed listing_sources insert cannot
+      // leave a listing with no provenance row (F46).
+      const listingId = await db.transaction(async (tx) => {
+        const id = await insertListing(
+          tx,
+          raw,
+          row.priceUsd!,
+          row.locationId!,
+          opts,
+        );
+        await syncImages(tx, id, raw.imageUrls);
+        await tx.insert(listingSources).values({
+          listingId: id,
+          source: raw.source,
+          scopeAgencyId,
+          sourceUrl: raw.sourceUrl,
+          sourceExternalId: raw.sourceExternalId,
+          contentHash: row.contentHash!,
+          dedupKey: row.dedupKey ?? null,
+          firstSeenAt: now,
+          lastSeenAt: now,
+        });
+        return id;
       });
       producedListingId.set(i, listingId);
       if (row.dedupKey) writtenDedupKeys.add(row.dedupKey);
@@ -668,7 +682,7 @@ function listingFields(raw: RawListing, priceUsd: number, locationId: number) {
 }
 
 async function insertListing(
-  db: typeof Db,
+  db: DbConn,
   raw: RawListing,
   priceUsd: number,
   locationId: number,
@@ -700,7 +714,7 @@ async function insertListing(
  * someone would let one import move another agency's inventory.
  */
 async function backfillOwnership(
-  db: typeof Db,
+  db: DbConn,
   listingId: number,
   opts: ImportOptions,
 ) {
@@ -730,7 +744,7 @@ async function backfillOwnership(
  * Empty/absent list → leave existing images untouched.
  */
 async function syncImages(
-  db: typeof Db,
+  db: DbConn,
   listingId: number,
   urls: string[] | undefined,
 ) {
