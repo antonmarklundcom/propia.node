@@ -1,5 +1,5 @@
 /**
- * propia.com.py — single shared schema for every domain (ARCHITECTURE.md §2).
+ * Single shared schema for every domain/door (ARCHITECTURE.md §2).
  *
  * Rules that keep the Postgres escape hatch open:
  *  - No stored procedures, no MySQL-specific JSON tricks in hot paths.
@@ -498,7 +498,7 @@ export const leads = mysqlTable(
       "developer",
       "agent_signup",
     ]).notNull(),
-    vertical: varchar("vertical", { length: 40 }).notNull(), // which domain captured it: 'propia','alquiler','en',...
+    vertical: varchar("vertical", { length: 40 }).notNull(), // which domain captured it: 'en','inmobiliaria','alquiler',...
     listingId: fk("listing_id"),
     projectId: fk("project_id"),
     name: varchar("name", { length: 140 }),

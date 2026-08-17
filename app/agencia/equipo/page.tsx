@@ -44,10 +44,10 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
  * siteOrigin().
  *
  * siteOrigin() answers "which domain owns this page for SEO" and falls back to
- * PRIMARY_ORIGIN (propia.com.py) for any host that is not an enabled vertical
- * — a domain that does not resolve today (CLAUDE.md, "Domains"). An invite link
- * has to open in a browser, so it is built from the host the founder is
- * actually looking at.
+ * PRIMARY_ORIGIN (= CANONICAL_HOST) for any host that is not an enabled
+ * vertical — including preview deploys and *.hostingersite.com, which is not
+ * where the founder is actually looking (CLAUDE.md, "Domains"). An invite link
+ * has to open in a browser, so it is built from the request's own host.
  */
 async function requestOrigin(): Promise<string> {
   const h = await headers();

@@ -7,14 +7,17 @@
  * code change. NEXT_PUBLIC_ prefix because client components (Newsletter
  * signup) also read them — Next inlines these at build time.
  *
- * [FOUNDER] The fallback email is on propia.com.py, a domain that is NOT
- * owned — mail to it dead-ends. Set NEXT_PUBLIC_CONTACT_EMAIL to a real
- * mailbox in the Hostinger env; until then every contact path is dead, which
- * is a business problem this module can only centralise, not fix.
+ * **Neither has a fallback, on purpose** (founder decision, 2026-08-17). The
+ * old default was `hola@propia.com.py`, on a domain nobody owns, so every
+ * mailto: on the site opened a compose window addressed to a black hole —
+ * worse than showing no address at all. Until a real mailbox exists, the
+ * contact channels are the on-site lead form (`/contacto`, `/publicar`,
+ * the form on every listing) and WhatsApp. Every consumer must therefore
+ * treat both of these as possibly-null and fall back to the form.
  */
-export const CONTACT_EMAIL =
-  process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hola@propia.com.py";
+export const CONTACT_EMAIL: string | null =
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL || null;
 
 /** Portal WhatsApp as typed (display form). Null = don't render WA CTAs. */
-export const CONTACT_WHATSAPP =
+export const CONTACT_WHATSAPP: string | null =
   process.env.NEXT_PUBLIC_CONTACT_WHATSAPP || null;

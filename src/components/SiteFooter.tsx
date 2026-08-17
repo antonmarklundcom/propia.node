@@ -76,10 +76,19 @@ export async function SiteFooter() {
                 </a>
               </li>
             )}
+            {/* No portal mailbox exists yet, so the form is the contact path —
+                showing a mailto: to an address nobody reads is worse than
+                sending people somewhere that actually reaches us. */}
             <li>
-              <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
-                ✉️ {CONTACT_EMAIL}
-              </a>
+              {CONTACT_EMAIL ? (
+                <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
+                  ✉️ {CONTACT_EMAIL}
+                </a>
+              ) : (
+                <Link className="site-footer__link" href="/contacto">
+                  ✉️ Escribinos
+                </Link>
+              )}
             </li>
             <li>
               <span className="site-footer__muted">📍 Asunción, Paraguay</span>

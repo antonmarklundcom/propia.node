@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-08-16.
+Last verified against the code: 2026-08-17.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -12,7 +12,7 @@ Last verified against the code: 2026-08-16.
 | --- | --- |
 | `realestateinparaguay.com` | **This app, live, today**, and the current `CANONICAL_HOST` default. Serves the Spanish marketplace. Slated to become the **English** site once `inmobiliaria.com.py` takes over as Spanish primary — its `verticals.ts` entry still says `locale: "es"` and must not be flipped alone (see the flip checklist in PLAN.md D6). |
 | `inmobiliaria.com.py` (singular) | **Owned, enabled, and as of 2026-08-16 the Spanish marketplace primary in waiting** — the founder reversed the earlier "his own agency brand only, never wire it in" call (PLAN.md D6). Same app, same database, same `/admin` and `/agencia`. It ships with `ownsListingDetail: false` while both hosts serve identical Spanish rows, so its `/propiedad` pages canonicalise to `realestateinparaguay.com` and its sitemap omits them; every other page type there indexes normally. |
-| `propia.com.py` | **NOT owned.** Aspirational only. Still declared (disabled) in `verticals.ts` and referenced throughout ARCHITECTURE.md, README.md and `.env.example` — all of that is a plan, not a fact. `inmobiliaria.com.py` is the `.com.py` domain it was standing in for; do **not** make it the fallback for anything. |
+| `propia.com.py` | **NOT owned, and as of 2026-08-17 no longer in the code.** Its `verticals.ts` entry (and the `"propia"` vertical key) is deleted, the `hola@propia.com.py` contact fallback is gone, and the founder has ruled out *propia* as a brand name anywhere a client or realtor can see it. ARCHITECTURE.md and README.md still name it — that is stale prose, not a fact. `inmobiliaria.com.py` is the `.com.py` domain it was standing in for; do **not** reintroduce it as a fallback for anything. |
 | `inmobiliarios.com.py` (plural) | Not owned. The future agent-directory vertical already declared in `verticals.ts`. Distinct from the singular above — do not conflate them. |
 | `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
 
@@ -67,11 +67,25 @@ How to read it, and the one mistake to avoid:
 - Copy that names the brand is brand-parameterised, not constant:
   `faqSections(brand)`, `esSiteNotice.body(brand)`, `esPrecios.methodBody(brand)`,
   `inquiryPrefillFor(brand, …)`, and friends.
-- Still *propia*-flavoured and untouched by this: the session cookie
-  (`propia_session`), localStorage keys, and the support email
-  `hola@propia.com.py` — **which is on a domain the founder does not own**, so
-  every contact path currently dead-ends. Fixing that needs a real mailbox
-  from the founder, not a code decision.
+- **No *propia* in anything a visitor, realtor or staff user sees** (founder
+  decision, 2026-08-17). The `propia.com.py` vertical and its `brand: "Propia"`
+  are deleted; the admin CSV template downloads as `plantilla-avisos.csv`.
+- **There is no portal email, on purpose.** `CONTACT_EMAIL` / `CONTACT_WHATSAPP`
+  in `src/config/contact.ts` are `string | null` with **no fallback** — the old
+  `hola@propia.com.py` default opened a compose window to a domain nobody owns.
+  Until the founder has a real mailbox (he wants it outside Hostinger, ideally
+  through VenderCRM), the contact channels are **the on-site lead form and
+  WhatsApp**. Every consumer already handles null: the footer and `/contacto`
+  hide the address, the privacy policy drops the "or write to" clause, the
+  Organization JSON-LD omits the email `contactPoint`, the homepage publish CTA
+  routes to `/publicar`, and `NewsletterSignup` falls back to WhatsApp and then
+  to a `/contacto` link. **Do not add a placeholder address back.**
+- Still *propia*-flavoured and deliberately left alone (backend only, never
+  rendered): the session cookie `propia_session`, the localStorage keys
+  `propia:recently-viewed` / `propia:publish-draft`, the docker-compose DB
+  name/user, `package.json`'s name, and the import User-Agent in
+  `src/lib/safe-fetch.ts` (that file is being rewritten in the security PR —
+  change the UA there, not on a parallel branch).
 - The site is **Spanish-only** for now. Both hosts serve `locale: "es"`; the
   English vertical waits until the Spanish site is finished.
 

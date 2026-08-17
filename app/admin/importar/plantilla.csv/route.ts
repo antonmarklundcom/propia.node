@@ -20,7 +20,7 @@ export async function GET(): Promise<Response> {
   return new Response(`﻿${templateCsv()}`, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="plantilla-propia.csv"',
+      "Content-Disposition": 'attachment; filename="plantilla-avisos.csv"',
       "Cache-Control": "no-store",
     },
   });

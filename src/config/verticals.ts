@@ -10,7 +10,6 @@
  */
 
 export type VerticalKey =
-  | "propia"
   | "terreno"
   | "alquiler"
   | "agents"
@@ -38,31 +37,18 @@ export interface VerticalConfig {
   /** Directory/projects domains render a different shell entirely. */
   mode?: "portal" | "directory" | "projects";
   copy: "ownership" | "land" | "rental" | "foreign" | "directory";
-  /** Only enabled verticals are routed; others 302 to propia until launch. */
+  /** Only enabled verticals are routed; others 302 to CANONICAL_HOST until launch. */
   enabled: boolean;
   /**
    * Whether /propiedad/{slug} is canonical on THIS host (§2.8: detail pages
-   * live on propia only; the EN site is the translation exception). Feeder
-   * domains own category/landing pages and link into the primary host, so
-   * their detail pages canonicalise away — see `listingCanonicalOrigin()`.
+   * live on the primary host only; the EN site is the translation exception).
+   * Feeder domains own category/landing pages and link into the primary host,
+   * so their detail pages canonicalise away — see `listingCanonicalOrigin()`.
    */
   ownsListingDetail: boolean;
 }
 
 export const VERTICALS: Record<string, VerticalConfig> = {
-  /**
-   * NOT owned by the founder — aspirational future primary domain (see
-   * CLAUDE.md). Declared but disabled so routing/canonical types stay ready
-   * for it; do not delete or re-enable until the domain is actually bought.
-   */
-  "propia.com.py": {
-    key: "propia",
-    brand: "Propia",
-    locale: "es",
-    copy: "ownership",
-    enabled: false,
-    ownsListingDetail: true,
-  },
   "terreno.com.py": {
     key: "terreno",
     brand: "Terreno.com.py",
@@ -100,11 +86,10 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     ownsListingDetail: false,
   },
   /**
-   * INTERIM: this is the live production host (see CLAUDE.md) — the founder
-   * does not yet own a .com.py marketplace domain, so the Spanish site is
-   * primary here instead of on `propia.com.py`. When a .com.py domain is
-   * bought and becomes primary, this entry reverts to the originally planned
-   * English feeder vertical: `key: "en"`, `locale: "en"`,
+   * INTERIM: this is the live production host (see CLAUDE.md), and the
+   * Spanish site is primary here. When `inmobiliaria.com.py` takes over as
+   * the Spanish primary (PLAN.md D6), this entry becomes the English feeder
+   * vertical it was originally planned as: `key: "en"`, `locale: "en"`,
    * `filters: { foreign_exposure: true }`, `copy: "foreign"`,
    * `enabled: false`, `ownsListingDetail: true` (its own translated detail
    * pages, hreflang'd against the primary — translation ≠ duplicate).
@@ -120,9 +105,8 @@ export const VERTICALS: Record<string, VerticalConfig> = {
   /**
    * SECOND production host (see CLAUDE.md, PLAN.md D6) — same app, same
    * database as realestateinparaguay.com. Owned by the founder, and as of
-   * 2026-08-16 this is the **Spanish marketplace primary in waiting** — the
-   * real `.com.py` domain the `propia.com.py` placeholder always stood in
-   * for. It was previously earmarked for his own individual agency brand and
+   * 2026-08-16 this is the **Spanish marketplace primary in waiting**. It
+   * was previously earmarked for his own individual agency brand and
    * ruled out of this app entirely — that call was reversed, and the domain
    * now carries both his own inventory and other realtors'/agencies' listings
    * he takes on case-by-case until his EAS/SERPLAID license issues
@@ -164,20 +148,27 @@ export const VERTICALS: Record<string, VerticalConfig> = {
  * URLs here — see `src/lib/origin.ts`. Changing it is a D2 decision, not a
  * code decision.
  *
- * INTERIM default: `realestateinparaguay.com`, the only production host
- * actually owned today (see CLAUDE.md). `propia.com.py` is aspirational and
- * not owned — if this fell back to it, a missing env var on Hostinger would
- * resurrect canonicals pointing at a domain that doesn't resolve. Revert this
- * default to `propia.com.py` only once that domain is actually acquired.
+ * INTERIM default: `realestateinparaguay.com`, one of the two hosts actually
+ * owned today (see CLAUDE.md). It moves to `inmobiliaria.com.py` on flip day,
+ * as one item in the PLAN.md D6 checklist — never on its own, because
+ * `DEFAULT` below derives the locale, filters and copy of every request from
+ * whatever this names.
  */
 export const CANONICAL_HOST =
   process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "realestateinparaguay.com";
 
-// Fallback must be an OWNED host: if CANONICAL_HOST ever names a host with
-// no entry, falling back to unowned propia.com.py would brand every page
-// "Propia" while canonicals still self-reference (audit F41).
+// Fallback must be an OWNED host: if CANONICAL_HOST ever names a host with no
+// entry, every page would be branded with a domain the founder does not own
+// while canonicals still self-reference (audit F41).
 const DEFAULT =
   VERTICALS[CANONICAL_HOST] ?? VERTICALS["realestateinparaguay.com"];
+
+/**
+ * The vertical key to stamp on a row when no `x-vertical` header reached the
+ * handler (direct API call, a request that bypassed middleware). Derived from
+ * DEFAULT so it can never name a door that no longer exists.
+ */
+export const DEFAULT_VERTICAL_KEY: VerticalKey = DEFAULT.key;
 
 /** Resolve a Host header to a vertical. Unknown hosts (localhost, previews) → CANONICAL_HOST's vertical. */
 export function resolveVertical(host: string | null): VerticalConfig {
