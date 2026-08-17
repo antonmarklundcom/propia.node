@@ -10,6 +10,8 @@ export function CategoryFilterBar({
   precioMax,
   dormitorios,
   orden,
+  vista,
+  tipoVacio,
   hasActiveFilters,
 }: {
   basePath: string;
@@ -17,10 +19,18 @@ export function CategoryFilterBar({
   precioMax?: string;
   dormitorios?: string;
   orden?: string;
+  /** Current view mode (?vista=mapa) — kept across a filter submit. */
+  vista?: string;
+  /** Empty-category redirect notice (?tipo_vacio=…) — kept across a submit. */
+  tipoVacio?: string;
   hasActiveFilters: boolean;
 }) {
   return (
     <form className="filter-bar" method="GET" action={basePath}>
+      {/* A GET form replaces the whole query string, so params this form
+          doesn't own must ride along as hidden inputs or they're dropped. */}
+      {vista && <input type="hidden" name="vista" value={vista} />}
+      {tipoVacio && <input type="hidden" name="tipo_vacio" value={tipoVacio} />}
       <div className="filter-bar__field">
         <label className="filter-bar__label" htmlFor="precio_min">
           Precio mín. (US$)

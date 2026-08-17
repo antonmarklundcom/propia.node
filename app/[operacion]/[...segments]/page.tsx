@@ -299,6 +299,8 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         precioMax={typeof sp.precio_max === "string" ? sp.precio_max : undefined}
         dormitorios={typeof sp.dormitorios === "string" ? sp.dormitorios : undefined}
         orden={typeof sp.orden === "string" ? sp.orden : undefined}
+        vista={mapView ? "mapa" : undefined}
+        tipoVacio={typeof sp.tipo_vacio === "string" ? sp.tipo_vacio : undefined}
         hasActiveFilters={hasActiveFilters}
       />
     </>
