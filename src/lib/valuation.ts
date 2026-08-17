@@ -96,6 +96,7 @@ async function estimateValueUncached(
     .select({
       medianPriceM2Usd: marketMedians.medianPriceM2Usd,
       sampleSize: marketMedians.sampleSize,
+      sampleSizeM2: marketMedians.sampleSizeM2,
     })
     .from(marketMedians)
     .where(
@@ -108,15 +109,21 @@ async function estimateValueUncached(
     );
 
   // Sample-weighted, same as the price pages: a barrio with 40 comparables
-  // should count for more than one with two.
+  // should count for more than one with two. The whole estimate is derived
+  // from price-per-m², so the sample that gates it and sizes the band is the
+  // m² sample — counting area-less listings claimed 40 comparables behind a
+  // number computed from 2 (audit F16). Rows written before sample_size_m2
+  // existed carry 0 there; fall back to the old (inflated) count until the
+  // medians cron re-runs, rather than refusing every estimate.
   let weighted = 0;
   let weight = 0;
   let sample = 0;
   for (const r of rows) {
-    sample += r.sampleSize;
     if (r.medianPriceM2Usd == null) continue;
-    weighted += Number(r.medianPriceM2Usd) * r.sampleSize;
-    weight += r.sampleSize;
+    const n = r.sampleSizeM2 > 0 ? r.sampleSizeM2 : r.sampleSize;
+    sample += n;
+    weighted += Number(r.medianPriceM2Usd) * n;
+    weight += n;
   }
 
   if (weight === 0) {
