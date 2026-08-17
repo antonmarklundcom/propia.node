@@ -22,6 +22,7 @@
  */
 import "server-only";
 import { fetchUserUrl } from "@/lib/safe-fetch";
+import { parseAmount } from "./normalize";
 import type { Operation, PropertyType } from "./types";
 
 export interface ParsedListing {
@@ -141,39 +142,8 @@ function firstNumber(...values: unknown[]): number | null {
   return null;
 }
 
-/**
- * Parse a printed amount. Paraguay writes `Gs. 1.250.000.000` and
- * `US$ 85.000`, i.e. '.' as the thousands separator — the opposite of the
- * en-US assumption, and getting it backwards would turn 85 000 dollars into 85.
- */
-export function parseAmount(input: string): number | null {
-  const cleaned = input.replace(/[^\d.,]/g, "");
-  if (!cleaned) return null;
-
-  const lastDot = cleaned.lastIndexOf(".");
-  const lastComma = cleaned.lastIndexOf(",");
-  const afterComma = lastComma === -1 ? -1 : cleaned.length - lastComma - 1;
-  let normalized: string;
-
-  if (lastComma > lastDot && afterComma === 3) {
-    // '185,000' — a comma with exactly three digits after it and no dot in
-    // sight is the en-US thousands separator, which bilingual PY portals do
-    // use. Reading it as a decimal turned 185 000 into 185.
-    normalized = cleaned.replace(/,/g, "");
-  } else if (lastComma > lastDot) {
-    // '1.250.000,50' → decimal comma
-    normalized = cleaned.replace(/\./g, "").replace(",", ".");
-  } else if (lastDot > -1 && cleaned.length - lastDot - 1 === 2 && lastComma === -1) {
-    // '85000.50' → a genuine decimal point
-    normalized = cleaned;
-  } else {
-    // '1.250.000' / '85.000' / '1,250,000' → separators only
-    normalized = cleaned.replace(/[.,]/g, "");
-  }
-
-  const n = Number(normalized);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
+// Moved to normalize.ts so the CSV adapter shares it; re-exported for callers.
+export { parseAmount } from "./normalize";
 
 function detectCurrency(text: string): "USD" | "PYG" | null {
   if (/\b(usd|u\$s|us\$|dólares|dolares)\b/i.test(text)) return "USD";

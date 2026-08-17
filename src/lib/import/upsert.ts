@@ -196,6 +196,16 @@ export async function planImport(
       }
 
       const priceUsd = toPriceUsd(raw.priceAmount, raw.priceCurrency, usdToPyg);
+      // Sanity floor: no property in this market sells for under US$1000, so a
+      // venta row below it is a mangled number (wrong thousands separator,
+      // truncated cell), and one bad price poisons the medians, /precios and
+      // /tasacion. Rejecting loudly beats importing quietly.
+      if (raw.operation === "venta" && priceUsd < 1000) {
+        skip(
+          `precio de venta sospechosamente bajo (US$ ${priceUsd}) — revisá el separador de miles`,
+        );
+        continue;
+      }
       const cHash = computeContentHash(raw, priceUsd);
       const dKey = computeDedupKey(raw, priceUsd, locationId, scopeAgencyId);
 
