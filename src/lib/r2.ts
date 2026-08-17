@@ -8,7 +8,8 @@
  * configured" instead of the page 500ing, and nothing else in the app cares.
  *
  * Reads never come through here. Public delivery is the R2 public bucket URL
- * (R2_PUBLIC_BASE_URL, mapped to img.propia.com.py), which is what
+ * (R2_PUBLIC_BASE_URL — the bucket's pub-*.r2.dev URL or a custom domain
+ * actually mapped in Cloudflare; see .env.example), which is what
  * `imageUrl()` in format.ts builds — zero egress cost and no Node process in
  * the path.
  */

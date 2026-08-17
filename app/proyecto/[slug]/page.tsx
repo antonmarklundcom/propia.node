@@ -242,7 +242,7 @@ export default async function ProjectPage({ params }: Params) {
                 {developer?.name ?? `Publicado en ${brand}`}
               </div>
               <div className="seller-card__kind">
-                {developer ? "Desarrolladora" : "propia.com.py"}
+                {developer ? "Desarrolladora" : brand}
               </div>
             </div>
           </div>
