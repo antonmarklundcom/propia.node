@@ -419,9 +419,18 @@ export async function commitImport(
           };
         }
 
+        // A cached cuota computed from the old operation/price is wrong money
+        // on the card; clear it and let cron:cuotas recompute (audit F15).
+        const moneyChanged =
+          previous &&
+          (previous.operation !== raw.operation ||
+            Number(previous.priceUsd) !== row.priceUsd);
         await db
           .update(listings)
-          .set(listingFields(raw, row.priceUsd!, row.locationId!))
+          .set({
+            ...listingFields(raw, row.priceUsd!, row.locationId!),
+            ...(moneyChanged ? { cuotaGs: null } : {}),
+          })
           .where(eq(listings.id, row.listingId!));
         await backfillOwnership(db, row.listingId!, opts);
         await syncImages(db, row.listingId!, raw.imageUrls);

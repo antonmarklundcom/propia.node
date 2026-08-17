@@ -34,20 +34,31 @@ async function main() {
   }));
 
   if (!programs.some((p) => p.active)) {
-    console.log("no active financing programs — nothing to compute");
-    process.exit(0);
+    // Keep going: with nothing active every cuota computes to NULL, and the
+    // sweep below clears values still cached from a deactivated program.
+    console.log("no active financing programs — clearing cached cuotas");
   }
 
+  // Every listing, not just venta: a listing flipped venta→alquiler keeps its
+  // stale purchase cuota otherwise (audit F15). Non-venta rows get NULL.
   const rows = await db
-    .select({ id: listings.id, priceUsd: listings.priceUsd })
-    .from(listings)
-    .where(eq(listings.operation, "venta"));
+    .select({
+      id: listings.id,
+      operation: listings.operation,
+      priceUsd: listings.priceUsd,
+      cuotaGs: listings.cuotaGs,
+    })
+    .from(listings);
 
   let updated = 0;
   for (const row of rows) {
-    const priceGs = Number(row.priceUsd) * USD_TO_PYG;
-    const result = bestCuota(priceGs, programs);
-    const cuotaGs = result ? result.monthlyGs.toString() : null;
+    let cuotaGs: string | null = null;
+    if (row.operation === "venta") {
+      const priceGs = Number(row.priceUsd) * USD_TO_PYG;
+      const result = bestCuota(priceGs, programs);
+      cuotaGs = result ? result.monthlyGs.toString() : null;
+    }
+    if (cuotaGs === row.cuotaGs) continue; // already right — skip the write
     await db
       .update(listings)
       .set({ cuotaGs })
@@ -55,7 +66,7 @@ async function main() {
     updated++;
   }
 
-  console.log(`recomputed cuota for ${updated} venta listings`);
+  console.log(`recomputed cuota for ${updated} of ${rows.length} listings`);
   process.exit(0);
 }
 
