@@ -24,6 +24,7 @@ import { citiesWithPrices } from "@/lib/precios-queries";
 import { categoryUrl } from "@/lib/urls";
 import { brandTaglineFor } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
+import { siteOrigin } from "@/lib/origin";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
 
@@ -79,6 +80,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
     description:
       "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
+    // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
+    alternates: { canonical: await siteOrigin() },
     // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
     // is the size every network crops to.
     openGraph: {

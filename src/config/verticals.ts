@@ -173,7 +173,11 @@ export const VERTICALS: Record<string, VerticalConfig> = {
 export const CANONICAL_HOST =
   process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "realestateinparaguay.com";
 
-const DEFAULT = VERTICALS[CANONICAL_HOST] ?? VERTICALS["propia.com.py"];
+// Fallback must be an OWNED host: if CANONICAL_HOST ever names a host with
+// no entry, falling back to unowned propia.com.py would brand every page
+// "Propia" while canonicals still self-reference (audit F41).
+const DEFAULT =
+  VERTICALS[CANONICAL_HOST] ?? VERTICALS["realestateinparaguay.com"];
 
 /** Resolve a Host header to a vertical. Unknown hosts (localhost, previews) → CANONICAL_HOST's vertical. */
 export function resolveVertical(host: string | null): VerticalConfig {

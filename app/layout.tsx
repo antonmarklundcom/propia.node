@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNotice } from "@/components/SiteNotice";
 import { brandMeta } from "@/lib/brand-server";
+import { siteOrigin } from "@/lib/origin";
 import { currentVertical } from "@/lib/vertical-context";
 import { themeFor } from "@/design/themes";
 
@@ -19,9 +20,24 @@ import { themeFor } from "@/design/themes";
 export async function generateMetadata(): Promise<Metadata> {
   const { name, tagline } = await brandMeta();
   return {
+    // Without a metadataBase, Next resolves relative OG images against
+    // http://localhost:3000 — an unfetchable og:image and a bare grey card
+    // on WhatsApp, the primary share channel here (audit F6).
+    metadataBase: new URL(await siteOrigin()),
     title: { default: `${name} — ${tagline}`, template: `%s — ${name}` },
     description:
       "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay.",
+    // Default Open Graph for every page that doesn't set its own: Next only
+    // emits og:* when metadata.openGraph is truthy, so before this the whole
+    // category tree, /precios, profiles and legal pages shared as bare links
+    // (audit F7). A page's own openGraph object replaces this one wholesale —
+    // pages that set one must carry their own image if they want one.
+    openGraph: {
+      type: "website",
+      siteName: name,
+      locale: "es_PY",
+      images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
+    },
   };
 }
 
