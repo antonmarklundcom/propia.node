@@ -8,7 +8,7 @@
  * deployment behind several domains it is a per-request value (src/lib/origin.ts),
  * and JSON-LD that disagrees with the page's own canonical is a crawl error.
  */
-import type { ListingDetail, LocationRow } from "./queries";
+import type { ListingDetail } from "./queries";
 import { imageUrl } from "./format";
 import { listingUrl } from "./urls";
 
@@ -23,7 +23,10 @@ export function breadcrumbJsonLd(
       "@type": "ListItem",
       position: i + 1,
       name: it.name,
-      item: `${origin}${it.url}`,
+      // An already-absolute url passes through: the listing detail page's
+      // ancestors belong to the serving host while its leaf may be canonical
+      // on another domain (audit F32) — one origin can't cover both.
+      item: /^https?:\/\//.test(it.url) ? it.url : `${origin}${it.url}`,
     })),
   };
 }
@@ -155,18 +158,4 @@ export function organizationJsonLd(
     url: origin,
     ...(contactPoint.length > 0 ? { contactPoint } : {}),
   };
-}
-
-/** Breadcrumb items from a location chain + operation label. */
-export function locationBreadcrumb(
-  chain: LocationRow[],
-  tail?: { name: string; url: string },
-): { name: string; url: string }[] {
-  const items = [{ name: "Inicio", url: "/" }];
-  // location chain contributes names; category/listing pages append the tail.
-  for (const loc of chain) {
-    items.push({ name: loc.name, url: `/venta/${loc.slug}` });
-  }
-  if (tail) items.push(tail);
-  return items;
 }

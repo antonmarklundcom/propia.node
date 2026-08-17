@@ -10,7 +10,7 @@ import {
   getAgencyById,
 } from "@/lib/queries";
 import { agentUrl, agencyUrl } from "@/lib/urls";
-import { siteOrigin } from "@/lib/origin";
+import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
 import { getIndexability } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
@@ -66,6 +66,8 @@ export default async function AgentProfilePage({ params }: Params) {
     agent.agencyId ? getAgencyById(agent.agencyId) : Promise.resolve(null),
   ]);
   const origin = await siteOrigin();
+  // ItemList entries are listing detail URLs — canonical host may differ (F9).
+  const listingOrigin = await listingCanonicalOrigin();
   const canonical = `${origin}${agentUrl(agent.slug)}`;
   const initials = agent.name
     .split(/\s+/)
@@ -85,7 +87,7 @@ export default async function AgentProfilePage({ params }: Params) {
           data={[
             breadcrumbJsonLd(origin, crumbs),
             itemListJsonLd(
-              origin,
+              listingOrigin,
               listings.map((l) => ({ title: l.title, url: listingUrl(l) })),
             ),
           ]}

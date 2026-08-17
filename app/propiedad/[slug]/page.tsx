@@ -26,7 +26,7 @@ import {
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
 import { esPrecios, inquiryPrefillFor } from "@/i18n/es";
-import { listingCanonicalOrigin } from "@/lib/origin";
+import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
 import { getCityPrices } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { isBotUserAgent } from "@/lib/view-tracking";
@@ -61,6 +61,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const detail = await load(slug);
   if (!detail) return { title: `Propiedad no encontrada` };
   const { listing } = detail;
+  const brand = await brandName();
   const canonical = `${await listingCanonicalOrigin()}${listingUrl(listing)}`;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
@@ -68,7 +69,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
     alternates: { canonical },
     openGraph: {
-      title: listing.title,
+      // og:title doesn't inherit title.template — brand goes in by hand (F47).
+      title: `${listing.title} — ${brand}`,
       url: canonical,
       images: cover ? [cover] : undefined,
       type: "website",
@@ -133,6 +135,7 @@ export default async function ListingPage({ params }: Params) {
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
   const area = listing.areaM2 ?? listing.landM2;
   const origin = await listingCanonicalOrigin();
+  const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
   const waMessage = inquiryPrefillFor(brand, listing.title, canonical);
   const waHref = waLink(contactWhatsapp, waMessage);
@@ -169,9 +172,11 @@ export default async function ListingPage({ params }: Params) {
   }
   crumbs.push({ name: listing.title });
 
+  // Ancestor crumbs are this host's own category pages; only the leaf lives
+  // on the listing's canonical origin, so it goes in absolute (F32).
   const jsonLdCrumbs = crumbs
     .filter((c): c is { name: string; url: string } => Boolean(c.url))
-    .concat([{ name: listing.title, url: listingUrl(listing) }]);
+    .concat([{ name: listing.title, url: canonical }]);
 
   const realImages = images.filter((im) => !isPlaceholderPhoto(im.r2Key));
   const visibleThumbs = realImages.slice(1, 4);
@@ -246,7 +251,7 @@ export default async function ListingPage({ params }: Params) {
       <JsonLd
         data={[
           listingJsonLd(origin, detail),
-          breadcrumbJsonLd(origin, jsonLdCrumbs),
+          breadcrumbJsonLd(servingOrigin, jsonLdCrumbs),
         ]}
       />
       <RecentlyViewedRecorder
