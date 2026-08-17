@@ -280,6 +280,9 @@ export async function planImport(
           .limit(1);
 
         if (dup) {
+          // Memoise the DB hit too: a second batch row with this key should
+          // resolve in-batch instead of re-querying and re-attaching (F60).
+          seenDedup.set(dKey, planned.length);
           planned.push({
             ...base,
             outcome: "deduped",
@@ -336,6 +339,13 @@ export async function commitImport(
   const scopeAgencyId = plan.scopeAgencyId;
   /** Row index → the listing id it produced, for in-batch dedupe targets. */
   const producedListingId = new Map<number, number>();
+  /**
+   * Dedup keys whose provenance row was already written by this batch. Two
+   * batch rows carrying the same key and no external id are the same source
+   * saying the same thing twice — a second listing_sources row would be a
+   * duplicate, not extra provenance (F60).
+   */
+  const writtenDedupKeys = new Set<string>();
 
   for (let i = 0; i < plan.rows.length; i++) {
     const row = plan.rows[i];
@@ -372,6 +382,41 @@ export async function commitImport(
           .where(eq(listings.id, row.listingId!))
           .limit(1);
 
+        /**
+         * The snapshot must cover everything this branch overwrites, not just
+         * scalar columns. syncImages() below deletes and re-inserts the image
+         * rows, and the source row's content_hash advances — without capturing
+         * both, a rollback restored the scalars but left curated photos gone
+         * and the hash pointing at the bad import, so re-uploading a corrected
+         * file reported `unchanged` and never applied the fix.
+         * The `_` keys ride along in previous_json; rollback splits them off.
+         */
+        const snapshot: Record<string, unknown> = { ...previous };
+        if (raw.imageUrls && raw.imageUrls.length > 0) {
+          const imageRows = await db
+            .select({
+              r2Key: listingImages.r2Key,
+              position: listingImages.position,
+              width: listingImages.width,
+              height: listingImages.height,
+              watermarkScore: listingImages.watermarkScore,
+            })
+            .from(listingImages)
+            .where(eq(listingImages.listingId, row.listingId!));
+          snapshot._images = imageRows;
+        }
+        const [prevSource] = await db
+          .select({ contentHash: listingSources.contentHash })
+          .from(listingSources)
+          .where(eq(listingSources.id, row.sourceRowId!))
+          .limit(1);
+        if (prevSource) {
+          snapshot._source = {
+            id: row.sourceRowId!,
+            contentHash: prevSource.contentHash,
+          };
+        }
+
         await db
           .update(listings)
           .set(listingFields(raw, row.priceUsd!, row.locationId!))
@@ -387,7 +432,7 @@ export async function commitImport(
           })
           .where(eq(listingSources.id, row.sourceRowId!));
 
-        out.push(committed(row, row.listingId!, previous ?? null));
+        out.push(committed(row, row.listingId!, previous ? snapshot : null));
         continue;
       }
 
@@ -410,7 +455,16 @@ export async function commitImport(
           });
           continue;
         }
-        await db.insert(listingSources).values({
+        producedListingId.set(i, target);
+        if (
+          row.dedupKey &&
+          !raw.sourceExternalId &&
+          writtenDedupKeys.has(row.dedupKey)
+        ) {
+          out.push(committed(row, target, null));
+          continue;
+        }
+        const [srcRes] = await db.insert(listingSources).values({
           listingId: target,
           source: raw.source,
           scopeAgencyId,
@@ -421,7 +475,18 @@ export async function commitImport(
           firstSeenAt: now,
           lastSeenAt: now,
         });
-        out.push(committed(row, target, null));
+        if (row.dedupKey) writtenDedupKeys.add(row.dedupKey);
+        // The rollback needs to know exactly which provenance row this batch
+        // attached: `first_seen_at >= job.createdAt` never matched (the job
+        // header is written after commit), so deduped rollbacks were no-ops
+        // that still claimed success (F12).
+        out.push(
+          committed(row, target, {
+            _sourceRowId: Number(
+              (srcRes as unknown as { insertId: number }).insertId,
+            ),
+          }),
+        );
         continue;
       }
 
@@ -446,6 +511,7 @@ export async function commitImport(
         lastSeenAt: now,
       });
       producedListingId.set(i, listingId);
+      if (row.dedupKey) writtenDedupKeys.add(row.dedupKey);
       out.push(committed(row, listingId, null));
     } catch (e) {
       out.push({
