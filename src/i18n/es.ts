@@ -397,6 +397,8 @@ export const esPanel = {
   importCreated:
     "Borrador creado. Revisalo, agregá fotos y mandalo a publicación.",
   importDuplicate: "Ese enlace ya fue importado antes:",
+  importDuplicateFlash:
+    "Ese enlace ya fue importado antes — no se creó un aviso duplicado.",
   importLocationLabel: "Ubicación (confirmá o corregí)",
 
   // Importación masiva (/admin/importar)

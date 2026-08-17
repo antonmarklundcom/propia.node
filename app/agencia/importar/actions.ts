@@ -12,6 +12,9 @@
  */
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { locations } from "@/db/schema";
 import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   importListingFromUrl,
@@ -89,6 +92,22 @@ export async function confirmImportAction(formData: FormData): Promise<void> {
     locationId > 0;
 
   if (!valid) redirect("/agencia/importar?msg=invalid");
+
+  // The id arrives from the form and a wrong one would file the listing under
+  // a location that does not exist — off every SEO page, invisible to search.
+  const [location] = await db
+    .select({ id: locations.id })
+    .from(locations)
+    .where(eq(locations.id, locationId!))
+    .limit(1);
+  if (!location) redirect("/agencia/importar?msg=invalid");
+
+  // Re-check at write time: step 1's duplicate warning is minutes old by now,
+  // and a double-submit (or two agents pasting the same link) would otherwise
+  // create two listings for one URL. The existing claim may belong to someone
+  // else, so this points back at the form rather than at their listing.
+  const existing = await findExistingClaim(sourceUrl);
+  if (existing) redirect("/agencia/importar?msg=duplicate");
 
   const listingId = await createClaimedDraft({
     // Only the source URL and the free-text location survive from the parse;
