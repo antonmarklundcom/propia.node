@@ -56,19 +56,24 @@ export default async function RootLayout({
   return (
     <html lang={vertical.locale === "en" ? "en" : "es-PY"} style={theme}>
       <head>
-        {/* Cormorant Garamond + Jost, loaded from Google rather than through
-            next/font: next/font fetches at build time, and the Hostinger build
-            must not be able to fail on someone else's CDN. Self-hosting the two
-            families is the eventual fix. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* Cormorant Garamond + Jost are self-hosted (audit F50): the
+            @font-face rules live in globals.css and the variable woff2 files
+            in public/fonts — no render-blocking third-party CSS, and the
+            Hostinger build can't fail on someone else's CDN. Preload both so
+            text doesn't reflow when they land. */}
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
+          rel="preload"
+          href="/fonts/jost-latin.woff2"
+          as="font"
+          type="font/woff2"
           crossOrigin=""
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          href="/fonts/cormorant-garamond-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin=""
         />
       </head>
       <body
