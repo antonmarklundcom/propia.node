@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import { es } from "@/i18n/es";
 import { currentVertical } from "@/lib/vertical-context";
 import {
@@ -24,6 +25,9 @@ import { citiesWithPrices } from "@/lib/precios-queries";
 import { categoryUrl } from "@/lib/urls";
 import { brandTaglineFor } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
+import { siteOrigin } from "@/lib/origin";
+import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
+import { waLink } from "@/lib/wa";
 
 /**
  * Zone cards on the home page. Each one needs a photograph, so this is a fixed
@@ -69,7 +73,57 @@ const CITY_SHORTCUTS = [
   "Encarnación",
 ];
 
-export const revalidate = 600;
+/**
+ * NOTE: no `export const revalidate` here — the page renders per request
+ * (brand/origin come from the Host header, a dynamic API), which made a
+ * route-level revalidate silently dead (audit F17/F37). The DB work is
+ * cached below in getHomePayload instead: the render still runs per hit,
+ * but its 10+ queries run once per 10 minutes.
+ */
+const getHomePayload = unstable_cache(
+  async () => {
+    const [
+      recent,
+      cities,
+      total,
+      ventaCasas,
+      ventaDeptos,
+      alquileres,
+      terrenos,
+      featuredProjects,
+      featuredDevelopers,
+      priceCities,
+    ] = await Promise.all([
+      getRecentListings(8),
+      listCities(),
+      countPublished(),
+      getRecentListingsBy({ operation: "venta", type: "casa" }, 8),
+      getRecentListingsBy({ operation: "venta", type: "departamento" }, 8),
+      getRecentListingsBy({ operation: "alquiler" }, 8),
+      getRecentListingsBy({ operation: "venta", type: "terreno" }, 8),
+      getFeaturedProjects(6),
+      getFeaturedDevelopers(8),
+      citiesWithPrices(),
+    ]);
+    return {
+      recent,
+      cities,
+      total,
+      ventaCasas,
+      ventaDeptos,
+      alquileres,
+      terrenos,
+      featuredProjects,
+      featuredDevelopers,
+      priceCities,
+    };
+  },
+  ["home-payload"],
+  // Both live hosts serve identical Spanish rows today, so one cache entry
+  // covers them; if a vertical ever filters the listing set, its key must
+  // join this cache key.
+  { revalidate: 600, tags: ["listings"] },
+);
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
@@ -77,6 +131,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
     description:
       "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
+    // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
+    alternates: { canonical: await siteOrigin() },
     // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
     // is the size every network crops to.
     openGraph: {
@@ -87,13 +143,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** Publish CTA — same WhatsApp/mailto fallback logic as the header button. */
 function publishHref(brand: string): string {
-  const wa = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP?.replace(/\D/g, "");
-  const text = encodeURIComponent(
-    `Hola, quiero publicar una propiedad en ${brand}.`,
+  return (
+    waLink(CONTACT_WHATSAPP, `Hola, quiero publicar una propiedad en ${brand}.`) ??
+    `mailto:${CONTACT_EMAIL}?subject=Quiero%20publicar%20una%20propiedad`
   );
-  return wa
-    ? `https://wa.me/${wa}?text=${text}`
-    : "mailto:hola@propia.com.py?subject=Quiero%20publicar%20una%20propiedad";
 }
 
 /**
@@ -188,7 +241,7 @@ export default async function Home() {
   const brand = await brandName();
   const faq = faqHome(brand);
   await currentVertical();
-  const [
+  const {
     recent,
     cities,
     total,
@@ -199,18 +252,7 @@ export default async function Home() {
     featuredProjects,
     featuredDevelopers,
     priceCities,
-  ] = await Promise.all([
-    getRecentListings(8),
-    listCities(),
-    countPublished(),
-    getRecentListingsBy({ operation: "venta", type: "casa" }, 8),
-    getRecentListingsBy({ operation: "venta", type: "departamento" }, 8),
-    getRecentListingsBy({ operation: "alquiler" }, 8),
-    getRecentListingsBy({ operation: "venta", type: "terreno" }, 8),
-    getFeaturedProjects(6),
-    getFeaturedDevelopers(8),
-    citiesWithPrices(),
-  ]);
+  } = await getHomePayload();
 
   const cityShortcuts = CITY_SHORTCUTS.map((name) =>
     cities.find((c) => c.name === name),

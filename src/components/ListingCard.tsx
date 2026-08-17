@@ -33,8 +33,10 @@ export function ListingCard({ card }: { card: Card }) {
     : imageThumbUrl(card.coverKey);
   const cuota = formatCuota(card.cuotaGs);
   const area = card.areaM2 ?? card.landM2;
+  // new Date() re-wrap: cards that crossed an unstable_cache boundary carry
+  // featuredUntil as an ISO string, and string > Date is silently false.
   const isFeatured =
-    card.featuredUntil != null && card.featuredUntil > new Date();
+    card.featuredUntil != null && new Date(card.featuredUntil) > new Date();
 
   const specs = [
     card.bedrooms != null ? `${card.bedrooms} dorm.` : null,
@@ -60,12 +62,13 @@ export function ListingCard({ card }: { card: Card }) {
       <span className="ds-photo-card__chip">
         {OPERATION_BADGE[card.operation]}
       </span>
-      {(isFeatured || card.isVerified) && (
+      {/* No "Verificado" here: listings.is_verified means "publisher's
+          WhatsApp passed the (currently disabled) OTP", which is not the
+          admin-granted verified badge the profile pages show (audit F57).
+          The card stays silent rather than showing a flag with two meanings. */}
+      {isFeatured && (
         <span className="listing-card__flags">
-          {isFeatured && <span className="listing-card__flag">Destacado</span>}
-          {card.isVerified && (
-            <span className="listing-card__flag">Verificado</span>
-          )}
+          <span className="listing-card__flag">Destacado</span>
         </span>
       )}
       {!cover && (

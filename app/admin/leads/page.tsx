@@ -9,6 +9,7 @@ import {
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
+import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
@@ -47,7 +48,7 @@ const ROUTED_LABEL: Record<string, string> = {
 };
 
 function waReplyHref(whatsapp: string): string {
-  return `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
+  return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
 }
 
 function formatWhen(d: Date): string {

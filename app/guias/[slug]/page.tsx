@@ -43,7 +43,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     alternates: { canonical: `${await siteOrigin()}/guias/${post.slug}` },
     openGraph: {
       type: "article",
-      title: post.title,
+      // og:title doesn't inherit title.template — brand goes in by hand (F47).
+      title: `${post.title} — ${await brandName()}`,
       description,
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: post.updatedAt?.toISOString(),

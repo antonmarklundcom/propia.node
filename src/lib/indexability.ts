@@ -9,7 +9,7 @@
 export type Indexability =
   | { state: "index" } // in sitemap, indexable
   | { state: "noindex" } // renders (facet landings), noindex,follow, NOT in sitemap
-  | { state: "gone"; redirectTo?: string }; // 410, or redirect to parent
+  | { state: "gone"; redirectTo?: string }; // 404 (via notFound()), or redirect to parent
 
 export interface PageSignals {
   /** Published listings matching this page's (location × type × operation). */

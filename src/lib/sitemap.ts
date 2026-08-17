@@ -124,24 +124,24 @@ export async function buildSitemapEntries(
     }
   }
 
-  const cityIndexable = new Set<string>();
   for (const [key, n] of cityCount) {
     const [op, cityId] = key.split("|");
     const city = locById.get(Number(cityId));
     if (!city) continue;
     if (getIndexability({ listingCount: n }).state === "index") {
-      cityIndexable.add(key);
       entries.push({
         path: categoryUrl({ operation: op as Operation, citySlug: city.slug }),
       });
     }
   }
 
+  const cityTypeIndexable = new Set<string>();
   for (const [key, n] of cityTypeCount) {
     const [op, cityId, type] = key.split("|");
     const city = locById.get(Number(cityId));
     if (!city) continue;
     if (getIndexability({ listingCount: n }).state === "index") {
+      cityTypeIndexable.add(key);
       entries.push({
         path: categoryUrl({
           operation: op as Operation,
@@ -158,8 +158,12 @@ export async function buildSitemapEntries(
     if (!barrio || !barrio.parentId) continue;
     const city = locById.get(barrio.parentId);
     if (!city) continue;
-    // Barrio pages require an indexable parent city page.
-    const parentIndexable = cityIndexable.has(`${op}|${city.id}`);
+    // Barrio pages require an indexable parent — and the parent the PAGE
+    // checks is the city+type page (count ≥ 3 for the same type), not the
+    // all-types city page. Keying this on the city count submitted URLs the
+    // template rendered noindex — Search Console's "submitted URL not
+    // selected as canonical" (audit F8).
+    const parentIndexable = cityTypeIndexable.has(`${op}|${city.id}|${type}`);
     if (
       getIndexability({ listingCount: n, parentIndexable }).state === "index"
     ) {

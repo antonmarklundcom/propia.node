@@ -50,7 +50,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!detail) return { title: `Proyecto no encontrado` };
   const { project, developer } = detail;
   return {
-    title: `${project.name}${developer ? ` — ${developer.name}` : ""} | ${brand}`,
+    // No brand here — the layout's title.template appends it (F22: this was
+    // the one page in the repo that doubled it).
+    title: `${project.name}${developer ? ` — ${developer.name}` : ""}`,
     description:
       project.descriptionEs?.slice(0, 160) ??
       `${project.name}: proyecto inmobiliario en Paraguay.`,
@@ -242,7 +244,7 @@ export default async function ProjectPage({ params }: Params) {
                 {developer?.name ?? `Publicado en ${brand}`}
               </div>
               <div className="seller-card__kind">
-                {developer ? "Desarrolladora" : "propia.com.py"}
+                {developer ? "Desarrolladora" : brand}
               </div>
             </div>
           </div>

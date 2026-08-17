@@ -6,6 +6,8 @@ import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { LeadForm } from "@/components/LeadForm";
 import { PageHero, Section } from "@/components/MarketingUI";
+import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
+import { waLink } from "@/lib/wa";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +33,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ContactoPage() {
   const brand = await brandName();
   const origin = await siteOrigin();
-  const whatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP ?? null;
-  const waDigits = whatsapp?.replace(/\D/g, "");
+  const whatsapp = CONTACT_WHATSAPP;
+  const waHref = waLink(whatsapp);
 
   return (
     <main>
@@ -45,7 +47,7 @@ export default async function ContactoPage() {
           organizationJsonLd(origin, {
             name: brand,
             whatsapp,
-            email: "hola@propia.com.py",
+            email: CONTACT_EMAIL,
           }),
         ]}
       />
@@ -84,10 +86,10 @@ export default async function ContactoPage() {
             <div className="mk-card">
               <h3 className="mk-card__title">Canales directos</h3>
               <ul className="mk-card__list">
-                {waDigits && (
+                {waHref && (
                   <li>
                     <a
-                      href={`https://wa.me/${waDigits}`}
+                      href={waHref}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -96,7 +98,7 @@ export default async function ContactoPage() {
                   </li>
                 )}
                 <li>
-                  <a href="mailto:hola@propia.com.py">✉️ hola@propia.com.py</a>
+                  <a href={`mailto:${CONTACT_EMAIL}`}>✉️ {CONTACT_EMAIL}</a>
                 </li>
                 <li>📍 Asunción, Paraguay</li>
                 <li>🕘 Lunes a viernes, 8:00 a 18:00</li>

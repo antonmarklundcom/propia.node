@@ -14,6 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `Creá tu cuenta`,
     description: `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
+    // Renders per ?invite= token — keep every variant out of the index (F40).
+    robots: { index: false, follow: true },
   };
 }
 

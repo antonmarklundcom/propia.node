@@ -153,6 +153,18 @@ export const listings = mysqlTable(
     index("idx_agency").on(t.agencyId, t.status),
     index("idx_project").on(t.projectId, t.status),
     index("idx_fresh").on(t.status, t.publishedAt),
+    /**
+     * Homepage rows: getRecentListingsBy filters (status, operation[, type])
+     * and sorts published_at with NO location — idx_recent's location_id in
+     * third position blocks its published_at, so those queries paid a
+     * filesort (audit F38).
+     */
+    index("idx_home_row").on(
+      t.status,
+      t.operation,
+      t.propertyType,
+      t.publishedAt,
+    ),
   ],
 );
 
@@ -196,7 +208,12 @@ export const locations = mysqlTable(
     guideContentEn: mediumtext("guide_content_en"),
     guideUpdatedAt: datetime("guide_updated_at"),
   },
-  (t) => [index("idx_parent").on(t.parentId, t.level)],
+  (t) => [
+    index("idx_parent").on(t.parentId, t.level),
+    // resolveCity/resolveBarrio filter on (slug, level) — the hottest route's
+    // first lookup was a full scan without this (audit F38).
+    index("idx_slug").on(t.slug, t.level),
+  ],
 );
 
 /* ------------------------------------------------------------------ */
@@ -501,6 +518,8 @@ export const leads = mysqlTable(
   (t) => [
     index("idx_listing").on(t.listingId),
     index("idx_type").on(t.leadType, t.createdAt),
+    // Panel inboxes default-sort on created_at with no type filter (F38).
+    index("idx_created").on(t.createdAt),
   ],
 );
 
@@ -595,7 +614,11 @@ export const sessions = mysqlTable(
     expiresAt: datetime("expires_at").notNull(),
     createdAt: createdAt(),
   },
-  (t) => [index("idx_user").on(t.userId)],
+  (t) => [
+    index("idx_user").on(t.userId),
+    // cron:sessions purges by expires_at (audit F39).
+    index("idx_expires").on(t.expiresAt),
+  ],
 );
 
 /* ------------------------------------------------------------------ */
@@ -623,11 +646,10 @@ export const listingViewsDaily = mysqlTable(
     day: date("day", { mode: "string" }).notNull(),
     views: int("views", { unsigned: true }).notNull().default(0),
   },
-  (t) => [
-    primaryKey({ columns: [t.listingId, t.day] }),
-    // Reads are always "this listing, recent days first".
-    index("idx_listing_day").on(t.listingId, t.day),
-  ],
+  // No secondary index: reads are "this listing, recent days first", which
+  // the composite PRIMARY KEY (listing_id, day) already serves — the old
+  // idx_listing_day duplicated it column-for-column (audit F49).
+  (t) => [primaryKey({ columns: [t.listingId, t.day] })],
 );
 
 /* ------------------------------------------------------------------ */

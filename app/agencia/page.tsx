@@ -137,31 +137,44 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
               <td className="panel-table__num">{stats.get(row.id)?.leads ?? 0}</td>
               <td>
                 <div className="panel-actions">
-                  <form
-                    action={setListingStatusAction}
-                    className="panel-actions"
-                    style={{ gap: 6 }}
-                  >
-                    <input type="hidden" name="listingId" value={row.id} />
-                    <select
-                      name="status"
-                      className="panel-select"
-                      defaultValue={
-                        AGENCY_STATUS_OPTIONS.includes(row.status)
-                          ? row.status
-                          : "draft"
-                      }
+                  {/* pending_review / removed are admin-owned states: no
+                      status select — the old default silently pre-set
+                      "Borrador", so one save cancelled the review (F25). */}
+                  {AGENCY_STATUS_OPTIONS.includes(row.status) ? (
+                    <form
+                      action={setListingStatusAction}
+                      className="panel-actions"
+                      style={{ gap: 6 }}
                     >
-                      {AGENCY_STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>
-                          {listingStatusLabel[s]}
-                        </option>
-                      ))}
-                    </select>
-                    <button className="panel-btn" type="submit">
-                      {esPanel.saveStatus}
-                    </button>
-                  </form>
+                      <input type="hidden" name="listingId" value={row.id} />
+                      <select
+                        name="status"
+                        className="panel-select"
+                        defaultValue={row.status}
+                      >
+                        {AGENCY_STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>
+                            {listingStatusLabel[s]}
+                          </option>
+                        ))}
+                      </select>
+                      <button className="panel-btn" type="submit">
+                        {esPanel.saveStatus}
+                      </button>
+                    </form>
+                  ) : (
+                    <p className="panel-status-note">
+                      {row.status === "pending_review"
+                        ? esPanel.statusPendingNote
+                        : esPanel.statusRejectedNote}
+                      {row.status === "removed" && row.reviewNotes && (
+                        <>
+                          {" "}
+                          {esPanel.statusRejectedReason}: {row.reviewNotes}
+                        </>
+                      )}
+                    </p>
+                  )}
                   <Link
                     className="panel-btn"
                     href={`/agencia/propiedad/${row.id}`}

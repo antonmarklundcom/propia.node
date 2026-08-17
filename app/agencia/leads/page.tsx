@@ -6,6 +6,7 @@ import type { EditScope } from "@/lib/listing-edit";
 import { getPanelLeads } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
+import { waLink } from "@/lib/wa";
 import { agencyTabs } from "../tabs";
 
 export const metadata: Metadata = {
@@ -26,8 +27,7 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
 
 /** wa.me deep link to reply to the lead's own WhatsApp number. */
 function waReplyHref(whatsapp: string): string {
-  const digits = whatsapp.replace(/\D/g, "");
-  return `https://wa.me/${digits}`;
+  return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
 }
 
 function formatWhen(d: Date): string {

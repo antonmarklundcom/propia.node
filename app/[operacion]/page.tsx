@@ -67,7 +67,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${copy.h1}`,
     description: copy.lead,
     alternates: { canonical: `${await siteOrigin()}/${operationSlug(op)}` },
-    openGraph: { title: copy.h1, description: copy.lead },
+    // og:title doesn't inherit title.template, so the brand is explicit (F47).
+    openGraph: { title: `${copy.h1} — ${brand}`, description: copy.lead },
   };
 }
 

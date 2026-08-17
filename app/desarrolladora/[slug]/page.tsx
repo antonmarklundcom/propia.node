@@ -9,6 +9,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { ProjectCard } from "@/components/ProjectCard";
 import { getDeveloperBySlug } from "@/lib/directory-queries";
 import { CtaBand, Section } from "@/components/MarketingUI";
+import { waLink } from "@/lib/wa";
 
 // DB-backed profile, same posture as the agency and agent profiles.
 export const dynamic = "force-dynamic";
@@ -50,7 +51,10 @@ export default async function DesarrolladoraPage({ params }: Params) {
   const origin = await siteOrigin();
 
   const totalUnits = projects.reduce((n, p) => n + p.availableUnits, 0);
-  const waDigits = developer.whatsapp?.replace(/\D/g, "");
+  const waHref = waLink(
+    developer.whatsapp,
+    `Hola, vi los proyectos de ${developer.name} en ${brand}.`,
+  );
 
   return (
     <main>
@@ -105,12 +109,10 @@ export default async function DesarrolladoraPage({ params }: Params) {
               )}
             </div>
             <div className="profile-hero__actions">
-              {waDigits && (
+              {waHref && (
                 <a
                   className="mk-btn mk-btn--accent"
-                  href={`https://wa.me/${waDigits}?text=${encodeURIComponent(
-                    `Hola, vi los proyectos de ${developer.name} en ${brand}.`,
-                  )}`}
+                  href={waHref}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

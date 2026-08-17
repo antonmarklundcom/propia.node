@@ -4,6 +4,7 @@ import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { getPortalStats } from "@/lib/directory-queries";
+import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import {
   CtaBand,
   FeatureGrid,
@@ -54,7 +55,7 @@ const PRINCIPLES = [
 export default async function NosotrosPage() {
   const brand = await brandName();
   const [origin, stats] = await Promise.all([siteOrigin(), getPortalStats()]);
-  const whatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP ?? null;
+  const whatsapp = CONTACT_WHATSAPP;
 
   return (
     <main>
@@ -67,7 +68,7 @@ export default async function NosotrosPage() {
           organizationJsonLd(origin, {
             name: brand,
             whatsapp,
-            email: "hola@propia.com.py",
+            email: CONTACT_EMAIL,
           }),
         ]}
       />

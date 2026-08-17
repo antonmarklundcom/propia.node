@@ -5,6 +5,7 @@ import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { PageHero, Prose, Section } from "@/components/MarketingUI";
+import { CONTACT_EMAIL } from "@/config/contact";
 
 export const dynamic = "force-dynamic";
 
@@ -162,8 +163,8 @@ export default async function PrivacidadPage() {
             Podés pedirnos en cualquier momento acceder a tus datos,
             rectificarlos si están desactualizados o incorrectos, o solicitar su
             eliminación y la baja de tu cuenta. Escribinos desde la{" "}
-            <Link href="/contacto">página de contacto</Link> o a
-            hola@propia.com.py. Respondemos dentro de los plazos que establece
+            <Link href="/contacto">página de contacto</Link> o a{" "}
+            {CONTACT_EMAIL}. Respondemos dentro de los plazos que establece
             la normativa aplicable en Paraguay, incluida la Ley N.º 6534/2020 de
             protección de datos personales crediticios en lo que resulte
             pertinente.

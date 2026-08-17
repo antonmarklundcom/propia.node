@@ -178,7 +178,9 @@ inventory derived from `locations.listing_counts`; top ~200 pages seeded via
 **Thin-page rule — non-negotiable, single source of truth in
 `src/lib/indexability.ts`**, called by BOTH page templates and the sitemap
 generator: count ≥ 3 → indexable + sitemap; 1–2 → renders but
-`noindex,follow`, out of sitemap; 0 → 410 or redirect to parent. Barrio pages
+`noindex,follow`, out of sitemap; 0 → 404 (via `notFound()`) or redirect to
+parent — a true 410 would need a route handler and buys nothing over 404 for
+deindexing. Barrio pages
 additionally require an indexable parent city page.
 
 Structured data: `RealEstateListing` + `Offer` (+ `Residence`/`LandParcel`),

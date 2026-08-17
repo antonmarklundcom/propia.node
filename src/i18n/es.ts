@@ -435,6 +435,12 @@ export const esPanel = {
     "Visitas de personas: excluimos buscadores y bots para que el número signifique algo.",
   saveStatus: "Guardar",
   contactLead: "Responder por WhatsApp",
+  // Read-only status rows (audit F25): the status <select> used to pre-set
+  // "Borrador" on a row en revisión, so one save silently cancelled the review.
+  statusPendingNote:
+    "En revisión: lo publicamos nosotros apenas lo aprobemos. No hace falta hacer nada.",
+  statusRejectedNote: "No aprobado. Corregilo desde «Editar» y reenvialo.",
+  statusRejectedReason: "Motivo",
 } as const;
 
 /** Voseo strings for the publish wizard (ARCHITECTURE.md §3, M5). */

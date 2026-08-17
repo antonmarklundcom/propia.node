@@ -256,6 +256,7 @@ export const STATIC_SITEMAP_PATHS: string[] = [
   "/",
   "/venta",
   "/alquiler",
+  "/alquiler-temporal",
   "/proyectos",
   "/desarrolladoras",
   "/inmobiliarias",

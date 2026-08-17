@@ -17,6 +17,7 @@
     "cron:cuotas": "tsx --tsconfig scripts/tsconfig.json scripts/recompute-cuotas.ts",
     "cron:medians": "tsx --tsconfig scripts/tsconfig.json scripts/compute-medians.ts",
     "cron:resync": "tsx --tsconfig scripts/tsconfig.json scripts/resync-stale.ts",
+    "cron:sessions": "tsx --tsconfig scripts/tsconfig.json scripts/purge-sessions.ts",
     "verify:import": "tsx --tsconfig scripts/tsconfig.json scripts/verify-import.ts",
     "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",
     "backfill:images": "tsx --tsconfig scripts/tsconfig.json scripts/backfill-images.ts",

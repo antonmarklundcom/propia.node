@@ -7,12 +7,17 @@ export const dynamic = "force-dynamic";
 
 /**
  * Per-page noindex is handled in each template's metadata (the thin-page
- * rule); robots.txt only points crawlers at the sitemap and keeps the
- * lead/OTP API surface out of the index.
+ * rule); robots.txt points crawlers at the sitemap and keeps the API surface
+ * and the account/panel pages out of the crawl entirely — they all carry
+ * noindex meta, but crawling them at all is wasted budget (audit F24).
  */
 export default async function robots(): Promise<MetadataRoute.Robots> {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: "/api/" },
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: ["/api/", "/admin", "/agencia", "/publicar", "/login", "/registro"],
+    },
     sitemap: `${await siteOrigin()}/sitemap.xml`,
   };
 }
