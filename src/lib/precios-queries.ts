@@ -81,6 +81,7 @@ async function getCityPricesUncached(
       medianPriceUsd: marketMedians.medianPriceUsd,
       medianPriceM2Usd: marketMedians.medianPriceM2Usd,
       sampleSize: marketMedians.sampleSize,
+      sampleSizeM2: marketMedians.sampleSizeM2,
     })
     .from(marketMedians)
     .where(
@@ -110,8 +111,11 @@ async function getCityPricesUncached(
       a.priceWeight += n;
     }
     if (r.medianPriceM2Usd != null) {
-      a.m2Weighted += Number(r.medianPriceM2Usd) * n;
-      a.m2Weight += n;
+      // Weight the m² median by its own sample (listings that had an area),
+      // not the full bucket (F16). Pre-migration rows carry 0 → old weight.
+      const m2n = r.sampleSizeM2 > 0 ? r.sampleSizeM2 : n;
+      a.m2Weighted += Number(r.medianPriceM2Usd) * m2n;
+      a.m2Weight += m2n;
     }
     a.sample += n;
     acc.set(key, a);

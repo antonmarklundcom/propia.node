@@ -25,9 +25,11 @@
  * Re-running the same file therefore lands entirely in (1) → zero duplicates,
  * which is the M2 gate.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { db as Db } from "../../db";
 import {
+  importJobs,
+  importRows,
   listingImages,
   listings,
   listingSources,
@@ -42,6 +44,14 @@ import {
   canon,
 } from "./normalize";
 import type { ImportReport, RawListing } from "./types";
+
+/**
+ * The pool or a transaction handle — row writers take either, so commit can
+ * make each row's writes atomic (F46: a listing_sources insert that threw
+ * after the listing insert left a listing with no provenance, invisible to
+ * dedup, resync and rollback).
+ */
+type DbConn = typeof Db | Parameters<Parameters<(typeof Db)["transaction"]>[0]>[0];
 
 const LEVEL_RANK: Record<string, number> = {
   barrio: 4,
@@ -196,6 +206,16 @@ export async function planImport(
       }
 
       const priceUsd = toPriceUsd(raw.priceAmount, raw.priceCurrency, usdToPyg);
+      // Sanity floor: no property in this market sells for under US$1000, so a
+      // venta row below it is a mangled number (wrong thousands separator,
+      // truncated cell), and one bad price poisons the medians, /precios and
+      // /tasacion. Rejecting loudly beats importing quietly.
+      if (raw.operation === "venta" && priceUsd < 1000) {
+        skip(
+          `precio de venta sospechosamente bajo (US$ ${priceUsd}) — revisá el separador de miles`,
+        );
+        continue;
+      }
       const cHash = computeContentHash(raw, priceUsd);
       const dKey = computeDedupKey(raw, priceUsd, locationId, scopeAgencyId);
 
@@ -270,6 +290,9 @@ export async function planImport(
           .limit(1);
 
         if (dup) {
+          // Memoise the DB hit too: a second batch row with this key should
+          // resolve in-batch instead of re-querying and re-attaching (F60).
+          seenDedup.set(dKey, planned.length);
           planned.push({
             ...base,
             outcome: "deduped",
@@ -326,6 +349,13 @@ export async function commitImport(
   const scopeAgencyId = plan.scopeAgencyId;
   /** Row index → the listing id it produced, for in-batch dedupe targets. */
   const producedListingId = new Map<number, number>();
+  /**
+   * Dedup keys whose provenance row was already written by this batch. Two
+   * batch rows carrying the same key and no external id are the same source
+   * saying the same thing twice — a second listing_sources row would be a
+   * duplicate, not extra provenance (F60).
+   */
+  const writtenDedupKeys = new Set<string>();
 
   for (let i = 0; i < plan.rows.length; i++) {
     const row = plan.rows[i];
@@ -362,22 +392,68 @@ export async function commitImport(
           .where(eq(listings.id, row.listingId!))
           .limit(1);
 
-        await db
-          .update(listings)
-          .set(listingFields(raw, row.priceUsd!, row.locationId!))
-          .where(eq(listings.id, row.listingId!));
-        await backfillOwnership(db, row.listingId!, opts);
-        await syncImages(db, row.listingId!, raw.imageUrls);
-        await db
-          .update(listingSources)
-          .set({
-            contentHash: row.contentHash!,
-            dedupKey: row.dedupKey ?? null,
-            lastSeenAt: now,
-          })
-          .where(eq(listingSources.id, row.sourceRowId!));
+        /**
+         * The snapshot must cover everything this branch overwrites, not just
+         * scalar columns. syncImages() below deletes and re-inserts the image
+         * rows, and the source row's content_hash advances — without capturing
+         * both, a rollback restored the scalars but left curated photos gone
+         * and the hash pointing at the bad import, so re-uploading a corrected
+         * file reported `unchanged` and never applied the fix.
+         * The `_` keys ride along in previous_json; rollback splits them off.
+         */
+        const snapshot: Record<string, unknown> = { ...previous };
+        if (raw.imageUrls && raw.imageUrls.length > 0) {
+          const imageRows = await db
+            .select({
+              r2Key: listingImages.r2Key,
+              position: listingImages.position,
+              width: listingImages.width,
+              height: listingImages.height,
+              watermarkScore: listingImages.watermarkScore,
+            })
+            .from(listingImages)
+            .where(eq(listingImages.listingId, row.listingId!));
+          snapshot._images = imageRows;
+        }
+        const [prevSource] = await db
+          .select({ contentHash: listingSources.contentHash })
+          .from(listingSources)
+          .where(eq(listingSources.id, row.sourceRowId!))
+          .limit(1);
+        if (prevSource) {
+          snapshot._source = {
+            id: row.sourceRowId!,
+            contentHash: prevSource.contentHash,
+          };
+        }
 
-        out.push(committed(row, row.listingId!, previous ?? null));
+        // A cached cuota computed from the old operation/price is wrong money
+        // on the card; clear it and let cron:cuotas recompute (audit F15).
+        const moneyChanged =
+          previous &&
+          (previous.operation !== raw.operation ||
+            Number(previous.priceUsd) !== row.priceUsd);
+        await db.transaction(async (tx) => {
+          await tx
+            .update(listings)
+            .set({
+              ...listingFields(raw, row.priceUsd!, row.locationId!),
+              ...(moneyChanged ? { cuotaGs: null } : {}),
+            })
+            .where(eq(listings.id, row.listingId!));
+          await backfillOwnership(tx, row.listingId!, opts);
+          await syncImages(tx, row.listingId!, raw.imageUrls);
+          await tx
+            .update(listingSources)
+            .set({
+              contentHash: row.contentHash!,
+              dedupKey: row.dedupKey ?? null,
+              lastSeenAt: now,
+            })
+            .where(eq(listingSources.id, row.sourceRowId!));
+        });
+
+        out.push(committed(row, row.listingId!, previous ? snapshot : null));
         continue;
       }
 
@@ -400,7 +476,16 @@ export async function commitImport(
           });
           continue;
         }
-        await db.insert(listingSources).values({
+        producedListingId.set(i, target);
+        if (
+          row.dedupKey &&
+          !raw.sourceExternalId &&
+          writtenDedupKeys.has(row.dedupKey)
+        ) {
+          out.push(committed(row, target, null));
+          continue;
+        }
+        const [srcRes] = await db.insert(listingSources).values({
           listingId: target,
           source: raw.source,
           scopeAgencyId,
@@ -411,31 +496,47 @@ export async function commitImport(
           firstSeenAt: now,
           lastSeenAt: now,
         });
-        out.push(committed(row, target, null));
+        if (row.dedupKey) writtenDedupKeys.add(row.dedupKey);
+        // The rollback needs to know exactly which provenance row this batch
+        // attached: `first_seen_at >= job.createdAt` never matched (the job
+        // header is written after commit), so deduped rollbacks were no-ops
+        // that still claimed success (F12).
+        out.push(
+          committed(row, target, {
+            _sourceRowId: Number(
+              (srcRes as unknown as { insertId: number }).insertId,
+            ),
+          }),
+        );
         continue;
       }
 
-      // created
-      const listingId = await insertListing(
-        db,
-        raw,
-        row.priceUsd!,
-        row.locationId!,
-        opts,
-      );
-      await syncImages(db, listingId, raw.imageUrls);
-      await db.insert(listingSources).values({
-        listingId,
-        source: raw.source,
-        scopeAgencyId,
-        sourceUrl: raw.sourceUrl,
-        sourceExternalId: raw.sourceExternalId,
-        contentHash: row.contentHash!,
-        dedupKey: row.dedupKey ?? null,
-        firstSeenAt: now,
-        lastSeenAt: now,
+      // created — one transaction, so a failed listing_sources insert cannot
+      // leave a listing with no provenance row (F46).
+      const listingId = await db.transaction(async (tx) => {
+        const id = await insertListing(
+          tx,
+          raw,
+          row.priceUsd!,
+          row.locationId!,
+          opts,
+        );
+        await syncImages(tx, id, raw.imageUrls);
+        await tx.insert(listingSources).values({
+          listingId: id,
+          source: raw.source,
+          scopeAgencyId,
+          sourceUrl: raw.sourceUrl,
+          sourceExternalId: raw.sourceExternalId,
+          contentHash: row.contentHash!,
+          dedupKey: row.dedupKey ?? null,
+          firstSeenAt: now,
+          lastSeenAt: now,
+        });
+        return id;
       });
       producedListingId.set(i, listingId);
+      if (row.dedupKey) writtenDedupKeys.add(row.dedupKey);
       out.push(committed(row, listingId, null));
     } catch (e) {
       out.push({
@@ -449,7 +550,64 @@ export async function commitImport(
     }
   }
 
+  await unpauseResurfaced(db, out);
+
   return out;
+}
+
+/**
+ * The other half of the staleness sweep's promise. resync.ts pauses a listing
+ * whose feed went quiet and says "one re-import that sees it again is enough to
+ * put it back" — but nothing ever did (audit F14): updates never touch status
+ * and the unchanged branch only bumps last_seen_at. So: any listing this batch
+ * matched (updated or unchanged) that is currently paused *by a resync sweep*
+ * goes back to published. Deliberately narrow — a listing paused by hand in the
+ * panel stays paused; only sweep-paused rows (a non-reverted `paused` row under
+ * a resync job) qualify, so a re-imported feed cannot override a human choice.
+ */
+async function unpauseResurfaced(db: typeof Db, out: CommittedRow[]) {
+  const seenIds = [
+    ...new Set(
+      out
+        .filter(
+          (r) =>
+            (r.outcome === "updated" || r.outcome === "unchanged") &&
+            r.listingId != null,
+        )
+        .map((r) => r.listingId as number),
+    ),
+  ];
+  if (seenIds.length === 0) return;
+
+  const sweepPaused = await db
+    .select({ listingId: importRows.listingId })
+    .from(importRows)
+    .innerJoin(importJobs, eq(importJobs.id, importRows.jobId))
+    .innerJoin(listings, eq(listings.id, importRows.listingId))
+    .where(
+      and(
+        inArray(importRows.listingId, seenIds),
+        eq(importRows.outcome, "paused"),
+        isNull(importRows.revertedAt),
+        eq(importJobs.kind, "resync"),
+        eq(listings.status, "paused"),
+      ),
+    );
+
+  const ids = [
+    ...new Set(
+      sweepPaused
+        .map((r) => r.listingId)
+        .filter((id): id is number => id != null),
+    ),
+  ];
+  if (ids.length === 0) return;
+
+  // publishedAt is left alone: this is a restore, not a fresh publish.
+  await db
+    .update(listings)
+    .set({ status: "published" })
+    .where(and(inArray(listings.id, ids), eq(listings.status, "paused")));
 }
 
 function committed(
@@ -524,7 +682,7 @@ function listingFields(raw: RawListing, priceUsd: number, locationId: number) {
 }
 
 async function insertListing(
-  db: typeof Db,
+  db: DbConn,
   raw: RawListing,
   priceUsd: number,
   locationId: number,
@@ -556,7 +714,7 @@ async function insertListing(
  * someone would let one import move another agency's inventory.
  */
 async function backfillOwnership(
-  db: typeof Db,
+  db: DbConn,
   listingId: number,
   opts: ImportOptions,
 ) {
@@ -586,7 +744,7 @@ async function backfillOwnership(
  * Empty/absent list → leave existing images untouched.
  */
 async function syncImages(
-  db: typeof Db,
+  db: DbConn,
   listingId: number,
   urls: string[] | undefined,
 ) {

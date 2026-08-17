@@ -112,6 +112,21 @@ function pureChecks() {
   const parsed = recordToRaw(recs[1], "whiteglove");
   check("currency passes through", parsed.priceCurrency === "PYG");
 
+  // es-PY thousands separators — `85.000` is 85 000, not a JS decimal (F3).
+  const dotted = recordToRaw(
+    { ...recs[0], price_amount: "85.000", area_m2: "1.200" },
+    "whiteglove",
+  );
+  check("'85.000' parses as 85000, not 85", dotted.priceAmount === 85000, String(dotted.priceAmount));
+  check("'1.200' m² parses as 1200, not 1.2", dotted.areaM2 === 1200, String(dotted.areaM2));
+  const grouped = recordToRaw(
+    { ...recs[0], price_amount: "1.250.000", price_currency: "PYG" },
+    "whiteglove",
+  );
+  check("'1.250.000' parses as 1250000", grouped.priceAmount === 1_250_000, String(grouped.priceAmount));
+  const enUs = recordToRaw({ ...recs[0], price_amount: "185,000" }, "whiteglove");
+  check("'185,000' parses as 185000", enUs.priceAmount === 185_000, String(enUs.priceAmount));
+
   let threw = false;
   try {
     recordToRaw({ ...recs[0], price_amount: "0" }, "whiteglove");

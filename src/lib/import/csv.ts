@@ -9,6 +9,7 @@
  * property_state, location_full_slug, location_name, address_text, lat, lng,
  * contact_phone, source_external_id, source_url, image_urls (| separated).
  */
+import { parseAmount } from "./normalize";
 import type {
   Operation,
   PropertyState,
@@ -72,10 +73,24 @@ export function parseCsvRecords(text: string): Record<string, string>[] {
   });
 }
 
+/**
+ * Plain numeric cell — counts and coordinates, where '.' really is a decimal
+ * point (lat -25.28 must stay -25.28).
+ */
 const num = (s: string | undefined): number | undefined => {
   if (!s) return undefined;
   const n = Number(s.replace(/[^0-9.-]/g, ""));
   return Number.isFinite(n) ? n : undefined;
+};
+
+/**
+ * Money/area cell — es-PY spreadsheets write `85.000` meaning 85 000, so these
+ * go through the locale-aware parseAmount the link importer already uses.
+ * Reading `85.000` as a JS decimal wrote a $85 listing into the DB (F3).
+ */
+const amount = (s: string | undefined): number | undefined => {
+  if (!s) return undefined;
+  return parseAmount(s) ?? undefined;
 };
 
 /** Map one CSV record to a RawListing. Throws with a clear reason if invalid. */
@@ -85,7 +100,7 @@ export function recordToRaw(
 ): RawListing {
   const operation = rec.operation as Operation;
   const propertyType = rec.property_type as PropertyType;
-  const priceAmount = num(rec.price_amount);
+  const priceAmount = amount(rec.price_amount);
   const currency = (rec.price_currency || "USD").toUpperCase();
 
   if (!rec.title) throw new Error("missing title");
@@ -111,8 +126,8 @@ export function recordToRaw(
     bedrooms: num(rec.bedrooms),
     bathrooms: num(rec.bathrooms),
     parking: num(rec.parking),
-    areaM2: num(rec.area_m2),
-    landM2: num(rec.land_m2),
+    areaM2: amount(rec.area_m2),
+    landM2: amount(rec.land_m2),
     propertyState: (rec.property_state as PropertyState) || undefined,
     locationFullSlug: rec.location_full_slug || undefined,
     locationName: rec.location_name || undefined,

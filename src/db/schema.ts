@@ -522,6 +522,10 @@ export const marketMedians = mysqlTable(
       scale: 2,
     }),
     sampleSize: int("sample_size", { unsigned: true }).notNull(), // context module renders only when >= 8
+    // Listings that actually had an area — the m² median's real sample. The
+    // price sample above counts every listing in the bucket, and using it to
+    // judge the m² median claimed 40 data points behind a number derived from 2.
+    sampleSizeM2: int("sample_size_m2", { unsigned: true }).notNull().default(0),
     source: mysqlEnum("source", ["own", "blended"]).notNull(),
   },
   (t) => [

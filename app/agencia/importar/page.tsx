@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 const FLASH: Record<string, { text: string; error?: boolean }> = {
   ownership: { text: esPanel.importOwnershipRequired, error: true },
   invalid: { text: esPanel.profileInvalid, error: true },
+  duplicate: { text: esPanel.importDuplicateFlash, error: true },
 };
 
 export default async function ImportPage({

@@ -86,6 +86,9 @@ async function main() {
       medianPriceM2Usd:
         medianPriceM2Usd != null ? medianPriceM2Usd.toFixed(2) : null,
       sampleSize: b.prices.length,
+      // The m² median's own sample — only listings that had an area. Reusing
+      // the price count claimed 40 data points behind a number from 2 (F16).
+      sampleSizeM2: b.pricesM2.length,
       source: "own" as const,
     };
     await db
@@ -96,6 +99,7 @@ async function main() {
           medianPriceUsd: values.medianPriceUsd,
           medianPriceM2Usd: values.medianPriceM2Usd,
           sampleSize: values.sampleSize,
+          sampleSizeM2: values.sampleSizeM2,
           source: values.source,
         },
       });

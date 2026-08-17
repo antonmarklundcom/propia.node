@@ -264,6 +264,25 @@ export async function updateListing(params: {
 
   if (!statusesFor(scope).includes(input.status)) return 0;
 
+  // The cached cuota was computed from the old operation and price. Leaving it
+  // when either changes renders wrong money on the card until the nightly cron
+  // (a listing flipped venta→alquiler kept a purchase cuota forever). Cleared
+  // here, recomputed by cron:cuotas.
+  const [current] = await db
+    .select({
+      operation: listings.operation,
+      priceAmount: listings.priceAmount,
+      priceCurrency: listings.priceCurrency,
+    })
+    .from(listings)
+    .where(eq(listings.id, id))
+    .limit(1);
+  const moneyChanged =
+    !current ||
+    current.operation !== input.operation ||
+    Number(current.priceAmount) !== input.priceAmount ||
+    current.priceCurrency !== input.priceCurrency;
+
   const patch: Partial<typeof listings.$inferInsert> = {
     title: input.title.slice(0, 180),
     descriptionEs: input.descriptionEs,
@@ -286,6 +305,8 @@ export async function updateListing(params: {
     foreignExposure: input.foreignExposure,
     status: input.status,
   };
+
+  if (moneyChanged) patch.cuotaGs = null;
 
   // First publish stamps publishedAt so category ordering (idx_fresh) is sane.
   if (input.status === "published") patch.publishedAt = new Date();

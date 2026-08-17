@@ -38,14 +38,55 @@ export function canonPhone(s: string | undefined | null): string {
   return d;
 }
 
-/** Normalized USD price used for every filter and for dedup bucketing. */
+/**
+ * Parse a printed amount. Paraguay writes `Gs. 1.250.000.000` and
+ * `US$ 85.000`, i.e. '.' as the thousands separator — the opposite of the
+ * en-US assumption, and getting it backwards would turn 85 000 dollars into 85.
+ * Shared by the link importer and the CSV adapter so both intakes read money
+ * the same way (F3: they used to disagree, and the CSV side wrote $85 rows).
+ */
+export function parseAmount(input: string): number | null {
+  const cleaned = input.replace(/[^\d.,]/g, "");
+  if (!cleaned) return null;
+
+  const lastDot = cleaned.lastIndexOf(".");
+  const lastComma = cleaned.lastIndexOf(",");
+  const afterComma = lastComma === -1 ? -1 : cleaned.length - lastComma - 1;
+  let normalized: string;
+
+  if (lastComma > lastDot && afterComma === 3) {
+    // '185,000' — a comma with exactly three digits after it and no dot in
+    // sight is the en-US thousands separator, which bilingual PY portals do
+    // use. Reading it as a decimal turned 185 000 into 185.
+    normalized = cleaned.replace(/,/g, "");
+  } else if (lastComma > lastDot) {
+    // '1.250.000,50' → decimal comma
+    normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (lastDot > -1 && cleaned.length - lastDot - 1 === 2 && lastComma === -1) {
+    // '85000.50' → a genuine decimal point
+    normalized = cleaned;
+  } else {
+    // '1.250.000' / '85.000' / '1,250,000' → separators only
+    normalized = cleaned.replace(/[.,]/g, "");
+  }
+
+  const n = Number(normalized);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Normalized USD price used for every filter and for dedup bucketing.
+ * Kept to two decimals (not whole dollars): the sync report compares the
+ * snapshotted price to the new one, and truncating cents made a ±$0.40 feed
+ * move invisible to it (F59).
+ */
 export function toPriceUsd(
   amount: number,
   currency: "USD" | "PYG",
   usdToPyg: number,
 ): number {
-  if (currency === "USD") return Math.round(amount);
-  return Math.round(amount / usdToPyg);
+  if (currency === "USD") return Math.round(amount * 100) / 100;
+  return Math.round((amount / usdToPyg) * 100) / 100;
 }
 
 /** Coarse buckets absorb small listing-to-listing price/area differences. */

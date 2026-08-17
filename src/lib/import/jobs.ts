@@ -353,26 +353,72 @@ export async function rollbackImportJob(
       (row.outcome === "updated" || row.outcome === "paused") &&
       row.previousJson
     ) {
-      await db
-        .update(listings)
-        .set(row.previousJson as Record<string, never>)
-        .where(eq(listings.id, row.listingId));
+      // The snapshot carries two non-column keys the commit rode along:
+      // `_images` (the image rows syncImages replaced) and `_source` (the
+      // content_hash the commit advanced). Restoring only the scalar columns
+      // left curated photos deleted and — because the hash still described the
+      // bad import — re-importing a *corrected* file reported `unchanged`.
+      const { _images, _source, ...columns } = row.previousJson as {
+        _images?: {
+          r2Key: string;
+          position: number;
+          width: number | null;
+          height: number | null;
+          watermarkScore: number | null;
+        }[];
+        _source?: { id: number; contentHash: string | null };
+      } & Record<string, unknown>;
+
+      if (Object.keys(columns).length > 0) {
+        await db
+          .update(listings)
+          .set(columns as Record<string, never>)
+          .where(eq(listings.id, row.listingId));
+      }
+      if (Array.isArray(_images)) {
+        await db
+          .delete(listingImages)
+          .where(eq(listingImages.listingId, row.listingId));
+        if (_images.length > 0) {
+          await db.insert(listingImages).values(
+            _images.map((img) => ({ ...img, listingId: row.listingId as number })),
+          );
+        }
+      }
+      if (_source && typeof _source.id === "number") {
+        await db
+          .update(listingSources)
+          .set({ contentHash: _source.contentHash ?? "" })
+          .where(eq(listingSources.id, _source.id));
+      }
       restored++;
       revertedRowIds.push(row.id);
     }
 
     if (row.outcome === "deduped") {
       // Only the extra provenance row this batch attached goes; the listing it
-      // attached to predates the batch and is not ours to remove.
-      await db
-        .delete(listingSources)
-        .where(
-          and(
-            eq(listingSources.listingId, row.listingId),
-            eq(listingSources.source, job.source as never),
-            sql`${listingSources.firstSeenAt} >= ${job.createdAt}`,
-          ),
-        );
+      // attached to predates the batch and is not ours to remove. Newer jobs
+      // recorded the exact row id at commit (F12: the timestamp predicate never
+      // matched, because the job header is written after commit).
+      const sourceRowId = (
+        row.previousJson as { _sourceRowId?: number } | null
+      )?._sourceRowId;
+      if (typeof sourceRowId === "number") {
+        await db
+          .delete(listingSources)
+          .where(eq(listingSources.id, sourceRowId));
+      } else {
+        // Legacy jobs committed before the id was recorded: best effort.
+        await db
+          .delete(listingSources)
+          .where(
+            and(
+              eq(listingSources.listingId, row.listingId),
+              eq(listingSources.source, job.source as never),
+              sql`${listingSources.firstSeenAt} >= ${job.createdAt}`,
+            ),
+          );
+      }
       revertedRowIds.push(row.id);
     }
   }
