@@ -2,14 +2,21 @@
 
 import { useState } from "react";
 import { es } from "@/i18n/es";
+import { waLink } from "@/lib/wa";
 
 /**
  * Full contact form for a listing (ARCHITECTURE.md §3 sticky WhatsApp
  * contact, extended to match the form-first pattern sellers expect).
- * Records the lead through /api/leads (MySQL first, then GHL) and THEN
- * opens WhatsApp with the same message — a lead is captured even if the
- * visitor never sends the WhatsApp message. WhatsApp/phone stay as a
- * one-tap fallback below the form for visitors who just want to chat.
+ * Records the lead through /api/leads (MySQL first, then GHL) and then
+ * hands the visitor a WhatsApp link with the same message — a lead is
+ * captured even if the visitor never sends the WhatsApp message.
+ *
+ * Success is only claimed when the POST actually succeeded (res.ok) or the
+ * seller is reachable by WhatsApp anyway; a total failure shows an error
+ * with the WhatsApp fallback instead of a false "¡Mensaje enviado!". The
+ * WhatsApp continuation is a rendered <a> the visitor taps, not a
+ * post-await window.open — popup blockers (iOS Safari especially) eat
+ * window.open calls that don't happen synchronously in the tap handler.
  *
  * Two layouts from the same component: "card" (stacked, for the sticky
  * sidebar) and "panel" (two-column, for the full-width bottom section).
@@ -33,8 +40,9 @@ export function ContactForm({
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState(prefillMessage);
   const [questions, setQuestions] = useState<string[]>([]);
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
 
   function toggleQuestion(q: string) {
     setQuestions((prev) => {
@@ -45,13 +53,15 @@ export function ContactForm({
 
   const fullMessage =
     questions.length > 0 ? `${message}\n\n${questions.join(" ")}` : message;
+  const waHref = waLink(contactWhatsapp, fullMessage);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const whatsappTarget = phone.trim() || contactWhatsapp;
-    setSending(true);
+    setState("sending");
+    let captured = false;
     try {
-      await fetch("/api/leads", {
+      const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -64,17 +74,13 @@ export function ContactForm({
           utm: readUtm(),
         }),
       });
+      captured = res.ok;
     } catch {
-      // A capture failure must not block the visitor reaching the seller.
-    } finally {
-      setSending(false);
-      setSent(true);
-      if (contactWhatsapp) {
-        const digits = contactWhatsapp.replace(/\D/g, "");
-        const text = encodeURIComponent(fullMessage);
-        window.open(`https://wa.me/${digits}?text=${text}`, "_blank");
-      }
+      // Network failure — handled below; WhatsApp may still reach the seller.
     }
+    // Without a WhatsApp fallback a failed capture means nobody got the
+    // message — say so instead of lying with a success state.
+    setState(captured || waHref ? "sent" : "error");
   }
 
   const fieldsRow = (
@@ -147,19 +153,43 @@ export function ContactForm({
         />
       </label>
 
-      <button className="contact-form__submit" type="submit" disabled={sending}>
-        {sent ? "¡Mensaje enviado!" : sending ? "Enviando…" : "Enviar Mensaje"}
+      <button
+        className="contact-form__submit"
+        type="submit"
+        disabled={state === "sending"}
+      >
+        {state === "sent"
+          ? "¡Mensaje enviado!"
+          : state === "sending"
+            ? "Enviando…"
+            : "Enviar Mensaje"}
       </button>
+
+      {state === "sent" && waHref && (
+        <a
+          className="contact-form__submit contact-form__submit--wa"
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          💬 Continuar en WhatsApp
+        </a>
+      )}
+      {state === "error" && (
+        <p className="contact-form__error" role="alert">
+          No pudimos enviar tu consulta. Probá de nuevo en unos segundos.
+        </p>
+      )}
 
       <div className="contact-form__footer">
         <span className="contact-form__note">
           ✓ Tu consulta llega directamente al vendedor
         </span>
-        {contactWhatsapp && (
+        {waHref && (
           <div className="contact-form__altlinks">
             <a
               className="contact-form__altlink"
-              href={`https://wa.me/${contactWhatsapp.replace(/\D/g, "")}`}
+              href={waHref}
               target="_blank"
               rel="noopener noreferrer"
             >

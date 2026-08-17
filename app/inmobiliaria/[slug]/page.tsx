@@ -15,6 +15,7 @@ import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
+import { waLink } from "@/lib/wa";
 
 // Same shape as the listing detail page: DB-backed, so no static caching —
 // this is the founder's inventory changing, not content that goes stale slowly.
@@ -125,10 +126,10 @@ export default async function AgencyProfilePage({ params }: Params) {
           </p>
           {(agency.whatsapp || agency.email) && (
             <div className="agency-profile__contact">
-              {agency.whatsapp && (
+              {waLink(agency.whatsapp) && (
                 <a
                   className="contact-form__altlink"
-                  href={`https://wa.me/${agency.whatsapp.replace(/\D/g, "")}`}
+                  href={waLink(agency.whatsapp)!}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

@@ -24,6 +24,8 @@ import { citiesWithPrices } from "@/lib/precios-queries";
 import { categoryUrl } from "@/lib/urls";
 import { brandTaglineFor } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
+import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
+import { waLink } from "@/lib/wa";
 
 /**
  * Zone cards on the home page. Each one needs a photograph, so this is a fixed
@@ -87,13 +89,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** Publish CTA — same WhatsApp/mailto fallback logic as the header button. */
 function publishHref(brand: string): string {
-  const wa = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP?.replace(/\D/g, "");
-  const text = encodeURIComponent(
-    `Hola, quiero publicar una propiedad en ${brand}.`,
+  return (
+    waLink(CONTACT_WHATSAPP, `Hola, quiero publicar una propiedad en ${brand}.`) ??
+    `mailto:${CONTACT_EMAIL}?subject=Quiero%20publicar%20una%20propiedad`
   );
-  return wa
-    ? `https://wa.me/${wa}?text=${text}`
-    : "mailto:hola@propia.com.py?subject=Quiero%20publicar%20una%20propiedad";
 }
 
 /**

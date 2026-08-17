@@ -8,6 +8,8 @@ import {
   FOOTER_TYPES,
 } from "@/config/site-nav";
 import { brandName } from "@/lib/brand-server";
+import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
+import { waLink } from "@/lib/wa";
 
 /**
  * Global footer (portal shell). Two jobs at once: it is the site's second
@@ -47,8 +49,8 @@ export async function SiteFooter() {
   // Per-host wordmark: the domain is the brand (src/lib/brand.ts).
   const brand = await brandName();
   const year = new Date().getFullYear();
-  const whatsapp = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP;
-  const waDigits = whatsapp?.replace(/\D/g, "");
+  const whatsapp = CONTACT_WHATSAPP;
+  const waHref = waLink(whatsapp);
 
   return (
     <footer className="site-footer">
@@ -62,11 +64,11 @@ export async function SiteFooter() {
           </p>
 
           <ul className="site-footer__contact">
-            {waDigits && (
+            {waHref && (
               <li>
                 <a
                   className="site-footer__link"
-                  href={`https://wa.me/${waDigits}`}
+                  href={waHref}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -75,8 +77,8 @@ export async function SiteFooter() {
               </li>
             )}
             <li>
-              <a className="site-footer__link" href="mailto:hola@propia.com.py">
-                ✉️ hola@propia.com.py
+              <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
+                ✉️ {CONTACT_EMAIL}
               </a>
             </li>
             <li>

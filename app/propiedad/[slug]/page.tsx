@@ -30,6 +30,7 @@ import { listingCanonicalOrigin } from "@/lib/origin";
 import { getCityPrices } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { isBotUserAgent } from "@/lib/view-tracking";
+import { waLink } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
@@ -134,6 +135,7 @@ export default async function ListingPage({ params }: Params) {
   const origin = await listingCanonicalOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
   const waMessage = inquiryPrefillFor(brand, listing.title, canonical);
+  const waHref = waLink(contactWhatsapp, waMessage);
 
   const city = chain.find((c) => c.level === "ciudad");
   const barrio = chain.find((c) => c.level === "barrio");
@@ -585,10 +587,10 @@ export default async function ListingPage({ params }: Params) {
           {cuota && <span className="listing-cta-bar__cuota">💳 {cuota}</span>}
         </div>
         <div className="listing-cta-bar__actions">
-          {contactWhatsapp && (
+          {waHref && (
             <a
               className="listing-cta-bar__btn listing-cta-bar__btn--whatsapp"
-              href={`https://wa.me/${contactWhatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(waMessage)}`}
+              href={waHref}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Contactar por WhatsApp"
