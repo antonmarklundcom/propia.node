@@ -13,6 +13,7 @@ import {
   PageHero,
   Section,
 } from "@/components/MarketingUI";
+import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
@@ -114,11 +115,12 @@ export default async function ProyectosPage() {
           <div className="mk-devs">
             {developers.map((d) => (
               <div key={d.id} className="mk-dev">
-                {d.logoUrl ? (
+                {safeImageUrl(d.logoUrl) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     className="mk-dev__logo"
-                    src={d.logoUrl}
+                    src={safeImageUrl(d.logoUrl) ?? undefined}
+                    referrerPolicy="no-referrer"
                     alt={d.name}
                     loading="lazy"
                     decoding="async"

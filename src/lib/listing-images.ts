@@ -17,6 +17,7 @@ import type { EditScope } from "@/lib/listing-edit";
 import {
   buildImageKey,
   ImageRejectedError,
+  MAX_UPLOAD_BYTES,
   processListingImage,
   STORED_CONTENT_TYPE,
   thumbKey,
@@ -97,7 +98,16 @@ async function resequence(listingId: number): Promise<void> {
 
 export type UploadOutcome =
   | { ok: true; added: number; rejected: string[] }
-  | { ok: false; reason: "not_found" | "not_configured" | "no_files" };
+  | { ok: false; reason: "not_found" | "not_configured" | "no_files" | "too_many" };
+
+/**
+ * How many photos one submit may carry (audit F36). The action body limit
+ * (8 MB, next.config.ts) used to be the only bound, which is a bound on bytes
+ * and not on *work*: a hundred 80 KB files is a legal request that costs a
+ * hundred sequential sharp decodes on a box already at its process cap. Twenty
+ * is more than any real listing gallery and cheap to justify to an operator.
+ */
+export const MAX_FILES_PER_UPLOAD = 20;
 
 /**
  * Process and store uploaded files, then append them to the listing.
@@ -114,6 +124,7 @@ export async function addListingImages(
   files: File[],
 ): Promise<UploadOutcome> {
   if (files.length === 0) return { ok: false, reason: "no_files" };
+  if (files.length > MAX_FILES_PER_UPLOAD) return { ok: false, reason: "too_many" };
   if (!isR2Configured()) return { ok: false, reason: "not_configured" };
 
   const listing = await scopedListing(listingId, scope);
@@ -130,6 +141,13 @@ export async function addListingImages(
 
   for (const file of files) {
     if (file.size === 0) continue;
+    // Checked against the declared size *before* reading, so an oversized file
+    // is refused without ever being pulled into the heap (audit F36).
+    // processListingImage re-checks the real byte length behind this.
+    if (file.size > MAX_UPLOAD_BYTES) {
+      rejected.push(`${file.name}: El archivo supera los 12 MB.`);
+      continue;
+    }
     try {
       const processed = await processListingImage(
         Buffer.from(await file.arrayBuffer()),

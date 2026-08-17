@@ -23,6 +23,7 @@ export type PhotoFlash =
   | "photos_deleted"
   | "photos_reordered"
   | "photos_none"
+  | "photos_too_many"
   | "photos_unconfigured"
   | "not_found";
 
@@ -51,6 +52,7 @@ export async function handleUpload(
   if (!result.ok) {
     if (result.reason === "not_configured") return "photos_unconfigured";
     if (result.reason === "no_files") return "photos_none";
+    if (result.reason === "too_many") return "photos_too_many";
     return "not_found";
   }
   // A batch where some files were unreadable still saved the rest — say so

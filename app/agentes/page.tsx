@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { agentUrl } from "@/lib/urls";
 import { listAgentsForDirectory } from "@/lib/directory-queries";
 import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
+import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
@@ -67,11 +68,12 @@ export default async function AgentesPage() {
             {agents.map((a) => (
               <Link key={a.id} className="mk-agency" href={agentUrl(a.slug)}>
                 <div className="mk-agency__head">
-                  {a.photoUrl ? (
+                  {safeImageUrl(a.photoUrl) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       className="mk-agency__logo mk-agency__logo--round"
-                      src={a.photoUrl}
+                      src={safeImageUrl(a.photoUrl) ?? undefined}
+                      referrerPolicy="no-referrer"
                       alt={a.name}
                       loading="lazy"
                       decoding="async"

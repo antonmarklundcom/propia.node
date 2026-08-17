@@ -10,6 +10,7 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { getDeveloperBySlug } from "@/lib/directory-queries";
 import { CtaBand, Section } from "@/components/MarketingUI";
 import { waLink } from "@/lib/wa";
+import { safeImageUrl } from "@/lib/external-image";
 
 // DB-backed profile, same posture as the agency and agent profiles.
 export const dynamic = "force-dynamic";
@@ -81,11 +82,12 @@ export default async function DesarrolladoraPage({ params }: Params) {
 
       <section className="profile-hero">
         <div className="profile-hero__inner">
-          {developer.logoUrl ? (
+          {safeImageUrl(developer.logoUrl) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               className="profile-hero__logo"
-              src={developer.logoUrl}
+              src={safeImageUrl(developer.logoUrl) ?? undefined}
+              referrerPolicy="no-referrer"
               alt={developer.name}
             />
           ) : (

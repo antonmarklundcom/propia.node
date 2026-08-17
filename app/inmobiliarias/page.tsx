@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { agencyUrl } from "@/lib/urls";
 import { listAgenciesForDirectory } from "@/lib/directory-queries";
 import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
+import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
@@ -77,11 +78,12 @@ export default async function InmobiliariasPage() {
                 href={agencyUrl(a.slug)}
               >
                 <div className="mk-agency__head">
-                  {a.logoUrl ? (
+                  {safeImageUrl(a.logoUrl) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       className="mk-agency__logo"
-                      src={a.logoUrl}
+                      src={safeImageUrl(a.logoUrl) ?? undefined}
+                      referrerPolicy="no-referrer"
                       alt={a.name}
                       loading="lazy"
                       decoding="async"

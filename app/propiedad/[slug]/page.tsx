@@ -37,6 +37,7 @@ import { ListingCard } from "@/components/ListingCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
 import { PriceAlert } from "@/components/PriceAlert";
 import { RecentlyViewedRecorder } from "@/components/RecentlyViewed";
+import { safeImageUrl } from "@/lib/external-image";
 
 // Canonical URLs are derived from the Host header (one deployment, several
 // domains — src/lib/origin.ts), which is a dynamic API, so this route can no
@@ -464,9 +465,9 @@ export default async function ListingPage({ params }: Params) {
         {/* Sticky contact card */}
         <aside className="listing-detail__aside">
           <div className="seller-card__head">
-            {agency?.logoUrl ? (
+            {safeImageUrl(agency?.logoUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="seller-card__logo" src={agency.logoUrl} alt={sellerName} />
+              <img className="seller-card__logo" src={safeImageUrl(agency?.logoUrl) ?? undefined} alt={sellerName} referrerPolicy="no-referrer" />
             ) : (
               <div className="seller-card__avatar" aria-hidden>
                 {sellerInitials || "P"}

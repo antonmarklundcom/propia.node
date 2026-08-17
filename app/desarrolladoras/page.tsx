@@ -6,6 +6,7 @@ import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { listDevelopersForDirectory } from "@/lib/directory-queries";
 import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
+import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
@@ -80,11 +81,12 @@ export default async function DesarrolladorasPage() {
                 href={`/desarrolladora/${d.slug}`}
               >
                 <div className="mk-agency__head">
-                  {d.logoUrl ? (
+                  {safeImageUrl(d.logoUrl) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       className="mk-agency__logo"
-                      src={d.logoUrl}
+                      src={safeImageUrl(d.logoUrl) ?? undefined}
+                      referrerPolicy="no-referrer"
                       alt={d.name}
                       loading="lazy"
                       decoding="async"

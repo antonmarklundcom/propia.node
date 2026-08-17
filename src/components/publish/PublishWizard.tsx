@@ -230,7 +230,9 @@ export function PublishWizard({
           setPhotoError(
             res.error === "not_configured"
               ? esPublish.photosStorageOff
-              : esPublish.photosFailed,
+              : res.error === "too_many"
+                ? esPublish.photosTooMany
+                : esPublish.photosFailed,
           );
           return;
         }

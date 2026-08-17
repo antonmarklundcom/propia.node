@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveVertical } from "@/config/verticals";
 import { bareHostFrom } from "@/lib/host";
+import { cspHeader, newNonce } from "@/lib/csp";
 
 /**
  * Host-based vertical routing (ARCHITECTURE.md §2.8).
@@ -19,7 +20,19 @@ export function middleware(req: NextRequest) {
   // /admin and /agencia. Carrying it as a header keeps that decision on the
   // server — a client-side check would render the strip and then hide it.
   headers.set("x-pathname", req.nextUrl.pathname);
-  return NextResponse.next({ request: { headers } });
+
+  // CSP (audit F20). The nonce goes on the *request* headers as well as the
+  // response: that is how Next finds it and stamps its own inline hydration
+  // scripts, and how <JsonLd> reads it back through next/headers. The other
+  // security headers are static and live in next.config.ts.
+  const nonce = newNonce();
+  const csp = cspHeader(nonce, process.env.NODE_ENV !== "production");
+  headers.set("x-nonce", nonce);
+  headers.set("content-security-policy", csp);
+
+  const res = NextResponse.next({ request: { headers } });
+  res.headers.set("content-security-policy", csp);
+  return res;
 }
 
 export const config = {
