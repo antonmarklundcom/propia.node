@@ -11,6 +11,7 @@ import { leads, listings } from "@/db/schema";
 import { getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
 import { listingCanonicalOrigin } from "@/lib/origin";
+import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 
 const bodySchema = z.object({
   leadType: z.enum([
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const vertical = req.headers.get("x-vertical") ?? "propia";
+  const vertical = req.headers.get("x-vertical") ?? DEFAULT_VERTICAL_KEY;
 
   // Resolve listing context (for routing + CRM payload) if one was given.
   let listing: typeof listings.$inferSelect | null = null;

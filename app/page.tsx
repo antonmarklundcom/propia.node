@@ -26,7 +26,7 @@ import { categoryUrl } from "@/lib/urls";
 import { brandTaglineFor } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
-import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
+import { CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
 
 /**
@@ -141,11 +141,16 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-/** Publish CTA — same WhatsApp/mailto fallback logic as the header button. */
-function publishHref(brand: string): string {
-  return (
-    waLink(CONTACT_WHATSAPP, `Hola, quiero publicar una propiedad en ${brand}.`) ??
-    `mailto:${CONTACT_EMAIL}?subject=Quiero%20publicar%20una%20propiedad`
+/**
+ * Publish CTA — outbound WhatsApp when a portal number is configured, null
+ * otherwise. It used to fall back to a mailto:, which pointed at an address
+ * nobody owns; `/publicar` is the real form, so call sites route there
+ * instead of opening a compose window into a black hole.
+ */
+function publishWaHref(brand: string): string | null {
+  return waLink(
+    CONTACT_WHATSAPP,
+    `Hola, quiero publicar una propiedad en ${brand}.`,
   );
 }
 
@@ -311,9 +316,17 @@ export default async function Home() {
                 : "Propiedades en todo Paraguay"}
             </span>
             <span>Actualizado diariamente</span>
-            <a href={publishHref(brand)} target="_blank" rel="noopener noreferrer">
-              {es.publishCta}
-            </a>
+            {publishWaHref(brand) ? (
+              <a
+                href={publishWaHref(brand)!}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {es.publishCta}
+              </a>
+            ) : (
+              <Link href="/publicar">{es.publishCta}</Link>
+            )}
           </div>
         </div>
       </section>
@@ -712,14 +725,18 @@ export default async function Home() {
             <Link className="home-cta__button" href="/publicar">
               Publicar ahora
             </Link>
-            <a
-              className="home-cta__alt"
-              href={publishHref(brand)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              o escribinos por WhatsApp
-            </a>
+            {/* Only rendered with a real number behind it: the label promises
+                WhatsApp, so it must not quietly become something else. */}
+            {publishWaHref(brand) && (
+              <a
+                className="home-cta__alt"
+                href={publishWaHref(brand)!}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                o escribinos por WhatsApp
+              </a>
+            )}
           </div>
         </div>
       </section>
