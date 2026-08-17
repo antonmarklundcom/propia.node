@@ -25,9 +25,11 @@
  * Re-running the same file therefore lands entirely in (1) → zero duplicates,
  * which is the M2 gate.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { db as Db } from "../../db";
 import {
+  importJobs,
+  importRows,
   listingImages,
   listings,
   listingSources,
@@ -525,7 +527,64 @@ export async function commitImport(
     }
   }
 
+  await unpauseResurfaced(db, out);
+
   return out;
+}
+
+/**
+ * The other half of the staleness sweep's promise. resync.ts pauses a listing
+ * whose feed went quiet and says "one re-import that sees it again is enough to
+ * put it back" — but nothing ever did (audit F14): updates never touch status
+ * and the unchanged branch only bumps last_seen_at. So: any listing this batch
+ * matched (updated or unchanged) that is currently paused *by a resync sweep*
+ * goes back to published. Deliberately narrow — a listing paused by hand in the
+ * panel stays paused; only sweep-paused rows (a non-reverted `paused` row under
+ * a resync job) qualify, so a re-imported feed cannot override a human choice.
+ */
+async function unpauseResurfaced(db: typeof Db, out: CommittedRow[]) {
+  const seenIds = [
+    ...new Set(
+      out
+        .filter(
+          (r) =>
+            (r.outcome === "updated" || r.outcome === "unchanged") &&
+            r.listingId != null,
+        )
+        .map((r) => r.listingId as number),
+    ),
+  ];
+  if (seenIds.length === 0) return;
+
+  const sweepPaused = await db
+    .select({ listingId: importRows.listingId })
+    .from(importRows)
+    .innerJoin(importJobs, eq(importJobs.id, importRows.jobId))
+    .innerJoin(listings, eq(listings.id, importRows.listingId))
+    .where(
+      and(
+        inArray(importRows.listingId, seenIds),
+        eq(importRows.outcome, "paused"),
+        isNull(importRows.revertedAt),
+        eq(importJobs.kind, "resync"),
+        eq(listings.status, "paused"),
+      ),
+    );
+
+  const ids = [
+    ...new Set(
+      sweepPaused
+        .map((r) => r.listingId)
+        .filter((id): id is number => id != null),
+    ),
+  ];
+  if (ids.length === 0) return;
+
+  // publishedAt is left alone: this is a restore, not a fresh publish.
+  await db
+    .update(listings)
+    .set({ status: "published" })
+    .where(and(inArray(listings.id, ids), eq(listings.status, "paused")));
 }
 
 function committed(

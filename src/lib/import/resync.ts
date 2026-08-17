@@ -17,7 +17,7 @@
  * nobody re-uploaded a file would be nonsense.
  */
 import "server-only";
-import { and, eq, inArray, lt, max, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, lt, max, min, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { importJobs, importRows, listings, listingSources } from "@/db/schema";
 import type { ListingSource } from "./types";
@@ -66,7 +66,17 @@ export async function findStaleListings(
       ),
     )
     .groupBy(listingSources.listingId, listings.title)
-    .having(lt(max(listingSources.lastSeenAt), cutoff));
+    .having(
+      and(
+        lt(max(listingSources.lastSeenAt), cutoff),
+        // Only listings that a feed has actually re-confirmed at least once.
+        // A one-shot sighting (an agent's link claim, a single upload never
+        // repeated) has last_seen = first_seen forever — there is no feed
+        // going quiet to detect, and sweeping those paused an agent's own
+        // claimed listing 30 days after they published it (audit F13).
+        gt(max(listingSources.lastSeenAt), min(listingSources.firstSeenAt)),
+      ),
+    );
 
   return rows
     .filter((r) => r.lastSeenAt != null)
