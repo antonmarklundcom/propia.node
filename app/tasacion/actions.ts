@@ -10,6 +10,7 @@
  * what was asked without having to ask again.
  */
 import { headers } from "next/headers";
+import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { getCrm } from "@/lib/crm";
@@ -50,7 +51,7 @@ export async function requestValuationContactAction(input: {
   const whatsapp = canonPhone(input.whatsapp);
   if (whatsapp.length < 6) return { ok: false };
 
-  const vertical = (await headers()).get("x-vertical") ?? "propia";
+  const vertical = (await headers()).get("x-vertical") ?? DEFAULT_VERTICAL_KEY;
 
   // MySQL first, provider second — the same order /api/leads uses, for the
   // same reason: a failed push must never lose the lead.

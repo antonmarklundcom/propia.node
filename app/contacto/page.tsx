@@ -47,7 +47,7 @@ export default async function ContactoPage() {
           organizationJsonLd(origin, {
             name: brand,
             whatsapp,
-            email: CONTACT_EMAIL,
+            email: CONTACT_EMAIL ?? undefined,
           }),
         ]}
       />
@@ -97,9 +97,14 @@ export default async function ContactoPage() {
                     </a>
                   </li>
                 )}
-                <li>
-                  <a href={`mailto:${CONTACT_EMAIL}`}>✉️ {CONTACT_EMAIL}</a>
-                </li>
+                {/* Only shown once a real mailbox is configured — the form on
+                    the left is the channel until then. */}
+                {CONTACT_EMAIL && (
+                  <li>
+                    <a href={`mailto:${CONTACT_EMAIL}`}>✉️ {CONTACT_EMAIL}</a>
+                  </li>
+                )}
+                <li>📝 Formulario de contacto (respondemos por acá)</li>
                 <li>📍 Asunción, Paraguay</li>
                 <li>🕘 Lunes a viernes, 8:00 a 18:00</li>
               </ul>

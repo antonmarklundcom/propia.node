@@ -68,7 +68,7 @@ export default async function NosotrosPage() {
           organizationJsonLd(origin, {
             name: brand,
             whatsapp,
-            email: CONTACT_EMAIL,
+            email: CONTACT_EMAIL ?? undefined,
           }),
         ]}
       />
