@@ -22,6 +22,44 @@ const nextConfig: NextConfig = {
      */
     serverActions: { bodySizeLimit: "8mb" },
   },
+  /**
+   * Security headers (audit F20). Everything here is static and host-agnostic,
+   * so it belongs in the config rather than the middleware — which matters
+   * because the middleware matcher deliberately skips static assets, and those
+   * responses should still carry `nosniff` and HSTS.
+   *
+   * The Content-Security-Policy is NOT here: it carries a per-response nonce
+   * and is set in middleware.ts (see src/lib/csp.ts). Two CSP headers would be
+   * intersected by the browser, so there must only ever be one source.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            // Two years, subdomains included. Deliberately no `preload`: that
+            // is a one-way submission to the browser vendors' list and a
+            // founder decision, not a code one.
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Belt and braces with the CSP's frame-ancestors, for the browsers
+          // and middleboxes that only understand the older header.
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            // Nothing on this site asks for any of these; the map uses tiles,
+            // never the visitor's position.
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+          },
+          { key: "X-DNS-Prefetch-Control", value: "off" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

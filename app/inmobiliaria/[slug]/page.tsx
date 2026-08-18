@@ -16,6 +16,7 @@ import { listingUrl } from "@/lib/urls";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { waLink } from "@/lib/wa";
+import { safeImageUrl } from "@/lib/external-image";
 
 // Same shape as the listing detail page: DB-backed, so no static caching —
 // this is the founder's inventory changing, not content that goes stale slowly.
@@ -104,9 +105,9 @@ export default async function AgencyProfilePage({ params }: Params) {
       </nav>
 
       <header className="agency-profile__header">
-        {agency.logoUrl ? (
+        {safeImageUrl(agency.logoUrl) ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="agency-profile__logo" src={agency.logoUrl} alt={agency.name} />
+          <img className="agency-profile__logo" src={safeImageUrl(agency.logoUrl) ?? undefined} alt={agency.name} referrerPolicy="no-referrer" />
         ) : (
           <div className="agency-profile__avatar" aria-hidden>
             {initials || "I"}

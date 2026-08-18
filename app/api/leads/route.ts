@@ -11,6 +11,9 @@ import { leads, listings } from "@/db/schema";
 import { getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
 import { listingCanonicalOrigin } from "@/lib/origin";
+import { clientIpFrom } from "@/lib/client-ip";
+import { allowRequest } from "@/lib/rate-limit";
+import { rawHostFrom } from "@/lib/host";
 import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 
 const bodySchema = z.object({
@@ -30,13 +33,64 @@ const bodySchema = z.object({
   utm: z.record(z.string()).optional(),
 });
 
+/** 10 leads per IP per 10 minutes — far above a real buyer, far below a bot. */
+const LEAD_MAX = 10;
+const LEAD_WINDOW_MS = 10 * 60_000;
+
+/**
+ * The endpoint is intentionally unauthenticated — it is the public capture
+ * form, and requiring a session would defeat it. What it was missing is
+ * everything *else* that keeps an open endpoint from being free infrastructure
+ * (audit F28): each accepted row also fires an outbound GHL webhook, so an
+ * unthrottled POST loop is both a junk-lead flood in the panel and an
+ * amplifier pointed at our own CRM quota.
+ *
+ * The Origin check is a cheap same-origin filter, not a security boundary: a
+ * browser sets Origin on every cross-site POST and cannot forge it, so it
+ * stops the drive-by embedded form. A script that sends no Origin at all is
+ * left to the rate limit, which is the control that actually bounds the harm.
+ */
+function sameOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return true; // non-browser client; the rate limit is its bound
+  try {
+    return new URL(origin).host.replace(/^www\./, "") === rawHostFrom(req.headers);
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
+  if (!sameOrigin(req)) {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+  }
+
+  // req.json() happily parses a body sent as text/plain, which is exactly the
+  // content-type a cross-site form uses to dodge a CORS preflight.
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return NextResponse.json(
+      { ok: false, error: "invalid payload" },
+      { status: 415 },
+    );
+  }
+
+  const ip = clientIpFrom(req.headers);
+  if (!allowRequest(`leads|${ip}`, LEAD_MAX, LEAD_WINDOW_MS)) {
+    return NextResponse.json(
+      { ok: false, error: "too many requests" },
+      { status: 429, headers: { "retry-after": "600" } },
+    );
+  }
+
   let parsed;
   try {
     parsed = bodySchema.parse(await req.json());
-  } catch (e) {
+  } catch {
+    // No `detail`: the zod error echoes the submitted payload and the schema
+    // back to an unauthenticated caller (audit F28).
     return NextResponse.json(
-      { ok: false, error: "invalid payload", detail: String(e) },
+      { ok: false, error: "invalid payload" },
       { status: 400 },
     );
   }

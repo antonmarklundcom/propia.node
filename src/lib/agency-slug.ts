@@ -12,6 +12,7 @@ import { like } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies } from "@/db/schema";
 import { slugify } from "@/lib/slug";
+import { startsWithPattern } from "@/lib/sql-like";
 
 export async function uniqueAgencySlug(name: string): Promise<string> {
   const base = slugify(name) || "inmobiliaria";
@@ -20,7 +21,7 @@ export async function uniqueAgencySlug(name: string): Promise<string> {
       await db
         .select({ slug: agencies.slug })
         .from(agencies)
-        .where(like(agencies.slug, `${base}%`))
+        .where(like(agencies.slug, startsWithPattern(base)))
     ).map((r) => r.slug),
   );
   if (!taken.has(base)) return base;

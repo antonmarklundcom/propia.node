@@ -58,9 +58,20 @@ export async function updateAccountAction(formData: FormData): Promise<void> {
     name: String(formData.get("name") ?? ""),
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
+    // Required by updateOwnAccount whenever the email or password moves
+    // (audit F21) — a session alone must not be enough to take the account.
+    currentPassword: String(formData.get("currentPassword") ?? ""),
   });
 
-  if (!result.ok) finish(result.error === "email_taken" ? "taken" : "invalid");
+  if (!result.ok) {
+    finish(
+      result.error === "email_taken"
+        ? "taken"
+        : result.error === "bad_password"
+          ? "bad_password"
+          : "invalid",
+    );
+  }
 
   // The password change revoked every session, this one included — reissue so
   // the person who just changed it isn't bounced to the login screen.

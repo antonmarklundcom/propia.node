@@ -28,6 +28,7 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   password: { text: esPanel.profilePasswordChanged },
   taken: { text: esPanel.profileEmailTaken, error: true },
   invalid: { text: esPanel.profileInvalid, error: true },
+  bad_password: { text: esPanel.profileBadPassword, error: true },
   forbidden: { text: esPanel.profileForbidden, error: true },
 };
 
@@ -284,6 +285,24 @@ export default async function AgencyProfilePage({
                 />
                 <span className="auth-field__hint">
                   {esPanel.newPasswordHint}
+                </span>
+              </label>
+
+              {/* Re-auth (audit F21). Not `required`: the name can be edited on
+                  its own, and the server is what decides whether this field
+                  was needed — the form is not the gate. */}
+              <label className="panel-form__field">
+                <span className="auth-field__label">
+                  {esPanel.currentPasswordLabel}
+                </span>
+                <input
+                  className="auth-field__input"
+                  name="currentPassword"
+                  type="password"
+                  autoComplete="current-password"
+                />
+                <span className="auth-field__hint">
+                  {esPanel.currentPasswordHint}
                 </span>
               </label>
 

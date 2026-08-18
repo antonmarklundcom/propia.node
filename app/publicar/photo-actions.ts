@@ -22,7 +22,7 @@ import {
 
 export type DraftPhotoResult =
   | { ok: true; images: ListingImageRow[]; rejected: string[] }
-  | { ok: false; error: "not_found" | "not_configured" | "no_files" };
+  | { ok: false; error: "not_found" | "not_configured" | "no_files" | "too_many" };
 
 export async function uploadDraftPhotosAction(
   formData: FormData,

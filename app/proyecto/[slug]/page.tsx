@@ -10,6 +10,7 @@ import { ContactForm } from "@/components/ContactForm";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
 import { siteOrigin } from "@/lib/origin";
+import { safeImageUrl } from "@/lib/external-image";
 
 // Canonical URLs come from the Host header (src/lib/origin.ts), a dynamic
 // API — so this route renders per request instead of on an ISR window.
@@ -223,12 +224,13 @@ export default async function ProjectPage({ params }: Params) {
 
         <aside className="listing-detail__aside">
           <div className="seller-card__head">
-            {developer?.logoUrl ? (
+            {safeImageUrl(developer?.logoUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 className="seller-card__logo"
-                src={developer.logoUrl}
-                alt={developer.name}
+                src={safeImageUrl(developer?.logoUrl) ?? undefined}
+                referrerPolicy="no-referrer"
+                alt={developer?.name ?? ""}
               />
             ) : (
               <div className="seller-card__avatar" aria-hidden>

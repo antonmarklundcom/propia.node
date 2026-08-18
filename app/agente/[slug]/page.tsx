@@ -18,6 +18,7 @@ import { esAgentProfile, agentInquiryPrefillFor } from "@/i18n/es";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { ContactForm } from "@/components/ContactForm";
+import { safeImageUrl } from "@/lib/external-image";
 
 // Mirrors app/inmobiliaria/[slug]/page.tsx: DB-backed profile, no static
 // caching — the founder's inventory changes, not slow-to-stale content.
@@ -109,9 +110,9 @@ export default async function AgentProfilePage({ params }: Params) {
       </nav>
 
       <header className="agent-profile__header">
-        {agent.photoUrl ? (
+        {safeImageUrl(agent.photoUrl) ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="agent-profile__logo" src={agent.photoUrl} alt={agent.name} />
+          <img className="agent-profile__logo" src={safeImageUrl(agent.photoUrl) ?? undefined} alt={agent.name} referrerPolicy="no-referrer" />
         ) : (
           <div className="agent-profile__avatar" aria-hidden>
             {initials || "A"}

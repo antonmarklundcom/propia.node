@@ -20,6 +20,7 @@ import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
 import { listingScopeWhere, type EditScope } from "@/lib/listing-edit";
+import { containsPattern } from "@/lib/sql-like";
 
 export type ListingStatus = (typeof listings.$inferSelect)["status"];
 
@@ -487,7 +488,7 @@ export async function listAllLeads(params: {
   }
   const q = params.q?.trim();
   if (q) {
-    const term = `%${q}%`;
+    const term = containsPattern(q);
     const match = or(
       like(leads.name, term),
       like(leads.whatsapp, term),

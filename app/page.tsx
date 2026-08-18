@@ -28,6 +28,7 @@ import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
+import { safeImageUrl } from "@/lib/external-image";
 
 /**
  * Zone cards on the home page. Each one needs a photograph, so this is a fixed
@@ -542,9 +543,9 @@ export default async function Home() {
             <div className="home-devs__grid">
               {featuredDevelopers.map((d) => (
                 <div key={d.id} className="home-devs__card">
-                  {d.logoUrl ? (
+                  {safeImageUrl(d.logoUrl) ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className="home-devs__logo" src={d.logoUrl} alt={d.name} />
+                    <img className="home-devs__logo" src={safeImageUrl(d.logoUrl) ?? undefined} alt={d.name} referrerPolicy="no-referrer" />
                   ) : (
                     <div className="home-devs__logo home-devs__logo--fallback" aria-hidden>
                       {d.name.charAt(0)}

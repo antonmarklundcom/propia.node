@@ -189,6 +189,11 @@ export const esPanel = {
   profileEmailTaken: "Ese email ya está en uso por otra cuenta.",
   profileForbidden: "No tenés permiso para cambiar esos datos.",
   profileInvalid: "Revisá los datos ingresados.",
+  profileBadPassword:
+    "Tu contraseña actual no coincide. Para cambiar el email o la contraseña necesitamos confirmarla.",
+  currentPasswordLabel: "Contraseña actual",
+  currentPasswordHint:
+    "Solo hace falta si cambiás el email o ponés una contraseña nueva.",
   profileVerifiedNote: (brand: string) => `Perfil verificado por ${brand}.`,
   profilePendingNote: "Verificación pendiente de aprobación.",
 
@@ -358,6 +363,8 @@ export const esPanel = {
   photosDeleted: "Foto borrada.",
   photosReordered: "Orden actualizado.",
   photosNoFiles: "No elegiste ninguna foto.",
+  photosTooManyFiles:
+    "Son demasiadas fotos de una vez. Subí hasta 20 por tanda.",
   photosRejected: "Algunas fotos no se pudieron subir.",
   photosNotConfigured:
     "El almacenamiento de fotos todavía no está configurado (faltan las claves de R2). Avisale al administrador.",
@@ -488,6 +495,8 @@ export const esPublish = {
   photosStorageOff:
     "El almacenamiento de fotos todavía no está disponible. Podés publicar igual y agregarlas después.",
   photosFailed: "No pudimos subir algunas fotos. Probá de nuevo.",
+  photosTooMany:
+    "Son demasiadas fotos de una vez. Subí hasta 20 por tanda.",
   foreignExposureLabel:
     "Mostrar también a compradores del exterior (realestateinparaguay.com) — próximamente",
 

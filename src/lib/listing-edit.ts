@@ -17,6 +17,7 @@ import { agencies, listings, locations } from "@/db/schema";
 import { toPriceUsd } from "@/lib/import/normalize";
 import { USD_TO_PYG } from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
+import { containsPattern } from "@/lib/sql-like";
 
 export type ListingStatusValue = (typeof listings.$inferSelect)["status"];
 
@@ -112,7 +113,7 @@ export async function listAllListings(params: {
 
   const q = params.q?.trim();
   if (q) {
-    const term = `%${q}%`;
+    const term = containsPattern(q);
     const match = or(like(listings.title, term), like(listings.publicId, term));
     if (match) filters.push(match);
   }

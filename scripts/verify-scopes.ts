@@ -292,10 +292,43 @@ async function main() {
       name: "Verify Independent",
       email: ownerUser.email!,
       password: "",
+      currentPassword: "secreto123",
     });
     check(
       "account email collision refused",
       !collision.ok && collision.error === "email_taken",
+    );
+
+    // Audit F21: a session alone must not be enough to move the credentials.
+    const noReauth = await updateOwnAccount(independent.userId, {
+      name: "Verify Independent",
+      email: indepUser.email!,
+      password: "otraclave1",
+      currentPassword: "",
+    });
+    check(
+      "password change without current password refused",
+      !noReauth.ok && noReauth.error === "bad_password",
+    );
+    const wrongReauth = await updateOwnAccount(independent.userId, {
+      name: "Verify Independent",
+      email: mail("moved"),
+      password: "",
+      currentPassword: "no-es-la-clave",
+    });
+    check(
+      "email change with wrong current password refused",
+      !wrongReauth.ok && wrongReauth.error === "bad_password",
+    );
+    const renameOnly = await updateOwnAccount(independent.userId, {
+      name: "Verify Independent",
+      email: indepUser.email!,
+      password: "",
+      currentPassword: "",
+    });
+    check(
+      "renaming alone needs no re-auth",
+      renameOnly.ok && !renameOnly.passwordChanged,
     );
 
     await db.insert(sessions).values([
@@ -315,6 +348,7 @@ async function main() {
       name: "Verify Independent",
       email: indepUser.email!,
       password: "nuevaclave1",
+      currentPassword: "secreto123",
     });
     check("password change reported", changed.ok && changed.passwordChanged);
 

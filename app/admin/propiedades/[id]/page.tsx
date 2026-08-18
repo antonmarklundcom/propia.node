@@ -42,6 +42,7 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   photos_deleted: { text: esPanel.photosDeleted },
   photos_reordered: { text: esPanel.photosReordered },
   photos_none: { text: esPanel.photosNoFiles, error: true },
+  photos_too_many: { text: esPanel.photosTooManyFiles, error: true },
   photos_unconfigured: { text: esPanel.photosNotConfigured, error: true },
 };
 
