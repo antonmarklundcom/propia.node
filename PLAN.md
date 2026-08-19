@@ -357,8 +357,40 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       Thin vitest suite over `cuota.ts`, `parseAmount`, `valuation.ts`, run
       in CI — the code where a silent regression prints wrong money sitewide.
 
-**All of D3–D5 and D7–D15 were decided 2026-08-19 (founder chose the
-recommended default on every item).** Still genuinely open: D1/D2 are
+- [x] **D16 — Template strategy.** DECIDED 2026-08-19: **this repo stays the
+      live site; a COPY becomes a separate template repo** with design, copy
+      and brand stripped and the **default language swappable** (Spanish,
+      Swedish and English markets are the priority). Sequencing that makes
+      the copy cheap instead of a maintenance trap: cut the copy **after
+      Batch 3 (i18n)** — the `getDictionary` layer is exactly what makes
+      "swap default language" a config change — and after the audit's
+      TEMPLATE-CRITICAL items are fixed (they mostly are; F1/F4 land in
+      Batches 1–2). The audit §5 list of hardcoded Paraguay assumptions
+      (currency enum, `cuota_gs`, location hierarchy, phone/WhatsApp,
+      legal/timezone) is the strip-list for the extraction session. Until
+      the cut, all work continues in this one repo.
+- [x] **D17 — AI provider for content jobs: Gemini API.** DECIDED
+      2026-08-19: barrio guides and the Batch 3 translation job use the
+      **Gemini API**, not the Claude API — replace the `ANTHROPIC_API_KEY`
+      slot with `GEMINI_API_KEY` (env + `.env.example` + the guide/translate
+      scripts). Founder also wants AI features explored for each role —
+      captured as ideas, not commitments: **admin** (review-queue assist:
+      flag suspect listings, summarize batch imports), **agency/realtor**
+      (listing-description writer/improver in the panel, lead-reply
+      suggestions), **buyers** (natural-language search box mapping to the
+      existing filter vocabulary), all as batch/panel actions — never in
+      the public request path (cost, latency, shared-host limits).
+- [x] **D18 — inmobiliaria.com.py design pass = Batch 5.** DECIDED
+      2026-08-19: the per-vertical visual identity work (theme tokens, copy
+      dictionary, shell variants — the D6 design ask) runs as **Batch 5,
+      after the core batches**, spec'd with the web-design-system skill.
+- [x] **D19 — English flip pacing.** DECIDED 2026-08-19: build the i18n
+      layer in normal batch order; the flip itself waits on the D6
+      checklist. Note: inmobiliaria.com.py being a *parked* domain on the
+      same app changes nothing — middleware routes by hostname, and the
+      flip is code + env only.
+
+**All of D3–D5 and D7–D19 were decided 2026-08-19.** Still genuinely open: D1/D2 are
 superseded in practice by the brand decision (CLAUDE.md) and D6; the [YOU]
 research task inside D3 (verify real AFD/MUVH terms so the cuota line can
 come back) and the featured price number (D5) remain founder homework.
@@ -547,12 +579,24 @@ panel scoping.
   Flip day itself stays gated on D6's checklist and is NOT part of the batch.
 - **Batch 4 — retention & monetisation (mostly parallel):** favorites +
   saved-search/alert engine (D9, MIGRATION), valuation→publish funnel,
-  featured toggle (D5 decision permitting).
+  featured toggle (D5), barrio guides generation via **Gemini** (D17 —
+  needs `GEMINI_API_KEY` in prod, `[YOU]`).
+- **Batch 5 — per-domain design pass (D18):** distinct visual identity for
+  inmobiliaria.com.py vs realestateinparaguay.com — per-vertical theme
+  tokens + copy dictionary + shell variants branching on the resolved
+  vertical. Spec with the web-design-system skill; builds on Batch 3's
+  dictionary layer.
+- **After Batch 3/5 — template extraction session (D16):** copy the repo,
+  strip brand/copy/design, parameterise the audit §5 hardcoded-assumption
+  list, make default language a config value. Separate session, separate
+  repo — not a batch in this one.
 
 Dependency notes: Batch 0 blocks all auto-merging; Batch 2 items are ordered;
 Batch 3 items are ordered; Batches 1/2/4 are independent of each other except
 that lead notifications (Batch 2) should land before the alert engine
-(Batch 4) reuses its delivery path.
+(Batch 4) reuses its delivery path. Batch 5 depends on Batch 3's dictionary;
+the template cut (D16) depends on Batch 3 and the TEMPLATE-CRITICAL fixes in
+Batches 1–2.
 
 ## Codeable work, in priority order
 
@@ -822,8 +866,9 @@ the product more usable than the last.
       here than on a category page because a median *looks* authoritative.
       Link modules: category page → its city's prices, listing detail → same,
       price row → the category page it summarises, footer → `/precios`.
-- [ ] Barrio guides via the Claude API (top 30). Needs `ANTHROPIC_API_KEY` in
-      prod `[YOU]`. Note the guides are the *only* part of §4.4 that needs it.
+- [ ] Barrio guides (top 30) — **now via the Gemini API per D17**: swap the
+      `ANTHROPIC_API_KEY` slot for `GEMINI_API_KEY` in the scripts and
+      `.env.example`; needs the key in prod `[YOU]`. Scheduled in Batch 4.
 - [ ] **[YOU]** GATE: Screaming Frog crawl — zero indexable thin pages, zero
       canonical conflicts.
 
