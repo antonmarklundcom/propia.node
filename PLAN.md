@@ -5,7 +5,8 @@ every session that finishes a step** — mark items done, add new blockers.
 `[C]` = Claude does it (code/session work). `[YOU]` = founder must do it
 (hosting, accounts, real-world data — things code cannot reach).
 
-_Last updated: 2026-07-24 (session: shared-edit-admin-pages)._
+_Last updated: 2026-08-19 (session: repo-template-review — audit re-verification,
+roles/i18n/UX review, build-batch plan; see the 2026-08-19 section below)._
 
 ---
 
@@ -299,6 +300,40 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
         Paused here — do not resume the schema change, translation job, or
         visual build without checking in first.
 
+- [ ] **D7 — Publish policy for agencies (this IS the audit's open P0, F1).**
+      Today FSBO submissions always pass `pending_review` while any
+      self-registered agency can set `published` directly
+      (`AGENCY_STATUSES` in `app/agencia/actions.ts`) — the review queue the
+      trust story rests on is advisory. **Recommended default: everyone goes
+      through review, plus a per-agency `trusted` flag (set manually in
+      `/admin`, like `is_verified`) that skips the queue.** Veto only if you
+      want agencies to keep direct publish.
+- [ ] **D8 — FSBO owner panel: in scope now?** A consumer who publishes via
+      `/publicar` currently has NO page after approval: can't see, edit or
+      pause their listing, and their leads route `internal` where only
+      `/admin/leads` sees them (audit F4 is the same loop). **Recommended:
+      yes — Batch 2 below (F4 contact fix → minimal owner panel → lead
+      notifications) completes the FSBO loop end-to-end.**
+- [ ] **D9 — Buyer retention features (favorites + real saved-search /
+      price-alert engine).** `PriceAlert` today is a manual lead with no
+      engine behind it; no favorites/saved-search exists. **Recommended:
+      build in Batch 4, after the FSBO loop and before/alongside i18n —
+      lightweight version only (favorites + weekly "nuevos en tu zona"
+      digest), not a full buyer-account system.**
+- [ ] **D10 — Import vs manual edits: who wins? (audit F61.)** Re-importing a
+      feed currently overwrites panel edits silently. **Recommended: manual
+      edits win — track `manually_edited_at` and have the importer skip+flag
+      those rows instead of overwriting.** Veto if a feed should be the
+      source of truth.
+- [ ] **D11 — AFK auto-merge policy for the builder chats (Opus/Sonnet).**
+      Merge = Hostinger auto-deploy, no staging. **Recommended: (a) CI
+      (Batch 0) is a required check and branch protection is on before any
+      auto-merge; (b) PRs touching `src/db/schema.ts` (MIGRATION REQUIRED)
+      are NEVER auto-merged — you merge those by hand and run
+      `npm run db:migrate` against prod; (c) everything else may auto-merge
+      when green.** The alternative — a `staging` branch on a second
+      Hostinger slot — is available later if (a)–(c) ever feel too thin.
+
 ## [YOU] — production items code cannot reach
 
 - [ ] ⚠️ **Run `npm run db:migrate` against prod when you merge.** Two
@@ -383,6 +418,110 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 | M7 Monetization & feeders | 🔶 valuation magnet done | ⏳ featured/preventa need a pricing decision (D5) |
 
 ---
+
+## 2026-08-19 repo review — verified state, gaps, and the build batches
+
+Full re-verification of `docs/audit-2026-08.md` against HEAD plus a roles /
+i18n / buyer-UX review. Every claim below was checked in code this session,
+not remembered.
+
+### Audit findings: 55 of 64 are FIXED (PRs #54–#57)
+
+`docs/audit-2026-08.md` now carries a status header; do not re-audit fixed
+items. Still open / partial:
+
+| ID | Sev | Status | What remains |
+| --- | --- | --- | --- |
+| F1 | P0 | OPEN | Agency can self-publish; review queue bypassable → **D7** |
+| F4 | P1 | OPEN | FSBO listing has no WhatsApp contact; its leads route `internal` and no panel shows them → **D8 / Batch 2** |
+| F48 | P3 | OPEN | `publishedAt` re-stamped on every edit (`listing-edit.ts` ~312) — gate on `current.publishedAt == null` |
+| F61 | P3 | OPEN | Re-import overwrites manual edits → **D10** |
+| F63 | P3 | OPEN | Zero-count city 404 vs documented 410 — fine to just amend the doc |
+| F17 | P1 | PARTIAL | Root layout still dynamic (only home DB payload cached); finish = static route group or middleware-resolved brand. Highest-leverage perf item given the 503 history |
+| F38 | P2 | PARTIAL | Map bbox still filters `coalesce(lat…)` so `idx_geo` unused; materialise a display coordinate (MIGRATION) |
+| F43 | P2 | PARTIAL | Sitemap cached but unchunked; needed near ~25k listings, not before |
+
+### Roles — verified model and gaps
+
+Enum: `consumer` (default) / `agent` / `agency_admin` / `developer` / `admin`.
+Agency teams already work (`/agencia/equipo`, invites, promote/demote,
+last-admin guard) — an invited `agent` IS the "employee" role; no new global
+role needed for that.
+
+Real gaps, in priority order:
+1. **FSBO owners have no panel** (see F4/D8). The `owner` EditScope exists in
+   code; no route uses it post-publish.
+2. **Publish-policy asymmetry** = F1/D7.
+3. **Agents see the whole agency's listings + leads** — no per-agent
+   assignment. Probably correct for small PY agencies today; noted as a later
+   option (`assigned_agent_id` + optional "only mine" scope), not a build item.
+4. **No buyer accounts / favorites / working alerts** → D9.
+5. **`developer` role is dormant** — in the enum, mapped to no panel. Reserved;
+   a `/proyecto`-owner panel is a someday item.
+6. **Admin "moderator" tier** (review queue + leads only) — cheap to add when
+   the founder hires help; unnecessary while solo.
+
+### Language swap — real scope (bigger than "add en.ts")
+
+Verified: no `en.ts`, no `getDictionary`, `x-locale` header set by middleware
+and read by nothing, `vertical.filters`/`.copy` never consumed,
+`description_en`/`guide_content_en` columns exist with no read/write path,
+no toggle UI. **And `es.ts` mostly covers admin/panel/publish — the
+buyer-facing surface (home ~39 literals, category page, SearchBar,
+CategoryFilterBar, ListingCard, detail ~18 literals) is inline Spanish JSX.**
+So the swap is four sequential layers (Batch 3): (1) extract buyer-facing
+strings into the dictionary + a `getDictionary(locale)` helper keyed off
+`x-locale`; (2) write `en.ts`; (3) translation batch job (Claude API) filling
+`title_en`/`description_en` on publish/edit — new columns, MIGRATION; (4) the
+existing D6 flip-day checklist (hreflang, env var, verticals) in one release.
+A visitor-facing ES/EN "toggle" is a cross-domain link to the sister host's
+listing (domain = language), cheap once hreflang exists — not a `?lang=`
+switch.
+
+### Product ideas agreed into scope (from audit §4 + this review)
+
+Ordered by leverage at zero users:
+1. **Operator lead notifications** (audit I10) — WhatsApp/email ping on new
+   lead + new review-queue item. Small; solo operator currently finds both by
+   chance. (Batch 2.)
+2. **Real photos** — purely the `[YOU]` R2 envs. Blocks perceived quality of
+   everything else.
+3. **Favorites + real saved-search/price-alert engine** (I2/I7, D9, Batch 4).
+4. **Valuation → publish funnel** (I4) — `/tasacion` CTA pre-fills
+   `/publicar`. Small; manufactures supply. (Batch 4.)
+5. **Featured listings, admin-toggle variant** (D5) — on `featured_until`,
+   invoice/transfer; skip payment integration until demand. (Batch 4.)
+6. Filter depth (baños/área/amenities, by-m² sort) — deferred until inventory
+   justifies it.
+
+### Build batches for the builder chats (Opus/Sonnet, PR-per-item)
+
+Guardrails for every builder session: CLAUDE.md + the Standing rules below;
+any `schema.ts` PR is MIGRATION REQUIRED and never auto-merged (D11); never
+touch `drizzle.config.ts` / `src/db/index.ts`; `npx tsc --noEmit` +
+`npm run build` before push; `npm run verify:scopes` on anything touching
+panel scoping.
+
+- **Batch 0 — CI (first, alone, blocking).** GitHub Actions: `tsc --noEmit`,
+  `next build`, `verify:import` (+ `verify:scopes` against a MySQL service
+  container). Required check + branch protection on `main`. Nothing
+  auto-merges before this exists.
+- **Batch 1 — independent fixes (parallel PRs):** F1+trusted flag (per D7,
+  MIGRATION for the flag column), F48, F63 doc amendment, F17 finish,
+  F38 display coordinate (MIGRATION), F61 per D10 (MIGRATION).
+- **Batch 2 — FSBO loop (sequential, shared files):** F4 contact fallback →
+  minimal owner panel (D8) → operator lead notifications (I10).
+- **Batch 3 — i18n (strictly sequential):** string extraction →
+  `getDictionary` → `en.ts` → translation job (MIGRATION for `title_en`).
+  Flip day itself stays gated on D6's checklist and is NOT part of the batch.
+- **Batch 4 — retention & monetisation (mostly parallel):** favorites +
+  saved-search/alert engine (D9, MIGRATION), valuation→publish funnel,
+  featured toggle (D5 decision permitting).
+
+Dependency notes: Batch 0 blocks all auto-merging; Batch 2 items are ordered;
+Batch 3 items are ordered; Batches 1/2/4 are independent of each other except
+that lead notifications (Batch 2) should land before the alert engine
+(Batch 4) reuses its delivery path.
 
 ## Codeable work, in priority order
 
