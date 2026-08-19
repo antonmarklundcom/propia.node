@@ -93,14 +93,20 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       wrong until you decide is the *experience* — the English domain serving
       Spanish copy — plus `realestateinparaguay.com` being `enabled: false`
       while it is the only live host.
-- [ ] **D3 — Real financing terms.** `scripts/seed-financing.ts` ships
-      placeholder Che Róga Porã / AFD numbers. Every venta card currently
-      advertises a monthly cuota derived from invented terms.
-- [ ] **D4 — USD→PYG rate** to quote (`USD_TO_PYG`, currently 6082).
-- [ ] **D5 — Featured-listing pricing, and how money arrives.** In-app payment
-      (an integration to pick and build) or invoice/transfer with an admin
-      toggle? The toggle is a small build on the existing `featured_until`
-      column; the integration is not. Blocks the rest of M7.
+- [x] **D3 — Real financing terms.** DECIDED 2026-08-19: **hide the cuota
+      line sitewide until the founder verifies real AFD/MUVH published
+      terms** (Batch 1 item). No wrong money shown meanwhile; the line
+      returns the day rates are confirmed and `seed:financing` +
+      `cron:cuotas` re-run.
+- [x] **D4 — USD→PYG rate.** DECIDED 2026-08-19: **auto-fetch via a nightly
+      cron** from a published reference rate (BCP or equivalent), replacing
+      the hardcoded 6082 (Batch 1 item). Keep a sane fallback if the fetch
+      fails.
+- [x] **D5 — Featured-listing money flow.** DECIDED 2026-08-19:
+      **invoice/transfer + admin toggle** on the existing `featured_until`
+      column (Batch 4 item). No payment integration until agencies are
+      actually paying repeatedly. Pricing number itself still `[YOU]` when
+      the first buyer appears.
 - [ ] **D6 — Second production domain: `inmobiliaria.com.py`, and
       `realestateinparaguay.com`'s role flips.** (session: 2026-08-16).
       This is a bigger architecture decision than it first looked —
@@ -300,7 +306,7 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
         Paused here — do not resume the schema change, translation job, or
         visual build without checking in first.
 
-- [ ] **D7 — Publish policy for agencies (this IS the audit's open P0, F1).**
+- [x] **D7 — Publish policy for agencies (this IS the audit's open P0, F1).**
       Today FSBO submissions always pass `pending_review` while any
       self-registered agency can set `published` directly
       (`AGENCY_STATUSES` in `app/agencia/actions.ts`) — the review queue the
@@ -308,24 +314,24 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       through review, plus a per-agency `trusted` flag (set manually in
       `/admin`, like `is_verified`) that skips the queue.** Veto only if you
       want agencies to keep direct publish.
-- [ ] **D8 — FSBO owner panel: in scope now?** A consumer who publishes via
+- [x] **D8 — FSBO owner panel: in scope now?** A consumer who publishes via
       `/publicar` currently has NO page after approval: can't see, edit or
       pause their listing, and their leads route `internal` where only
       `/admin/leads` sees them (audit F4 is the same loop). **Recommended:
       yes — Batch 2 below (F4 contact fix → minimal owner panel → lead
       notifications) completes the FSBO loop end-to-end.**
-- [ ] **D9 — Buyer retention features (favorites + real saved-search /
+- [x] **D9 — Buyer retention features (favorites + real saved-search /
       price-alert engine).** `PriceAlert` today is a manual lead with no
       engine behind it; no favorites/saved-search exists. **Recommended:
       build in Batch 4, after the FSBO loop and before/alongside i18n —
       lightweight version only (favorites + weekly "nuevos en tu zona"
       digest), not a full buyer-account system.**
-- [ ] **D10 — Import vs manual edits: who wins? (audit F61.)** Re-importing a
+- [x] **D10 — Import vs manual edits: who wins? (audit F61.)** Re-importing a
       feed currently overwrites panel edits silently. **Recommended: manual
       edits win — track `manually_edited_at` and have the importer skip+flag
       those rows instead of overwriting.** Veto if a feed should be the
       source of truth.
-- [ ] **D11 — AFK auto-merge policy for the builder chats (Opus/Sonnet).**
+- [x] **D11 — AFK auto-merge policy for the builder chats (Opus/Sonnet).**
       Merge = Hostinger auto-deploy, no staging. **Recommended: (a) CI
       (Batch 0) is a required check and branch protection is on before any
       auto-merge; (b) PRs touching `src/db/schema.ts` (MIGRATION REQUIRED)
@@ -333,6 +339,29 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       `npm run db:migrate` against prod; (c) everything else may auto-merge
       when green.** The alternative — a `staging` branch on a second
       Hostinger slot — is available later if (a)–(c) ever feel too thin.
+- [x] **D12 — Notification/send channel.** DECIDED 2026-08-19:
+      **WhatsApp-first now, email later.** Operator lead/review notifications
+      (Batch 2) go to the founder's WhatsApp; the buyer digest and any email
+      sending wait until a real mailbox exists (VenderCRM or a transactional
+      service — that choice is deferred, and nothing blocks on it).
+- [x] **D13 — Barrio guides across domains (D6 sub-decision).** DECIDED
+      2026-08-19: **same guides, translated** via the same translation job
+      (`guide_content_en` already exists). Investor-specific guides are a
+      possible later divergence, not part of the flip.
+- [x] **D14 — Per-listing publish-target toggle (D6 sub-decision).** DECIDED
+      2026-08-19: **not yet.** Both hosts serve the same rows and the
+      canonical/sitemap protections make that safe; build the toggle (two
+      boolean columns + host-filtered queries, MIGRATION) only when a real
+      listing must be excluded from one domain.
+- [x] **D15 — Money-math unit tests.** DECIDED 2026-08-19: **yes, Batch 0.**
+      Thin vitest suite over `cuota.ts`, `parseAmount`, `valuation.ts`, run
+      in CI — the code where a silent regression prints wrong money sitewide.
+
+**All of D3–D5 and D7–D15 were decided 2026-08-19 (founder chose the
+recommended default on every item).** Still genuinely open: D1/D2 are
+superseded in practice by the brand decision (CLAUDE.md) and D6; the [YOU]
+research task inside D3 (verify real AFD/MUVH terms so the cuota line can
+come back) and the featured price number (D5) remain founder homework.
 
 ## [YOU] — production items code cannot reach
 
@@ -504,11 +533,13 @@ panel scoping.
 
 - **Batch 0 — CI (first, alone, blocking).** GitHub Actions: `tsc --noEmit`,
   `next build`, `verify:import` (+ `verify:scopes` against a MySQL service
-  container). Required check + branch protection on `main`. Nothing
-  auto-merges before this exists.
+  container), **plus the D15 vitest money-math suite** (`cuota.ts`,
+  `parseAmount`, `valuation.ts`). Required check + branch protection on
+  `main`. Nothing auto-merges before this exists.
 - **Batch 1 — independent fixes (parallel PRs):** F1+trusted flag (per D7,
   MIGRATION for the flag column), F48, F63 doc amendment, F17 finish,
-  F38 display coordinate (MIGRATION), F61 per D10 (MIGRATION).
+  F38 display coordinate (MIGRATION), F61 per D10 (MIGRATION),
+  **hide-cuota-until-verified (D3)**, **FX auto-fetch cron (D4)**.
 - **Batch 2 — FSBO loop (sequential, shared files):** F4 contact fallback →
   minimal owner panel (D8) → operator lead notifications (I10).
 - **Batch 3 — i18n (strictly sequential):** string extraction →
