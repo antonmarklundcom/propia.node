@@ -274,6 +274,7 @@ export async function updateListing(params: {
       operation: listings.operation,
       priceAmount: listings.priceAmount,
       priceCurrency: listings.priceCurrency,
+      publishedAt: listings.publishedAt,
     })
     .from(listings)
     .where(eq(listings.id, id))
@@ -309,8 +310,14 @@ export async function updateListing(params: {
 
   if (moneyChanged) patch.cuotaGs = null;
 
-  // First publish stamps publishedAt so category ordering (idx_fresh) is sane.
-  if (input.status === "published") patch.publishedAt = new Date();
+  // FIRST publish stamps publishedAt so category ordering (idx_fresh) is sane —
+  // and only the first. Re-stamping on every edit made a typo fix look like a
+  // new listing: the row jumped back to the top of `published_at desc` and the
+  // sitemap's lastmod moved for content that had not changed. A listing that
+  // is unpaused keeps its original publish date on purpose.
+  if (input.status === "published" && current?.publishedAt == null) {
+    patch.publishedAt = new Date();
+  }
 
   const guard = listingScopeWhere(scope);
   const [res] = await db
