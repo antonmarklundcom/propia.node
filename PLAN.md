@@ -79,6 +79,17 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 
 ## Decisions needed from you (these block work below)
 
+> **Recording gap, 2026-08-19.** A chat session went through decisions the
+> founder answered verbally (referred to there as D3–D19). **Only D1–D11
+> exist in this file, and D3–D11 are still written as *recommendations* with
+> unticked boxes — the answers were never committed.** D12–D19 do not exist in
+> the repo at all. Anything gated on D7 (publish policy / F1), D10 (import vs
+> manual edits / F61), D5 (featured pricing) or D9 (retention scope) is
+> therefore still formally undecided *for a builder chat reading this file*,
+> which is the only thing a builder chat can read. Paste those answers and
+> they land here as ticked decisions; until then treat the "Recommended:"
+> lines as proposals, not policy.
+
 - [ ] **D1 — Product name.** The docs say "propia.com.py" everywhere; the UI
       says "Homes Paraguay" (commit `b5a4e0a`). Pick one; the loser gets
       renamed out of the docs and `metadata.title`s.
@@ -326,13 +337,41 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       those rows instead of overwriting.** Veto if a feed should be the
       source of truth.
 - [ ] **D11 — AFK auto-merge policy for the builder chats (Opus/Sonnet).**
-      Merge = Hostinger auto-deploy, no staging. **Recommended: (a) CI
-      (Batch 0) is a required check and branch protection is on before any
-      auto-merge; (b) PRs touching `src/db/schema.ts` (MIGRATION REQUIRED)
-      are NEVER auto-merged — you merge those by hand and run
-      `npm run db:migrate` against prod; (c) everything else may auto-merge
-      when green.** The alternative — a `staging` branch on a second
-      Hostinger slot — is available later if (a)–(c) ever feel too thin.
+      Merge = Hostinger auto-deploy, no staging. **REVISED 2026-08-19 by D20:**
+      the original (a) — "CI is a required check and branch protection is on" —
+      cannot happen without GitHub Actions, and Actions are off. So: (a) every
+      builder session runs `npm run verify:local` and pushes through the
+      pre-push hook, which is the same three checks CI would have run;
+      (b) PRs touching `src/db/schema.ts` (MIGRATION REQUIRED) are NEVER
+      auto-merged — you merge those by hand and run `npm run db:migrate`
+      against prod; (c) **everything else waits for your merge click too**,
+      because with no required status check there is nothing for auto-merge to
+      wait on. A green hook on the builder's machine is not visible to GitHub.
+      The alternative if the merge clicks become the bottleneck: one small
+      workflow, `ubuntu-latest`, `timeout-minutes: 5`, `paths-ignore` for docs
+      — roughly 3 minutes per push on one repo. That is a deliberate spend, not
+      a default; say the word and it lands.
+
+- [x] **D20 — CI runs locally, not on GitHub Actions.** (session: 2026-08-19,
+      founder asked to cut GitHub minutes.) Actions minutes bill **per account,
+      not per repo**, so fifteen repos each running a harmless 3-minute build
+      cost the same as one repo running a disaster — and the waste is invisible
+      until the quota is gone. This repo deploys via hPanel → Node.js App →
+      Import Git Repository: GitHub holds the code and fires a **webhook**,
+      which is free and unmetered and never appears in Actions billing. So a
+      workflow file here would add cost to a deploy path that does not use it.
+      Built instead (Batch 0): `.githooks/pre-push` = `typecheck` + `build` +
+      `verify:import`; `.githooks/pre-commit` = refuse `.github/workflows/**`;
+      `npm run verify:local` to run the gate by hand; wired by `prepare` on
+      `npm install`, or `npm run hooks:install`. `verify:scopes` stays manual —
+      it needs a localhost database and refuses to run against anything else.
+      **[YOU], account-level, where the actual minutes are going** — this repo
+      has never had a workflow, so its usage is already 0 and the spend is in
+      *other* repos: (1) github.com/settings/billing → set the Actions spending
+      limit to **$0** (runs get blocked, never billed); (2) per repo →
+      Settings → Actions → General → **Disable actions** on anything that
+      deploys off-GitHub; (3) turn **off Copilot code review** on private repos
+      — it consumes Actions minutes per PR and it is easy to miss.
 
 ## [YOU] — production items code cannot reach
 
@@ -434,9 +473,9 @@ items. Still open / partial:
 | --- | --- | --- | --- |
 | F1 | P0 | OPEN | Agency can self-publish; review queue bypassable → **D7** |
 | F4 | P1 | OPEN | FSBO listing has no WhatsApp contact; its leads route `internal` and no panel shows them → **D8 / Batch 2** |
-| F48 | P3 | OPEN | `publishedAt` re-stamped on every edit (`listing-edit.ts` ~312) — gate on `current.publishedAt == null` |
+| F48 | P3 | **FIXED 2026-08-19** | First publish only, in all three writers: `listing-edit.ts` (reads `publishedAt` in the row it already selects), `approveListing` and `setPanelListingStatus` (`coalesce(published_at, now())` — no extra round-trip, no race) |
 | F61 | P3 | OPEN | Re-import overwrites manual edits → **D10** |
-| F63 | P3 | OPEN | Zero-count city 404 vs documented 410 — fine to just amend the doc |
+| F63 | P3 | **CLOSED 2026-08-19** | No code change: ARCHITECTURE.md §4 already documents `0 → 404 (via notFound()) or redirect to parent — a true 410 would need a route handler and buys nothing over 404 for deindexing`. Code and doc agree; the audit row was stale |
 | F17 | P1 | PARTIAL | Root layout still dynamic (only home DB payload cached); finish = static route group or middleware-resolved brand. Highest-leverage perf item given the 503 history |
 | F38 | P2 | PARTIAL | Map bbox still filters `coalesce(lat…)` so `idx_geo` unused; materialise a display coordinate (MIGRATION) |
 | F43 | P2 | PARTIAL | Sitemap cached but unchunked; needed near ~25k listings, not before |
@@ -502,13 +541,21 @@ touch `drizzle.config.ts` / `src/db/index.ts`; `npx tsc --noEmit` +
 `npm run build` before push; `npm run verify:scopes` on anything touching
 panel scoping.
 
-- **Batch 0 — CI (first, alone, blocking).** GitHub Actions: `tsc --noEmit`,
-  `next build`, `verify:import` (+ `verify:scopes` against a MySQL service
-  container). Required check + branch protection on `main`. Nothing
-  auto-merges before this exists.
+- **Batch 0 — the quality gate (first, alone, blocking). DONE 2026-08-19, and
+  it is NOT GitHub Actions.** Superseded by D20 below: minutes are billed per
+  *account* across every repo, and this repo deploys through a Hostinger
+  webhook, so a workflow here buys nothing the deploy needs. The gate is local
+  instead — `.githooks/pre-push` runs `typecheck` + `build` + `verify:import`
+  (also available as `npm run verify:local`), and `.githooks/pre-commit`
+  refuses any file under `.github/workflows/`. `npm install` wires both up via
+  the `prepare` script; a builder session that skipped it runs
+  `npm run hooks:install`. Consequence for the batches: there is no required
+  status check to gate on, so **auto-merge is off** — see the revised D11.
 - **Batch 1 — independent fixes (parallel PRs):** F1+trusted flag (per D7,
-  MIGRATION for the flag column), F48, F63 doc amendment, F17 finish,
-  F38 display coordinate (MIGRATION), F61 per D10 (MIGRATION).
+  MIGRATION for the flag column), ~~F48~~ (done), ~~F63~~ (closed, no change),
+  F17 finish, F38 display coordinate (MIGRATION), F61 per D10 (MIGRATION).
+  The three MIGRATION items are also the three gated on an unrecorded decision
+  (D7, D10) — see the decision-record gap below.
 - **Batch 2 — FSBO loop (sequential, shared files):** F4 contact fallback →
   minimal owner panel (D8) → operator lead notifications (I10).
 - **Batch 3 — i18n (strictly sequential):** string extraction →
@@ -518,7 +565,8 @@ panel scoping.
   saved-search/alert engine (D9, MIGRATION), valuation→publish funnel,
   featured toggle (D5 decision permitting).
 
-Dependency notes: Batch 0 blocks all auto-merging; Batch 2 items are ordered;
+Dependency notes: Batch 0 is done (locally, not in CI) and no longer blocks
+anything; Batch 2 items are ordered;
 Batch 3 items are ordered; Batches 1/2/4 are independent of each other except
 that lead notifications (Batch 2) should land before the alert engine
 (Batch 4) reuses its delivery path.

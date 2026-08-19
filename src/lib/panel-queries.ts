@@ -81,7 +81,16 @@ export async function countReviewQueue(): Promise<number> {
 export async function approveListing(id: number): Promise<number> {
   const [res] = await db
     .update(listings)
-    .set({ status: "published", publishedAt: new Date(), reviewNotes: null })
+    .set({
+      status: "published",
+      // FIRST publish only. Approving a listing that was published before (it
+      // went back through review after an edit) must not re-date it: that
+      // pushes unchanged content back to the top of `published_at desc` and
+      // moves its sitemap lastmod. COALESCE instead of a read-then-write so
+      // there is no extra round-trip and no race between the two.
+      publishedAt: sql`coalesce(${listings.publishedAt}, now())`,
+      reviewNotes: null,
+    })
     .where(and(eq(listings.id, id), eq(listings.status, "pending_review")));
   return res.affectedRows;
 }
@@ -428,13 +437,17 @@ export async function setPanelListingStatus(params: {
   scope: EditScope;
   status: ListingStatus;
 }): Promise<number> {
-  const patch: Partial<typeof listings.$inferInsert> = { status: params.status };
-  // First publish stamps publishedAt so category ordering (idx_fresh) is sane.
-  if (params.status === "published") patch.publishedAt = new Date();
+  // FIRST publish stamps publishedAt so category ordering (idx_fresh) is sane —
+  // and only the first. Un-pausing a listing is not a new listing, so COALESCE
+  // keeps the original date rather than re-floating old inventory.
+  const publishPatch =
+    params.status === "published"
+      ? { publishedAt: sql`coalesce(${listings.publishedAt}, now())` }
+      : {};
   const guard = listingScopeWhere(params.scope);
   const [res] = await db
     .update(listings)
-    .set(patch)
+    .set({ status: params.status, ...publishPatch })
     .where(
       guard
         ? and(eq(listings.id, params.listingId), guard)

@@ -164,6 +164,28 @@ default, `--dry` first). It records itself as a revertible import job.
    screen that does not exist yet. Flipping `active` back to `true` site-wide
    is NOT the intended path.
 
+## CI — local, never GitHub Actions
+
+Deploys run on Hostinger's build servers; GitHub's whole job is to hold the
+code and fire a **webhook**, which is free and unmetered. Actions minutes bill
+**per account across every repo**, so a workflow here spends the founder's
+shared quota on a deploy path that does not use it.
+
+- **Do not create files under `.github/workflows/`.** `.githooks/pre-commit`
+  refuses to stage them. If a task genuinely needs one, state the case and stop
+  — explicit yes first.
+- The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
+  `npm run build`, `npm run verify:import`. Same thing by hand:
+  `npm run verify:local`.
+- Hooks install themselves via `prepare` on `npm install`; after a fresh clone
+  that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath
+  .githooks`).
+- `npm run verify:scopes` stays manual — it needs a localhost database and
+  refuses to run against anything else. Run it on anything touching
+  `listingScopeWhere`, `panelScope` or a panel query.
+- Because there is no required status check, **nothing auto-merges** — see
+  PLAN.md D11/D20.
+
 ## Working agreements with the founder
 
 - **Autonomous build + merge is authorised** for well-verified, low-risk work

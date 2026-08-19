@@ -1,0 +1,12 @@
+#!/bin/sh
+# The local quality gate that replaces GitHub Actions. Faster than CI anyway:
+# warm node_modules, warm .next/cache. Hostinger auto-deploys main and there is
+# no staging, so a push that does not build is a live outage.
+set -e
+echo "pre-push: typecheck…"
+npm run --silent typecheck
+echo "pre-push: build…"
+npm run --silent build
+echo "pre-push: verify:import…"
+npm run --silent verify:import
+echo "pre-push: OK"
