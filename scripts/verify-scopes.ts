@@ -178,6 +178,15 @@ async function main() {
         priceAmount: "100000",
         priceUsd: "100000",
         agencyId,
+        /**
+         * Must start as a DRAFT, and this is not cosmetic. maySetStatus()
+         * always lets a row keep the status it already has, so if this
+         * fixture inherited `base`'s `published` the F1 assertion below
+         * ("agency cannot publish its own listing") would be published ->
+         * published — permitted, and testing nothing. A draft is the state
+         * the review queue actually exists to gate.
+         */
+        status: "draft" as const,
       },
       {
         ...base,
