@@ -7,6 +7,7 @@
  * editing another agency's property.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import { updateListing } from "@/lib/listing-edit";
@@ -26,6 +27,7 @@ export async function agencyUpdateListingAction(formData: FormData): Promise<voi
 
   revalidatePath("/agencia");
   revalidatePath(`/agencia/propiedad/${parsed.id}`);
+  revalidateListings();
   redirect(
     `/agencia/propiedad/${parsed.id}?msg=${affected ? "saved" : "not_found"}`,
   );

@@ -6,6 +6,7 @@
  * touch a listing it does not own, or delete one outright.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
@@ -34,6 +35,7 @@ export async function adminUpdateListingAction(formData: FormData): Promise<void
 
   revalidatePath("/admin/propiedades");
   revalidatePath(`/admin/propiedades/${parsed.id}`);
+  revalidateListings();
   redirect(
     `/admin/propiedades/${parsed.id}?msg=${affected ? "saved" : "not_found"}`,
   );
@@ -46,6 +48,7 @@ export async function adminDeleteListingAction(formData: FormData): Promise<void
   if (Number.isInteger(id) && id > 0) await deleteListing(id);
 
   revalidatePath("/admin/propiedades");
+  revalidateListings();
   redirect("/admin/propiedades?msg=deleted");
 }
 
@@ -105,4 +108,5 @@ export async function bulkListingAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/propiedades");
   revalidatePath("/admin");
+  revalidateListings();
 }

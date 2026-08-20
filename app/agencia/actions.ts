@@ -7,6 +7,7 @@
  * listings, whatever the form claims.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateListings } from "@/lib/cache";
 import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   setPanelListingStatus,
@@ -36,4 +37,7 @@ export async function setListingStatusAction(formData: FormData): Promise<void> 
     status: status as ListingStatus,
   });
   revalidatePath("/agencia");
+  // paused / sold / rented all remove the listing from the published set the
+  // public pages cache, so the tag has to drop with the row.
+  revalidateListings();
 }

@@ -18,6 +18,8 @@ import {
   locations,
   projects,
 } from "../db/schema";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS, CACHE_TTL } from "./cache";
 import { projectCardsFrom } from "./queries";
 import type { ProjectCard } from "./queries";
 
@@ -39,7 +41,7 @@ export interface AgencyDirectoryRow {
  * inventory size. Agencies with nothing live are excluded — a directory of
  * empty profiles is worse than a short directory.
  */
-export async function listAgenciesForDirectory(): Promise<AgencyDirectoryRow[]> {
+async function listAgenciesForDirectoryUncached(): Promise<AgencyDirectoryRow[]> {
   const rows = await db
     .select({
       id: agencies.id,
@@ -148,7 +150,7 @@ export async function listAgenciesForDirectory(): Promise<AgencyDirectoryRow[]> 
 }
 
 /** Every project, newest first — the /proyectos index. */
-export async function listAllProjects(limit = 60): Promise<ProjectCard[]> {
+async function listAllProjectsUncached(limit = 60): Promise<ProjectCard[]> {
   const rows = await db
     .select({
       id: projects.id,
@@ -172,7 +174,7 @@ export async function listAllProjects(limit = 60): Promise<ProjectCard[]> {
 export type FinancingProgramRow = typeof financingPrograms.$inferSelect;
 
 /** Active financing programs, cheapest rate first — /financiamiento. */
-export async function listFinancingPrograms(): Promise<FinancingProgramRow[]> {
+async function listFinancingProgramsUncached(): Promise<FinancingProgramRow[]> {
   return db
     .select()
     .from(financingPrograms)
@@ -193,7 +195,7 @@ export interface DeveloperDirectoryRow {
 }
 
 /** Developers with at least one project — the /desarrolladoras index. */
-export async function listDevelopersForDirectory(): Promise<
+async function listDevelopersForDirectoryUncached(): Promise<
   DeveloperDirectoryRow[]
 > {
   const rows = await db
@@ -301,7 +303,7 @@ export interface AgentDirectoryRow {
  * agency directory: an agent with nothing live is not listed, because a
  * directory of empty profiles helps nobody and dilutes crawl budget.
  */
-export async function listAgentsForDirectory(): Promise<AgentDirectoryRow[]> {
+async function listAgentsForDirectoryUncached(): Promise<AgentDirectoryRow[]> {
   const rows = await db
     .select({
       id: agents.id,
@@ -467,7 +469,7 @@ export interface PortalStats {
  * Headline counts for /nosotros and /para-inmobiliarias. Real numbers only —
  * whatever the DB says is what the page shows, including zero.
  */
-export async function getPortalStats(): Promise<PortalStats> {
+async function getPortalStatsUncached(): Promise<PortalStats> {
   const [[l], [a], [c], [p]] = await Promise.all([
     db
       .select({ n: sql<number>`COUNT(*)` })
@@ -489,4 +491,94 @@ export async function getPortalStats(): Promise<PortalStats> {
     cities: Number(c?.n ?? 0),
     projects: Number(p?.n ?? 0),
   };
+}
+
+/* ------------------------------------------------------------------------ *
+ * Data cache (PLAN.md F17)
+ *
+ * These six queries aggregate across whole tables — the agency directory
+ * alone runs three grouped joins — and they back pages that change on an
+ * operator's cadence, not a visitor's. Caching them means /inmobiliarias,
+ * /agentes, /desarrolladoras, /proyectos, /financiamiento, /nosotros and
+ * /para-inmobiliarias render without touching MySQL between writes.
+ *
+ * Every tag here has a writer: the admin and agencia actions that change an
+ * agency, agent, developer or project call `revalidateDirectory()`, so an
+ * operator sees their edit on the public page immediately rather than when
+ * the TTL happens to expire. The TTL is the backstop, not the mechanism.
+ * ------------------------------------------------------------------------ */
+
+const DIRECTORY_CACHE = {
+  revalidate: CACHE_TTL.directory,
+  tags: [CACHE_TAGS.directory],
+};
+
+/**
+ * Every agency that has at least one published listing, ordered by plan then
+ * inventory size. Agencies with nothing live are excluded — a directory of
+ * empty profiles is worse than a short directory.
+ */
+export const listAgenciesForDirectory = unstable_cache(
+  listAgenciesForDirectoryUncached,
+  ["directory:agencies"],
+  DIRECTORY_CACHE,
+);
+
+/**
+ * Agents with published inventory — the /agentes index. Same rule as the
+ * agency directory: an agent with nothing live is not listed, because a
+ * directory of empty profiles helps nobody and dilutes crawl budget.
+ */
+export const listAgentsForDirectory = unstable_cache(
+  listAgentsForDirectoryUncached,
+  ["directory:agents"],
+  DIRECTORY_CACHE,
+);
+
+/** Developers with at least one project — the /desarrolladoras index. */
+export const listDevelopersForDirectory = unstable_cache(
+  listDevelopersForDirectoryUncached,
+  ["directory:developers"],
+  DIRECTORY_CACHE,
+);
+
+/**
+ * Every project, newest first — the /proyectos index.
+ *
+ * `ProjectCard.deliveryDate` is typed `string | Date | null` precisely
+ * because of this boundary: it goes in as a Date and comes back as an ISO
+ * string, and `deliveryLabel()` accepts both.
+ */
+export const listAllProjects = unstable_cache(
+  listAllProjectsUncached,
+  ["directory:projects"],
+  DIRECTORY_CACHE,
+);
+
+/** Headline counts for /nosotros and /para-inmobiliarias. */
+export const getPortalStats = unstable_cache(
+  getPortalStatsUncached,
+  ["directory:portal-stats"],
+  DIRECTORY_CACHE,
+);
+
+const cachedFinancingPrograms = unstable_cache(
+  listFinancingProgramsUncached,
+  ["directory:financing-programs"],
+  { revalidate: CACHE_TTL.directory, tags: [CACHE_TAGS.directory] },
+);
+
+/**
+ * Active financing programs, cheapest rate first — /financiamiento.
+ *
+ * `updatedAt` is re-wrapped because the cache serializes it to a string while
+ * the row type still says `Date | null`. Nothing renders it today; the wrap
+ * is so that the first thing that does is not quietly wrong.
+ */
+export async function listFinancingPrograms(): Promise<FinancingProgramRow[]> {
+  const rows = await cachedFinancingPrograms();
+  return rows.map((r) => ({
+    ...r,
+    updatedAt: r.updatedAt == null ? null : new Date(r.updatedAt),
+  }));
 }

@@ -17,6 +17,7 @@
  */
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { marketMedians } from "@/db/schema";
@@ -169,5 +170,5 @@ async function estimateValueUncached(
 export const estimateValue = unstable_cache(
   estimateValueUncached,
   ["valuation-estimate"],
-  { revalidate: 3600, tags: ["market-medians"] },
+  { revalidate: 3600, tags: [CACHE_TAGS.marketMedians] },
 );

@@ -4,8 +4,10 @@ import { listCities } from "@/lib/queries";
 import { SearchBar } from "@/components/SearchBar";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 
-// Renders per-request rather than at build time — it queries the DB for the
-// city list, and this page has no dynamic segment to otherwise force that.
+// Renders per-request rather than at build time — the root layout reads the
+// Host header for the per-host brand, so nothing in this app prerenders
+// (PLAN.md F17). The city list below is cached, so a 404 no longer costs a
+// query; this stays force-dynamic because the shell around it is.
 export const dynamic = "force-dynamic";
 
 /**
@@ -15,7 +17,11 @@ export const dynamic = "force-dynamic";
  * who just searched should get somewhere to go next, not a dead end.
  */
 export default async function NotFound() {
-  const cities = await listCities();
+  // A 404 must never become a 500. This page is also the error surface for
+  // "category URL with zero matches", so it renders during exactly the kind
+  // of incident where MySQL may be the thing that is unwell — a dead search
+  // bar is a worse-but-usable page, a stack trace is not.
+  const cities = await listCities().catch(() => []);
 
   return (
     <main

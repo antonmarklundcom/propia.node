@@ -14,6 +14,8 @@ import { db } from "@/db";
 import { posts, users } from "@/db/schema";
 import { markdownToPlainText, readingMinutes } from "@/lib/markdown";
 import { slugify } from "@/lib/slug";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 
 export type PostRow = typeof posts.$inferSelect;
 
@@ -69,7 +71,7 @@ function toCard(row: PostRow): PostCard {
 }
 
 /** Published posts, newest first — the /guias index. */
-export async function listPublishedPosts(limit = 60): Promise<PostCard[]> {
+async function listPublishedPostsUncached(limit = 60): Promise<PostCard[]> {
   try {
     const rows = await db
       .select()
@@ -91,8 +93,7 @@ export interface PostDetail {
   related: PostCard[];
 }
 
-/** One published post by slug, plus a few siblings. Null when not published. */
-export async function getPublishedPost(
+async function getPublishedPostUncached(
   slug: string,
 ): Promise<PostDetail | null> {
   try {
@@ -261,4 +262,70 @@ export async function countDraftPosts(): Promise<number> {
     if (isMissingTable(err)) return 0;
     throw err;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Data cache (PLAN.md F17)                                            */
+/*                                                                     */
+/* /guias changes when the founder writes a post, i.e. rarely, and is  */
+/* read by crawlers far more often than it is written. Both reads are  */
+/* cached under the `guides` tag and every post write in               */
+/* app/admin/guias/actions.ts calls revalidateGuides(), so a published */
+/* edit is live at once rather than at the TTL's convenience.          */
+/*                                                                     */
+/* Dates do not survive the cache boundary — an entry is serialized,   */
+/* so `publishedAt`/`updatedAt` come back as ISO strings while the row */
+/* types still say `Date | null`. Both are re-wrapped here, at the     */
+/* boundary, rather than by every consumer.                            */
+/* ------------------------------------------------------------------ */
+
+const GUIDES_CACHE = {
+  revalidate: CACHE_TTL.guides,
+  tags: [CACHE_TAGS.guides],
+};
+
+function asDate(v: Date | string | null): Date | null {
+  return v == null ? null : new Date(v);
+}
+
+function reviveCard(c: PostCard): PostCard {
+  return { ...c, publishedAt: asDate(c.publishedAt) };
+}
+
+function reviveRow(r: PostRow): PostRow {
+  return {
+    ...r,
+    publishedAt: asDate(r.publishedAt),
+    updatedAt: asDate(r.updatedAt),
+  };
+}
+
+const cachedPublishedPosts = unstable_cache(
+  listPublishedPostsUncached,
+  ["guides:list"],
+  GUIDES_CACHE,
+);
+
+/** Published posts, newest first — the /guias index. */
+export async function listPublishedPosts(limit = 60): Promise<PostCard[]> {
+  return (await cachedPublishedPosts(limit)).map(reviveCard);
+}
+
+const cachedPublishedPost = unstable_cache(
+  getPublishedPostUncached,
+  ["guides:detail"],
+  GUIDES_CACHE,
+);
+
+/** One published post by slug, plus a few siblings. Null when not published. */
+export async function getPublishedPost(
+  slug: string,
+): Promise<PostDetail | null> {
+  const detail = await cachedPublishedPost(slug);
+  if (!detail) return null;
+  return {
+    ...detail,
+    post: reviveRow(detail.post),
+    related: detail.related.map(reviveCard),
+  };
 }

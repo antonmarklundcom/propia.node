@@ -7,6 +7,7 @@
  * agency who forges a POST is refused rather than silently allowed.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateDirectory } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireAgencyContext } from "@/lib/auth/guards";
 import { createSession } from "@/lib/auth/session";
@@ -19,6 +20,7 @@ import {
 function finish(msg: string): never {
   revalidatePath("/agencia/perfil");
   revalidatePath("/agencia");
+  revalidateDirectory();
   redirect(`/agencia/perfil?msg=${msg}`);
 }
 

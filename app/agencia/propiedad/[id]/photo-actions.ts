@@ -7,6 +7,7 @@
  * touching another agency's photos.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
@@ -27,6 +28,7 @@ async function scope(): Promise<EditScope> {
 async function finish(listingId: number, flash: PhotoFlash): Promise<never> {
   revalidatePath(`/agencia/propiedad/${listingId}`);
   revalidatePath("/agencia");
+  revalidateListings();
   redirect(`/agencia/propiedad/${listingId}?msg=${flash}`);
 }
 
