@@ -7,6 +7,7 @@
  * ?msg= flash the edit form already uses.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
@@ -25,6 +26,7 @@ async function finish(listingId: number, flash: PhotoFlash): Promise<never> {
   // The public pages read covers straight from listing_images, so a reorder
   // that isn't revalidated leaves the old cover on the grid.
   revalidatePath("/admin/propiedades");
+  revalidateListings();
   redirect(`/admin/propiedades/${listingId}?msg=${flash}`);
 }
 

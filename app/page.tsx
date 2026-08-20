@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import { dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
+import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { currentVertical } from "@/lib/vertical-context";
 import {
   getRecentListings,
@@ -108,7 +109,7 @@ const getHomePayload = unstable_cache(
   // Both live hosts serve identical Spanish rows today, so one cache entry
   // covers them; if a vertical ever filters the listing set, its key must
   // join this cache key.
-  { revalidate: 600, tags: ["listings"] },
+  { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings] },
 );
 
 export async function generateMetadata(): Promise<Metadata> {

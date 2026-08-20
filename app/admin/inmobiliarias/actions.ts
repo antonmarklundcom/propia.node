@@ -9,6 +9,7 @@
  * the review queue; only the create form is here.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateDirectory } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { createPanelAgency, type AgencyRow } from "@/lib/panel-queries";
@@ -31,6 +32,7 @@ function toPlan(v: FormDataEntryValue | null): AgencyRow["plan"] {
 /** Bounce back to the page with a flash code in the query string. */
 function done(code: string): never {
   revalidatePath(ROUTE);
+  revalidateDirectory();
   redirect(`${ROUTE}?msg=${code}`);
 }
 

@@ -14,6 +14,7 @@
  * operator approves are produced by the code that then runs.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { agencies } from "@/db/schema";
@@ -266,6 +267,7 @@ export async function commitImportAction(
     revalidatePath(ROUTE);
     revalidatePath("/admin");
     revalidatePath("/admin/propiedades");
+    revalidateListings();
     return { ok: true, jobId, report };
   } catch (e) {
     return {
@@ -290,6 +292,7 @@ export async function rollbackImportAction(formData: FormData): Promise<void> {
   revalidatePath(ROUTE);
   revalidatePath(`${ROUTE}/${jobId}`);
   revalidatePath("/admin/propiedades");
+  revalidateListings();
 
   // The outcome matters — a rollback that kept rows back is not a failure, but
   // the operator has to be told which ones and why.

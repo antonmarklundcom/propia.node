@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-08-17.
+Last verified against the code: 2026-08-20.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -163,6 +163,34 @@ default, `--dry` first). It records itself as a revertible import job.
    is not built**: it needs a column on `projects` plus an `/admin/proyectos`
    screen that does not exist yet. Flipping `active` back to `true` site-wide
    is NOT the intended path.
+
+## Caching — the data cache is the only cache this portal has
+
+Every public route is `ƒ (Dynamic)`. The root layout reads the `Host` header
+for the per-host brand, so no route holds a full route cache and none ever will
+without moving the vertical into the URL (PLAN.md, "F17, re-measured"). A
+`export const revalidate` at route level is therefore silently dead — don't add
+one.
+
+What does work is `unstable_cache`: the page still renders per request, but its
+queries don't run. Tags, TTLs and the invalidation helpers live in
+**`src/lib/cache.ts`**. Two rules:
+
+- **Every tag has a writer.** `revalidatePath()` does NOT clear
+  `unstable_cache` entries — they are separate caches. A new cached query
+  without a matching `revalidateListings()` / `revalidateDirectory()` /
+  `revalidateGuides()` call in the actions that write it means an operator
+  saves a change and the public page keeps showing the old one until the TTL
+  expires, which reads as "the save didn't work". The TTL is the backstop.
+- **Dates do not survive the boundary.** Entries are serialized, so a `Date`
+  comes back as an ISO string and `string > Date` is silently false (this is
+  why `ListingCard` re-wraps `featuredUntil`). A cached query returning Dates
+  re-wraps them in its exported wrapper — see `listFinancingPrograms` and the
+  `revive*` helpers in `post-queries.ts` — not in each consumer.
+
+`app/not-found.tsx` deliberately does `listCities().catch(() => [])`: a 404 is
+also the zero-match category surface, and it must not become a 500 during the
+exact incident where MySQL is the thing that is unwell.
 
 ## i18n — read this before touching any visitor-facing string
 

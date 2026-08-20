@@ -7,6 +7,7 @@
  * whole guard and it is re-derived from the session on every call.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateGuides } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
@@ -65,6 +66,7 @@ export async function createPostAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/guias");
   revalidatePath("/guias");
+  revalidateGuides();
   redirect(`/admin/guias/${id}?msg=created`);
 }
 
@@ -87,6 +89,7 @@ export async function updatePostAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/guias");
   revalidatePath("/guias");
+  revalidateGuides();
   revalidatePath(`/guias/${current.slug}`);
   if (slug !== current.slug) revalidatePath(`/guias/${slug}`);
   redirect(`/admin/guias/${id}?msg=saved`);
@@ -111,6 +114,7 @@ export async function deletePostAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/guias");
   revalidatePath("/guias");
+  revalidateGuides();
   redirect("/admin/guias?msg=deleted");
 }
 
@@ -156,6 +160,7 @@ export async function uploadPostCoverAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/guias");
   revalidatePath("/guias");
+  revalidateGuides();
   revalidatePath(`/guias/${post.slug}`);
   redirect(`/admin/guias/${id}?msg=cover_saved`);
 }
@@ -177,5 +182,6 @@ export async function removePostCoverAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/guias");
   revalidatePath("/guias");
+  revalidateGuides();
   redirect(`/admin/guias/${id}?msg=cover_removed`);
 }
