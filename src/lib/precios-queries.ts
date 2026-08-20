@@ -45,6 +45,45 @@ export interface CityPrices {
   reliableSample: number;
 }
 
+/**
+ * The median that describes one exact (operation, type) pair — the number a
+ * category or listing page can state as market context (audit I8).
+ *
+ * Only `reliable` cells come back. Below MIN_RELIABLE_SAMPLE a median is an
+ * anecdote, and a page that prints an anecdote as "the market" is worse than a
+ * page that prints nothing: /precios exists precisely because we refuse to do
+ * that, and these surfaces must not undercut it.
+ */
+export function medianFor(
+  prices: CityPrices | null,
+  operation: Operation,
+  propertyType: PropertyType,
+): MedianCell | null {
+  if (!prices) return null;
+  const cell = prices.cells.find(
+    (c) => c.operation === operation && c.propertyType === propertyType,
+  );
+  return cell?.reliable ? cell : null;
+}
+
+/**
+ * The best-evidenced median for an operation, whatever the property type —
+ * for a city page that has no type in its path. Returns the type alongside so
+ * the copy can name what it is describing rather than implying it covers
+ * everything.
+ */
+export function bestMedianFor(
+  prices: CityPrices | null,
+  operation: Operation,
+): MedianCell | null {
+  if (!prices) return null;
+  return (
+    prices.cells
+      .filter((c) => c.reliable && c.operation === operation)
+      .sort((a, b) => b.sampleSize - a.sampleSize)[0] ?? null
+  );
+}
+
 /** The newest period we actually have rows for; null when the job never ran. */
 export async function latestPeriod(): Promise<string | null> {
   const [row] = await db

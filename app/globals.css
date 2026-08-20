@@ -4331,6 +4331,14 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink);
 }
 
+/* The context line now carries a median and a per-m² figure, so it needs to
+   be allowed to wrap rather than squeeze the CTA. */
+.precios-cta > span {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+
 /* ------------------------------------------------------------------ */
 /* Valuation tool (/tasacion)                                          */
 /* ------------------------------------------------------------------ */
