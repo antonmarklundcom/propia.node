@@ -182,9 +182,15 @@ export function ContactForm({
       )}
 
       <div className="contact-form__footer">
-        <span className="contact-form__note">
-          ✓ Tu consulta llega directamente al vendedor
-        </span>
+        {/* Only claim direct delivery when there is a seller channel to
+            deliver to. With no contact on the listing the lead lands in the
+            operator's inbox instead, and promising otherwise is a lie the
+            buyer can't check (audit F4). */}
+        {waHref && (
+          <span className="contact-form__note">
+            ✓ Tu consulta llega directamente al vendedor
+          </span>
+        )}
         {waHref && (
           <div className="contact-form__altlinks">
             <a

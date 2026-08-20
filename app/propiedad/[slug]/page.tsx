@@ -111,7 +111,7 @@ export default async function ListingPage({ params }: Params) {
   const detail = await load(slug);
   if (!detail) notFound();
 
-  const { listing, images, chain, agency, agent } = detail;
+  const { listing, images, chain, agency, agent, ownerUser } = detail;
   const [d, locale] = await Promise.all([dict(), currentLocale()]);
   const t: Dictionary["listing"] = d.listing;
   const numberLocale = locale === "en" ? "en-US" : "es-PY";
@@ -133,7 +133,14 @@ export default async function ListingPage({ params }: Params) {
     });
   }
   const cuota = formatCuota(listing.cuotaGs);
-  const contactWhatsapp = agent?.whatsapp ?? agency?.whatsapp ?? null;
+  /**
+   * Contact chain, most specific first. `ownerUser` is the FSBO tail: a
+   * listing published through /publicar belongs to a person, not an agency,
+   * and without this link the card, the panel form and the mobile CTA bar all
+   * rendered with no way to reach the seller (audit F4).
+   */
+  const contactWhatsapp =
+    agent?.whatsapp ?? agency?.whatsapp ?? ownerUser?.whatsapp ?? null;
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
   const area = listing.areaM2 ?? listing.landM2;
   const origin = await listingCanonicalOrigin();
@@ -247,7 +254,11 @@ export default async function ListingPage({ params }: Params) {
   if (listing.parking != null)
     details.push({ icon: "🚗", label: t.detailParking, value: String(listing.parking) });
 
-  const sellerName = agency?.name ?? agent?.name ?? t.sellerFallback(brand);
+  const sellerName =
+    agency?.name ??
+    agent?.name ??
+    ownerUser?.name ??
+    (ownerUser ? t.sellerKindOwner : t.sellerFallback(brand));
   const sellerInitials = sellerName
     .split(/\s+/)
     .slice(0, 2)
@@ -487,12 +498,20 @@ export default async function ListingPage({ params }: Params) {
                 ) : (
                   sellerName
                 )}
-                {(agency?.isVerified || agent?.isVerified) && (
+                {(agency?.isVerified ||
+                  agent?.isVerified ||
+                  (ownerUser != null && listing.isVerified)) && (
                   <span className="seller-card__verified" title={t.sellerVerified}>✓</span>
                 )}
               </div>
               <div className="seller-card__kind">
-                {agency ? t.sellerKindAgency : agent ? t.sellerKindAgent : brand}
+                {agency
+                  ? t.sellerKindAgency
+                  : agent
+                    ? t.sellerKindAgent
+                    : ownerUser
+                      ? t.sellerKindOwner
+                      : brand}
               </div>
             </div>
           </div>

@@ -5,7 +5,7 @@
  * can never mutate a row it doesn't own — the agencyId comes from the session
  * (guards.ts), never from the request.
  */
-import { and, desc, eq, inArray, like, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   agencies,
@@ -480,6 +480,17 @@ export interface AdminLeadRow extends LeadRow {
   vertical: string;
   routedTo: (typeof leads.$inferSelect)["routedTo"];
   agencyName: string | null;
+  /**
+   * The FSBO publisher behind an `internal` lead, when the listing has one.
+   *
+   * `routed_to` has no `owner` lane (adding one is a schema change), so a lead
+   * on a self-published listing lands in `internal` alongside valuation and
+   * seller leads — indistinguishable, and with no hint that a real person is
+   * waiting for it. Resolving the owner here makes the founder's inbox say who
+   * the lead is for and gives a one-tap way to forward it (audit F4).
+   */
+  ownerName: string | null;
+  ownerWhatsapp: string | null;
 }
 
 /**
@@ -526,10 +537,22 @@ export async function listAllLeads(params: {
       vertical: leads.vertical,
       routedTo: leads.routedTo,
       agencyName: agencies.name,
+      ownerName: users.name,
+      ownerWhatsapp: users.whatsapp,
     })
     .from(leads)
     .leftJoin(listings, eq(leads.listingId, listings.id))
     .leftJoin(agencies, eq(listings.agencyId, agencies.id))
+    // Owner only when nobody professional owns the row — the same precedence
+    // the detail page's contact chain uses.
+    .leftJoin(
+      users,
+      and(
+        eq(listings.ownerUserId, users.id),
+        isNull(listings.agencyId),
+        isNull(listings.agentId),
+      ),
+    )
     .where(filters.length ? and(...filters) : undefined)
     .orderBy(desc(leads.createdAt))
     .limit(params.limit ?? 300);

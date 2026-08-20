@@ -6,6 +6,7 @@ import {
   countLeadsByType,
   countReviewQueue,
   listAllLeads,
+  type AdminLeadRow,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
@@ -49,6 +50,35 @@ const ROUTED_LABEL: Record<string, string> = {
 
 function waReplyHref(whatsapp: string): string {
   return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
+}
+
+/**
+ * Hand an FSBO lead to the person who published the listing. Null for every
+ * other lead: an agency works its own inbox, and an internal lead is the
+ * founder's to answer directly.
+ */
+function forwardHref(lead: AdminLeadRow) {
+  if (!lead.ownerWhatsapp) return null;
+  const href = waLink(
+    lead.ownerWhatsapp,
+    esPanel.forwardLeadMessage({
+      listingTitle: lead.listingTitle,
+      name: lead.name,
+      whatsapp: lead.whatsapp,
+      message: lead.message,
+    }),
+  );
+  if (!href) return null;
+  return (
+    <a
+      className="panel-btn"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {esPanel.forwardLead}
+    </a>
+  );
 }
 
 function formatWhen(d: Date): string {
@@ -154,11 +184,13 @@ export default async function AdminLeadsPage({
                     <span>{formatWhen(lead.createdAt)}</span>
                     <span>{lead.whatsapp}</span>
                     {lead.email ? <span>{lead.email}</span> : null}
-                    {/* Who owns the follow-up: an agency, or you. */}
+                    {/* Who owns the follow-up: an agency, a particular
+                        seller who has no panel yet, or you. */}
                     <span>
                       {lead.agencyName ??
-                        ROUTED_LABEL[lead.routedTo] ??
-                        lead.routedTo}
+                        (lead.ownerWhatsapp
+                          ? `${esPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerWhatsapp}`
+                          : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
                     </span>
                     {/* Which door captured it — matters once feeders are on. */}
                     <span>{lead.vertical}</span>
@@ -177,14 +209,19 @@ export default async function AdminLeadsPage({
                     ) : null}
                   </div>
                 </div>
-                <a
-                  className="panel-btn panel-btn--whatsapp"
-                  href={waReplyHref(lead.whatsapp)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {esPanel.contactLead}
-                </a>
+                <div className="panel-card__actions">
+                  <a
+                    className="panel-btn panel-btn--whatsapp"
+                    href={waReplyHref(lead.whatsapp)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {esPanel.contactLead}
+                  </a>
+                  {/* A particular seller has no inbox of their own (PLAN.md
+                      D8), so the lead only reaches them if it is forwarded. */}
+                  {forwardHref(lead)}
+                </div>
               </div>
 
               {lead.message ? (

@@ -3163,6 +3163,14 @@ body {
   flex-wrap: wrap;
 }
 
+/* Right-hand action cluster of a panel card (reply / forward). */
+.panel-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .panel-card__title {
   margin: 0;
   font-size: 16px;
