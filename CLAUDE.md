@@ -164,6 +164,25 @@ default, `--dry` first). It records itself as a revertible import job.
    screen that does not exist yet. Flipping `active` back to `true` site-wide
    is NOT the intended path.
 
+8. **FSBO loop — half built, on purpose.** As of 2026-08-20 (PRs #62–#64) a
+   listing published through `/publicar` has a working contact: the chain on
+   the detail page is agent → agency → **owner** (`ListingDetail.ownerUser`,
+   resolved only when there is no agency and no agent), the seller card labels
+   them "Particular", and `/admin/leads` names that publisher behind an
+   `internal` lead and offers a one-tap WhatsApp forward. An FSBO publisher
+   does **not** get an `agents` row — that would put a private seller into
+   `/agente/[slug]` and the agent directory with a professional's trust
+   signal. What is still missing is their own inbox: **PLAN.md D8**, a founder
+   decision. Until it lands the operator forwards, which is why the forward
+   button exists. `routed_to` has no `owner` lane and adding one is a schema
+   change — do not add it without D8.
+9. **Operator alerts are optional and silent when unset.** `alertOperator()`
+   in `src/lib/crm.ts` posts `{"event":"operator_alert"}` to
+   `LEAD_WEBHOOK_URL` on a new lead and a new review submission. With no
+   webhook there is no alert and no fake one — the zero-config signal is the
+   `/admin` badges (review queue, and leads from the last 24 h). Same rule as
+   `sendOtp`: never log a line that pretends a message was delivered.
+
 ## Caching — the data cache is the only cache this portal has
 
 Every public route is `ƒ (Dynamic)`. The root layout reads the `Host` header
