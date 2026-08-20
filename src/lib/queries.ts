@@ -28,6 +28,7 @@ import {
   listings,
   locations,
   projects,
+  users,
 } from "../db/schema";
 import type { Operation, PropertyType } from "./import/types";
 import { CACHE_TAGS, CACHE_TTL } from "./cache";
@@ -464,12 +465,30 @@ export async function getRecentListings(limit = 12): Promise<ListingCard[]> {
   return attachCovers(rows);
 }
 
+/**
+ * The publisher of an FSBO ("particular") listing. Not a `users` row: only the
+ * three fields the detail page may show, so a query that widens later cannot
+ * leak an email or a password hash onto a public page.
+ */
+export interface ListingOwner {
+  name: string | null;
+  whatsapp: string | null;
+  whatsappVerifiedAt: Date | null;
+}
+
 export interface ListingDetail {
   listing: typeof listings.$inferSelect;
   images: (typeof listingImages.$inferSelect)[];
   chain: LocationRow[];
   agency: typeof agencies.$inferSelect | null;
   agent: typeof agents.$inferSelect | null;
+  /**
+   * Set only for a listing published through /publicar by someone who belongs
+   * to no agency. It is the third link in the contact chain (agent → agency →
+   * owner); without it a self-published listing renders no way to reach the
+   * seller at all (audit F4).
+   */
+  ownerUser: ListingOwner | null;
 }
 
 /** Full listing for the detail page, by public_id. Null if not published. */
@@ -486,7 +505,7 @@ export async function getListingByPublicId(
   // Images, location chain, agency and agent depend only on the listing row,
   // never on each other — awaiting them in sequence made one detail page up
   // to four serial round-trips where one suffices.
-  const [images, chain, agency, agent] = await Promise.all([
+  const [images, chain, agency, agent, ownerUser] = await Promise.all([
     db
       .select()
       .from(listingImages)
@@ -509,9 +528,23 @@ export async function getListingByPublicId(
           .limit(1)
           .then((rows) => rows[0] ?? null)
       : Promise.resolve(null),
+    // Only when nobody professional owns the row: an agency's or agent's own
+    // number always wins, so this query never runs for the common case.
+    listing.ownerUserId && !listing.agentId && !listing.agencyId
+      ? db
+          .select({
+            name: users.name,
+            whatsapp: users.whatsapp,
+            whatsappVerifiedAt: users.whatsappVerifiedAt,
+          })
+          .from(users)
+          .where(eq(users.id, listing.ownerUserId))
+          .limit(1)
+          .then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
   ]);
 
-  return { listing, images, chain, agency, agent };
+  return { listing, images, chain, agency, agent, ownerUser };
 }
 
 /** Same operación + tipo, same city subtree, excluding the listing itself. */

@@ -442,6 +442,25 @@ export const esPanel = {
     "Visitas de personas: excluimos buscadores y bots para que el número signifique algo.",
   saveStatus: "Guardar",
   contactLead: "Responder por WhatsApp",
+  /**
+   * FSBO leads land in the founder's inbox because a particular seller has no
+   * panel of their own yet; these two are how the lead gets to them.
+   */
+  leadOwnerRouted: "Particular",
+  forwardLead: "Reenviar al vendedor",
+  forwardLeadMessage: (params: {
+    listingTitle: string | null;
+    name: string | null;
+    whatsapp: string;
+    message: string | null;
+  }) =>
+    [
+      `Tenés una consulta${params.listingTitle ? ` por tu aviso: ${params.listingTitle}` : ""}.`,
+      `De: ${params.name ?? "Sin nombre"} (${params.whatsapp})`,
+      params.message ? `Mensaje: ${params.message}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
   // Read-only status rows (audit F25): the status <select> used to pre-set
   // "Borrador" on a row en revisión, so one save silently cancelled the review.
   statusPendingNote:
@@ -962,6 +981,8 @@ export const esListing = {
   sellerVerified: "Verificado",
   sellerKindAgency: "Inmobiliaria",
   sellerKindAgent: "Agente",
+  /** FSBO: the listing was published by its owner, not by a professional. */
+  sellerKindOwner: "Particular",
 
   contactTitle: "¿Interesado en esta propiedad?",
   contactSubtitle: "Contactanos hoy para más información o para agendar una visita.",
