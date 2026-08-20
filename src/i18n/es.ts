@@ -102,6 +102,30 @@ export const esPrecios = {
   backToPrices: "← Todos los precios",
   relatedPrices: (city: string) => `¿Cuánto vale una propiedad en ${city}?`,
   relatedPricesCta: "Ver precios medianos",
+
+  /**
+   * Market context stated as a number rather than a question (audit I8).
+   * Rendered only for a sample of MIN_RELIABLE_SAMPLE or more — see
+   * medianFor() in precios-queries.ts.
+   */
+  contextMedian: (params: {
+    typeLabel: string;
+    operationLabel: string;
+    city: string;
+    median: string;
+    perM2: string | null;
+    sample: number;
+  }) =>
+    `Mediana de ${params.operationLabel} de ${params.typeLabel.toLowerCase()} en ${params.city}: ${params.median}` +
+    (params.perM2 ? ` · ${params.perM2}/m²` : "") +
+    ` (${params.sample} avisos)`,
+  /** This listing's own price per m², next to the zone median. */
+  contextThisListing: (perM2: string) => `Esta propiedad: ${perM2}/m²`,
+  contextOperationLabel: {
+    venta: "venta",
+    alquiler: "alquiler",
+    alquiler_temporal: "alquiler temporal",
+  } as Record<string, string>,
 } as const;
 
 /**

@@ -17,7 +17,7 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
-import { formatPrice, formatCuota, imageUrl, imageThumbUrl } from "@/lib/format";
+import { formatPrice, formatCuota, formatUsd, imageUrl, imageThumbUrl } from "@/lib/format";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -29,7 +29,7 @@ import { esPrecios, inquiryPrefillFor } from "@/i18n/es";
 import { currentLocale, dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
-import { getCityPrices } from "@/lib/precios-queries";
+import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink } from "@/lib/wa";
@@ -230,6 +230,26 @@ export default async function ListingPage({ params }: Params) {
   ]);
 
   const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
+
+  /**
+   * Market context for this exact listing (audit I8). The medians payload was
+   * already fetched and reduced to a boolean; naming the number turns a link
+   * into a reason to click it. Only a sample of MIN_RELIABLE_SAMPLE or more
+   * qualifies — see medianFor().
+   */
+  const contextCell = medianFor(cityPrices, listing.operation, listing.propertyType);
+  // This listing's own price per m², for the reader to compare against. Land
+  // is priced on the lot, everything else on built area — the same rule
+  // /tasacion uses for its area question.
+  const listingArea = Number(
+    listing.propertyType === "terreno"
+      ? (listing.landM2 ?? listing.areaM2)
+      : (listing.areaM2 ?? listing.landM2),
+  );
+  const listingPerM2 =
+    contextCell && Number.isFinite(listingArea) && listingArea > 0
+      ? Number(listing.priceUsd) / listingArea
+      : null;
 
   const amenities = normalizeAmenities(listing.amenities);
   const publishedAgo = listing.publishedAt
@@ -544,7 +564,36 @@ export default async function ListingPage({ params }: Params) {
           never send a visitor (or a crawler) to an empty page. */}
       {city && cityHasPrices && (
         <aside className="precios-cta">
-          <span>{esPrecios.relatedPrices(city.name)}</span>
+          <span>
+            {contextCell ? (
+              <>
+                {esPrecios.contextMedian({
+                  typeLabel: PROPERTY_TYPE_LABELS[contextCell.propertyType],
+                  operationLabel:
+                    esPrecios.contextOperationLabel[contextCell.operation] ??
+                    contextCell.operation,
+                  city: city.name,
+                  median:
+                    contextCell.medianPriceUsd != null
+                      ? formatUsd(contextCell.medianPriceUsd)
+                      : "—",
+                  perM2:
+                    contextCell.medianPriceM2Usd != null
+                      ? formatUsd(contextCell.medianPriceM2Usd)
+                      : null,
+                  sample: contextCell.sampleSize,
+                })}
+                {listingPerM2 != null && (
+                  <>
+                    {" — "}
+                    {esPrecios.contextThisListing(formatUsd(listingPerM2))}
+                  </>
+                )}
+              </>
+            ) : (
+              esPrecios.relatedPrices(city.name)
+            )}
+          </span>
           <Link className="panel-btn" href={`/precios/${city.slug}`}>
             {esPrecios.relatedPricesCta}
           </Link>

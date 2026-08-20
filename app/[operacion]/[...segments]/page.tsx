@@ -27,7 +27,12 @@ import {
   parseTypePlural,
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
-import { getCityPrices as cityPricesFor } from "@/lib/precios-queries";
+import { formatUsd } from "@/lib/format";
+import {
+  bestMedianFor,
+  getCityPrices as cityPricesFor,
+  medianFor,
+} from "@/lib/precios-queries";
 import { itemListJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { siteOrigin, listingCanonicalOrigin } from "@/lib/origin";
 import { JsonLd } from "@/components/JsonLd";
@@ -280,6 +285,19 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   const cityPrices = await cityPricesFor(r.city.slug);
   const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
 
+  /**
+   * The payload above was already being fetched and then reduced to a boolean.
+   * Stating the actual median is what turns the module from a question into a
+   * credibility signal (audit I8) — and it costs nothing extra.
+   *
+   * A page with a type in its path gets that type's median; a bare city page
+   * gets the best-evidenced type for the operation, named so the copy never
+   * implies it covers everything.
+   */
+  const contextCell = r.type
+    ? medianFor(cityPrices, r.operation, r.type)
+    : bestMedianFor(cityPrices, r.operation);
+
   // Breadcrumbs are this host's own pages; the ItemList points at listing
   // detail pages, which may be canonical on a different host entirely.
   const [origin, listingOrigin] = await Promise.all([
@@ -458,7 +476,26 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           link into an empty page. */}
       {cityHasPrices && (
         <aside className="precios-cta">
-          <span>{esPrecios.relatedPrices(r.city.name)}</span>
+          <span>
+            {contextCell
+              ? esPrecios.contextMedian({
+                  typeLabel: t.typeLabel[contextCell.propertyType],
+                  operationLabel:
+                    esPrecios.contextOperationLabel[contextCell.operation] ??
+                    contextCell.operation,
+                  city: r.city.name,
+                  median:
+                    contextCell.medianPriceUsd != null
+                      ? formatUsd(contextCell.medianPriceUsd)
+                      : "—",
+                  perM2:
+                    contextCell.medianPriceM2Usd != null
+                      ? formatUsd(contextCell.medianPriceM2Usd)
+                      : null,
+                  sample: contextCell.sampleSize,
+                })
+              : esPrecios.relatedPrices(r.city.name)}
+          </span>
           <Link className="panel-btn" href={`/precios/${r.city.slug}`}>
             {esPrecios.relatedPricesCta}
           </Link>
