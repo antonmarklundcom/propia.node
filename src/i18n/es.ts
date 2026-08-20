@@ -525,6 +525,47 @@ export const esPanel = {
     "Para publicar un aviso, ponelo «En revisión»: lo revisamos y lo publicamos nosotros. Es lo que nos permite garantizarle al comprador que cada aviso pasó por una persona.",
 } as const;
 
+/**
+ * The private seller's panel, /mis-avisos (PLAN.md D8).
+ *
+ * Separate from `esPanel` because the reader is different: /agencia talks to a
+ * professional about their inventory, this talks to somebody selling one
+ * house. No "propiedades", no "cartera" — "tu aviso". Voseo throughout, same
+ * as the publish wizard they arrived from.
+ */
+export const esOwner = {
+  panelTitle: "Tus avisos",
+  listingsTab: "Tus avisos",
+  leadsTab: "Consultas",
+
+  listingsTitle: "Tus avisos",
+  listingsEmpty:
+    "Todavía no publicaste ningún aviso. Cuando publiques uno, lo vas a ver acá.",
+  addListingCta: "Publicar una propiedad",
+
+  /**
+   * Same rule as the agency panel (audit F1): nobody publishes their own
+   * listing. Worded for someone who has never used a portal panel.
+   */
+  statusReviewNote:
+    "Para que tu aviso salga publicado, ponelo «En revisión»: lo revisamos y lo publicamos nosotros. Es lo que nos permite garantizarle al comprador que cada aviso pasó por una persona.",
+
+  editListing: "Editar",
+  backToListings: "← Volver a tus avisos",
+  viewListing: "Ver el aviso publicado",
+  saveStatus: "Guardar",
+  statusLabel: "Estado",
+
+  leadsTitle: "Consultas sobre tus avisos",
+  leadsEmpty:
+    "Todavía no recibiste consultas. Cuando alguien se interese por tu propiedad, sus datos aparecen acá.",
+  contactLead: "Responder por WhatsApp",
+
+  /** The seller sees the interested buyer's number; say what to do with it. */
+  leadsNote:
+    "Estas personas dejaron su número para hablar con vos. Respondeles cuanto antes: las consultas se enfrían rápido.",
+} as const;
+
 /** Voseo strings for the publish wizard (ARCHITECTURE.md §3, M5). */
 export const esPublish = {
   pageTitle: "Publicá tu propiedad",

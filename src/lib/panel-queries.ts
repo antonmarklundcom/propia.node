@@ -613,7 +613,14 @@ export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
   // the previous shape read every owned listing id into Node first and then
   // sent them back as an IN(...) list, which grows with the agency's inventory.
   const guard = listingScopeWhere(scope);
-  const routed = inArray(leads.routedTo, ["agency", "agent"]);
+  /**
+   * The lanes a non-admin inbox may show. `owner` is the FSBO lane (D8) and is
+   * safe to include for every scope precisely because `guard` is the real
+   * check: an owner-routed lead sits on a listing with no agency, so an agency
+   * scope's WHERE clause excludes it anyway. `internal` and `developer` stay
+   * out — those are the founder's, and they belong to no panel.
+   */
+  const routed = inArray(leads.routedTo, ["agency", "agent", "owner"]);
 
   return db
     .select({

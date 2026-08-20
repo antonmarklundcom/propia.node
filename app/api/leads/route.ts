@@ -109,11 +109,22 @@ export async function POST(req: NextRequest) {
     listing = row ?? null;
   }
 
+  /**
+   * Same precedence as the detail page's seller card: agent, then agency, then
+   * the private owner. `owner` exists so an FSBO lead is addressed to the
+   * person actually waiting for it instead of landing in `internal` with the
+   * valuation leads, invisible to them (PLAN.md D8).
+   *
+   * A lead with no listing at all stays `internal` — there is nobody else it
+   * could belong to.
+   */
   const routedTo: LeadPayload["routedTo"] = listing?.agentId
     ? "agent"
     : listing?.agencyId
       ? "agency"
-      : "internal";
+      : listing?.ownerUserId
+        ? "owner"
+        : "internal";
 
   // 1. Record in MySQL first.
   const [res] = await db.insert(leads).values({

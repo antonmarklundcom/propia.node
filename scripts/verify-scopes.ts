@@ -20,6 +20,7 @@ import { db } from "../src/db";
 import {
   agencies,
   agents,
+  leads,
   listings,
   locations,
   sessions,
@@ -33,7 +34,11 @@ import {
   updateOwnAccount,
   updateOwnAgentProfile,
 } from "../src/lib/profile-queries";
-import { getPanelListings, setPanelListingStatus } from "../src/lib/panel-queries";
+import {
+  getPanelLeads,
+  getPanelListings,
+  setPanelListingStatus,
+} from "../src/lib/panel-queries";
 import { getEditableListing, updateListing } from "../src/lib/listing-edit";
 import { verifyPassword } from "../src/lib/auth/password";
 
@@ -312,6 +317,52 @@ async function main() {
     );
 
     /* ---------------------------------------------------------------- */
+    /* FSBO owner inbox — the `owner` lead lane (PLAN.md D8)            */
+    /* ---------------------------------------------------------------- */
+    /**
+     * Before the lane existed, a lead on a self-published listing was written
+     * as `internal` — the same lane as valuation and seller leads — so the
+     * person waiting for it could not be shown it without also showing them
+     * the founder's inbox. These assert both halves: the owner sees their own
+     * `owner` lead, and `internal` still belongs to nobody's panel.
+     */
+    await db.insert(leads).values([
+      {
+        leadType: "buyer",
+        vertical: "verify",
+        listingId: ownerRows[0].id,
+        whatsapp: `0983${String(stamp).slice(-6)}`,
+        name: "Verify buyer lead",
+        routedTo: "owner",
+      },
+      {
+        leadType: "valuation",
+        vertical: "verify",
+        listingId: ownerRows[0].id,
+        whatsapp: `0984${String(stamp).slice(-6)}`,
+        name: "Verify internal lead",
+        routedTo: "internal",
+      },
+    ]);
+
+    const ownerInbox = await getPanelLeads(ownerScope);
+    check(
+      "owner sees the lead routed to them",
+      ownerInbox.some((l) => l.name === "Verify buyer lead"),
+      `${ownerInbox.length} lead(s) in the owner inbox`,
+    );
+    check(
+      "an internal lead stays out of the owner's inbox",
+      !ownerInbox.some((l) => l.name === "Verify internal lead"),
+    );
+    check(
+      "the agency cannot see the owner's leads",
+      (await getPanelLeads(agencyScope)).every(
+        (l) => l.name !== "Verify buyer lead",
+      ),
+    );
+
+    /* ---------------------------------------------------------------- */
     /* Profile editing                                                  */
     /* ---------------------------------------------------------------- */
     const slugBefore = agencyRow!.slug;
@@ -452,7 +503,11 @@ async function main() {
       !(await verifyPassword("secreto123", afterPw.passwordHash)),
     );
   } finally {
-    // Clean up in FK order: listings and sessions before the rows they point at.
+    // Clean up in FK order: leads before the listings they point at, listings
+    // and sessions before the rows those point at.
+    if (createdListingIds.length) {
+      await db.delete(leads).where(inArray(leads.listingId, createdListingIds));
+    }
     if (createdListingIds.length) {
       await db.delete(listings).where(inArray(listings.id, createdListingIds));
     }
