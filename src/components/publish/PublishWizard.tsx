@@ -64,6 +64,16 @@ export interface InitialDraft extends Partial<WizardState> {
   draftId: number | null;
 }
 
+/**
+ * Fields carried in from another screen — today only /tasacion, which already
+ * asked for the operation, type, city and m² it needed to price the property
+ * (audit I4). It is a convenience, never work: it loses to a server draft and
+ * to a draft in progress on this device.
+ */
+export type PublishPrefill = Partial<
+  Pick<WizardState, "operation" | "propertyType" | "areaM2" | "landM2" | "locationId">
+>;
+
 const EMPTY: WizardState = {
   draftId: null,
   operation: "",
@@ -92,6 +102,7 @@ export function PublishWizard({
   usdToPyg,
   initialDraft,
   initialPhotos,
+  prefill,
   otpEnabled,
   homeHref,
 }: {
@@ -101,6 +112,8 @@ export function PublishWizard({
   usdToPyg: number;
   initialDraft: InitialDraft | null;
   initialPhotos?: ListingImageRow[];
+  /** Seed values from /tasacion. See PublishPrefill. */
+  prefill?: PublishPrefill | null;
   /**
    * Whether a WhatsApp code can actually be delivered. False → publish
    * directly; the server enforces the same rule, this only shapes the UI.
@@ -117,6 +130,7 @@ export function PublishWizard({
   const [saving, setSaving] = useState(false);
   const [stepError, setStepError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
 
   // Photos live on the server as soon as there is a draft row to hang them
   // on — there is no client-side "pending upload" state to lose on reload.
@@ -142,14 +156,27 @@ export function PublishWizard({
     }
   }, [state, done]);
 
-  // Rehydrate from localStorage only when there's no server draft to resume.
+  /**
+   * Rehydrate from localStorage only when there's no server draft to resume,
+   * and fall back to the /tasacion prefill only when there is no local draft
+   * either. Precedence is server draft → local draft → prefill: a half-typed
+   * listing on this device is work, and a prefill is four fields the visitor
+   * can retype, so the prefill must never be the thing that overwrites it.
+   */
   useEffect(() => {
     if (initialDraft) return;
+    let stored: Partial<WizardState> | null = null;
     try {
       const raw = localStorage.getItem(LS_KEY);
-      if (raw) setState((s) => ({ ...s, ...JSON.parse(raw) }));
+      if (raw) stored = JSON.parse(raw) as Partial<WizardState>;
     } catch {
       /* ignore */
+    }
+    if (stored) {
+      setState((s) => ({ ...s, ...stored }));
+    } else if (prefill) {
+      setState((s) => ({ ...s, ...prefill }));
+      setPrefilled(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -428,6 +455,12 @@ export function PublishWizard({
           </li>
         ))}
       </ol>
+
+      {/* Say why fields arrived filled in — an unexplained pre-filled form
+          reads as someone else's data, not as a shortcut. */}
+      {prefilled && step === 0 && (
+        <p className="wizard-prefill">{esPublish.prefillNote}</p>
+      )}
 
       {/* Step 1 — Detalles */}
       {step === 0 && (

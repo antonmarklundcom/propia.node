@@ -19,6 +19,27 @@ import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { ValuationResult } from "@/lib/valuation";
 import type { estimateAction, requestValuationContactAction } from "../../app/tasacion/actions";
 
+/**
+ * /publicar with the valuation's answers attached. The wizard treats these as
+ * a seed only — a draft already in progress wins — and re-validates every
+ * value server-side, so nothing here is trusted beyond "what the visitor typed
+ * one screen ago".
+ */
+function publishHref(
+  citySlug: string,
+  propertyType: string,
+  operation: string,
+  area: string,
+): string {
+  const qs = new URLSearchParams({
+    ciudad: citySlug,
+    tipo: propertyType,
+    operacion: operation,
+  });
+  if (area.trim() !== "") qs.set("m2", area.trim());
+  return `/publicar?${qs.toString()}`;
+}
+
 const ERROR_TEXT: Record<string, string> = {
   bad_area: esTasacion.errorBadArea,
   unknown_city: esTasacion.errorUnknownCity,
@@ -200,7 +221,7 @@ export function ValuationTool({
               {esTasacion.nextTitle}
             </h2>
             <p className="tasacion-hint" style={{ marginTop: 0 }}>
-              {esTasacion.nextBody}
+              {esTasacion.nextBody} {esTasacion.publishCtaHint}
             </p>
 
             {leadSent ? (
@@ -246,7 +267,18 @@ export function ValuationTool({
                   {esTasacion.contactSubmit}
                 </button>
               )}
-              <Link className="panel-btn panel-btn--primary" href="/publicar">
+              {/* Carry the four answers the valuation already collected into
+                  the wizard (audit I4): the visitor who just learned what
+                  their property is worth is the likeliest publisher the
+                  portal will see, and re-asking is where they drop out.
+                  Price is deliberately NOT carried: the estimate is a
+                  reference band from published asking prices, and seeding it
+                  as an asking price would anchor the market on our own
+                  output. */}
+              <Link
+                className="panel-btn panel-btn--primary"
+                href={publishHref(citySlug, propertyType, operation, area)}
+              >
                 {esTasacion.publishCta}
               </Link>
               <Link className="panel-btn" href={`/precios/${citySlug}`}>

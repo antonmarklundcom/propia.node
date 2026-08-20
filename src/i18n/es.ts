@@ -72,6 +72,8 @@ export const esTasacion = {
     "¡Listo! Te vamos a escribir por WhatsApp. Mientras tanto podés publicar tu propiedad vos mismo.",
   contactError: "No pudimos enviar tus datos. Probá de nuevo.",
   publishCta: "Publicar mi propiedad",
+  publishCtaHint:
+    "Llevamos los datos que cargaste acá, así no los escribís dos veces.",
   seePrices: "Ver precios de la zona",
 } as const;
 
@@ -497,6 +499,10 @@ export const esPublish = {
   pageTitle: "Publicá tu propiedad",
   pageSubtitle:
     "Cargala en tres pasos. Guardamos tu avance automáticamente, así podés terminar cuando quieras.",
+
+  /** Shown when /tasacion carried the operation, type, city and m² over. */
+  prefillNote:
+    "Completamos lo que ya nos dijiste en la tasación. Revisalo y seguí — podés cambiar cualquier dato.",
 
   stepLabels: ["Detalles", "Ubicación", "Precio y publicación"] as const,
 

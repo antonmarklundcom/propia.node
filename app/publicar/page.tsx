@@ -13,7 +13,10 @@ import { isMessagingConfigured } from "@/lib/crm";
 import {
   PublishWizard,
   type InitialDraft,
+  type PublishPrefill,
 } from "@/components/publish/PublishWizard";
+import { resolveCity } from "@/lib/queries";
+import { OPERATIONS, PROPERTY_TYPES } from "@/lib/import/types";
 import { listListingImages, type ListingImageRow } from "@/lib/listing-images";
 
 export const metadata: Metadata = {
@@ -24,19 +27,74 @@ export const metadata: Metadata = {
 // Draft state is per-user; never statically cache the wizard.
 export const dynamic = "force-dynamic";
 
+/**
+ * Seed values handed over by /tasacion (audit I4). Every one is re-validated
+ * here against the same enums the actions use, and the city is resolved to a
+ * real location id — a query string is a visitor-controlled input, so an
+ * unknown value is dropped rather than carried into the form.
+ */
+async function readPrefill(params: {
+  ciudad?: string;
+  tipo?: string;
+  operacion?: string;
+  m2?: string;
+}): Promise<PublishPrefill | null> {
+  const out: PublishPrefill = {};
+
+  if (params.operacion && (OPERATIONS as readonly string[]).includes(params.operacion)) {
+    out.operation = params.operacion as PublishPrefill["operation"];
+  }
+  if (params.tipo && (PROPERTY_TYPES as readonly string[]).includes(params.tipo)) {
+    out.propertyType = params.tipo as PublishPrefill["propertyType"];
+  }
+
+  const m2 = Number(params.m2);
+  if (Number.isFinite(m2) && m2 >= 10 && m2 <= 100_000) {
+    // /tasacion asks for lot m² on a terreno and built m² on everything else,
+    // and the wizard keeps those in two different fields.
+    if (out.propertyType === "terreno") out.landM2 = String(Math.round(m2));
+    else out.areaM2 = String(Math.round(m2));
+  }
+
+  if (params.ciudad) {
+    const city = await resolveCity(params.ciudad);
+    if (city) out.locationId = city.id;
+  }
+
+  return Object.keys(out).length > 0 ? out : null;
+}
+
 export default async function PublishPage({
   searchParams,
 }: {
-  searchParams: Promise<{ draft?: string }>;
+  searchParams: Promise<{
+    draft?: string;
+    ciudad?: string;
+    tipo?: string;
+    operacion?: string;
+    m2?: string;
+  }>;
 }) {
-  const user = await requireUser("/publicar");
-  const { draft } = await searchParams;
+  const params = await searchParams;
+  const { draft } = params;
+
+  // Preserve the prefill across the login bounce: requireUser("/publicar")
+  // would drop the query string, and a visitor who signed in from /tasacion
+  // would land on an empty wizard having answered the questions already.
+  const query = new URLSearchParams(
+    Object.entries(params).filter(([, v]) => typeof v === "string") as [string, string][],
+  ).toString();
+  const user = await requireUser(query ? `/publicar?${query}` : "/publicar");
 
   const [locations, projects, programs] = await Promise.all([
     listPublishLocations(),
     listNearbyProjects(),
     listActiveFinancingPrograms(),
   ]);
+
+  // A prefill only ever matters when there is no draft to resume; resolving it
+  // alongside the locations costs nothing and keeps the branch below simple.
+  const prefill = await readPrefill(params);
 
   // Resume an existing draft only if it belongs to the signed-in user.
   let initialDraft: InitialDraft | null = null;
@@ -85,6 +143,7 @@ export default async function PublishPage({
         usdToPyg={USD_TO_PYG}
         initialDraft={initialDraft}
         initialPhotos={initialPhotos}
+        prefill={prefill}
         otpEnabled={isMessagingConfigured()}
         homeHref={homeForRole(user)}
       />
