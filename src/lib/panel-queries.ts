@@ -19,7 +19,7 @@ import {
 import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
-import { listingScopeWhere, type EditScope } from "@/lib/listing-edit";
+import { listingScopeWhere, maySetStatus, type EditScope } from "@/lib/listing-edit";
 import { containsPattern } from "@/lib/sql-like";
 
 export type ListingStatus = (typeof listings.$inferSelect)["status"];
@@ -457,6 +457,19 @@ export async function setPanelListingStatus(params: {
   scope: EditScope;
   status: ListingStatus;
 }): Promise<number> {
+  /**
+   * The permission gate lives here rather than in each action, so a new caller
+   * cannot forget it (audit F1). `published` is admin-only; an agency submits
+   * for review. Reading the current status first is what lets a row keep the
+   * status it already has — see maySetStatus().
+   */
+  const [current] = await db
+    .select({ status: listings.status })
+    .from(listings)
+    .where(eq(listings.id, params.listingId))
+    .limit(1);
+  if (!maySetStatus(params.scope, current?.status, params.status)) return 0;
+
   // FIRST publish stamps publishedAt so category ordering (idx_fresh) is sane —
   // and only the first. Un-pausing a listing is not a new listing, so COALESCE
   // keeps the original date rather than re-floating old inventory.

@@ -34,7 +34,7 @@ import {
   updateOwnAgentProfile,
 } from "../src/lib/profile-queries";
 import { getPanelListings, setPanelListingStatus } from "../src/lib/panel-queries";
-import { getEditableListing } from "../src/lib/listing-edit";
+import { getEditableListing, updateListing } from "../src/lib/listing-edit";
 import { verifyPassword } from "../src/lib/auth/password";
 
 const url = process.env.DATABASE_URL ?? "";
@@ -224,6 +224,74 @@ async function main() {
       status: "paused",
     });
     check("independent can change their own", ownStatus === 1);
+
+    /* ---------------------------------------------------------------- */
+    /* Review queue is not optional (audit F1)                          */
+    /* ---------------------------------------------------------------- */
+    const selfPublish = await setPanelListingStatus({
+      listingId: agencyRows[0].id,
+      scope: agencyScope,
+      status: "published",
+    });
+    check(
+      "agency cannot publish its own listing",
+      selfPublish === 0,
+      `rows affected: ${selfPublish}`,
+    );
+
+    const submit = await setPanelListingStatus({
+      listingId: agencyRows[0].id,
+      scope: agencyScope,
+      status: "pending_review",
+    });
+    check("agency can submit its own listing for review", submit === 1);
+
+    const adminPublish = await setPanelListingStatus({
+      listingId: agencyRows[0].id,
+      scope: { kind: "admin" },
+      status: "published",
+    });
+    check("admin can publish it", adminPublish === 1);
+
+    /**
+     * The regression this fix could plausibly cause: an agency saving a typo
+     * fix on a PUBLISHED listing. `published` is not a status they may move
+     * to, so without maySetStatus()'s keep-current allowance the save would be
+     * rejected outright or would quietly unpublish the row.
+     *
+     * Asserted through updateListing (the real edit path) rather than a
+     * same-status setPanelListingStatus call, because an UPDATE that changes
+     * nothing reports 0 affected rows and would prove nothing either way.
+     */
+    const editPublished = await updateListing({
+      id: agencyRows[0].id,
+      scope: agencyScope,
+      input: {
+        title: "Verify agency listing (edited)",
+        descriptionEs: null,
+        operation: "venta",
+        propertyType: "casa",
+        priceAmount: 100000,
+        priceCurrency: "USD",
+        bedrooms: null,
+        bathrooms: null,
+        parking: null,
+        areaM2: null,
+        landM2: null,
+        locationId,
+        videoUrl: null,
+        foreignExposure: true,
+        status: "published",
+      },
+    });
+    check("agency can edit a published listing without unpublishing it", editPublished === 1);
+
+    const [afterEdit] = await db
+      .select({ status: listings.status })
+      .from(listings)
+      .where(eq(listings.id, agencyRows[0].id))
+      .limit(1);
+    check("...and it is still published", afterEdit?.status === "published");
 
     check(
       "agency cannot load the independent's listing for editing",

@@ -516,6 +516,13 @@ export const esPanel = {
     "En revisión: lo publicamos nosotros apenas lo aprobemos. No hace falta hacer nada.",
   statusRejectedNote: "No aprobado. Corregilo desde «Editar» y reenvialo.",
   statusRejectedReason: "Motivo",
+  /**
+   * Publishing is not a status an agency sets any more (audit F1). Says so
+   * once, where the status control is, so "En revisión" reads as the way to
+   * publish rather than as a step that leads nowhere.
+   */
+  statusReviewNote:
+    "Para publicar un aviso, ponelo «En revisión»: lo revisamos y lo publicamos nosotros. Es lo que nos permite garantizarle al comprador que cada aviso pasó por una persona.",
 } as const;
 
 /** Voseo strings for the publish wizard (ARCHITECTURE.md §3, M5). */
