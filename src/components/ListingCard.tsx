@@ -2,15 +2,8 @@ import Link from "next/link";
 import { formatPrice, formatCuota, imageThumbUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto } from "@/lib/photos";
-import type { Operation } from "@/lib/import/types";
 import type { ListingCard as Card } from "@/lib/queries";
-
-/** Short badge label per operation. Alquiler variants share one label. */
-const OPERATION_BADGE: Record<Operation, string> = {
-  venta: "Venta",
-  alquiler: "Alquiler",
-  alquiler_temporal: "Alquiler temporal",
-};
+import { dict } from "@/i18n/server";
 
 /**
  * Category-grid / homepage card, in the editorial system: **the photo is the
@@ -24,7 +17,8 @@ const OPERATION_BADGE: Record<Operation, string> = {
  * wall and a palm shadow) so it can't be mistaken for the property itself, and
  * "Foto próximamente" stays on top of it.
  */
-export function ListingCard({ card }: { card: Card }) {
+export async function ListingCard({ card }: { card: Card }) {
+  const t = (await dict()).card;
   // Thumb, not the full 1600px original: a category page renders ~20 of these
   // on Paraguayan mobile data. Falls back to the stored key for imported rows
   // that have no derivative yet (see imageThumbUrl).
@@ -39,11 +33,9 @@ export function ListingCard({ card }: { card: Card }) {
     card.featuredUntil != null && new Date(card.featuredUntil) > new Date();
 
   const specs = [
-    card.bedrooms != null ? `${card.bedrooms} dorm.` : null,
-    card.bathrooms != null
-      ? `${card.bathrooms} ${card.bathrooms === 1 ? "baño" : "baños"}`
-      : null,
-    area ? `${Math.round(Number(area))} m²` : null,
+    card.bedrooms != null ? t.bedroomsShort(card.bedrooms) : null,
+    card.bathrooms != null ? t.bathrooms(card.bathrooms) : null,
+    area ? t.area(Math.round(Number(area))) : null,
   ].filter((s): s is string => s !== null);
 
   return (
@@ -60,7 +52,7 @@ export function ListingCard({ card }: { card: Card }) {
       <div className="ds-photo-card__scrim" />
 
       <span className="ds-photo-card__chip">
-        {OPERATION_BADGE[card.operation]}
+        {t.operationBadge[card.operation]}
       </span>
       {/* No "Verificado" here: listings.is_verified means "publisher's
           WhatsApp passed the (currently disabled) OTP", which is not the
@@ -68,11 +60,11 @@ export function ListingCard({ card }: { card: Card }) {
           The card stays silent rather than showing a flag with two meanings. */}
       {isFeatured && (
         <span className="listing-card__flags">
-          <span className="listing-card__flag">Destacado</span>
+          <span className="listing-card__flag">{t.featured}</span>
         </span>
       )}
       {!cover && (
-        <span className="listing-card__nophoto">Foto próximamente</span>
+        <span className="listing-card__nophoto">{t.noPhoto}</span>
       )}
 
       <div className="ds-photo-card__body">

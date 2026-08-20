@@ -2,6 +2,7 @@ import Link from "next/link";
 import { tokens } from "@/design/tokens";
 import { listCities } from "@/lib/queries";
 import { SearchBar } from "@/components/SearchBar";
+import { currentLocale } from "@/i18n/server";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 
 // Renders per-request rather than at build time — the root layout reads the
@@ -21,7 +22,10 @@ export default async function NotFound() {
   // "category URL with zero matches", so it renders during exactly the kind
   // of incident where MySQL may be the thing that is unwell — a dead search
   // bar is a worse-but-usable page, a stack trace is not.
-  const cities = await listCities().catch(() => []);
+  const [cities, locale] = await Promise.all([
+    listCities().catch(() => []),
+    currentLocale(),
+  ]);
 
   return (
     <main
@@ -44,7 +48,7 @@ export default async function NotFound() {
       </p>
 
       <div style={{ textAlign: "left" }}>
-        <SearchBar cities={cities} />
+        <SearchBar cities={cities} locale={locale} />
       </div>
 
       <p

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
+import { dict } from "@/i18n/server";
+import type { Dictionary } from "@/i18n";
 import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
-import { es } from "@/i18n/es";
 import { currentVertical } from "@/lib/vertical-context";
 import {
   getRecentListings,
@@ -37,30 +38,14 @@ import { safeImageUrl } from "@/lib/external-image";
  * empty tile in a grid built entirely out of photographs.
  */
 const ZONE_CARDS = [
-  {
-    name: "Asunción",
-    slug: "asuncion",
-    sub: "Capital — la mayor oferta",
-    img: "/img/zona-asuncion.webp",
-  },
+  { name: "Asunción", slug: "asuncion", img: "/img/zona-asuncion.webp" },
   {
     name: "San Bernardino",
     slug: "san-bernardino",
-    sub: "Lago Ypacaraí, casas de fin de semana",
     img: "/img/zona-san-bernardino.webp",
   },
-  {
-    name: "Luque",
-    slug: "luque",
-    sub: "Zona en crecimiento",
-    img: "/img/zona-luque.webp",
-  },
-  {
-    name: "Encarnación",
-    slug: "encarnacion",
-    sub: "Sobre el Paraná, calidad de vida",
-    img: "/img/zona-encarnacion.webp",
-  },
+  { name: "Luque", slug: "luque", img: "/img/zona-luque.webp" },
+  { name: "Encarnación", slug: "encarnacion", img: "/img/zona-encarnacion.webp" },
 ] as const;
 
 /** Curated, high-population cities — a fixed shortcut row (avoids querying
@@ -131,8 +116,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
     title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
-    description:
-      "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
+    description: (await dict()).home.metaDescription,
     // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
     alternates: { canonical: await siteOrigin() },
     // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
@@ -149,75 +133,23 @@ export async function generateMetadata(): Promise<Metadata> {
  * nobody owns; `/publicar` is the real form, so call sites route there
  * instead of opening a compose window into a black hole.
  */
-function publishWaHref(brand: string): string | null {
-  return waLink(
-    CONTACT_WHATSAPP,
-    `Hola, quiero publicar una propiedad en ${brand}.`,
-  );
+function publishWaHref(brand: string, t: Dictionary["home"]): string | null {
+  return waLink(CONTACT_WHATSAPP, t.publishWaPrefill(brand));
 }
 
 /**
- * Both cards used to point at the same outbound WhatsApp link, because neither
- * destination existed yet. The valuation card now has a real one.
+ * Both discover cards used to point at the same outbound WhatsApp link,
+ * because neither destination existed yet. The valuation card now has a real
+ * one. The card list, like the three-step explainer, now lives in the
+ * dictionary (`esHome.discoverCards` / `esHome.howSteps`) — hrefs and icons
+ * travel with the copy because a translated card without its link is not a
+ * card.
+ *
+ * The old `external?: boolean` field on the card list is gone with it: no card
+ * ever set it, so the `target="_blank"` branch it guarded was dead.
  */
-const DISCOVER_CARDS: {
-  icon: string;
-  title: string;
-  text: string;
-  cta: string;
-  href: string;
-  external?: boolean;
-}[] = [
-  {
-    icon: "🏡",
-    title: "Publicá tu propiedad gratis",
-    text: "Cargá fotos, precio y ubicación en minutos. Sin comisión, sin costo de publicación.",
-    cta: "Publicar ahora",
-    href: "/publicar",
-  },
-  {
-    icon: "💰",
-    title: es.valuationMagnet,
-    text: "Te damos un rango estimado con los precios publicados en la zona. Gratis y sin registrarte.",
-    cta: "Calcular gratis",
-    href: "/tasacion",
-  },
-  {
-    icon: "📊",
-    title: "Precios del mercado",
-    text: "Mediana de precio por m² en cada ciudad, calculada sobre los avisos publicados del portal.",
-    cta: "Ver precios",
-    href: "/precios",
-  },
-  {
-    icon: "🏦",
-    title: "Financiamiento y cuotas",
-    text: "Qué programas existen en Paraguay, qué piden y cómo calculamos la cuota estimada de cada aviso.",
-    cta: "Leer la guía",
-    href: "/financiamiento",
-  },
-];
 
-/** Three-step explainer — the "what is this site" answer above the fold fold. */
-const HOW_STEPS = [
-  {
-    icon: "🔎",
-    title: "Buscá por zona y presupuesto",
-    text: "Filtrá por ciudad, barrio, tipo de propiedad y rango de precio. Mirá los resultados en lista o sobre el mapa.",
-  },
-  {
-    icon: "📊",
-    title: "Compará con el mercado",
-    text: "Cada propiedad en venta muestra su cuota estimada, y publicamos la mediana de precio por m² de cada ciudad.",
-  },
-  {
-    icon: "💬",
-    title: "Contactá directo",
-    text: "Escribile por WhatsApp a quien publicó, desde la misma ficha y sin intermediarios ni costo.",
-  },
-];
-
-function Row({
+async function Row({
   title,
   href,
   cards,
@@ -227,12 +159,13 @@ function Row({
   cards: Card[];
 }) {
   if (cards.length === 0) return null;
+  const t = (await dict()).home;
   return (
     <section className="home-section">
       <div className="home-section__head">
         <h2 className="home-section__title">{title}</h2>
         <Link className="home-section__more" href={href}>
-          Ver todas →
+          {t.rowMore}
         </Link>
       </div>
       <div className="home-row">
@@ -246,8 +179,14 @@ function Row({
 
 export default async function Home() {
   const brand = await brandName();
+  const d = await dict();
+  const t = d.home;
+  const tCommon = d.common;
   const faq = faqHome(brand);
-  await currentVertical();
+  const vertical = await currentVertical();
+  // Number formatting follows the request's locale, not the copy: the
+  // thousands separator is not the same character everywhere.
+  const numberLocale = vertical.locale === "en" ? "en-US" : "es-PY";
   const {
     recent,
     cities,
@@ -281,26 +220,23 @@ export default async function Home() {
         />
         <div className="home-hero__scrim" />
         <div className="home-hero__inner ds-container">
-          <p className="ds-label">Asunción · Paraguay</p>
+          <p className="ds-label">{t.heroKicker}</p>
           <h1 className="home-hero__title">
-            Encontrá tu propiedad en <span>Paraguay</span>
+            {t.heroTitleLead}<span>{t.heroTitleHighlight}</span>
           </h1>
-          <p className="home-hero__subtitle">
-            Casas, departamentos y terrenos en venta y alquiler — con cuota
-            estimada y financiamiento.
-          </p>
+          <p className="home-hero__subtitle">{t.heroSubtitle}</p>
 
           <div className="home-hero__actions">
             <Link className="ds-btn ds-btn--primary" href="/venta/asuncion">
-              Ver propiedades
+              {t.heroSeeListings}
             </Link>
             <Link className="ds-btn ds-btn--on-photo" href="/publicar">
-              Vender mi propiedad
+              {t.heroSellCta}
             </Link>
           </div>
 
           <div className="home-hero__search">
-            <SearchBar cities={cities} />
+            <SearchBar cities={cities} locale={vertical.locale} />
           </div>
 
           <div className="home-hero__chips">
@@ -314,20 +250,20 @@ export default async function Home() {
           <div className="home-hero__stats">
             <span>
               {total > 0
-                ? `${total.toLocaleString("es-PY")} propiedades publicadas`
-                : "Propiedades en todo Paraguay"}
+                ? t.heroStatCount(total.toLocaleString(numberLocale))
+                : t.heroStatCountEmpty}
             </span>
-            <span>Actualizado diariamente</span>
-            {publishWaHref(brand) ? (
+            <span>{t.heroStatUpdated}</span>
+            {publishWaHref(brand, t) ? (
               <a
-                href={publishWaHref(brand)!}
+                href={publishWaHref(brand, t)!}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {es.publishCta}
+                {tCommon.publishCta}
               </a>
             ) : (
-              <Link href="/publicar">{es.publishCta}</Link>
+              <Link href="/publicar">{tCommon.publishCta}</Link>
             )}
           </div>
         </div>
@@ -339,11 +275,11 @@ export default async function Home() {
       <section className="ds-section ds-container" id="zonas">
         <div className="home-section__head">
           <div>
-            <p className="ds-label">Zonas</p>
-            <h2>Dónde querés vivir</h2>
+            <p className="ds-label">{t.zonesKicker}</p>
+            <h2>{t.zonesTitle}</h2>
           </div>
           <Link className="ds-link-underline" href="/venta/asuncion">
-            Ver todas las zonas →
+            {t.zonesAll}
           </Link>
         </div>
         <div className="ds-grid" style={{ ["--ds-track" as string]: "220px" }}>
@@ -359,7 +295,7 @@ export default async function Home() {
               <div className="ds-photo-card__scrim ds-photo-card__scrim--zone" />
               <div className="ds-photo-card__body">
                 <div className="zone-card__name">{z.name}</div>
-                <div className="zone-card__sub">{z.sub}</div>
+                <div className="zone-card__sub">{t.zoneCardSub[z.slug]}</div>
               </div>
             </Link>
           ))}
@@ -369,12 +305,10 @@ export default async function Home() {
       {/* Cómo funciona — the "what is this site" answer, before any listing */}
       <section className="home-how">
         <div className="home-how__inner">
-          <h2 className="home-how__title">Cómo funciona</h2>
-          <p className="home-how__subtitle">
-            Buscar, comparar y contactar. Gratis, sin registro y sin comisión.
-          </p>
+          <h2 className="home-how__title">{t.howTitle}</h2>
+          <p className="home-how__subtitle">{t.howSubtitle}</p>
           <div className="home-how__grid">
-            {HOW_STEPS.map((s, i) => (
+            {t.howSteps.map((s, i) => (
               <div key={s.title} className="home-how__step">
                 <span className="home-how__num" aria-hidden>
                   {i + 1}
@@ -388,7 +322,7 @@ export default async function Home() {
             ))}
           </div>
           <Link className="home-how__more" href="/como-funciona">
-            Ver la guía completa →
+            {t.howMore}
           </Link>
         </div>
       </section>
@@ -400,25 +334,21 @@ export default async function Home() {
         <div className="editorial__media">
           <img
             src="/img/editorial-vender.webp"
-            alt="Interior de una casa en Paraguay"
+            alt={t.sellImageAlt}
             loading="lazy"
             decoding="async"
           />
         </div>
         <div className="editorial__body">
-          <p className="ds-label">Vender</p>
-          <h2>Vendé con quien conoce el mercado</h2>
-          <p className="editorial__text">
-            Publicá tu propiedad gratis y llegá a compradores de todo Paraguay.
-            Te damos un rango de precio estimado con los avisos publicados de tu
-            zona, para que sepas dónde parás antes de decidir.
-          </p>
+          <p className="ds-label">{t.sellKicker}</p>
+          <h2>{t.sellTitle}</h2>
+          <p className="editorial__text">{t.sellText}</p>
           <div className="editorial__actions">
             <Link className="ds-btn ds-btn--secondary" href="/tasacion">
-              Solicitar valuación
+              {t.sellValuationCta}
             </Link>
             <Link className="ds-link-underline" href="/publicar">
-              Publicar una propiedad →
+              {t.sellPublishCta}
             </Link>
           </div>
         </div>
@@ -429,25 +359,21 @@ export default async function Home() {
           <div className="editorial__media">
             <img
               src="/img/editorial-invertir.webp"
-              alt="Asunción al atardecer"
+              alt={t.investImageAlt}
               loading="lazy"
               decoding="async"
             />
           </div>
           <div className="editorial__body">
-            <p className="ds-label">Invertir</p>
-            <h2>Invertí en Paraguay con datos, no con corazonadas</h2>
-            <p className="editorial__text">
-              Publicamos la mediana de precio por m² de cada ciudad, calculada
-              sobre los avisos del portal, y la cuota estimada de cada propiedad
-              en venta según los programas de financiamiento vigentes.
-            </p>
+            <p className="ds-label">{t.investKicker}</p>
+            <h2>{t.investTitle}</h2>
+            <p className="editorial__text">{t.investText}</p>
             <div className="editorial__actions">
               <Link className="ds-btn ds-btn--outline-gold" href="/precios">
-                Ver precios por zona
+                {t.investPricesCta}
               </Link>
               <Link className="ds-link-underline ds-link-underline--dark" href="/financiamiento">
-                Cómo funciona el financiamiento →
+                {t.investFinancingCta}
               </Link>
             </div>
           </div>
@@ -459,14 +385,9 @@ export default async function Home() {
         <section className="home-projects" id="proyectos">
           <div className="home-projects__inner">
             <div className="home-section__head">
-              <h2 className="home-section__title">
-                🏗 Nuevos proyectos en Paraguay
-              </h2>
+              <h2 className="home-section__title">{t.projectsTitle}</h2>
             </div>
-            <p className="home-projects__subtitle">
-              Obra nueva verificada — departamentos en pozo, en construcción y
-              entrega inmediata.
-            </p>
+            <p className="home-projects__subtitle">{t.projectsSubtitle}</p>
             <div className="home-row home-row--projects">
               {featuredProjects.map((p) => (
                 <ProjectCard key={p.id} card={p} />
@@ -480,7 +401,7 @@ export default async function Home() {
       {cityShortcuts.length > 0 && (
         <section className="home-cities">
           <div className="home-cities__inner">
-            <h2 className="home-cities__title">Explorá por ciudad</h2>
+            <h2 className="home-cities__title">{t.citiesTitle}</h2>
             <div className="home-cities__row">
               {cityShortcuts.map((c) => (
                 <Link
@@ -499,34 +420,34 @@ export default async function Home() {
       <div className="home-body">
         <RecentlyViewed />
         <Row
-          title="Propiedades recomendadas"
+          title={t.rowRecommended}
           href="/venta/asuncion"
           cards={recent}
         />
         <Row
-          title="Casas en Venta — Asunción y alrededores"
+          title={t.rowHousesForSale}
           href="/venta/asuncion/casas"
           cards={ventaCasas}
         />
         <Row
-          title="Departamentos en Venta — Asunción"
+          title={t.rowFlatsForSale}
           href="/venta/asuncion/departamentos"
           cards={ventaDeptos}
         />
         <Row
-          title="Alquileres en Asunción"
+          title={t.rowRentals}
           href="/alquiler/asuncion"
           cards={alquileres}
         />
         <Row
-          title="Terrenos"
+          title={t.rowLand}
           href="/venta/asuncion/terrenos"
           cards={terrenos}
         />
 
         {recent.length === 0 && (
           <p style={{ color: "var(--color-ink-secondary)", padding: "2rem 0" }}>
-            {es.emptyState}
+            {tCommon.emptyState}
           </p>
         )}
       </div>
@@ -536,11 +457,9 @@ export default async function Home() {
         <section className="home-devs">
           <div className="home-devs__inner">
             <div className="home-section__head">
-              <h2 className="home-section__title">Desarrolladoras destacadas</h2>
+              <h2 className="home-section__title">{t.developersTitle}</h2>
             </div>
-            <p className="home-projects__subtitle">
-              Conocé quién construye los proyectos del país.
-            </p>
+            <p className="home-projects__subtitle">{t.developersSubtitle}</p>
             <div className="home-devs__grid">
               {featuredDevelopers.map((d) => (
                 <div key={d.id} className="home-devs__card">
@@ -554,7 +473,7 @@ export default async function Home() {
                   )}
                   <div className="home-devs__name">{d.name}</div>
                   <div className="home-devs__count">
-                    {d.projectCount} {d.projectCount === 1 ? "proyecto" : "proyectos"}
+                    {t.developerProjectCount(d.projectCount)}
                   </div>
                 </div>
               ))}
@@ -569,18 +488,12 @@ export default async function Home() {
         <section className="home-prices">
           <div className="home-prices__inner">
             <div className="home-section__head">
-              <h2 className="home-section__title">
-                📊 Precios de referencia por ciudad
-              </h2>
+              <h2 className="home-section__title">{t.pricesTitle}</h2>
               <Link className="home-section__more" href="/precios">
-                Ver todos →
+                {t.pricesMore}
               </Link>
             </div>
-            <p className="home-prices__subtitle">
-              Medianas de precio por m² calculadas sobre los avisos publicados.
-              Para saber si un aviso está en línea con su zona antes de
-              negociar.
-            </p>
+            <p className="home-prices__subtitle">{t.pricesSubtitle}</p>
             <div className="home-prices__row">
               {priceCities.slice(0, 8).map((c) => (
                 <Link
@@ -590,7 +503,7 @@ export default async function Home() {
                 >
                   <span className="home-prices__city">{c.name}</span>
                   <span className="home-prices__sample">
-                    {c.reliableSample.toLocaleString("es-PY")} avisos analizados
+                    {t.pricesSample(c.reliableSample.toLocaleString(numberLocale))}
                   </span>
                 </Link>
               ))}
@@ -602,23 +515,7 @@ export default async function Home() {
       {/* Value proposition strip */}
       <section className="home-values">
         <div className="home-values__inner">
-          {[
-            {
-              icon: "✅",
-              title: "Contacto directo",
-              text: "Hablás directo con el vendedor o la inmobiliaria, sin intermediarios.",
-            },
-            {
-              icon: "💳",
-              title: "Cuota estimada",
-              text: "Cada propiedad en venta muestra su cuota mensual con financiamiento vigente.",
-            },
-            {
-              icon: "🇵🇾",
-              title: "Hecho para Paraguay",
-              text: "Precios en guaraníes y dólares, barrios reales y WhatsApp primero.",
-            },
-          ].map((v) => (
+          {t.values.map((v) => (
             <div key={v.title} className="home-values__item">
               <span className="home-values__icon" aria-hidden>
                 {v.icon}
@@ -635,17 +532,10 @@ export default async function Home() {
       {/* Descubre más — secondary product surfaces */}
       <section className="home-discover">
         <div className="home-discover__inner">
-          <h2 className="home-discover__title">Descubre más en {brand}</h2>
+          <h2 className="home-discover__title">{t.discoverTitle(brand)}</h2>
           <div className="home-discover__grid">
-            {DISCOVER_CARDS.map((c) => (
-              <a
-                key={c.title}
-                className="home-discover__card"
-                href={c.href}
-                {...(c.external
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-              >
+            {t.discoverCards.map((c) => (
+              <a key={c.title} className="home-discover__card" href={c.href}>
                 <span className="home-discover__icon" aria-hidden>
                   {c.icon}
                 </span>
@@ -663,28 +553,20 @@ export default async function Home() {
       <section className="home-pro">
         <div className="home-pro__inner">
           <div className="home-pro__copy">
-            <div className="home-pro__kicker">Para inmobiliarias y agentes</div>
-            <h2 className="home-pro__title">
-              ¿Vendés propiedades todos los días?
-            </h2>
-            <p className="home-pro__text">
-              Publicá tu cartera completa, mostrá tu inmobiliaria con perfil
-              verificado y recibí las consultas directo en tu WhatsApp. Sin
-              costo por aviso, sin costo por lead y sin comisión sobre tus
-              operaciones.
-            </p>
+            <div className="home-pro__kicker">{t.proKicker}</div>
+            <h2 className="home-pro__title">{t.proTitle}</h2>
+            <p className="home-pro__text">{t.proText}</p>
             <ul className="home-pro__list">
-              <li>✓ Avisos ilimitados en el plan gratuito</li>
-              <li>✓ Perfil público de la inmobiliaria y de cada agente</li>
-              <li>✓ Importación de cartera desde planilla o enlace</li>
-              <li>✓ Panel con las consultas de cada propiedad</li>
+              {t.proBullets.map((b) => (
+                <li key={b}>{b}</li>
+              ))}
             </ul>
             <div className="home-pro__actions">
               <Link className="home-pro__button" href="/para-inmobiliarias">
-                Conocer más
+                {t.proMore}
               </Link>
               <Link className="home-pro__link" href="/planes">
-                Ver planes →
+                {t.proPlans}
               </Link>
             </div>
           </div>
@@ -693,23 +575,15 @@ export default async function Home() {
               <span className="home-pro__card-icon" aria-hidden>
                 🏢
               </span>
-              <span className="home-pro__card-title">
-                Directorio de inmobiliarias
-              </span>
-              <span className="home-pro__card-text">
-                Mirá quiénes ya publican su cartera en el portal.
-              </span>
+              <span className="home-pro__card-title">{t.proAgencyCardTitle}</span>
+              <span className="home-pro__card-text">{t.proAgencyCardText}</span>
             </Link>
             <Link className="home-pro__card" href="/proyectos">
               <span className="home-pro__card-icon" aria-hidden>
                 🏗
               </span>
-              <span className="home-pro__card-title">
-                Desarrolladoras y proyectos
-              </span>
-              <span className="home-pro__card-text">
-                Obra nueva, en pozo y entrega inmediata.
-              </span>
+              <span className="home-pro__card-title">{t.proProjectsCardTitle}</span>
+              <span className="home-pro__card-text">{t.proProjectsCardText}</span>
             </Link>
           </div>
         </div>
@@ -718,25 +592,22 @@ export default async function Home() {
       {/* Publish CTA banner */}
       <section className="home-cta">
         <div className="home-cta__inner">
-          <h2 className="home-cta__title">Publicá tu propiedad gratis</h2>
-          <p className="home-cta__text">
-            Llegá a miles de compradores e inquilinos en todo Paraguay. Simple,
-            rápido y sin costo.
-          </p>
+          <h2 className="home-cta__title">{t.ctaTitle}</h2>
+          <p className="home-cta__text">{t.ctaText}</p>
           <div className="home-cta__actions">
             <Link className="home-cta__button" href="/publicar">
-              Publicar ahora
+              {t.ctaButton}
             </Link>
             {/* Only rendered with a real number behind it: the label promises
                 WhatsApp, so it must not quietly become something else. */}
-            {publishWaHref(brand) && (
+            {publishWaHref(brand, t) && (
               <a
                 className="home-cta__alt"
-                href={publishWaHref(brand)!}
+                href={publishWaHref(brand, t)!}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                o escribinos por WhatsApp
+                {t.ctaWhatsapp}
               </a>
             )}
           </div>
@@ -747,13 +618,8 @@ export default async function Home() {
       <section className="home-newsletter">
         <div className="home-newsletter__inner">
           <div>
-            <h2 className="home-newsletter__title">
-              Oportunidades inmobiliarias, una vez por semana
-            </h2>
-            <p className="home-newsletter__text">
-              Propiedades curadas, señales del mercado y las últimas del sector —
-              en tu correo. Sin spam, podés cancelar cuando quieras.
-            </p>
+            <h2 className="home-newsletter__title">{t.newsletterTitle}</h2>
+            <p className="home-newsletter__text">{t.newsletterText}</p>
           </div>
           <NewsletterSignup />
         </div>
@@ -762,10 +628,8 @@ export default async function Home() {
       {/* FAQ */}
       <section className="home-faq">
         <div className="home-faq__inner">
-          <h2 className="home-faq__title">Preguntas frecuentes</h2>
-          <p className="home-faq__subtitle">
-            Todo lo que necesitás saber sobre {brand}.
-          </p>
+          <h2 className="home-faq__title">{t.faqTitle}</h2>
+          <p className="home-faq__subtitle">{t.faqSubtitle(brand)}</p>
           {faq.map((f) => (
             <details key={f.q} className="home-faq__item">
               <summary className="home-faq__q">{f.q}</summary>
@@ -773,7 +637,7 @@ export default async function Home() {
             </details>
           ))}
           <Link className="home-faq__more" href="/preguntas-frecuentes">
-            Ver todas las preguntas →
+            {t.faqMore}
           </Link>
         </div>
       </section>

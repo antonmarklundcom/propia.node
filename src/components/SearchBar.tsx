@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { categoryUrl, operationSlug } from "@/lib/urls";
+import { DEFAULT_LOCALE, getDictionary, type Locale } from "@/i18n";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
@@ -10,11 +11,6 @@ export interface CityOption {
   name: string;
   slug: string;
 }
-
-const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
-  { value: "venta", label: "Comprar" },
-  { value: "alquiler", label: "Alquilar" },
-];
 
 /**
  * Optional max-budget shortcut (feeds ?precio_max=, the same USD filter the
@@ -26,10 +22,6 @@ const BUDGET_OPTIONS: Record<"venta" | "alquiler", number[]> = {
   alquiler: [300, 500, 800, 1_200, 2_000],
 };
 
-function budgetLabel(n: number): string {
-  return `Hasta US$ ${n.toLocaleString("es-PY")}`;
-}
-
 /**
  * Hero search bar: operación + ciudad + tipo, submits by pushing straight to
  * the matching category URL (§4 shapes) — no client-side filtering, no new
@@ -39,18 +31,33 @@ function budgetLabel(n: number): string {
  * Also reused on category pages, pre-filled with the current selection
  * (defaultOperation/defaultCitySlug/defaultType) so a visitor can pivot the
  * search without going back to the homepage.
+ *
+ * This is the one client component among the buyer-facing surfaces, so it
+ * cannot read the `x-locale` header itself — the server page that renders it
+ * passes `locale` down. The default keeps every existing call site rendering
+ * exactly what it rendered before.
  */
 export function SearchBar({
   cities,
   defaultOperation = "venta",
   defaultCitySlug,
   defaultType = "",
+  locale = DEFAULT_LOCALE,
 }: {
   cities: CityOption[];
   defaultOperation?: Operation;
   defaultCitySlug?: string;
   defaultType?: PropertyType | "";
+  locale?: Locale;
 }) {
+  const t = getDictionary(locale).searchBar;
+  // Number formatting follows the locale, not the copy: "Hasta US$ 150.000"
+  // and "Up to US$ 150,000" differ in the separator, not just the words.
+  const numberLocale = locale === "en" ? "en-US" : "es-PY";
+  const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
+    { value: "venta", label: t.operationBuy },
+    { value: "alquiler", label: t.operationRent },
+  ];
   const router = useRouter();
   const [operation, setOperation] = useState<Operation>(defaultOperation);
   // "" = todas las ciudades → the national operation hub (/venta, /alquiler).
@@ -75,7 +82,7 @@ export function SearchBar({
     <form className="search-bar" onSubmit={handleSubmit} role="search">
       <div className="search-bar__field">
         <label className="search-bar__label" htmlFor="search-operation">
-          Operación
+          {t.operationLabel}
         </label>
         <select
           id="search-operation"
@@ -93,7 +100,7 @@ export function SearchBar({
 
       <div className="search-bar__field search-bar__field--grow">
         <label className="search-bar__label" htmlFor="search-city">
-          Ciudad
+          {t.cityLabel}
         </label>
         <select
           id="search-city"
@@ -101,7 +108,7 @@ export function SearchBar({
           value={citySlug}
           onChange={(e) => setCitySlug(e.target.value)}
         >
-          <option value="">Todas las ciudades</option>
+          <option value="">{t.cityAny}</option>
           {cities.map((c) => (
             <option key={c.slug} value={c.slug}>
               {c.name}
@@ -112,7 +119,7 @@ export function SearchBar({
 
       <div className="search-bar__field search-bar__field--grow">
         <label className="search-bar__label" htmlFor="search-type">
-          Tipo
+          {t.typeLabel}
         </label>
         <select
           id="search-type"
@@ -120,7 +127,7 @@ export function SearchBar({
           value={type}
           onChange={(e) => setType(e.target.value as PropertyType | "")}
         >
-          <option value="">Todos los tipos</option>
+          <option value="">{t.typeAny}</option>
           {PROPERTY_TYPE_OPTIONS.map((t) => (
             <option key={t.value} value={t.value}>
               {t.label}
@@ -131,7 +138,7 @@ export function SearchBar({
 
       <div className="search-bar__field">
         <label className="search-bar__label" htmlFor="search-budget">
-          Presupuesto
+          {t.budgetLabel}
         </label>
         <select
           id="search-budget"
@@ -139,17 +146,17 @@ export function SearchBar({
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
         >
-          <option value="">Sin límite</option>
+          <option value="">{t.budgetAny}</option>
           {budgets.map((b) => (
             <option key={b} value={b}>
-              {budgetLabel(b)}
+              {t.budgetUpTo(b, numberLocale)}
             </option>
           ))}
         </select>
       </div>
 
       <button className="search-bar__submit" type="submit">
-        Buscar
+        {t.submit}
       </button>
     </form>
   );
