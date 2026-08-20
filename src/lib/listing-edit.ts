@@ -45,16 +45,75 @@ export const ADMIN_STATUSES: readonly ListingStatusValue[] = [
   "removed",
 ];
 
+/**
+ * Statuses a non-admin scope may MOVE a listing to.
+ *
+ * `published` is deliberately absent (audit F1). A self-registered agency
+ * account used to be able to take its own draft straight to `published`, which
+ * made the review queue optional — and the review queue is the entire trust
+ * story this portal sells to buyers. Publishing is now something a human
+ * grants: an agency submits (`pending_review`) and /admin approves.
+ *
+ * `pending_review` is here for the same reason: without it "submit for review"
+ * would not be an action an agency could take at all.
+ */
 export const AGENCY_STATUSES: readonly ListingStatusValue[] = [
   "draft",
-  "published",
+  "pending_review",
   "paused",
   "sold",
   "rented",
 ];
 
+/**
+ * States an agency may not leave on its own: the listing is with the reviewer,
+ * or the reviewer rejected it. The dashboard shows a note instead of a select
+ * for these (F25 — a select defaulting to "Borrador" cancelled the review).
+ */
+export const AGENCY_LOCKED_STATUSES: readonly ListingStatusValue[] = [
+  "pending_review",
+  "removed",
+];
+
 export function statusesFor(scope: EditScope): readonly ListingStatusValue[] {
   return scope.kind === "admin" ? ADMIN_STATUSES : AGENCY_STATUSES;
+}
+
+/** Is this form value a listing status at all? Says nothing about permission. */
+export function isListingStatus(value: string): value is ListingStatusValue {
+  return (ADMIN_STATUSES as readonly string[]).includes(value);
+}
+
+/**
+ * May this scope move a listing from `current` to `next`?
+ *
+ * Keeping the status a row already has is always allowed. Without that, an
+ * agency saving a typo fix on a *published* listing would be forced to change
+ * its status — and since `published` is not theirs to set, the save would
+ * either fail or quietly unpublish. It grants nothing: the only row this lets
+ * them "set to published" is one that is already published.
+ */
+export function maySetStatus(
+  scope: EditScope,
+  current: ListingStatusValue | undefined,
+  next: ListingStatusValue,
+): boolean {
+  if (current !== undefined && next === current) return true;
+  return statusesFor(scope).includes(next);
+}
+
+/**
+ * What the agency dashboard and edit form offer for a row: everything the
+ * scope may set, plus the row's own status so "leave it as it is" is
+ * expressible. Published rows are the case that matters — an agency must
+ * still be able to pause or mark one sold.
+ */
+export function agencyStatusOptions(
+  current: ListingStatusValue,
+): ListingStatusValue[] {
+  return AGENCY_STATUSES.includes(current)
+    ? [...AGENCY_STATUSES]
+    : [current, ...AGENCY_STATUSES];
 }
 
 /**
@@ -263,22 +322,25 @@ export async function updateListing(params: {
 }): Promise<number> {
   const { id, scope, input } = params;
 
-  if (!statusesFor(scope).includes(input.status)) return 0;
-
   // The cached cuota was computed from the old operation and price. Leaving it
   // when either changes renders wrong money on the card until the nightly cron
   // (a listing flipped venta→alquiler kept a purchase cuota forever). Cleared
-  // here, recomputed by cron:cuotas.
+  // here, recomputed by cron:cuotas. The row's current status comes back in the
+  // same read, because the permission check below needs it.
   const [current] = await db
     .select({
       operation: listings.operation,
       priceAmount: listings.priceAmount,
       priceCurrency: listings.priceCurrency,
       publishedAt: listings.publishedAt,
+      status: listings.status,
     })
     .from(listings)
     .where(eq(listings.id, id))
     .limit(1);
+
+  if (!maySetStatus(scope, current?.status, input.status)) return 0;
+
   const moneyChanged =
     !current ||
     current.operation !== input.operation ||

@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
-import type { EditScope } from "@/lib/listing-edit";
+import {
+  AGENCY_LOCKED_STATUSES,
+  agencyStatusOptions,
+  type EditScope,
+} from "@/lib/listing-edit";
 import { getPanelListings } from "@/lib/panel-queries";
 import {
   getPanelListingStats,
@@ -23,8 +27,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// The statuses an agency can set from the dashboard (mirrors actions.ts).
-const AGENCY_STATUS_OPTIONS = ["draft", "published", "paused", "sold", "rented"];
+
 
 export default async function AgencyListingsPage({
   searchParams,
@@ -58,6 +61,10 @@ export default async function AgencyListingsPage({
             {esPanel.agencyAddListingCta}
           </Link>
         </div>
+
+        {/* Publishing moved behind the review queue (audit F1); say so where
+            the status control is, not in a help page nobody opens. */}
+        <p className="panel-note">{esPanel.statusReviewNote}</p>
 
         {/* An agency account with no agencies row is a setup slip worth
             flagging; an independent agent is simply scoped to their own rows. */}
@@ -140,7 +147,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
                   {/* pending_review / removed are admin-owned states: no
                       status select — the old default silently pre-set
                       "Borrador", so one save cancelled the review (F25). */}
-                  {AGENCY_STATUS_OPTIONS.includes(row.status) ? (
+                  {!AGENCY_LOCKED_STATUSES.includes(row.status) ? (
                     <form
                       action={setListingStatusAction}
                       className="panel-actions"
@@ -152,7 +159,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
                         className="panel-select"
                         defaultValue={row.status}
                       >
-                        {AGENCY_STATUS_OPTIONS.map((s) => (
+                        {agencyStatusOptions(row.status).map((s) => (
                           <option key={s} value={s}>
                             {listingStatusLabel[s]}
                           </option>

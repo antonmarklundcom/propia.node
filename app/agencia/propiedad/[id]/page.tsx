@@ -7,7 +7,7 @@ import { PhotoManager } from "@/components/panel/PhotoManager";
 import { ListingStats } from "@/components/panel/ListingStats";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
-  AGENCY_STATUSES,
+  agencyStatusOptions,
   getEditableListing,
   type EditScope,
 } from "@/lib/listing-edit";
@@ -122,7 +122,7 @@ export default async function AgencyListingEditPage({
           <ListingForm
             listing={listing}
             locations={locations}
-            statuses={AGENCY_STATUSES}
+            statuses={agencyStatusOptions(listing.status)}
             action={agencyUpdateListingAction}
           />
         </article>
