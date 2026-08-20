@@ -76,6 +76,26 @@ export async function countReviewQueue(): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
+/**
+ * Leads captured in the last `hours` — the badge on the /admin Consultas tab.
+ *
+ * The zero-config half of the operator notification (audit I10): an outbound
+ * ping needs `LEAD_WEBHOOK_URL`, this needs nothing, so the founder always has
+ * one signal that something arrived. Deliberately "recent", not "unread":
+ * read-state would be a column on `leads` and a schema change, and a rolling
+ * window is honest about what it counts.
+ *
+ * One COUNT on idx_created (leads.created_at), so it stays cheap enough to run
+ * on every admin page render.
+ */
+export async function countRecentLeads(hours = 24): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(leads)
+    .where(sql`${leads.createdAt} >= now() - interval ${sql.raw(String(Math.max(1, Math.floor(hours))))} hour`);
+  return Number(row?.n ?? 0);
+}
+
 /** Approve a pending listing → published. Scoped to pending_review so it can't
  * resurrect a removed/sold row. Returns rows affected (0 = nothing to do). */
 export async function approveListing(id: number): Promise<number> {

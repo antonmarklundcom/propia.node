@@ -9,9 +9,9 @@
  */
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { agents, users } from "@/db/schema";
+import { agents, listings, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth/guards";
-import { getCrm, isMessagingConfigured } from "@/lib/crm";
+import { alertOperator, getCrm, isMessagingConfigured } from "@/lib/crm";
 import { canonPhone } from "@/lib/import/normalize";
 import {
   OPERATIONS,
@@ -19,6 +19,8 @@ import {
   type Operation,
   type PropertyType,
 } from "@/lib/import/types";
+import { esPanel } from "@/i18n/es";
+import { siteOrigin } from "@/lib/origin";
 import { createOtp, verifyOtp } from "@/lib/otp";
 import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
 
@@ -153,6 +155,32 @@ export async function requestOtpAction(
   return { ok: true };
 }
 
+/**
+ * Tell the operator a listing is waiting for review (audit I10).
+ *
+ * The review queue is the whole trust story, and it only works if someone
+ * looks at it: a draft submitted on a Friday and approved on a Tuesday is a
+ * publisher who assumes the portal is dead. Best-effort by construction — the
+ * row is already `pending_review`, and /admin badges the count regardless of
+ * whether any provider is configured.
+ */
+async function alertReviewSubmitted(
+  draftId: number,
+  verified: boolean,
+): Promise<void> {
+  const [row] = await db
+    .select({ title: listings.title })
+    .from(listings)
+    .where(eq(listings.id, draftId))
+    .limit(1);
+  await alertOperator({
+    kind: "review_submitted",
+    title: esPanel.alertReviewTitle,
+    detail: esPanel.alertReviewDetail(row?.title ?? String(draftId), verified),
+    url: `${await siteOrigin()}/admin`,
+  });
+}
+
 export type PublishResult =
   | { ok: true }
   | {
@@ -196,6 +224,7 @@ export async function verifyAndPublishAction(params: {
     verified: true,
   });
   if (affected === 0) return { ok: false, error: "not_found" };
+  await alertReviewSubmitted(params.draftId, true);
   return { ok: true };
 }
 
@@ -233,5 +262,6 @@ export async function publishDraftAction(params: {
     verified: false,
   });
   if (affected === 0) return { ok: false, error: "not_found" };
+  await alertReviewSubmitted(params.draftId, false);
   return { ok: true };
 }

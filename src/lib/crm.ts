@@ -43,6 +43,28 @@ export interface LeadPayload {
   routedTo: "agency" | "agent" | "internal" | "developer";
 }
 
+/**
+ * A ping to the person running the portal — not a CRM record.
+ *
+ * The founder is a solo operator with no inbox on this domain (there is no
+ * portal email, on purpose), so a new lead or a listing waiting for review is
+ * discovered by opening /admin and looking. This is the outbound half of that:
+ * when a webhook is configured, the same channel that carries leads carries a
+ * "go look" alert, distinguishable by its `event` so a downstream flow can
+ * route it to WhatsApp instead of into a pipeline.
+ *
+ * Optional by construction, exactly like every other outbound message here: no
+ * provider means no alert, never a logged line pretending to be one.
+ */
+export interface OperatorAlert {
+  kind: "new_lead" | "review_submitted";
+  /** One line, already in the operator's language. */
+  title: string;
+  detail?: string;
+  /** Absolute URL of the screen that acts on it. */
+  url?: string;
+}
+
 export interface CrmResult {
   ok: boolean;
   /** Provider-side contact id (stored as leads.ghl_contact_id). */
@@ -53,6 +75,7 @@ export interface CrmResult {
 export interface CrmProvider {
   pushLead(lead: LeadPayload): Promise<CrmResult>;
   sendOtp(whatsapp: string, code: string): Promise<CrmResult>;
+  notifyOperator(alert: OperatorAlert): Promise<CrmResult>;
 }
 
 /**
@@ -68,6 +91,10 @@ class WebhookProvider implements CrmProvider {
 
   async sendOtp(whatsapp: string, code: string): Promise<CrmResult> {
     return this.post({ event: "otp", whatsapp, code });
+  }
+
+  async notifyOperator(alert: OperatorAlert): Promise<CrmResult> {
+    return this.post({ event: "operator_alert", ...alert });
   }
 
   private async post(body: unknown): Promise<CrmResult> {
@@ -113,6 +140,18 @@ class NoProvider implements CrmProvider {
     }
     return { ok: false, error: "no messaging provider configured" };
   }
+  /**
+   * Reports failure, like sendOtp and unlike pushLead: a lead push has nothing
+   * left to deliver once the row is stored, but an alert that was never sent
+   * is simply an alert that was never sent. The /admin badges are what the
+   * operator has without a provider, and they are always there.
+   */
+  async notifyOperator(alert: OperatorAlert): Promise<CrmResult> {
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[messaging:dev] operator alert", JSON.stringify(alert));
+    }
+    return { ok: false, error: "no messaging provider configured" };
+  }
 }
 
 /** URL of the outbound webhook, if one is configured. */
@@ -133,4 +172,17 @@ export function isMessagingConfigured(): boolean {
 export function getCrm(): CrmProvider {
   const url = webhookUrl();
   return url ? new WebhookProvider(url) : new NoProvider();
+}
+
+/**
+ * Fire-and-forget operator alert. Never throws and never reports back: no
+ * caller may fail, retry or slow a request because a ping did not land — the
+ * lead or the pending listing is already in MySQL, which is the record.
+ */
+export async function alertOperator(alert: OperatorAlert): Promise<void> {
+  try {
+    await getCrm().notifyOperator(alert);
+  } catch {
+    /* an undelivered ping is not worth an error page */
+  }
 }

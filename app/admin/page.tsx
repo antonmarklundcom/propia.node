@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { getReviewQueue } from "@/lib/panel-queries";
+import { countRecentLeads, getReviewQueue } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -23,7 +23,10 @@ const OPERATION_LABEL: Record<string, string> = {
 
 export default async function AdminReviewPage() {
   const user = await requireSuperAdmin();
-  const queue = await getReviewQueue();
+  const [queue, recentLeads] = await Promise.all([
+    getReviewQueue(),
+    countRecentLeads(),
+  ]);
 
   return (
     <>
@@ -31,7 +34,7 @@ export default async function AdminReviewPage() {
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("review", queue.length)}
+        tabs={adminTabs("review", queue.length, undefined, recentLeads)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.adminReviewTitle}</h2>

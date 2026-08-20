@@ -15,6 +15,12 @@ export function adminTabs(
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
   draftPostCount?: number,
+  /**
+   * Leads from the last 24 h, badged on the Consultas tab. Omitted where it
+   * isn't loaded — the badge is a nudge, not a number every screen must pay
+   * a query for.
+   */
+  recentLeadCount?: number,
 ): PanelTab[] {
   return [
     {
@@ -31,6 +37,7 @@ export function adminTabs(
     {
       href: "/admin/leads",
       label: esPanel.adminLeadsTitle,
+      count: recentLeadCount,
       active: active === "leads",
     },
     {
