@@ -9,6 +9,7 @@
  * in team-queries.ts, not here, so both callers get it.
  */
 import { revalidatePath } from "next/cache";
+import { revalidateDirectory } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { moveAgentToAgency, type TeamRole } from "@/lib/team-queries";
@@ -18,6 +19,7 @@ const ROUTE = "/admin/agentes";
 function done(code: string): never {
   revalidatePath(ROUTE);
   revalidatePath("/admin/inmobiliarias");
+  revalidateDirectory();
   redirect(`${ROUTE}?msg=${code}`);
 }
 

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { unstable_cache } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache";
 import { buildSitemapEntries } from "@/lib/sitemap";
 import { siteOrigin, hostOwnsListingDetail } from "@/lib/origin";
 
@@ -15,7 +16,7 @@ const cachedEntries = unstable_cache(
   async (includeListingDetail: boolean) =>
     buildSitemapEntries({ includeListingDetail }),
   ["sitemap-entries"],
-  { revalidate: 3600, tags: ["listings"] },
+  { revalidate: 3600, tags: [CACHE_TAGS.listings] },
 );
 
 // Depends on live DB — render at request time, not at build (Hostinger builds

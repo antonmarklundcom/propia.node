@@ -5,6 +5,7 @@
  * open. JSON columns are display-only and never filtered here.
  */
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import {
   and,
   asc,
@@ -29,16 +30,35 @@ import {
   projects,
 } from "../db/schema";
 import type { Operation, PropertyType } from "./import/types";
+import { CACHE_TAGS, CACHE_TTL } from "./cache";
 
 export type LocationRow = typeof locations.$inferSelect;
 
-/** All ciudad-level locations, alphabetical — populates the search bar's city select. */
-export async function listCities(): Promise<Pick<LocationRow, "id" | "name" | "slug">[]> {
-  return db
-    .select({ id: locations.id, name: locations.name, slug: locations.slug })
-    .from(locations)
-    .where(eq(locations.level, "ciudad"))
-    .orderBy(asc(locations.name));
+/**
+ * All ciudad-level locations, alphabetical — populates the search bar's city
+ * select.
+ *
+ * The hottest query in the app: the home page, both category routes,
+ * /tasacion and the 404 page all render a SearchBar, so before caching this
+ * every one of those requests paid a round-trip for a table that only changes
+ * when someone runs the seed. Cached under `locations` (src/lib/cache.ts);
+ * plain scalars, so nothing to re-wrap on the way out.
+ */
+const cachedCities = unstable_cache(
+  async (): Promise<Pick<LocationRow, "id" | "name" | "slug">[]> =>
+    db
+      .select({ id: locations.id, name: locations.name, slug: locations.slug })
+      .from(locations)
+      .where(eq(locations.level, "ciudad"))
+      .orderBy(asc(locations.name)),
+  ["queries:listCities"],
+  { revalidate: CACHE_TTL.locations, tags: [CACHE_TAGS.locations] },
+);
+
+export async function listCities(): Promise<
+  Pick<LocationRow, "id" | "name" | "slug">[]
+> {
+  return cachedCities();
 }
 
 /** A ciudad by slug (slugs are unique per level in our seed). */

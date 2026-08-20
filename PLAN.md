@@ -476,9 +476,77 @@ items. Still open / partial:
 | F48 | P3 | **FIXED 2026-08-19** | First publish only, in all three writers: `listing-edit.ts` (reads `publishedAt` in the row it already selects), `approveListing` and `setPanelListingStatus` (`coalesce(published_at, now())` — no extra round-trip, no race) |
 | F61 | P3 | OPEN | Re-import overwrites manual edits → **D10** |
 | F63 | P3 | **CLOSED 2026-08-19** | No code change: ARCHITECTURE.md §4 already documents `0 → 404 (via notFound()) or redirect to parent — a true 410 would need a route handler and buys nothing over 404 for deindexing`. Code and doc agree; the audit row was stale |
-| F17 | P1 | PARTIAL | Root layout still dynamic (only home DB payload cached); finish = static route group or middleware-resolved brand. Highest-leverage perf item given the 503 history |
+| F17 | P1 | **RESCOPED + DONE 2026-08-20** | The route-cache half is dead ground and the data-cache half is now finished. See "F17, re-measured" below |
 | F38 | P2 | PARTIAL | Map bbox still filters `coalesce(lat…)` so `idx_geo` unused; materialise a display coordinate (MIGRATION) |
 | F43 | P2 | PARTIAL | Sitemap cached but unchunked; needed near ~25k listings, not before |
+
+### F17, re-measured (2026-08-20) — the route cache is not the win
+
+Measured against HEAD with `npm run build`, not reasoned about:
+
+- **Baseline: every route is `ƒ (Dynamic)`.** All 49 pages, `/terminos`
+  included. Only `/icon.svg` is `○`.
+- **The root layout is indeed the global blocker.** Stubbing `brandMeta()`,
+  `siteOrigin()` and `currentVertical()` out of `app/layout.tsx` and adding a
+  throwaway `<p>hi</p>` page made Next attempt to prerender it. Confirmed.
+- **The CSP nonce does NOT block static rendering** here, contrary to the
+  usual warning about nonces. One less obstacle.
+- **`app/not-found.tsx` was a second, undocumented blocker**: it called
+  `listCities()`, so the prerender attempt died on `ECONNREFUSED 127.0.0.1:3306`.
+  The global not-found boundary is bundled into every static export, so no page
+  could prerender while it queried the DB — and every 404 in production paid a
+  round-trip. Fixed in this PR (cached + `.catch(() => [])`).
+
+**Why "middleware-resolved brand" cannot work.** The full route cache is keyed
+by path and nothing else. Two hosts must emit two different documents (`Real
+Estate in Paraguay` vs `Inmobiliaria Paraguay` in `<title>`, header lockup,
+footer, OG `siteName`). One file keyed on `/terminos` cannot hold both, and a
+middleware header read at render time is itself the dynamic API being removed.
+The brand has to enter through the **URL** or not at all:
+
+```
+/terminos  ->  rewrite to /en/terminos  |  /inmobiliaria/terminos
+app/[vertical]/terminos/page.tsx + generateStaticParams(['en','inmobiliaria'])
+```
+
+**Why that is a bad trade today.** It moves all ~49 route files and rethreads
+132 `brandName()` / `siteOrigin()` / `currentVertical()` call sites across 41
+files from `headers()` to `params` — and it collides with Batch 3, which
+rewrites the same buyer-facing components. What it buys is ~10–12 pages
+(`/terminos`, `/privacidad`, `/nosotros`, `/preguntas-frecuentes`,
+`/como-funciona`, `/financiamiento`, `/para-inmobiliarias`, `/planes`,
+`/datos`, `/contacto`). Those are the only ones with neither a DB read nor
+search params — and they already do zero DB work, so their dynamic render is a
+template render. Everything implicated in the 503s (`/`, `/[operacion]/*`,
+`/propiedad/[slug]`, `/precios`) reads the database and the query string and
+can never hold a route cache regardless.
+
+**So F17's premise was wrong.** Static HTML cannot reach the pages that fell
+over; cached *data* can. A dynamic render over a warm data cache costs one
+render and zero queries, which is the actual 503 shape. That is what this PR
+finishes, extending the pattern already proven on the home payload:
+
+| Cached | Tag | Writer |
+| --- | --- | --- |
+| `listCities()` — the hottest query in the app (home, both category routes, /tasacion, every 404) | `locations` | none needed; seed data |
+| agency / agent / developer directories, `listAllProjects`, `getPortalStats`, `listFinancingPrograms` | `directory` | admin inmobiliarias + agentes actions, agencia perfil action |
+| `/guias` index and post detail | `guides` | every write in `app/admin/guias/actions.ts` |
+| home payload, sitemap (pre-existing) | `listings` | admin + agencia listing, photo and import actions |
+| price medians, valuation (pre-existing) | `market-medians` | nightly job / TTL |
+
+Two things that were quietly broken and are now fixed: `revalidatePath()` does
+**not** clear `unstable_cache` entries, so nothing ever invalidated the home
+payload — an approved listing took up to 10 minutes to appear. Every tag above
+now has a named writer calling `revalidateListings()` / `revalidateDirectory()`
+/ `revalidateGuides()` from `src/lib/cache.ts`; the TTL is the backstop, not
+the mechanism. And a cached entry is serialized, so `Date` comes back as an ISO
+string — the guides and financing readers re-wrap at the cache boundary rather
+than leaving the next reader to trip over `string > Date`.
+
+**If the route cache is still wanted**, it is a multi-PR project of its own and
+belongs *after* Batch 3, not inside Batch 1. Its prerequisites are now down to
+one: the `[vertical]` segment rewrite. `not-found.tsx` no longer blocks it.
+
 
 ### Roles — verified model and gaps
 

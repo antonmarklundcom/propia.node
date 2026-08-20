@@ -14,6 +14,7 @@
  */
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { locations, marketMedians } from "@/db/schema";
@@ -236,11 +237,11 @@ const PRICES_TTL_SECONDS = 3600;
 export const getCityPrices = unstable_cache(
   getCityPricesUncached,
   ["city-prices"],
-  { revalidate: PRICES_TTL_SECONDS, tags: ["market-medians"] },
+  { revalidate: PRICES_TTL_SECONDS, tags: [CACHE_TAGS.marketMedians] },
 );
 
 export const citiesWithPrices = unstable_cache(
   citiesWithPricesUncached,
   ["cities-with-prices"],
-  { revalidate: PRICES_TTL_SECONDS, tags: ["market-medians"] },
+  { revalidate: PRICES_TTL_SECONDS, tags: [CACHE_TAGS.marketMedians] },
 );
