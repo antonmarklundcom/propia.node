@@ -3,14 +3,15 @@
  * (source of truth for the money report), THEN push to GHL through the
  * crm.ts boundary. A GHL failure never loses the lead — it's already stored.
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { leads, listings } from "@/db/schema";
-import { getCrm, type LeadPayload } from "@/lib/crm";
+import { alertOperator, getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
-import { listingCanonicalOrigin } from "@/lib/origin";
+import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
+import { esPanel } from "@/i18n/es";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
 import { rawHostFrom } from "@/lib/host";
@@ -149,6 +150,28 @@ export async function POST(req: NextRequest) {
         }
       : undefined,
   };
+
+  /**
+   * Ping the operator (audit I10). A solo operator otherwise finds a lead by
+   * opening /admin, and a lead found next week is a lead lost. It runs after
+   * the response so a slow or dead webhook never becomes the visitor's wait,
+   * and it is separate from the CRM push above: that one carries the record,
+   * this one is "go look", and a downstream flow routes them differently.
+   */
+  const adminUrl = `${await siteOrigin()}/admin/leads`;
+  after(() =>
+    alertOperator({
+      kind: "new_lead",
+      title: esPanel.alertNewLeadTitle,
+      detail: esPanel.alertNewLeadDetail({
+        leadType: parsed.leadType,
+        name: parsed.name ?? null,
+        whatsapp: parsed.whatsapp,
+        listingTitle: listing?.title ?? null,
+      }),
+      url: adminUrl,
+    }),
+  );
 
   const crmResult = await getCrm().pushLead(payload);
   if (crmResult.ok && crmResult.contactId) {

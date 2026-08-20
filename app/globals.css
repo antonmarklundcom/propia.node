@@ -3146,6 +3146,17 @@ body {
   color: var(--color-ink-secondary);
 }
 
+/* A one-line status line above a list — says what a tab badge is counting. */
+.panel-note {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-ink-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* Card list (review queue rows, lead rows) */
 .panel-card {
   background: var(--color-surface);

@@ -443,6 +443,29 @@ export const esPanel = {
   saveStatus: "Guardar",
   contactLead: "Responder por WhatsApp",
   /**
+   * Operator alerts (I10). Outbound, to the person running the portal — never
+   * rendered on a page, but copy all the same, so it lives here.
+   */
+  alertNewLeadTitle: "Nueva consulta en el portal",
+  alertNewLeadDetail: (params: {
+    leadType: string;
+    name: string | null;
+    whatsapp: string;
+    listingTitle: string | null;
+  }) =>
+    [
+      `${params.leadType} · ${params.name ?? "Sin nombre"} (${params.whatsapp})`,
+      params.listingTitle ? `Aviso: ${params.listingTitle}` : null,
+    ]
+      .filter(Boolean)
+      .join(" — "),
+  alertReviewTitle: "Un aviso espera revisión",
+  alertReviewDetail: (title: string, verified: boolean) =>
+    `${title}${verified ? " · WhatsApp verificado" : " · WhatsApp sin verificar"}`,
+  /** Leads that arrived in the last 24 h — the badge on the Consultas tab. */
+  adminLeadsRecent: (n: number) =>
+    n === 1 ? "1 consulta nueva en las últimas 24 h" : `${n} consultas nuevas en las últimas 24 h`,
+  /**
    * FSBO leads land in the founder's inbox because a particular seller has no
    * panel of their own yet; these two are how the lead gets to them.
    */

@@ -4,6 +4,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
   countLeadsByType,
+  countRecentLeads,
   countReviewQueue,
   listAllLeads,
   type AdminLeadRow,
@@ -104,8 +105,9 @@ export default async function AdminLeadsPage({
     ? (tipo as (typeof LEAD_TYPES)[number])
     : "all";
 
-  const [reviewCount, counts, rows] = await Promise.all([
+  const [reviewCount, recentLeads, counts, rows] = await Promise.all([
     countReviewQueue(),
+    countRecentLeads(),
     countLeadsByType(),
     listAllLeads({ type: activeType, q }),
   ]);
@@ -116,13 +118,18 @@ export default async function AdminLeadsPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("leads", reviewCount)}
+        tabs={adminTabs("leads", reviewCount, undefined, recentLeads)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.adminLeadsTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 13, marginTop: 0 }}>
           {esPanel.adminLeadsHint}
         </p>
+        {/* Says what the tab badge is counting — a bare number next to
+            "Consultas" would read as the all-time total. */}
+        {recentLeads > 0 ? (
+          <p className="panel-note">{esPanel.adminLeadsRecent(recentLeads)}</p>
+        ) : null}
 
         <nav className="panel-chips">
           {LEAD_TYPES.map((t) => {
