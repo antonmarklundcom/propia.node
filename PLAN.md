@@ -657,15 +657,18 @@ panel scoping.
   F17 finish, F38 display coordinate (MIGRATION), F61 per D10 (MIGRATION).
   The three MIGRATION items are also the three gated on an unrecorded decision
   (D7, D10) — see the decision-record gap below.
-- **Batch 2 — FSBO loop (sequential, shared files):** F4 contact fallback →
-  minimal owner panel (D8) → operator lead notifications (I10).
+- **Batch 2 — FSBO loop (sequential, shared files):** ~~F4 contact fallback~~
+  (**DONE 2026-08-20**, PR #62) → minimal owner panel (D8, still gated on the
+  decision) → ~~operator lead notifications (I10)~~ (**DONE 2026-08-20**,
+  PR #63). Until D8 lands, an FSBO lead reaches its publisher by the operator
+  forwarding it from /admin/leads.
 - **Batch 3 — i18n (strictly sequential):** ~~string extraction →
   `getDictionary`~~ (**DONE 2026-08-20**, see below) → `en.ts` → translation job
   (MIGRATION for `title_en`).
   Flip day itself stays gated on D6's checklist and is NOT part of the batch.
 - **Batch 4 — retention & monetisation (mostly parallel):** favorites +
-  saved-search/alert engine (D9, MIGRATION), valuation→publish funnel,
-  featured toggle (D5 decision permitting).
+  saved-search/alert engine (D9, MIGRATION), ~~valuation→publish funnel~~
+  (**DONE 2026-08-20**, PR #64), featured toggle (D5 decision permitting).
 
 Dependency notes: Batch 0 is done (locally, not in CI) and no longer blocks
 anything; Batch 2 items are ordered;
