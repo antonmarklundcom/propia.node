@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
+import { currentLocale, dict } from "@/i18n/server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -33,36 +34,12 @@ type Params = { params: Promise<{ operacion: string }> };
  * /planes and friends are unaffected; anything that isn't an operation slug
  * falls through to notFound().
  */
-const COPY: Record<
-  Operation,
-  { h1: string; lead: string; label: string; cityLabel: string }
-> = {
-  venta: {
-    h1: "Propiedades en venta en Paraguay",
-    lead: "Casas, departamentos, terrenos y locales en venta en todo el país. Cada aviso muestra su cuota mensual estimada, para saber de entrada si el número te cierra.",
-    label: "Venta",
-    cityLabel: "Comprar en",
-  },
-  alquiler: {
-    h1: "Propiedades en alquiler en Paraguay",
-    lead: "Departamentos, casas, oficinas y locales en alquiler en todo el país. Contacto directo con el propietario o la inmobiliaria, sin comisión del portal.",
-    label: "Alquiler",
-    cityLabel: "Alquilar en",
-  },
-  alquiler_temporal: {
-    h1: "Alquiler temporal en Paraguay",
-    lead: "Estadías cortas y alquileres por temporada en todo el país.",
-    label: "Alquiler temporal",
-    cityLabel: "Alquilar por temporada en",
-  },
-};
-
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const brand = await brandName();
   const { operacion } = await params;
   const op = parseOperation(operacion);
   if (!op) return { title: brand };
-  const copy = COPY[op];
+  const copy = (await dict()).hub.copy[op];
   return {
     title: `${copy.h1}`,
     description: copy.lead,
@@ -77,7 +54,10 @@ export default async function OperationHubPage({ params }: Params) {
   const op = parseOperation(operacion);
   if (!op) notFound();
 
-  const copy = COPY[op];
+  const [d, locale] = await Promise.all([dict(), currentLocale()]);
+  const t = d.hub;
+  const copy = t.copy[op];
+  const numberLocale = locale === "en" ? "en-US" : "es-PY";
   const [origin, hub, cities, recent] = await Promise.all([
     siteOrigin(),
     getOperationHubData(op),
@@ -92,7 +72,7 @@ export default async function OperationHubPage({ params }: Params) {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: t.breadcrumbHome, url: "/" },
             { name: copy.label, url: `/${operationSlug(op)}` },
           ]),
         ]}
@@ -104,34 +84,34 @@ export default async function OperationHubPage({ params }: Params) {
           <p className="hub-hero__lead">{copy.lead}</p>
           {hub.total > 0 && (
             <div className="hub-hero__count">
-              {hub.total.toLocaleString("es-PY")} propiedades publicadas
+              {t.count(hub.total.toLocaleString(numberLocale))}
             </div>
           )}
-          <SearchBar cities={cities} />
+          <SearchBar cities={cities} locale={locale} />
         </div>
       </section>
 
       {hub.types.length > 0 && (
         <Section
-          title={`Por tipo de propiedad`}
-          subtitle={`Elegí qué estás buscando. Los totales son avisos publicados hoy en ${copy.label.toLowerCase()}.`}
+          title={t.byTypeTitle}
+          subtitle={t.byTypeSubtitle(copy.label.toLowerCase())}
         >
           <div className="hub-grid">
-            {hub.types.map((t) => (
+            {hub.types.map((row) => (
               <Link
-                key={t.type}
+                key={row.type}
                 className="hub-tile"
                 href={categoryUrl({
                   operation: op,
                   citySlug: topCity,
-                  type: t.type as PropertyType,
+                  type: row.type as PropertyType,
                 })}
               >
                 <span className="hub-tile__label">
-                  {PROPERTY_TYPE_LABELS[t.type as PropertyType] ?? t.type}
+                  {PROPERTY_TYPE_LABELS[row.type as PropertyType] ?? row.type}
                 </span>
                 <span className="hub-tile__count">
-                  {t.count.toLocaleString("es-PY")}
+                  {row.count.toLocaleString(numberLocale)}
                 </span>
               </Link>
             ))}
@@ -142,8 +122,8 @@ export default async function OperationHubPage({ params }: Params) {
       {hub.cities.length > 0 && (
         <Section
           tone="muted"
-          title={`Por ciudad`}
-          subtitle="Todas las ciudades con inventario activo, ordenadas por cantidad de avisos."
+          title={t.byCityTitle}
+          subtitle={t.byCitySubtitle}
         >
           <div className="hub-grid hub-grid--cities">
             {hub.cities.map((c) => (
@@ -156,7 +136,7 @@ export default async function OperationHubPage({ params }: Params) {
                   {copy.cityLabel} {c.name}
                 </span>
                 <span className="hub-tile__count">
-                  {c.count.toLocaleString("es-PY")}
+                  {c.count.toLocaleString(numberLocale)}
                 </span>
               </Link>
             ))}
@@ -165,18 +145,18 @@ export default async function OperationHubPage({ params }: Params) {
       )}
 
       {recent.length > 0 && (
-        <Section title="Últimas publicaciones">
+        <Section title={t.latestTitle}>
           <div className="mk-project-grid">
             {recent.map((card) => (
               <ListingCard key={card.id} card={card} />
             ))}
           </div>
           <p className="mk-note">
-            ¿Buscás en una zona puntual? Entrá a{" "}
+            {t.latestNoteLead}{" "}
             <Link href={categoryUrl({ operation: op, citySlug: topCity })}>
               {copy.cityLabel} {hub.cities[0]?.name ?? "Asunción"}
             </Link>{" "}
-            y filtrá por barrio, precio y dormitorios.
+            {t.latestNoteTail}
           </p>
         </Section>
       )}
@@ -184,23 +164,19 @@ export default async function OperationHubPage({ params }: Params) {
       {hub.total === 0 && (
         <Section>
           <div className="mk-empty">
-            <p>Todavía no hay propiedades publicadas en {copy.label.toLowerCase()}.</p>
+            <p>{t.emptyBody(copy.label.toLowerCase())}</p>
             <Link className="mk-btn mk-btn--accent" href="/publicar">
-              Publicar la primera
+              {t.emptyCta}
             </Link>
           </div>
         </Section>
       )}
 
       <CtaBand
-        title={
-          op === "venta"
-            ? "¿Vendés una propiedad?"
-            : "¿Tenés una propiedad para alquilar?"
-        }
-        text="Publicala gratis y llegá a quienes están buscando en tu zona."
-        primary={{ label: "Publicar gratis", href: "/publicar" }}
-        secondary={{ label: "¿Cuánto vale?", href: "/tasacion" }}
+        title={op === "venta" ? t.ctaTitleSale : t.ctaTitleRent}
+        text={t.ctaText}
+        primary={{ label: t.ctaPrimary, href: "/publicar" }}
+        secondary={{ label: t.ctaSecondary, href: "/tasacion" }}
       />
     </main>
   );

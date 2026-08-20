@@ -26,6 +26,8 @@ import {
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
 import { esPrecios, inquiryPrefillFor } from "@/i18n/es";
+import { currentLocale, dict } from "@/i18n/server";
+import type { Dictionary } from "@/i18n";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
 import { getCityPrices } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
@@ -60,18 +62,21 @@ const subtreeIds = cache(citySubtreeIds);
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await load(slug);
-  if (!detail) return { title: `Propiedad no encontrada` };
+  if (!detail) return { title: (await dict()).listing.metaNotFound };
   const { listing } = detail;
-  const brand = await brandName();
+  const [brand, t] = await Promise.all([
+    brandName(),
+    dict().then((d) => d.listing),
+  ]);
   const canonical = `${await listingCanonicalOrigin()}${listingUrl(listing)}`;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: `${listing.title} — ${formatPrice(listing)}`,
+    title: t.metaTitle(listing.title, formatPrice(listing)),
     description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
     alternates: { canonical },
     openGraph: {
       // og:title doesn't inherit title.template — brand goes in by hand (F47).
-      title: `${listing.title} — ${brand}`,
+      title: t.ogTitle(listing.title, brand),
       url: canonical,
       images: cover ? [cover] : undefined,
       type: "website",
@@ -79,13 +84,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     robots: { index: true, follow: true },
   };
 }
-
-const STATE_LABELS: Record<string, string> = {
-  entrega_inmediata: "Entrega inmediata",
-  en_construccion: "En construcción",
-  en_pozo: "En pozo",
-  usado: "Usado",
-};
 
 /**
  * amenities is display-only JSON with no enforced shape (schema §2.1): accept
@@ -114,6 +112,9 @@ export default async function ListingPage({ params }: Params) {
   if (!detail) notFound();
 
   const { listing, images, chain, agency, agent } = detail;
+  const [d, locale] = await Promise.all([dict(), currentLocale()]);
+  const t: Dictionary["listing"] = d.listing;
+  const numberLocale = locale === "en" ? "en-US" : "es-PY";
 
   /**
    * Count the view after the response is sent: the owner's stats must never
@@ -150,7 +151,9 @@ export default async function ListingPage({ params }: Params) {
 
   // Only include nodes with a genuinely routable URL in both the visible
   // nav and the JSON-LD (a bare barrio page isn't a valid route).
-  const crumbs: { name: string; url?: string }[] = [{ name: "Inicio", url: "/" }];
+  const crumbs: { name: string; url?: string }[] = [
+    { name: t.breadcrumbHome, url: "/" },
+  ];
   if (city) {
     crumbs.push({
       name: city.name,
@@ -223,24 +226,28 @@ export default async function ListingPage({ params }: Params) {
 
   const amenities = normalizeAmenities(listing.amenities);
   const publishedAgo = listing.publishedAt
-    ? formatPublishedAgo(listing.publishedAt)
+    ? formatPublishedAgo(listing.publishedAt, t)
     : null;
 
   // "Detalles de la propiedad" rows — only what we actually know.
   const details: { icon: string; label: string; value: string }[] = [];
-  if (barrio) details.push({ icon: "📍", label: "Barrio", value: barrio.name });
-  if (city) details.push({ icon: "🏙", label: "Ciudad", value: city.name });
-  details.push({ icon: TYPE_ICON[listing.propertyType], label: "Tipo", value: typeLabel });
+  if (barrio) details.push({ icon: "📍", label: t.detailBarrio, value: barrio.name });
+  if (city) details.push({ icon: "🏙", label: t.detailCity, value: city.name });
+  details.push({ icon: TYPE_ICON[listing.propertyType], label: t.detailType, value: typeLabel });
   if (listing.propertyState)
-    details.push({ icon: "🔨", label: "Estado", value: STATE_LABELS[listing.propertyState] ?? listing.propertyState });
+    details.push({
+      icon: "🔨",
+      label: t.detailState,
+      value: t.stateLabel[listing.propertyState] ?? listing.propertyState,
+    });
   if (listing.areaM2)
-    details.push({ icon: "📐", label: "Superficie", value: `${Math.round(Number(listing.areaM2))} m²` });
+    details.push({ icon: "📐", label: t.detailArea, value: t.factArea(Math.round(Number(listing.areaM2))) });
   if (listing.landM2)
-    details.push({ icon: "🌳", label: "Terreno", value: `${Math.round(Number(listing.landM2))} m²` });
+    details.push({ icon: "🌳", label: t.detailLand, value: t.factArea(Math.round(Number(listing.landM2))) });
   if (listing.parking != null)
-    details.push({ icon: "🚗", label: "Cocheras", value: String(listing.parking) });
+    details.push({ icon: "🚗", label: t.detailParking, value: String(listing.parking) });
 
-  const sellerName = agency?.name ?? agent?.name ?? `Publicado en ${brand}`;
+  const sellerName = agency?.name ?? agent?.name ?? t.sellerFallback(brand);
   const sellerInitials = sellerName
     .split(/\s+/)
     .slice(0, 2)
@@ -265,14 +272,14 @@ export default async function ListingPage({ params }: Params) {
           // real photo stores no img and the card renders the fallback.
           img: imageThumbUrl(realImages[0]?.r2Key ?? null),
           specs: [
-            listing.bedrooms != null ? `${listing.bedrooms} dorm` : null,
-            listing.bathrooms != null ? `${listing.bathrooms} baño${listing.bathrooms === 1 ? "" : "s"}` : null,
-            area ? `${Math.round(Number(area))} m²` : null,
+            listing.bedrooms != null ? t.factBedrooms(listing.bedrooms) : null,
+            listing.bathrooms != null ? t.factBathrooms(listing.bathrooms) : null,
+            area ? t.factArea(Math.round(Number(area))) : null,
           ].filter((s): s is string => s !== null),
         }}
       />
 
-      <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
+      <nav className="breadcrumb-nav" aria-label={t.breadcrumbLabel}>
         {crumbs.map((c, i) => (
           <span key={`${c.name}-${i}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {i > 0 && <span aria-hidden>›</span>}
@@ -297,7 +304,7 @@ export default async function ListingPage({ params }: Params) {
           <span className="detail-gallery__empty-icon" aria-hidden>
             {TYPE_ICON[listing.propertyType]}
           </span>
-          <span className="detail-gallery__empty-label">Fotos próximamente</span>
+          <span className="detail-gallery__empty-label">{t.galleryEmpty}</span>
         </div>
       ) : (
         <div
@@ -326,12 +333,12 @@ export default async function ListingPage({ params }: Params) {
                     <img
                       className="media-cover-img"
                       src={imageUrl(im.r2Key) ?? ""}
-                      alt={`${listing.title} — foto ${i + 2}`}
+                      alt={t.galleryThumbAlt(listing.title, i + 2)}
                       loading="lazy"
                       decoding="async"
                     />
                     {isLast && extraCount > 0 && (
-                      <div className="detail-gallery__more">+{extraCount} fotos</div>
+                      <div className="detail-gallery__more">{t.galleryMore(extraCount)}</div>
                     )}
                   </div>
                 );
@@ -349,18 +356,18 @@ export default async function ListingPage({ params }: Params) {
               <span aria-hidden>{TYPE_ICON[listing.propertyType]}</span> {typeLabel.replace(/s$/, "")}
             </li>
             {listing.bedrooms != null && (
-              <li className="listing-facts__item">🛏 {listing.bedrooms} dorm</li>
+              <li className="listing-facts__item">🛏 {t.factBedrooms(listing.bedrooms)}</li>
             )}
             {listing.bathrooms != null && (
               <li className="listing-facts__item">
-                🚿 {listing.bathrooms} {listing.bathrooms === 1 ? "baño" : "baños"}
+                🚿 {t.factBathrooms(listing.bathrooms)}
               </li>
             )}
             {listing.parking != null && (
-              <li className="listing-facts__item">🚗 {listing.parking} cocheras</li>
+              <li className="listing-facts__item">🚗 {t.factParking(listing.parking)}</li>
             )}
             {area && (
-              <li className="listing-facts__item">📐 {Math.round(Number(area))} m²</li>
+              <li className="listing-facts__item">📐 {t.factArea(Math.round(Number(area)))}</li>
             )}
             {publishedAgo && (
               <li className="listing-facts__item listing-facts__item--muted">
@@ -372,9 +379,9 @@ export default async function ListingPage({ params }: Params) {
           <div className="listing-price">
             {listing.operation !== "venta" ? (
               <>
-                <span className="listing-price__label">Alquiler</span>{" "}
+                <span className="listing-price__label">{t.priceRentLabel}</span>{" "}
                 <span className="listing-price__amount">{formatPrice(listing)}</span>
-                <span className="listing-price__period">/mes</span>
+                <span className="listing-price__period">{t.priceRentPeriod}</span>
               </>
             ) : (
               <span className="listing-price__amount">{formatPrice(listing)}</span>
@@ -390,26 +397,26 @@ export default async function ListingPage({ params }: Params) {
           {cuota && financingProgram && (
             <div className="financing-box">
               <div className="financing-box__head">
-                💳 Con {financingProgram.name}
-                {financingProgram.code === "che_roga_pora" && " (programa estatal)"}
+                {t.financingHead(financingProgram.name)}
+                {financingProgram.code === "che_roga_pora" &&
+                  t.financingStateProgram}
               </div>
               <div className="financing-box__grid">
                 <div>
-                  <div className="financing-box__label">Cuota estimada</div>
+                  <div className="financing-box__label">{t.financingCuotaLabel}</div>
                   <div className="financing-box__value">{cuota}</div>
                 </div>
                 <div>
-                  <div className="financing-box__label">Condiciones</div>
+                  <div className="financing-box__label">{t.financingTermsLabel}</div>
                   <div className="financing-box__value financing-box__value--muted">
-                    Tasa {Number(financingProgram.annualRate).toLocaleString("es-PY")}% ·{" "}
-                    {Math.round(financingProgram.maxTermMonths / 12)} años
+                    {t.financingTerms(
+                      Number(financingProgram.annualRate).toLocaleString(numberLocale),
+                      Math.round(financingProgram.maxTermMonths / 12),
+                    )}
                   </div>
                 </div>
               </div>
-              <div className="financing-box__foot">
-                Estimación referencial para esta propiedad — la aprobación depende
-                del banco y del programa.
-              </div>
+              <div className="financing-box__foot">{t.financingFoot}</div>
             </div>
           )}
           {cuota && !financingProgram && (
@@ -418,7 +425,7 @@ export default async function ListingPage({ params }: Params) {
 
           {details.length > 0 && (
             <section className="listing-section">
-              <h2 className="listing-section__title">☰ Detalles de la propiedad</h2>
+              <h2 className="listing-section__title">{t.detailsTitle}</h2>
               <dl className="listing-details-grid">
                 {details.map((d) => (
                   <div className="listing-details-grid__row" key={d.label}>
@@ -434,7 +441,7 @@ export default async function ListingPage({ params }: Params) {
 
           {amenities.length > 0 && (
             <section className="listing-section">
-              <h2 className="listing-section__title">✨ Comodidades de la propiedad</h2>
+              <h2 className="listing-section__title">{t.amenitiesTitle}</h2>
               <ul className="listing-amenities">
                 {amenities.map((a) => (
                   <li className="listing-amenities__item" key={a}>
@@ -448,14 +455,14 @@ export default async function ListingPage({ params }: Params) {
 
           {listing.descriptionEs && (
             <section className="listing-section">
-              <h2 className="listing-section__title">📄 Descripción</h2>
+              <h2 className="listing-section__title">{t.descriptionTitle}</h2>
               <p className="listing-description">{listing.descriptionEs}</p>
             </section>
           )}
 
           {approxLocation && (
             <section className="listing-section">
-              <h2 className="listing-section__title">📍 Ubicación aproximada</h2>
+              <h2 className="listing-section__title">{t.locationTitle}</h2>
               <p className="listing-location__caption">{approxLocation.label}</p>
               <ListingMapLazy lat={approxLocation.lat} lng={approxLocation.lng} />
             </section>
@@ -481,11 +488,11 @@ export default async function ListingPage({ params }: Params) {
                   sellerName
                 )}
                 {(agency?.isVerified || agent?.isVerified) && (
-                  <span className="seller-card__verified" title="Verificado">✓</span>
+                  <span className="seller-card__verified" title={t.sellerVerified}>✓</span>
                 )}
               </div>
               <div className="seller-card__kind">
-                {agency ? "Inmobiliaria" : agent ? "Agente" : brand}
+                {agency ? t.sellerKindAgency : agent ? t.sellerKindAgent : brand}
               </div>
             </div>
           </div>
@@ -502,10 +509,8 @@ export default async function ListingPage({ params }: Params) {
       {/* Full-width contact panel, mirrors the sticky card for visitors
           who scrolled past it without noticing. */}
       <section className="contact-panel" id="contacto">
-        <h2 className="contact-panel__title">¿Interesado en esta propiedad?</h2>
-        <p className="contact-panel__subtitle">
-          Contactanos hoy para más información o para agendar una visita.
-        </p>
+        <h2 className="contact-panel__title">{t.contactTitle}</h2>
+        <p className="contact-panel__subtitle">{t.contactSubtitle}</p>
         <ContactForm
           listingPublicId={listing.publicId}
           contactWhatsapp={contactWhatsapp}
@@ -529,7 +534,7 @@ export default async function ListingPage({ params }: Params) {
 
       {similar.length > 0 && (
         <section className="similar-listings">
-          <h2 className="similar-listings__title">Propiedades similares</h2>
+          <h2 className="similar-listings__title">{t.similarTitle}</h2>
           <div className="similar-listings__grid">
             {similar.map((card) => (
               <ListingCard key={card.id} card={card} />
@@ -541,11 +546,11 @@ export default async function ListingPage({ params }: Params) {
       {fromAgency.length > 0 && (
         <section className="similar-listings">
           <h2 className="similar-listings__title">
-            Más de{" "}
+            {t.fromAgencyTitleLead}{" "}
             {agency ? (
               <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
             ) : (
-              "esta inmobiliaria"
+              t.fromAgencyFallback
             )}
           </h2>
           <div className="similar-listings__grid">
@@ -569,14 +574,14 @@ export default async function ListingPage({ params }: Params) {
                 type: listing.propertyType,
               })}
             >
-              📍 Más propiedades en {barrio.name}
+              {t.moreInBarrio(barrio.name)}
             </Link>
           )}
           <Link
             className="listing-morelinks__chip"
             href={categoryUrl({ operation: listing.operation, citySlug: city.slug })}
           >
-            🏙 Todas las propiedades en {city.name}
+            {t.moreInCity(city.name)}
           </Link>
         </div>
       )}
@@ -588,7 +593,7 @@ export default async function ListingPage({ params }: Params) {
         <div className="listing-cta-bar__price">
           <span className="listing-cta-bar__amount">
             {formatPrice(listing)}
-            {listing.operation !== "venta" && "/mes"}
+            {listing.operation !== "venta" && t.priceRentPeriod}
           </span>
           {cuota && <span className="listing-cta-bar__cuota">💳 {cuota}</span>}
         </div>
@@ -599,13 +604,13 @@ export default async function ListingPage({ params }: Params) {
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Contactar por WhatsApp"
+              aria-label={t.ctaBarWhatsapp}
             >
               💬
             </a>
           )}
           <a className="listing-cta-bar__btn listing-cta-bar__btn--primary" href="#contacto">
-            Consultar
+            {t.ctaBarConsult}
           </a>
         </div>
       </div>
@@ -614,14 +619,17 @@ export default async function ListingPage({ params }: Params) {
 }
 
 /** "Publicado hace N días/semanas/meses" — coarse freshness, es-PY voseo-neutral. */
-function formatPublishedAgo(publishedAt: Date | string): string | null {
+function formatPublishedAgo(
+  publishedAt: Date | string,
+  t: Dictionary["listing"],
+): string | null {
   const ts = new Date(publishedAt).getTime();
   if (!Number.isFinite(ts)) return null;
   const days = Math.floor((Date.now() - ts) / 86_400_000);
   if (days < 0) return null;
-  if (days === 0) return "Publicado hoy";
-  if (days === 1) return "Publicado ayer";
-  if (days < 14) return `Publicado hace ${days} días`;
-  if (days < 60) return `Publicado hace ${Math.floor(days / 7)} semanas`;
-  return `Publicado hace ${Math.floor(days / 30)} meses`;
+  if (days === 0) return t.publishedToday;
+  if (days === 1) return t.publishedYesterday;
+  if (days < 14) return t.publishedDaysAgo(days);
+  if (days < 60) return t.publishedWeeksAgo(Math.floor(days / 7));
+  return t.publishedMonthsAgo(Math.floor(days / 30));
 }

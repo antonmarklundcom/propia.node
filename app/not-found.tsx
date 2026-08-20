@@ -2,6 +2,7 @@ import Link from "next/link";
 import { tokens } from "@/design/tokens";
 import { listCities } from "@/lib/queries";
 import { SearchBar } from "@/components/SearchBar";
+import { currentLocale } from "@/i18n/server";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 
 // Renders per-request rather than at build time — it queries the DB for the
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic";
  * who just searched should get somewhere to go next, not a dead end.
  */
 export default async function NotFound() {
-  const cities = await listCities();
+  const [cities, locale] = await Promise.all([listCities(), currentLocale()]);
 
   return (
     <main
@@ -38,7 +39,7 @@ export default async function NotFound() {
       </p>
 
       <div style={{ textAlign: "left" }}>
-        <SearchBar cities={cities} />
+        <SearchBar cities={cities} locale={locale} />
       </div>
 
       <p

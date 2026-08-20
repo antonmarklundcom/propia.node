@@ -164,6 +164,41 @@ default, `--dry` first). It records itself as a revertible import job.
    screen that does not exist yet. Flipping `active` back to `true` site-wide
    is NOT the intended path.
 
+## i18n — read this before touching any visitor-facing string
+
+The site is **Spanish-only** and stays that way until the Spanish site is
+finished (both live hosts are `locale: "es"`). What exists today is the
+plumbing, not a second language: there is **no `en.ts`** — that is Batch 3
+layer 2 in PLAN.md.
+
+- **Strings live in `src/i18n/es.ts`.** Buyer-facing copy — home, the operation
+  hubs, the category grid, `SearchBar`, `CategoryFilterBar`, `ListingCard` and
+  the `/propiedad` detail page — was inline JSX until 2026-08-20 and is now in
+  the `esHome` / `esHub` / `esCategory` / `esSearchBar` / `esFilters` /
+  `esCard` / `esListing` namespaces. **Do not add a new visitor-facing literal
+  to a page or component**; add it to the namespace and read it back.
+- **Reach them through the dictionary, not by importing the namespace.**
+  Two ways in, and picking the wrong one is the mistake to avoid — the same
+  split as `brand.ts` / `brand-server.ts`, for the same reason:
+  - `dict()` from **`@/i18n/server`** — async, request-scoped, reads the
+    `x-locale` header the middleware sets. **Correct on every public page**,
+    in `generateMetadata` and in the component body alike.
+  - `getDictionary(locale)` from **`@/i18n`** — pure. For **client components**
+    (which take `locale` as a prop — `SearchBar` is the only buyer-facing one)
+    and for callers that already hold a locale.
+- **`src/i18n/index.ts` must never import `next/headers`**, directly or
+  transitively. `SearchBar` and five other client components consume it. The
+  request-scoped half is `server.ts`, which is `server-only`.
+- `Dictionary` is derived from the Spanish dictionary (`typeof esDictionary`),
+  so when `en.ts` lands a missing key is a type error, not a blank string on a
+  live page. Until then `en` resolves to the Spanish dictionary.
+- **Numbers are not copy.** `toLocaleString` takes a number locale derived from
+  the request (`es-PY` / `en-US`), not the dictionary — the thousands separator
+  differs even where the words don't.
+- Copy that names the brand stays brand-parameterised: `faqSubtitle(brand)`,
+  `discoverTitle(brand)`, `sellerFallback(brand)` and friends take it as an
+  argument rather than baking one host's name in.
+
 ## CI — local, never GitHub Actions
 
 Deploys run on Hostinger's build servers; GitHub's whole job is to hold the

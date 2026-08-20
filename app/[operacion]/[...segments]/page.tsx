@@ -3,7 +3,9 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { tokens } from "@/design/tokens";
 import Link from "next/link";
-import { es, esPrecios } from "@/i18n/es";
+import { esPrecios } from "@/i18n/es";
+import { currentLocale, dict } from "@/i18n/server";
+import type { Dictionary } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
 import {
   resolveCity,
@@ -38,22 +40,6 @@ import type { Operation, PropertyType } from "@/lib/import/types";
 
 // Already rendered per request (searchParams drive the filter bar); the Host
 // header now feeds the canonical URL too — see src/lib/origin.ts.
-
-const OP_LABEL: Record<Operation, string> = {
-  venta: "venta",
-  alquiler: "alquiler",
-  alquiler_temporal: "alquiler temporal",
-};
-const TYPE_LABEL: Record<PropertyType, string> = {
-  casa: "Casas",
-  departamento: "Departamentos",
-  terreno: "Terrenos",
-  duplex: "Dúplex",
-  comercial: "Locales comerciales",
-  oficina: "Oficinas",
-  deposito: "Depósitos",
-  quinta: "Quintas",
-};
 
 type Params = {
   params: Promise<{ operacion: string; segments: string[] }>;
@@ -119,6 +105,11 @@ const resolve = cache(async function resolve(
   operacion: string,
   segments: string[],
 ): Promise<Resolved | null> {
+  // The title is the one piece of resolution that is copy rather than
+  // structure, so this reaches for the dictionary. cache() keys on the two
+  // string arguments, and the locale cannot change within a request, so the
+  // lookup does not need to join the key.
+  const t = (await dict()).category;
   const operation = parseOperation(operacion);
   if (!operation) return null;
   const shape = parseCategorySegments(segments);
@@ -153,8 +144,8 @@ const resolve = cache(async function resolve(
   }
 
   const where = barrio ? `${barrio.name}, ${city.name}` : city.name;
-  const typeLabel = type ? TYPE_LABEL[type] : "Propiedades";
-  const title = `${typeLabel} en ${OP_LABEL[operation]} en ${where}`;
+  const typeLabel = type ? t.typeLabel[type] : t.typeLabelAny;
+  const title = t.title(typeLabel, t.operationLabel[operation], where);
 
   return {
     operation,
@@ -179,9 +170,10 @@ export async function generateMetadata({
   searchParams,
 }: Params): Promise<Metadata> {
   const brand = await brandName();
+  const t = (await dict()).category;
   const { operacion, segments } = await params;
   const r = await resolve(operacion, segments);
-  if (!r) return { title: `No encontrado` };
+  if (!r) return { title: t.metaNotFound };
 
   const page = parsePage((await searchParams).page);
   const count = await countFor(r.operation, r.locationIds, r.type);
@@ -203,8 +195,8 @@ export async function generateMetadata({
       : `${await siteOrigin()}${r.canonicalPath}`;
 
   return {
-    title: page > 1 ? `${r.title} — página ${page}` : `${r.title}`,
-    description: `${count} ${r.title.toLowerCase()} en ${brand}. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
+    title: page > 1 ? t.titlePaged(r.title, page) : r.title,
+    description: t.metaDescription(count, r.title, brand),
     alternates: { canonical },
     robots:
       ix.state === "index" && page === 1
@@ -214,6 +206,8 @@ export async function generateMetadata({
 }
 
 export default async function CategoryPage({ params, searchParams }: Params) {
+  const [d, locale] = await Promise.all([dict(), currentLocale()]);
+  const t: Dictionary["category"] = d.category;
   const { operacion, segments } = await params;
   const sp = await searchParams;
   const r = await resolve(operacion, segments);
@@ -294,7 +288,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   ]);
 
   const crumbs = [
-    { name: "Inicio", url: "/" },
+    { name: t.breadcrumbHome, url: "/" },
     { name: r.city.name, url: categoryUrl({ operation: r.operation, citySlug: r.city.slug }) },
     ...(r.barrio ? [{ name: r.barrio.name, url: r.canonicalPath }] : []),
   ];
@@ -329,6 +323,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         defaultOperation={r.operation}
         defaultCitySlug={r.city.slug}
         defaultType={r.type ?? ""}
+        locale={locale}
       />
 
       <CategoryFilterBar
@@ -371,16 +366,16 @@ export default async function CategoryPage({ params, searchParams }: Params) {
 
       <h1 style={{ fontSize: 24 }}>{r.title}</h1>
       <p style={{ color: tokens.color.inkSecondary, marginTop: 4 }}>
-        {count > 0
-          ? `${count} ${count === 1 ? "propiedad" : "propiedades"} disponibles.`
-          : es.emptyState}
+        {count > 0 ? t.count(count) : d.common.emptyState}
       </p>
 
       {tipoVacio && (
         <p className="category-redirect-notice">
-          No hay {TYPE_LABEL[tipoVacio].toLowerCase()} en {OP_LABEL[r.operation]}{" "}
-          en {r.city.name} por el momento. Te mostramos todas las propiedades
-          en {r.city.name}.
+          {t.emptyTypeNotice(
+            t.typeLabel[tipoVacio].toLowerCase(),
+            t.operationLabel[r.operation],
+            r.city.name,
+          )}
         </p>
       )}
 
@@ -390,18 +385,18 @@ export default async function CategoryPage({ params, searchParams }: Params) {
       {!mapView && controls}
 
       {mapCentre && (
-        <nav className="view-switch" aria-label="Vista">
+        <nav className="view-switch" aria-label={t.viewSwitchLabel}>
           <a
             className={`view-switch__option${!mapView ? " view-switch__option--active" : ""}`}
             href={viewHref("lista")}
           >
-            Lista
+            {t.viewList}
           </a>
           <a
             className={`view-switch__option${mapView ? " view-switch__option--active" : ""}`}
             href={viewHref("mapa")}
           >
-            Mapa
+            {t.viewMap}
           </a>
         </nav>
       )}
@@ -415,10 +410,10 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         />
       ) : filteredCount === 0 ? (
         <div className="filter-empty">
-          No hay propiedades que coincidan con estos filtros.
+          {t.filterEmpty}
           <br />
           <a className="filter-empty__clear" href={r.canonicalPath}>
-            Quitar filtros
+            {t.filterEmptyClear}
           </a>
         </div>
       ) : (
@@ -441,18 +436,18 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           with no internal link pointing at them. Plain <a>: pages 2+ are
           noindex,follow, so these links pass discovery, not index weight. */}
       {!mapView && filteredCount > PAGE_SIZE && (
-        <nav className="pagination" aria-label="Paginación">
+        <nav className="pagination" aria-label={t.paginationLabel}>
           {page > 1 && (
             <a className="pagination__link" href={pageHref(page - 1)}>
-              ← Anterior
+              {t.paginationPrev}
             </a>
           )}
           <span className="pagination__status">
-            Página {page} de {totalPages}
+            {t.paginationStatus(page, totalPages)}
           </span>
           {page < totalPages && (
             <a className="pagination__link" href={pageHref(page + 1)}>
-              Siguiente →
+              {t.paginationNext}
             </a>
           )}
         </nav>

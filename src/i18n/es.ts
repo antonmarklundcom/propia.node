@@ -590,3 +590,395 @@ export const esAgentProfile = {
 export function agentInquiryPrefillFor(brand: string, agentName: string, url: string): string {
   return `Hola, vi tu perfil en ${brand} y quiero contactarte: ${agentName}\n${url}`;
 }
+
+/* ========================================================================== *
+ * Buyer-facing surfaces (Batch 3, layer 1)
+ *
+ * Everything below was inline JSX until now. It is the half of the site a
+ * visitor actually reads — home, the operation hubs, the category grid, the
+ * search and filter bars, the listing card and the property detail page —
+ * and it was the half `es.ts` did not cover, which is why "add en.ts" was
+ * never a one-file job. Extraction only: every string here is byte-identical
+ * to the literal it replaced.
+ *
+ * Read these through `getDictionary(locale)` (src/i18n/index.ts) rather than
+ * importing them directly, so layer 2 can add `en.ts` without touching a
+ * single call site.
+ * ========================================================================== */
+
+/** Hero search bar — operación / ciudad / tipo / presupuesto. */
+export const esSearchBar = {
+  operationLabel: "Operación",
+  operationBuy: "Comprar",
+  operationRent: "Alquilar",
+  cityLabel: "Ciudad",
+  cityAny: "Todas las ciudades",
+  typeLabel: "Tipo",
+  typeAny: "Todos los tipos",
+  budgetLabel: "Presupuesto",
+  budgetAny: "Sin límite",
+  /** Locale-aware on purpose: the thousands separator is not universal. */
+  budgetUpTo: (amount: number, locale: string) =>
+    `Hasta US$ ${amount.toLocaleString(locale)}`,
+  submit: "Buscar",
+} as const;
+
+/** Category page filter bar — a plain GET form, no client JS. */
+export const esFilters = {
+  priceMinLabel: "Precio mín. (US$)",
+  priceMinPlaceholder: "Sin mínimo",
+  priceMaxLabel: "Precio máx. (US$)",
+  priceMaxPlaceholder: "Sin máximo",
+  bedroomsLabel: "Dormitorios",
+  bedroomsAny: "Cualquiera",
+  sortLabel: "Ordenar por",
+  sortRecent: "Más recientes",
+  sortPriceAsc: "Menor precio",
+  sortPriceDesc: "Mayor precio",
+  submit: "Filtrar",
+  clear: "Quitar filtros",
+} as const;
+
+/** Listing card — the grid tile. */
+export const esCard = {
+  operationBadge: {
+    venta: "Venta",
+    alquiler: "Alquiler",
+    alquiler_temporal: "Alquiler temporal",
+  } as Record<string, string>,
+  featured: "Destacado",
+  noPhoto: "Foto próximamente",
+  bedroomsShort: (n: number) => `${n} dorm.`,
+  bathrooms: (n: number) => `${n} ${n === 1 ? "baño" : "baños"}`,
+  area: (m2: number) => `${m2} m²`,
+} as const;
+
+/** Home page. */
+export const esHome = {
+  metaDescription:
+    "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay, con cuota estimada y financiamiento.",
+  publishWaPrefill: (brand: string) =>
+    `Hola, quiero publicar una propiedad en ${brand}.`,
+
+  heroKicker: "Asunción · Paraguay",
+  heroTitleLead: "Encontrá tu propiedad en ",
+  heroTitleHighlight: "Paraguay",
+  heroSubtitle:
+    "Casas, departamentos y terrenos en venta y alquiler — con cuota estimada y financiamiento.",
+  heroSeeListings: "Ver propiedades",
+  heroSellCta: "Vender mi propiedad",
+  heroStatCount: (total: string) => `${total} propiedades publicadas`,
+  heroStatCountEmpty: "Propiedades en todo Paraguay",
+  heroStatUpdated: "Actualizado diariamente",
+
+  zonesKicker: "Zonas",
+  zonesTitle: "Dónde querés vivir",
+  zonesAll: "Ver todas las zonas →",
+  /**
+   * The one translatable half of a zone card. Name, slug and photograph are
+   * structural and stay in `app/page.tsx`; the strapline is copy, so it lives
+   * here keyed by slug.
+   */
+  zoneCardSub: {
+    asuncion: "Capital — la mayor oferta",
+    "san-bernardino": "Lago Ypacaraí, casas de fin de semana",
+    luque: "Zona en crecimiento",
+    encarnacion: "Sobre el Paraná, calidad de vida",
+  } as Record<string, string>,
+
+  howTitle: "Cómo funciona",
+  howSubtitle: "Buscar, comparar y contactar. Gratis, sin registro y sin comisión.",
+  howMore: "Ver la guía completa →",
+  howSteps: [
+    {
+      icon: "🔎",
+      title: "Buscá por zona y presupuesto",
+      text: "Filtrá por ciudad, barrio, tipo de propiedad y rango de precio. Mirá los resultados en lista o sobre el mapa.",
+    },
+    {
+      icon: "📊",
+      title: "Compará con el mercado",
+      text: "Cada propiedad en venta muestra su cuota estimada, y publicamos la mediana de precio por m² de cada ciudad.",
+    },
+    {
+      icon: "💬",
+      title: "Contactá directo",
+      text: "Escribile por WhatsApp a quien publicó, desde la misma ficha y sin intermediarios ni costo.",
+    },
+  ],
+
+  sellKicker: "Vender",
+  sellTitle: "Vendé con quien conoce el mercado",
+  sellText:
+    "Publicá tu propiedad gratis y llegá a compradores de todo Paraguay. Te damos un rango de precio estimado con los avisos publicados de tu zona, para que sepas dónde parás antes de decidir.",
+  sellImageAlt: "Interior de una casa en Paraguay",
+  sellValuationCta: "Solicitar valuación",
+  sellPublishCta: "Publicar una propiedad →",
+
+  investKicker: "Invertir",
+  investTitle: "Invertí en Paraguay con datos, no con corazonadas",
+  investText:
+    "Publicamos la mediana de precio por m² de cada ciudad, calculada sobre los avisos del portal, y la cuota estimada de cada propiedad en venta según los programas de financiamiento vigentes.",
+  investImageAlt: "Asunción al atardecer",
+  investPricesCta: "Ver precios por zona",
+  investFinancingCta: "Cómo funciona el financiamiento →",
+
+  projectsTitle: "🏗 Nuevos proyectos en Paraguay",
+  projectsSubtitle:
+    "Obra nueva verificada — departamentos en pozo, en construcción y entrega inmediata.",
+
+  citiesTitle: "Explorá por ciudad",
+
+  rowMore: "Ver todas →",
+  rowRecommended: "Propiedades recomendadas",
+  rowHousesForSale: "Casas en Venta — Asunción y alrededores",
+  rowFlatsForSale: "Departamentos en Venta — Asunción",
+  rowRentals: "Alquileres en Asunción",
+  rowLand: "Terrenos",
+
+  developersTitle: "Desarrolladoras destacadas",
+  developersSubtitle: "Conocé quién construye los proyectos del país.",
+  developerProjectCount: (n: number) => `${n} ${n === 1 ? "proyecto" : "proyectos"}`,
+
+  pricesTitle: "📊 Precios de referencia por ciudad",
+  pricesMore: "Ver todos →",
+  pricesSubtitle:
+    "Medianas de precio por m² calculadas sobre los avisos publicados. Para saber si un aviso está en línea con su zona antes de negociar.",
+  pricesSample: (n: string) => `${n} avisos analizados`,
+
+  values: [
+    {
+      icon: "✅",
+      title: "Contacto directo",
+      text: "Hablás directo con el vendedor o la inmobiliaria, sin intermediarios.",
+    },
+    {
+      icon: "💳",
+      title: "Cuota estimada",
+      text: "Cada propiedad en venta muestra su cuota mensual con financiamiento vigente.",
+    },
+    {
+      icon: "🇵🇾",
+      title: "Hecho para Paraguay",
+      text: "Precios en guaraníes y dólares, barrios reales y WhatsApp primero.",
+    },
+  ],
+
+  discoverTitle: (brand: string) => `Descubre más en ${brand}`,
+  discoverCards: [
+    {
+      icon: "🏡",
+      title: "Publicá tu propiedad gratis",
+      text: "Cargá fotos, precio y ubicación en minutos. Sin comisión, sin costo de publicación.",
+      cta: "Publicar ahora",
+      href: "/publicar",
+    },
+    {
+      icon: "💰",
+      title: es.valuationMagnet,
+      text: "Te damos un rango estimado con los precios publicados en la zona. Gratis y sin registrarte.",
+      cta: "Calcular gratis",
+      href: "/tasacion",
+    },
+    {
+      icon: "📊",
+      title: "Precios del mercado",
+      text: "Mediana de precio por m² en cada ciudad, calculada sobre los avisos publicados del portal.",
+      cta: "Ver precios",
+      href: "/precios",
+    },
+    {
+      icon: "🏦",
+      title: "Financiamiento y cuotas",
+      text: "Qué programas existen en Paraguay, qué piden y cómo calculamos la cuota estimada de cada aviso.",
+      cta: "Leer la guía",
+      href: "/financiamiento",
+    },
+  ],
+
+  proKicker: "Para inmobiliarias y agentes",
+  proTitle: "¿Vendés propiedades todos los días?",
+  proText:
+    "Publicá tu cartera completa, mostrá tu inmobiliaria con perfil verificado y recibí las consultas directo en tu WhatsApp. Sin costo por aviso, sin costo por lead y sin comisión sobre tus operaciones.",
+  proBullets: [
+    "✓ Avisos ilimitados en el plan gratuito",
+    "✓ Perfil público de la inmobiliaria y de cada agente",
+    "✓ Importación de cartera desde planilla o enlace",
+    "✓ Panel con las consultas de cada propiedad",
+  ],
+  proMore: "Conocer más",
+  proPlans: "Ver planes →",
+  proAgencyCardTitle: "Directorio de inmobiliarias",
+  proAgencyCardText: "Mirá quiénes ya publican su cartera en el portal.",
+  proProjectsCardTitle: "Desarrolladoras y proyectos",
+  proProjectsCardText: "Obra nueva, en pozo y entrega inmediata.",
+
+  ctaTitle: "Publicá tu propiedad gratis",
+  ctaText:
+    "Llegá a miles de compradores e inquilinos en todo Paraguay. Simple, rápido y sin costo.",
+  ctaButton: "Publicar ahora",
+  ctaWhatsapp: "o escribinos por WhatsApp",
+
+  newsletterTitle: "Oportunidades inmobiliarias, una vez por semana",
+  newsletterText:
+    "Propiedades curadas, señales del mercado y las últimas del sector — en tu correo. Sin spam, podés cancelar cuando quieras.",
+
+  faqTitle: "Preguntas frecuentes",
+  faqSubtitle: (brand: string) => `Todo lo que necesitás saber sobre ${brand}.`,
+  faqMore: "Ver todas las preguntas →",
+} as const;
+
+/** National operation hubs: /venta, /alquiler, /alquiler-temporal. */
+export const esHub = {
+  copy: {
+    venta: {
+      h1: "Propiedades en venta en Paraguay",
+      lead: "Casas, departamentos, terrenos y locales en venta en todo el país. Cada aviso muestra su cuota mensual estimada, para saber de entrada si el número te cierra.",
+      label: "Venta",
+      cityLabel: "Comprar en",
+    },
+    alquiler: {
+      h1: "Propiedades en alquiler en Paraguay",
+      lead: "Departamentos, casas, oficinas y locales en alquiler en todo el país. Contacto directo con el propietario o la inmobiliaria, sin comisión del portal.",
+      label: "Alquiler",
+      cityLabel: "Alquilar en",
+    },
+    alquiler_temporal: {
+      h1: "Alquiler temporal en Paraguay",
+      lead: "Estadías cortas y alquileres por temporada en todo el país.",
+      label: "Alquiler temporal",
+      cityLabel: "Alquilar por temporada en",
+    },
+  } as Record<string, { h1: string; lead: string; label: string; cityLabel: string }>,
+  breadcrumbHome: "Inicio",
+  count: (total: string) => `${total} propiedades publicadas`,
+  byTypeTitle: "Por tipo de propiedad",
+  byTypeSubtitle: (opLabel: string) =>
+    `Elegí qué estás buscando. Los totales son avisos publicados hoy en ${opLabel}.`,
+  byCityTitle: "Por ciudad",
+  byCitySubtitle:
+    "Todas las ciudades con inventario activo, ordenadas por cantidad de avisos.",
+  latestTitle: "Últimas publicaciones",
+  latestNoteLead: "¿Buscás en una zona puntual? Entrá a",
+  latestNoteTail: "y filtrá por barrio, precio y dormitorios.",
+  emptyBody: (opLabel: string) =>
+    `Todavía no hay propiedades publicadas en ${opLabel}.`,
+  emptyCta: "Publicar la primera",
+  ctaTitleSale: "¿Vendés una propiedad?",
+  ctaTitleRent: "¿Tenés una propiedad para alquilar?",
+  ctaText: "Publicala gratis y llegá a quienes están buscando en tu zona.",
+  ctaPrimary: "Publicar gratis",
+  ctaSecondary: "¿Cuánto vale?",
+} as const;
+
+/** Category grid: /[operacion]/[...segments]. */
+export const esCategory = {
+  operationLabel: {
+    venta: "venta",
+    alquiler: "alquiler",
+    alquiler_temporal: "alquiler temporal",
+  } as Record<string, string>,
+  typeLabel: {
+    casa: "Casas",
+    departamento: "Departamentos",
+    terreno: "Terrenos",
+    duplex: "Dúplex",
+    comercial: "Locales comerciales",
+    oficina: "Oficinas",
+    deposito: "Depósitos",
+    quinta: "Quintas",
+  } as Record<string, string>,
+  typeLabelAny: "Propiedades",
+  /** "Casas en venta en Villa Morra, Asunción" */
+  title: (typeLabel: string, opLabel: string, where: string) =>
+    `${typeLabel} en ${opLabel} en ${where}`,
+  titlePaged: (title: string, page: number) => `${title} — página ${page}`,
+  metaNotFound: "No encontrado",
+  metaDescription: (count: number, title: string, brand: string) =>
+    `${count} ${title.toLowerCase()} en ${brand}. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
+  breadcrumbHome: "Inicio",
+  count: (n: number) => `${n} ${n === 1 ? "propiedad" : "propiedades"} disponibles.`,
+  emptyTypeNotice: (typeLabel: string, opLabel: string, city: string) =>
+    `No hay ${typeLabel} en ${opLabel} en ${city} por el momento. Te mostramos todas las propiedades en ${city}.`,
+  viewSwitchLabel: "Vista",
+  viewList: "Lista",
+  viewMap: "Mapa",
+  filterEmpty: "No hay propiedades que coincidan con estos filtros.",
+  filterEmptyClear: "Quitar filtros",
+  paginationLabel: "Paginación",
+  paginationPrev: "← Anterior",
+  paginationNext: "Siguiente →",
+  paginationStatus: (page: number, total: number) => `Página ${page} de ${total}`,
+} as const;
+
+/** Property detail: /propiedad/[slug]. */
+export const esListing = {
+  metaNotFound: "Propiedad no encontrada",
+  metaTitle: (title: string, price: string) => `${title} — ${price}`,
+  ogTitle: (title: string, brand: string) => `${title} — ${brand}`,
+  stateLabel: {
+    entrega_inmediata: "Entrega inmediata",
+    en_construccion: "En construcción",
+    en_pozo: "En pozo",
+    usado: "Usado",
+  } as Record<string, string>,
+  breadcrumbHome: "Inicio",
+  breadcrumbLabel: "Ruta de navegación",
+
+  galleryEmpty: "Fotos próximamente",
+  galleryThumbAlt: (title: string, n: number) => `${title} — foto ${n}`,
+  galleryMore: (n: number) => `+${n} fotos`,
+
+  factBedrooms: (n: number) => `${n} dorm`,
+  factBathrooms: (n: number) => `${n} ${n === 1 ? "baño" : "baños"}`,
+  factParking: (n: number) => `${n} cocheras`,
+  factArea: (m2: number) => `${m2} m²`,
+
+  priceRentLabel: "Alquiler",
+  priceRentPeriod: "/mes",
+
+  financingHead: (program: string) => `💳 Con ${program}`,
+  financingStateProgram: " (programa estatal)",
+  financingCuotaLabel: "Cuota estimada",
+  financingTermsLabel: "Condiciones",
+  financingTerms: (rate: string, years: number) => `Tasa ${rate}% · ${years} años`,
+  financingFoot:
+    "Estimación referencial para esta propiedad — la aprobación depende del banco y del programa.",
+
+  detailsTitle: "☰ Detalles de la propiedad",
+  detailBarrio: "Barrio",
+  detailCity: "Ciudad",
+  detailType: "Tipo",
+  detailState: "Estado",
+  detailArea: "Superficie",
+  detailLand: "Terreno",
+  detailParking: "Cocheras",
+
+  amenitiesTitle: "✨ Comodidades de la propiedad",
+  descriptionTitle: "📄 Descripción",
+  locationTitle: "📍 Ubicación aproximada",
+
+  sellerFallback: (brand: string) => `Publicado en ${brand}`,
+  sellerVerified: "Verificado",
+  sellerKindAgency: "Inmobiliaria",
+  sellerKindAgent: "Agente",
+
+  contactTitle: "¿Interesado en esta propiedad?",
+  contactSubtitle: "Contactanos hoy para más información o para agendar una visita.",
+
+  similarTitle: "Propiedades similares",
+  fromAgencyTitleLead: "Más de",
+  fromAgencyFallback: "esta inmobiliaria",
+
+  moreInBarrio: (barrio: string) => `📍 Más propiedades en ${barrio}`,
+  moreInCity: (city: string) => `🏙 Todas las propiedades en ${city}`,
+
+  ctaBarWhatsapp: "Contactar por WhatsApp",
+  ctaBarConsult: "Consultar",
+
+  publishedToday: "Publicado hoy",
+  publishedYesterday: "Publicado ayer",
+  publishedDaysAgo: (n: number) => `Publicado hace ${n} días`,
+  publishedWeeksAgo: (n: number) => `Publicado hace ${n} semanas`,
+  publishedMonthsAgo: (n: number) => `Publicado hace ${n} meses`,
+} as const;

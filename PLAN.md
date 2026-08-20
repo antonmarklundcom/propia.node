@@ -517,6 +517,39 @@ A visitor-facing ES/EN "toggle" is a cross-domain link to the sister host's
 listing (domain = language), cheap once hreflang exists — not a `?lang=`
 switch.
 
+#### Layer 1 landed 2026-08-20 — extraction + `getDictionary`
+
+The buyer-facing surface is out of the JSX and into `src/i18n/es.ts`:
+`esHome`, `esHub`, `esCategory`, `esSearchBar`, `esFilters`, `esCard`,
+`esListing`. Extraction only — every string is byte-identical to the literal
+it replaced, no schema change, no new column, no `en.ts`.
+
+The lookup layer is split the same way `brand.ts` / `brand-server.ts` is, and
+for the same reason (`SearchBar` and five other client components import the
+dictionary, so it must never reach `next/headers`):
+
+- `src/i18n/index.ts` — client-safe. `getDictionary(locale)`, `Locale`,
+  `DEFAULT_LOCALE`, `parseLocale`, and `Dictionary` derived as
+  `typeof esDictionary`.
+- `src/i18n/server.ts` — `server-only`. `currentLocale()` reads the `x-locale`
+  header, `dict()` returns that request's dictionary. **This is the first
+  consumer of `x-locale`**, which the middleware has been setting since the
+  vertical routing layer landed and nothing read.
+
+Three consequences worth knowing before layer 2:
+
+- `Dictionary` being derived rather than hand-written means `en.ts` is a type
+  error until it is complete. A missing key cannot ship as a blank string.
+- `ListingCard` and `CategoryFilterBar` became async server components (they
+  await `dict()`). Neither is rendered from a client component — checked.
+- Number formatting is separate from copy: `toLocaleString` takes a locale
+  derived from the request, because the thousands separator differs even
+  where the words do not. Today both hosts resolve to `es-PY`, so nothing a
+  visitor sees changed.
+
+What layer 2 has to do is now confined to writing `en.ts` and adding it to
+`DICTIONARIES` — no page, component or call site changes again.
+
 ### Product ideas agreed into scope (from audit §4 + this review)
 
 Ordered by leverage at zero users:
@@ -558,8 +591,9 @@ panel scoping.
   (D7, D10) — see the decision-record gap below.
 - **Batch 2 — FSBO loop (sequential, shared files):** F4 contact fallback →
   minimal owner panel (D8) → operator lead notifications (I10).
-- **Batch 3 — i18n (strictly sequential):** string extraction →
-  `getDictionary` → `en.ts` → translation job (MIGRATION for `title_en`).
+- **Batch 3 — i18n (strictly sequential):** ~~string extraction →
+  `getDictionary`~~ (**DONE 2026-08-20**, see below) → `en.ts` → translation job
+  (MIGRATION for `title_en`).
   Flip day itself stays gated on D6's checklist and is NOT part of the batch.
 - **Batch 4 — retention & monetisation (mostly parallel):** favorites +
   saved-search/alert engine (D9, MIGRATION), valuation→publish funnel,
