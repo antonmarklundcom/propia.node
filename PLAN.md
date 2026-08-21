@@ -5,9 +5,9 @@ every session that finishes a step** — mark items done, add new blockers.
 `[C]` = Claude does it (code/session work). `[YOU]` = founder must do it
 (hosting, accounts, real-world data — things code cannot reach).
 
-_Last updated: 2026-08-21 (session: facet layer + en.ts — M4's shared filter
-builder, `VerticalConfig.filters` finally consumed, Batch 3 layer 2, and a
-cooldown on the link importer; see the 2026-08-21 section at the end)._
+_Last updated: 2026-08-21 (second session: hreflang ahead of the flip, the
+vertical table's SEO invariants as a failing check, and /admin's tab row
+grouped — PRs #71–#73; see the two 2026-08-21 sections at the end)._
 
 ---
 
@@ -1132,6 +1132,72 @@ localhost database, and this change does not touch panel scoping.
   precondition is the **translation job** (`title_en` / `description_en` have
   no writer) and the founder's separate-visual-identity design pass, which is
   design work rather than wiring.
+
+## 2026-08-21, second session — hreflang, SEO invariants, /admin tabs
+
+Three merged PRs (#71, #72, #73). No migration, no `schema.ts`, no founder
+decision consumed — the four decisions the previous handoff asked for (D5, D8,
+D9, D10) came back **blank**, so everything gated on them is untouched. Nothing
+a visitor sees changes today.
+
+**1. hreflang, built ahead of the flip (#71).** D6's checklist item 4 was the
+only code item on that list with no implementation, and an unbuilt item on a
+checklist is the one that gets improvised on the day. `src/lib/alternates.ts`
+derives a page's language map from the same `verticals.ts` entries the flip
+edits, so checklist items 2–3 now turn the tags on by themselves. Wired into
+home, the operation hubs, indexable category pages and `/propiedad`.
+
+It emits nothing today **on purpose**: both doors are `locale: "es"` and serve
+the same rows, so there is no translation to declare — and calling two Spanish
+URLs language variants of each other would contradict what
+`listingCanonicalOrigin()` already says about them. Duplicates are a canonical
+problem; hreflang is for translations. Two more rules it encodes, both "never
+annotate a URL we asked Google to ignore": `/propiedad` alternates are gated on
+`hostOwnsListingDetail()` (a feeder is not a language version of anything), and
+a category page emits them only when it is genuinely indexable.
+
+**2. The vertical table's traps are now a failing check (#73).** `npm run
+verify:seo` (pure, in the pre-push hook) refuses a push where two served doors
+would own their `/propiedad` pages in the same language — the one-line edit
+that turns `inmobiliaria.com.py` into a duplicate of the primary — plus
+duplicate vertical keys (`currentVertical()` resolves by first match), host
+keys spelled in a form `resolveVertical()` never looks up, shared brand names,
+and a primary whose row disagrees with `origin.ts`. It also drives
+`alternates.ts` against a **synthetic post-flip table**, so flip-day output is
+proven before the flip. Both halves were confirmed to fail on deliberately
+broken input, not only to pass.
+
+**3. `/admin`'s tab row is grouped (#72).** It had reached eight tabs, past
+what fits one row on a phone, and 3.4 asked for the next addition to group
+rather than append. `PanelTab.group` splits it: the daily work (revisión,
+propiedades, consultas) on the first row, the records behind it under a quieter
+"Administración" row. A second row rather than a disclosure — the panel ships
+no client JS, so a collapsed menu cannot remember its state. Tabs also gained
+`aria-current`. `/agencia` is untouched.
+
+**Two D6 status claims were wrong and are corrected in place** (#73), checked
+in code rather than remembered: per-vertical theme **tokens** exist
+(`src/design/themes.ts`, consumed by `app/layout.tsx`; the empty overrides map
+is deliberate), and the `copy` branch does **not** block the flip — locale
+already selects the foreign-buyer copy, and `copy`'s only distinct consumers
+are the unowned feeder domains. **The flip precondition is now one item: the
+translation job.**
+
+**Honest limit, same as the previous session:** no database was reachable (the
+sandbox blocks Docker Hub), so nothing was exercised against real rows — and
+`/admin`'s new tab row was rendered from its own markup plus the real
+`globals.css` in Chromium (390px and 1200px), not from the running panel, which
+needs a login and a database. `typecheck`, `build`, `verify:import`,
+`verify:facets`, `verify:i18n` and `verify:seo` all pass. `verify:scopes` was
+not run: it needs a localhost database, and none of this touches panel scoping.
+
+**What is left that no decision blocks.** Honestly assessed this session: very
+little. Batch 3 layer 3 (the translation job) needs a migration *and*
+`ANTHROPIC_API_KEY`; barrio guides need the same key *and* a content decision
+(D6's blog note); F38 and F61 need migrations; F1, D5, D8, D9 need answers.
+The unblocked remainder is the founder's separate-visual-identity design pass
+for `inmobiliaria.com.py` — design work, and the founder said he wants to talk
+it through, possibly with a different model, before it starts.
 
 ## Standing rules
 
