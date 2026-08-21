@@ -1069,6 +1069,24 @@ counter deliberately avoids the same trick; see `recordListingView`.
 `npm run db:migrate` against prod when convenient; it is a DROP INDEX plus two
 CREATE INDEX on a small table, so it completes immediately.
 
+**`drizzle/0009` (PR #69, the D8 `owner` lead lane) must be applied to
+production alongside that merge.** It is one additive `ALTER TABLE` appending
+`owner` to the `leads.routed_to` enum — no data is touched, already-applied
+migrations are skipped, safe to run twice. Unlike 0002 this one is **not**
+optional-when-convenient: from the moment #69's code is live, a buyer inquiry
+on an FSBO listing writes `routed_to = 'owner'`, and until the enum knows that
+value the insert fails and the lead is lost. Runbook (founder's machine —
+Hostinger deploys code only, it never runs migrations):
+
+```powershell
+# PowerShell, from a checkout of current main
+$env:DATABASE_URL = "mysql://<prod user>:<prod password>@<prod host>:3306/<prod db>"
+npm run db:migrate
+```
+
+Run it just before or immediately after merging #69. `db:migrate` applies
+every pending migration in order, so this run also clears 0002 above.
+
 ## 2026-08-21 session — facet layer, vertical filters, en.ts
 
 Three things landed, all unblocked by any founder decision, none touching
@@ -1198,6 +1216,51 @@ little. Batch 3 layer 3 (the translation job) needs a migration *and*
 The unblocked remainder is the founder's separate-visual-identity design pass
 for `inmobiliaria.com.py` — design work, and the founder said he wants to talk
 it through, possibly with a different model, before it starts.
+
+## D21 — Site-mode switch: marketplace vs. single-agency (PLAN ONLY, do not build yet)
+
+Decided in principle 2026-08-21: when this repo becomes a template for other
+real-estate listing sites, the "one agency's own site, only my team publishes"
+variant is a **config switch in this codebase, never a second repo**. Two
+reasons, both structural:
+
+1. The repo is already "one engine, multiple doors" — `verticals.ts` decides
+   brand, locale, filters and indexability per host. A `siteMode` is the same
+   idea one level up, and the engine (listings, categories, SEO, facets,
+   leads, panels, import, cuotas) is identical in both modes. The difference
+   is only what gets *switched off*.
+2. A forked template is a bug-fix debt that compounds: every SEO fix, facet,
+   and security patch has to land twice, and the copies drift within weeks.
+
+**Hard gate: nothing under D21 starts until the Spanish marketplace is
+finished** (founder call, 2026-08-21) — the switch must land on a stable
+engine, not a moving one. Until then this section is a design record, not a
+work item.
+
+Shape when it does start — keep the switch **coarse, at few choke points**,
+never `if (mode …)` scattered through components:
+
+- `siteMode: "marketplace" | "agency"` declared per vertical in
+  `verticals.ts`, defaulting to `"marketplace"` so every existing host is
+  untouched. `verify:seo` learns the new field so a misspelled mode fails the
+  pre-push hook rather than silently serving the wrong product.
+- **PR 1 — the flag and the doors.** Declare the mode; gate the public entry
+  points on it: `/registro` (invite-only in agency mode — the invite flow
+  already exists), `/publicar` (staff only), and the FSBO loop (D8 surfaces
+  hidden). Route guards at the handful of `require*Context()` choke points in
+  `src/lib/auth/guards.ts`, not per page.
+- **PR 2 — the directory surfaces.** In agency mode there is exactly one
+  agency, so `/inmobiliaria` + `/inmobiliarias`, `/agente` directory pages and
+  their sitemap/nav entries switch to a single "nuestro equipo" surface (or
+  off). Same `hostOwnsListingDetail()`-style rule as today: a host's sitemap
+  only lists what that host actually serves.
+- **PR 3 (only if a real customer needs it) — cosmetics.** Home copy, footer,
+  JSON-LD `Organization` vs `RealEstateAgent`, hiding marketplace-only trust
+  UI. Nothing here blocks PRs 1–2.
+
+Explicitly out of scope for the switch: multi-tenancy changes (the schema
+already scopes by agency), payments, and any new panel — agency mode reuses
+`/agencia` exactly as is.
 
 ## Standing rules
 
