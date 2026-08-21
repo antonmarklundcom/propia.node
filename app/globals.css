@@ -3108,6 +3108,36 @@ body {
   box-shadow: inset 0 -2px 0 var(--color-primary);
 }
 
+/* The second tab row (/admin's setup screens — PanelBar's `group`). Quieter
+   than the first by type size and colour, not by hiding: an operator must
+   still be able to see where they are without opening anything. */
+.panel-tabs--manage {
+  margin-top: 2px;
+  align-items: baseline;
+  border-top: 1px solid var(--color-border);
+  padding-top: 6px;
+}
+
+.panel-tabs--manage .panel-tab {
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
+.panel-tabs--manage .panel-tab--active {
+  color: var(--color-primary);
+}
+
+.panel-tabs__label {
+  padding: 7px 4px 7px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
 .panel-tab__count {
   margin-left: 6px;
   padding: 1px 7px;

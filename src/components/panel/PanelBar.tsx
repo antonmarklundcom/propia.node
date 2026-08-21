@@ -8,6 +8,16 @@ export interface PanelTab {
   label: string;
   count?: number;
   active?: boolean;
+  /**
+   * Which row the tab belongs to. `"main"` (the default) is the daily work —
+   * the screens an operator opens because something arrived. `"manage"` is
+   * setup: the records you edit when something changes, not every day.
+   *
+   * /admin reached eight tabs, which is past what fits one row on a phone and
+   * reads as a wall rather than a menu. Splitting them costs one line per tab
+   * and no new route; appending a ninth to a flat row would not have.
+   */
+  group?: "main" | "manage";
 }
 
 /**
@@ -26,6 +36,8 @@ export function PanelBar({
   userName: string | null;
   tabs: PanelTab[];
 }) {
+  const manage = tabs.filter((t) => t.group === "manage");
+
   return (
     <div className="panel-bar">
       <div className="panel-bar__inner">
@@ -41,19 +53,38 @@ export function PanelBar({
             </form>
           </div>
         </div>
-        <nav className="panel-tabs" aria-label="Secciones del panel">
-          {tabs.map((t) => (
-            <Link
-              key={t.href}
-              href={t.href}
-              className={`panel-tab${t.active ? " panel-tab--active" : ""}`}
-            >
-              {t.label}
-              {t.count ? <span className="panel-tab__count">{t.count}</span> : null}
-            </Link>
-          ))}
+        <nav className="panel-tabs" aria-label={esPanel.navMain}>
+          {tabs
+            .filter((t) => (t.group ?? "main") === "main")
+            .map((t) => (
+              <PanelTabLink key={t.href} tab={t} />
+            ))}
         </nav>
+        {manage.length > 0 ? (
+          /* A second row rather than a disclosure: a panel with no client JS
+             cannot restore an open/closed state, and a menu that hides where
+             you are is worse than one that is merely quieter. */
+          <nav className="panel-tabs panel-tabs--manage" aria-label={esPanel.navManage}>
+            <span className="panel-tabs__label">{esPanel.navManage}</span>
+            {manage.map((t) => (
+              <PanelTabLink key={t.href} tab={t} />
+            ))}
+          </nav>
+        ) : null}
       </div>
     </div>
+  );
+}
+
+function PanelTabLink({ tab }: { tab: PanelTab }) {
+  return (
+    <Link
+      href={tab.href}
+      className={`panel-tab${tab.active ? " panel-tab--active" : ""}`}
+      aria-current={tab.active ? "page" : undefined}
+    >
+      {tab.label}
+      {tab.count ? <span className="panel-tab__count">{tab.count}</span> : null}
+    </Link>
   );
 }
