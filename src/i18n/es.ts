@@ -454,6 +454,8 @@ export const esPanel = {
   importErrorNotHtml: "Ese enlace no es una página web con un aviso.",
   importErrorTooLarge: "Esa página es demasiado grande para leerla.",
   importErrorGeneric: "No pudimos leer ese enlace. Probá cargar el aviso a mano.",
+  importErrorRateLimited:
+    "Estás importando muy seguido. Esperá unos minutos y probá de nuevo.",
   importLegalNote:
     "Importamos un aviso a la vez, a pedido de su titular. No copiamos catálogos de otros portales.",
 
