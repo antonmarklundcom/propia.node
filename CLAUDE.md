@@ -25,6 +25,16 @@ Consequences that bite:
   `/propiedad` entries when `hostOwnsListingDetail()` is false. Keep any new
   host-specific page type on that same rule — submitting a URL you
   canonicalise elsewhere is a Search Console error, not a neutral extra.
+- **hreflang is derived, not hand-maintained.** `languageAlternates()`
+  (`src/lib/alternates.ts`) builds a page's language map from the same
+  `verticals.ts` entries, so the D6 flip turns the tags on with no separate
+  commit. Two rules it encodes and a new call site must not break: a set is
+  emitted only when two doors serve **different locales** (two Spanish doors
+  are a duplicate, which is the canonical tag's job, not hreflang's), and only
+  a host that owns the page type appears in it — `/propiedad` alternates are
+  gated on `hostOwnsListingDetail()`, and a noindex category page gets none.
+  Checked by `npm run verify:seo`, which runs the rule against a synthetic
+  post-flip vertical table.
 - `CANONICAL_HOST` is not just an origin string: `verticals.ts` derives
   `DEFAULT` from it (`VERTICALS[CANONICAL_HOST]`), so it decides the locale,
   filters and copy of every request that arrives without a known host. Moving
@@ -303,9 +313,9 @@ shared quota on a deploy path that does not use it.
   — explicit yes first.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
-  `npm run verify:i18n`. Same thing by hand: `npm run verify:local`. The last
-  three are pure — no database, no network — which is why they belong in a
-  hook at all.
+  `npm run verify:i18n`, `npm run verify:seo`. Same thing by hand:
+  `npm run verify:local`. The last four are pure — no database, no network —
+  which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath
   .githooks`).
