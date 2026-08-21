@@ -5,8 +5,9 @@ every session that finishes a step** — mark items done, add new blockers.
 `[C]` = Claude does it (code/session work). `[YOU]` = founder must do it
 (hosting, accounts, real-world data — things code cannot reach).
 
-_Last updated: 2026-08-19 (session: repo-template-review — audit re-verification,
-roles/i18n/UX review, build-batch plan; see the 2026-08-19 section below)._
+_Last updated: 2026-08-21 (session: facet layer + en.ts — M4's shared filter
+builder, `VerticalConfig.filters` finally consumed, Batch 3 layer 2, and a
+cooldown on the link importer; see the 2026-08-21 section at the end)._
 
 ---
 
@@ -236,19 +237,24 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
         - `currentVertical()` (`src/lib/vertical-context.ts`) is called in
           exactly one place (`app/page.tsx:175`) and its result is
           discarded — the value is awaited, never read.
-        - There is **no `src/i18n/en.ts`**. `src/i18n/es.ts` is the only
-          dictionary and is imported directly, so `locale: "en"` currently
-          changes nothing a visitor sees.
+        - ~~There is **no `src/i18n/en.ts`**.~~ **LANDED 2026-08-21**
+          (Batch 3 layer 2). `locale: "en"` now renders English copy. The
+          *data* is still Spanish — `title_en`/`description_en` have no writer
+          — so this closes the copy half of the flip precondition, not the
+          translation half.
         - There is **no per-vertical theming** — no token set, no shell
           variant, no `copy` branch. `VerticalConfig.copy` ("ownership" |
           "foreign" | ...) is declared and never read.
-        - **`VerticalConfig.filters` is never applied to a query.** Grep it:
-          the field is typed and set on terreno/alquiler/en, and no query
-          builder consults it. The data side exists —
-          `listings.foreign_exposure` is a real column (`src/db/schema.ts`,
-          default `true`) — but nothing reads it either, so
+        - ~~**`VerticalConfig.filters` is never applied to a query.**~~
+          **FIXED 2026-08-21.** `verticalConds()` (`src/lib/facet-sql.ts`) is
+          now ANDed into the category grid and its indexability count, the map
+          pins, the home rails, the operation hub, similar listings and the
+          sitemap. `listings.foreign_exposure` is read by it, so
           `filters: { foreign_exposure: true }` on realestateinparaguay.com
-          would silently do nothing.
+          will do what it says on flip day. No enabled vertical declares
+          filters today, so nothing a visitor sees changed. Note for whoever
+          adds the next cached query: the vertical key must join its cache key
+          (the home payload and the sitemap entries already do).
         Consequence for sequencing: flipping `realestateinparaguay.com` to
         `locale: "en"` today would produce a Spanish site that merely
         *claims* to be English — worse than the status quo, since hreflang
@@ -451,7 +457,7 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
 | M1 Schema + seeds | ✅ done | ⚠️ financing rates are placeholders (D3) |
 | M2 Minimum supply (importer, review queue) | ✅ done | ⏳ 50 hand-audited listings not confirmed |
 | M3 Public launch surface | ✅ done | ✅ canonical host is per-request (1.2) |
-| M4 Search, filters & map | ✅ filters, search, EXPLAIN audit (index fixed, migration 0002), bbox map API + split list/map view | ⏳ one typed facet builder still to share between category and map queries |
+| M4 Search, filters & map | ✅ filters, search, EXPLAIN audit (index fixed, migration 0002), bbox map API + split list/map view, one shared typed facet builder | ✅ code complete |
 | M5 Wizard, OTP & accounts | ✅ wizard, auth, admin user management, self-registration, profile editing; publishing no longer needs OTP | ✅ no external provider required |
 | M6 Scrape importers + SEO at scale | 🔶 link-import (3.5) + `/precios` pages and internal link modules done; barrio guides remain | ⏳ Screaming Frog crawl not run |
 | M7 Monetization & feeders | 🔶 valuation magnet done | ⏳ featured/preventa need a pricing decision (D5) |
@@ -570,7 +576,9 @@ Real gaps, in priority order:
 
 ### Language swap — real scope (bigger than "add en.ts")
 
-Verified: no `en.ts`, no `getDictionary`, `x-locale` header set by middleware
+Verified at the time (2026-08-19; layers 1 and 2 and the filter consumption
+have since landed — see the 2026-08-21 section): no `en.ts`, no
+`getDictionary`, `x-locale` header set by middleware
 and read by nothing, `vertical.filters`/`.copy` never consumed,
 `description_en`/`guide_content_en` columns exist with no read/write path,
 no toggle UI. **And `es.ts` mostly covers admin/panel/publish — the
@@ -663,8 +671,8 @@ panel scoping.
   PR #63). Until D8 lands, an FSBO lead reaches its publisher by the operator
   forwarding it from /admin/leads.
 - **Batch 3 — i18n (strictly sequential):** ~~string extraction →
-  `getDictionary`~~ (**DONE 2026-08-20**, see below) → `en.ts` → translation job
-  (MIGRATION for `title_en`).
+  `getDictionary`~~ (**DONE 2026-08-20**) → ~~`en.ts`~~ (**DONE 2026-08-21**,
+  see the section at the end) → translation job (MIGRATION for `title_en`).
   Flip day itself stays gated on D6's checklist and is NOT part of the batch.
 - **Batch 4 — retention & monetisation (mostly parallel):** favorites +
   saved-search/alert engine (D9, MIGRATION), ~~valuation→publish funnel~~
@@ -832,10 +840,17 @@ the product more usable than the last.
       `symbol` layer, which needs a `glyphs` font URL the free raster OSM style
       does not have — so the "cheap" path was a dependency on someone else's
       font server. HTML markers style with plain CSS instead.
-- [ ] Typed query layer over `idx_search` covering every facet combination
-      (the audit and the index fix are done; the remaining piece is one shared
-      typed builder so the category, map and future saved-search queries can't
-      drift apart).
+- [x] **Typed query layer over `idx_search` covering every facet combination.**
+      ✅ Done 2026-08-21. `src/lib/facets.ts` (pure: the type, the query-string
+      names, `parseFacetParams` and its inverse) + `src/lib/facet-sql.ts`
+      (`server-only`: `facetConds`, `verticalConds`, `publishedFacetWhere`).
+      The category grid, its count, the map endpoint, the home rails, the
+      operation hub, similar listings and the sitemap all build their WHERE
+      there. Two things fell out of it: the map now honours the page's location
+      (`?ciudad=`/`&barrio=` — without it, panning an Asunción page surfaced
+      Luque pins its own grid would never list), and `VerticalConfig.filters`
+      is finally read (see the consumption-layer note under D6). Verified by
+      `npm run verify:facets`, which is pure and runs in the pre-push hook.
 - [x] **EXPLAIN audit — done, and it found a real index bug.** ⚠️ **MIGRATION
       REQUIRED (`drizzle/0002`).** `idx_search` was
       `(status, operation, property_type, location_id, price_usd)`, but the URL
@@ -919,10 +934,11 @@ the product more usable than the last.
       cap, 10 s timeout. Verified against loopback, link-local (cloud metadata),
       all three RFC1918 ranges, IPv6 loopback, `file://`, `gopher://` and
       `0.0.0.0` — all refused.
-      _Known limit:_ no per-user rate limit on the fetcher yet. It needs a login
-      and only ever returns parsed listing fields (never raw HTML), so the abuse
-      ceiling is low, but a cooldown is worth adding before you have many
-      accounts.
+      _Known limit — closed 2026-08-21:_ the fetcher now allows 12 URL reads per
+      account per five minutes (`allowRequest`, the same fixed-window limiter
+      the lead endpoint uses), keyed on the user rather than the IP so one
+      office's shared connection cannot lock out its colleagues. A refusal is
+      an honest message in the form, not a generic parse failure.
 - [ ] ~~InfoCasas / Clasipar scrape adapters~~ — **deliberately not built**, see
       3.5 above. If you ever want bulk supply from a portal, the route is a
       *partnership* with a feed, not a crawler.
@@ -1023,6 +1039,64 @@ counter deliberately avoids the same trick; see `recordListingView`.
 — the only cost of waiting is that category pages keep the slower plan. Run
 `npm run db:migrate` against prod when convenient; it is a DROP INDEX plus two
 CREATE INDEX on a small table, so it completes immediately.
+
+## 2026-08-21 session — facet layer, vertical filters, en.ts
+
+Three things landed, all unblocked by any founder decision, none touching
+`schema.ts`. No migration. Nothing a visitor sees changes today.
+
+**1. One typed facet layer (closes the last open M4 item).** The same four
+filters were spelled out three times — the category page's `parseFilters`,
+`/api/mapa`'s zod schema, and the `mapQuery` object the page handed the map.
+`src/lib/facets.ts` is now the vocabulary (pure, so the client-side filter bar
+shares it) and `src/lib/facet-sql.ts` the WHERE builder (`server-only`).
+
+Two behaviour changes came out of it:
+
+- **The map honours the page's location.** It used to answer the viewport
+  alone, so panning a "Casas en venta en Asunción" page surfaced Luque pins
+  the grid would never list. `/api/mapa` now takes `?ciudad=`/`&barrio=` and
+  resolves the same subtree the page does.
+- **`VerticalConfig.filters` is consumed** — the gap this file recorded under
+  D6 as blocking the English flip. A door's hard filters are ANDed into every
+  public listing query; a door may narrow what a visitor asked for, never
+  widen it.
+
+Consequences handled: the home payload and the sitemap entries are cached, so
+the vertical key joins their cache keys (`app/page.tsx` carried a comment
+asking for exactly this). `currentVertical()` falls back to the `Host` header,
+because the middleware matcher excludes `/sitemap.xml` and `/robots.txt` —
+the two routes whose whole job is to speak for one domain.
+
+**2. `src/i18n/en.ts` (Batch 3 layer 2).** Written for foreign buyers per D6,
+not transliterated: *cuota* → "estimated monthly payment", *en pozo* →
+"pre-construction", *quinta* → "country house". `Dictionary` had to change
+with it — it was `typeof esDictionary`, and `as const` made the contract
+include the literal Spanish sentences, which is why `en` used to resolve to
+the Spanish dictionary. It is now `Widen<typeof esDictionary>`: leaves widened
+to `string`, structure untouched, both dictionaries checked with `satisfies`.
+
+**3. A cooldown on the link importer** (the known limit recorded under 3.5):
+12 fetches per account per five minutes.
+
+**Two new pure checks, both in the pre-push hook:** `npm run verify:facets`
+and `npm run verify:i18n`. The second exists because the type system has a
+blind spot that matters here — TypeScript lets a function taking fewer
+arguments satisfy one taking more, so `titlePaged: (title) => title` would
+compile and silently drop the page number from every paginated title. Both
+were confirmed to fail on a deliberately broken input, not just to pass.
+
+**Honest limit on all of it:** no database was reachable this session (the
+sandbox blocks Docker Hub), so nothing here was exercised against real rows.
+`npm run typecheck`, `npm run build`, `verify:import`, `verify:facets` and
+`verify:i18n` all pass. `npm run verify:scopes` was not run — it needs a
+localhost database, and this change does not touch panel scoping.
+
+**Next in these lanes, for whoever picks it up:**
+- Batch 3 layer 3 — the translation batch job filling `title_en` /
+  `description_en` (MIGRATION for `title_en`, needs `ANTHROPIC_API_KEY`).
+- The rest of the D6 consumption layer — per-vertical theme tokens and the
+  `copy` branch — is still unbuilt, and still blocks the flip.
 
 ## Standing rules
 

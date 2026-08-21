@@ -5,6 +5,7 @@ import { dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { currentVertical } from "@/lib/vertical-context";
+import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import {
   getRecentListings,
   getRecentListingsBy,
@@ -68,7 +69,13 @@ const CITY_SHORTCUTS = [
  * but its 10+ queries run once per 10 minutes.
  */
 const getHomePayload = unstable_cache(
-  async () => {
+  async (verticalKey: VerticalKey) => {
+    // Resolved from the key rather than passed as an object: the key is what
+    // enters the cache key, and a config object would serialize its comments
+    // and future fields into it too.
+    const vertical: VerticalConfig | undefined = Object.values(VERTICALS).find(
+      (v) => v.key === verticalKey,
+    );
     const [
       recent,
       cities,
@@ -81,13 +88,16 @@ const getHomePayload = unstable_cache(
       featuredDevelopers,
       priceCities,
     ] = await Promise.all([
-      getRecentListings(8),
+      getRecentListings(8, vertical),
       listCities(),
-      countPublished(),
-      getRecentListingsBy({ operation: "venta", type: "casa" }, 8),
-      getRecentListingsBy({ operation: "venta", type: "departamento" }, 8),
-      getRecentListingsBy({ operation: "alquiler" }, 8),
-      getRecentListingsBy({ operation: "venta", type: "terreno" }, 8),
+      countPublished(vertical),
+      getRecentListingsBy({ operation: "venta", type: "casa", vertical }, 8),
+      getRecentListingsBy(
+        { operation: "venta", type: "departamento", vertical },
+        8,
+      ),
+      getRecentListingsBy({ operation: "alquiler", vertical }, 8),
+      getRecentListingsBy({ operation: "venta", type: "terreno", vertical }, 8),
       getFeaturedProjects(6),
       getFeaturedDevelopers(8),
       citiesWithPrices(),
@@ -106,9 +116,10 @@ const getHomePayload = unstable_cache(
     };
   },
   ["home-payload"],
-  // Both live hosts serve identical Spanish rows today, so one cache entry
-  // covers them; if a vertical ever filters the listing set, its key must
-  // join this cache key.
+  // The vertical key is an argument, and `unstable_cache` folds arguments into
+  // the cache key — so a door with hard filters gets its own entry instead of
+  // being served another door's listing set. (Both live hosts declare no
+  // filters today, so their two entries hold identical rows.)
   { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings] },
 );
 
@@ -198,7 +209,7 @@ export default async function Home() {
     featuredProjects,
     featuredDevelopers,
     priceCities,
-  } = await getHomePayload();
+  } = await getHomePayload(vertical.key);
 
   const cityShortcuts = CITY_SHORTCUTS.map((name) =>
     cities.find((c) => c.name === name),

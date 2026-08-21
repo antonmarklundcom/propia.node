@@ -8,7 +8,7 @@
  * listings this is trivial; chunked child sitemaps (Next generateSitemaps)
  * are an M6 scale concern, not a launch one.
  */
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import {
   agencies,
@@ -25,6 +25,8 @@ import { STATIC_SITEMAP_PATHS } from "../config/site-nav";
 import { listPublishedPostSlugs } from "./post-queries";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
+import type { VerticalConfig } from "@/config/verticals";
+import { verticalConds } from "./facet-sql";
 
 export interface SitemapEntry {
   path: string;
@@ -42,12 +44,19 @@ export interface SitemapOptions {
    * the sitemap and the canonical tag are decided by the same predicate.
    */
   includeListingDetail?: boolean;
+  /**
+   * The door this sitemap is for. Its `filters` narrow the published rows the
+   * same way they narrow every page on that host — a sitemap that lists URLs
+   * the host would render empty is the same Search Console error as listing
+   * URLs it canonicalises away, arrived at from the other direction.
+   */
+  vertical?: VerticalConfig | null;
 }
 
 export async function buildSitemapEntries(
   opts: SitemapOptions = {},
 ): Promise<SitemapEntry[]> {
-  const { includeListingDetail = true } = opts;
+  const { includeListingDetail = true, vertical = null } = opts;
   const locs = await db
     .select({
       id: locations.id,
@@ -70,7 +79,12 @@ export async function buildSitemapEntries(
       agentId: listings.agentId,
     })
     .from(listings)
-    .where(eq(listings.status, "published"));
+    .where(
+      and(
+        eq(listings.status, "published"),
+        ...(vertical ? verticalConds(vertical) : []),
+      ),
+    );
 
   // 0. Hand-authored pages (home, company, sales, guides, legal). Listed in
   //    src/config/site-nav.ts next to the nav that links them, so a new page

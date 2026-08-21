@@ -11,9 +11,7 @@ import {
   asc,
   desc,
   eq,
-  gte,
   inArray,
-  lte,
   ne,
   sql,
   type SQL,
@@ -32,6 +30,11 @@ import {
 } from "../db/schema";
 import type { Operation, PropertyType } from "./import/types";
 import { CACHE_TAGS, CACHE_TTL } from "./cache";
+import type { VerticalConfig } from "@/config/verticals";
+import { facetConds, verticalConds } from "./facet-sql";
+import type { ListingFacets, SortOption } from "./facets";
+
+export type { SortOption } from "./facets";
 
 export type LocationRow = typeof locations.$inferSelect;
 
@@ -139,20 +142,32 @@ export interface CategoryQuery {
   type?: PropertyType;
   limit?: number;
   offset?: number;
+  /**
+   * The door this request arrived through. Its `filters` narrow every listing
+   * query on that domain (`verticalConds`), so the page, its count and its map
+   * all describe the same set. Omitted = no hard filter, which is what both
+   * live hosts declare today.
+   */
+  vertical?: VerticalConfig | null;
+}
+
+/** The path-level narrowing, as facets. */
+function categoryFacets(q: CategoryQuery): ListingFacets {
+  return {
+    operation: q.operation,
+    propertyType: q.type,
+    locationIds: q.locationIds,
+  };
 }
 
 /** Conditions shared by the list query and the count query. */
 function categoryConds(q: CategoryQuery) {
-  const conds = [
+  return and(
     eq(listings.status, "published"),
-    eq(listings.operation, q.operation),
-    inArray(listings.locationId, q.locationIds),
-  ];
-  if (q.type) conds.push(eq(listings.propertyType, q.type));
-  return and(...conds);
+    ...facetConds(categoryFacets(q)),
+    ...(q.vertical ? verticalConds(q.vertical) : []),
+  );
 }
-
-export type SortOption = "recientes" | "precio_asc" | "precio_desc";
 
 /**
  * User-chosen narrowing on a category page (price/bedrooms/sort). These are
@@ -167,13 +182,25 @@ export interface CategoryFilters {
   sort?: SortOption;
 }
 
-/** categoryConds() narrowed by optional price/bedroom filters. Price filters run on price_usd (the one normalized, indexed column — see schema). */
+/**
+ * categoryConds() narrowed by the visitor's own price/bedroom choices.
+ *
+ * The visitor's fields are named one by one rather than spread: a spread would
+ * let a `locationIds` key that happened to be present-and-undefined on `f`
+ * overwrite the category's own location set with nothing, which reads as "this
+ * city page suddenly lists the whole country".
+ */
 function filterConds(q: CategoryQuery, f: CategoryFilters) {
-  const conds = [categoryConds(q)];
-  if (f.priceMin != null) conds.push(gte(listings.priceUsd, String(f.priceMin)));
-  if (f.priceMax != null) conds.push(lte(listings.priceUsd, String(f.priceMax)));
-  if (f.minBedrooms != null) conds.push(gte(listings.bedrooms, f.minBedrooms));
-  return and(...conds);
+  return and(
+    eq(listings.status, "published"),
+    ...facetConds({
+      ...categoryFacets(q),
+      priceMin: f.priceMin,
+      priceMax: f.priceMax,
+      minBedrooms: f.minBedrooms,
+    }),
+    ...(q.vertical ? verticalConds(q.vertical) : []),
+  );
 }
 
 function sortOrder(sort: SortOption | undefined) {
@@ -291,8 +318,15 @@ async function attachCovers(
 }
 
 /** Total published listings — the homepage "propiedades activas" stat. */
-export async function countPublished(): Promise<number> {
-  return countRows(eq(listings.status, "published"));
+export async function countPublished(
+  vertical?: VerticalConfig | null,
+): Promise<number> {
+  return countRows(
+    and(
+      eq(listings.status, "published"),
+      ...(vertical ? verticalConds(vertical) : []),
+    ),
+  );
 }
 
 /**
@@ -300,16 +334,23 @@ export async function countPublished(): Promise<number> {
  * the homepage category rows ("Departamentos en venta", "Alquileres", …).
  */
 export async function getRecentListingsBy(
-  by: { operation?: Operation; type?: PropertyType },
+  by: {
+    operation?: Operation;
+    type?: PropertyType;
+    vertical?: VerticalConfig | null;
+  },
   limit = 8,
 ): Promise<ListingCard[]> {
-  const conds = [eq(listings.status, "published")];
-  if (by.operation) conds.push(eq(listings.operation, by.operation));
-  if (by.type) conds.push(eq(listings.propertyType, by.type));
   const rows = await db
     .select(cardColumns())
     .from(listings)
-    .where(and(...conds))
+    .where(
+      and(
+        eq(listings.status, "published"),
+        ...facetConds({ operation: by.operation, propertyType: by.type }),
+        ...(by.vertical ? verticalConds(by.vertical) : []),
+      ),
+    )
     .orderBy(desc(listings.publishedAt))
     .limit(limit);
   return attachCovers(rows);
@@ -438,28 +479,19 @@ function cardColumns() {
 }
 
 /** Most recent published listings for the homepage grid. */
-export async function getRecentListings(limit = 12): Promise<ListingCard[]> {
+export async function getRecentListings(
+  limit = 12,
+  vertical?: VerticalConfig | null,
+): Promise<ListingCard[]> {
   const rows = await db
-    .select({
-      id: listings.id,
-      publicId: listings.publicId,
-      slug: listings.slug,
-      title: listings.title,
-      operation: listings.operation,
-      propertyType: listings.propertyType,
-      priceUsd: listings.priceUsd,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
-      cuotaGs: listings.cuotaGs,
-      bedrooms: listings.bedrooms,
-      bathrooms: listings.bathrooms,
-      areaM2: listings.areaM2,
-      landM2: listings.landM2,
-      locationId: listings.locationId,
-      featuredUntil: listings.featuredUntil,
-    })
+    .select(cardColumns())
     .from(listings)
-    .where(eq(listings.status, "published"))
+    .where(
+      and(
+        eq(listings.status, "published"),
+        ...(vertical ? verticalConds(vertical) : []),
+      ),
+    )
     .orderBy(desc(listings.publishedAt))
     .limit(limit);
   return attachCovers(rows);
@@ -554,34 +586,21 @@ export async function getSimilarListings(params: {
   type: PropertyType;
   locationIds: number[];
   limit?: number;
+  vertical?: VerticalConfig | null;
 }): Promise<ListingCard[]> {
   const rows = await db
-    .select({
-      id: listings.id,
-      publicId: listings.publicId,
-      slug: listings.slug,
-      title: listings.title,
-      operation: listings.operation,
-      propertyType: listings.propertyType,
-      priceUsd: listings.priceUsd,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
-      cuotaGs: listings.cuotaGs,
-      bedrooms: listings.bedrooms,
-      bathrooms: listings.bathrooms,
-      areaM2: listings.areaM2,
-      landM2: listings.landM2,
-      locationId: listings.locationId,
-      featuredUntil: listings.featuredUntil,
-    })
+    .select(cardColumns())
     .from(listings)
     .where(
       and(
         eq(listings.status, "published"),
-        eq(listings.operation, params.operation),
-        eq(listings.propertyType, params.type),
-        inArray(listings.locationId, params.locationIds),
+        ...facetConds({
+          operation: params.operation,
+          propertyType: params.type,
+          locationIds: params.locationIds,
+        }),
         ne(listings.id, params.excludeId),
+        ...(params.vertical ? verticalConds(params.vertical) : []),
       ),
     )
     .orderBy(desc(listings.publishedAt))

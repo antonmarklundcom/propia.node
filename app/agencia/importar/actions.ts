@@ -26,6 +26,7 @@ import {
   suggestLocation,
 } from "@/lib/import/claim-import";
 import { UnsafeUrlError, type FetchRejection } from "@/lib/safe-fetch";
+import { allowRequest } from "@/lib/rate-limit";
 import { OPERATIONS, PROPERTY_TYPES } from "@/lib/import/types";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
@@ -36,13 +37,36 @@ export type ReadUrlResult =
       suggestedLocationId: number | null;
       duplicate: { listingId: number; title: string; status: string } | null;
     }
-  | { ok: false; error: FetchRejection | "generic" };
+  | { ok: false; error: FetchRejection | "generic" | "rate_limited" };
+
+/**
+ * How often one account may make the server fetch a URL of its choosing.
+ *
+ * This is the one endpoint in the app that turns a form field into an outbound
+ * request, so it is the one worth a cooldown even behind a login (PLAN.md 3.5
+ * lists this as the feature's known limit). `safe-fetch.ts` already refuses
+ * private addresses, so the risk left is volume: a loop of public URLs turning
+ * the site into someone's fetch proxy, and 90 neighbours on the same Hostinger
+ * process cap paying for it.
+ *
+ * Twelve in five minutes is far past a real migration session — an agent
+ * pastes a link, reviews the form and confirms it, which takes longer than
+ * this window allows a bot to be interesting.
+ */
+const URL_FETCHES = 12;
+const URL_WINDOW_MS = 5 * 60_000;
 
 /** Step 1: fetch and parse. Creates nothing. */
 export async function readListingUrlAction(
   rawUrl: string,
 ): Promise<ReadUrlResult> {
-  await requireAgencyContext();
+  const ctx = await requireAgencyContext();
+
+  // Keyed on the account, not the IP: the caller is authenticated, and an IP
+  // key would let one office's shared connection lock out its colleagues.
+  if (!allowRequest(`import-url:${ctx.user.id}`, URL_FETCHES, URL_WINDOW_MS)) {
+    return { ok: false, error: "rate_limited" };
+  }
 
   try {
     const parsed = await importListingFromUrl(rawUrl);

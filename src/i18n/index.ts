@@ -28,14 +28,23 @@ import {
   esListing,
   esSearchBar,
 } from "./es";
+import {
+  en,
+  enCard,
+  enCategory,
+  enFilters,
+  enHome,
+  enHub,
+  enListing,
+  enSearchBar,
+} from "./en";
 
 export type Locale = "es" | "en";
 
 /**
- * Both live hosts are `locale: "es"` (verticals.ts) and the English vertical
- * waits until the Spanish site is finished — see CLAUDE.md. This is the
- * fallback for a request that reached a page without the middleware's
- * `x-locale` header, and for a locale with no dictionary yet.
+ * Both live hosts are `locale: "es"` (verticals.ts) and the English door waits
+ * on the D6 flip checklist — see CLAUDE.md. This is the fallback for a request
+ * that reached a page without the middleware's `x-locale` header.
  */
 export const DEFAULT_LOCALE: Locale = "es";
 
@@ -51,22 +60,54 @@ const esDictionary = {
 } as const;
 
 /**
- * The shape every locale must satisfy. Deriving it from the Spanish
- * dictionary rather than hand-writing an interface is what makes `en.ts` a
- * type error until it is complete — a missing key cannot ship as a blank
- * string on a live page.
+ * Literal string types widened to `string`, structure kept exactly.
+ *
+ * `es.ts` declares its namespaces `as const`, so `typeof esDictionary` types
+ * `searchPlaceholder` as the literal `"¿Dónde querés vivir?"` — a shape only
+ * the Spanish dictionary can ever satisfy. Widening the leaves is what turns
+ * it into "the same keys, with strings in them", which is the contract a
+ * second locale is supposed to meet. Structure is not widened: an object stays
+ * that object's keys, a function keeps its parameters, so a key dropped or a
+ * signature changed on one side is still a type error.
  */
-export type Dictionary = typeof esDictionary;
+type Widen<T> = T extends string
+  ? string
+  : T extends number
+    ? number
+    : T extends boolean
+      ? boolean
+      : T extends (...args: infer A) => infer R
+        ? (...args: A) => Widen<R>
+        : T extends readonly (infer U)[]
+          ? readonly Widen<U>[]
+          : { [K in keyof T]: Widen<T[K]> };
 
 /**
- * No `en.ts` yet — that is layer 2 of Batch 3. Until it lands, `en` resolves
- * to the Spanish dictionary rather than to English-shaped placeholders: a
- * host that somehow declared `locale: "en"` today would still render a
- * coherent Spanish page, which is what both live hosts serve anyway.
+ * The shape every locale must satisfy. Derived from the Spanish dictionary
+ * rather than hand-written, so a key added to `es.ts` and forgotten in `en.ts`
+ * is a type error — a missing key cannot ship as a blank string on a live page.
  */
+export type Dictionary = Widen<typeof esDictionary>;
+
+/**
+ * Both locales, checked against the shape at the point of assembly. `satisfies`
+ * rather than an annotation: it rejects a missing or misspelled key without
+ * widening what callers see.
+ */
+const enDictionary = {
+  common: en,
+  searchBar: enSearchBar,
+  filters: enFilters,
+  card: enCard,
+  home: enHome,
+  hub: enHub,
+  category: enCategory,
+  listing: enListing,
+} satisfies Dictionary;
+
 const DICTIONARIES: Record<Locale, Dictionary> = {
   es: esDictionary,
-  en: esDictionary,
+  en: enDictionary,
 };
 
 export function getDictionary(locale: Locale): Dictionary {

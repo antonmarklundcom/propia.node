@@ -30,6 +30,7 @@ const ERROR_TEXT: Record<string, string> = {
   not_html: esPanel.importErrorNotHtml,
   too_large: esPanel.importErrorTooLarge,
   too_many_redirects: esPanel.importErrorUnreachable,
+  rate_limited: esPanel.importErrorRateLimited,
   generic: esPanel.importErrorGeneric,
 };
 

@@ -9,6 +9,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { SearchBar } from "@/components/SearchBar";
 import { getRecentListingsBy, listCities } from "@/lib/queries";
+import { currentVertical } from "@/lib/vertical-context";
 import { getOperationHubData } from "@/lib/directory-queries";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { categoryUrl, parseOperation, operationSlug } from "@/lib/urls";
@@ -58,11 +59,14 @@ export default async function OperationHubPage({ params }: Params) {
   const t = d.hub;
   const copy = t.copy[op];
   const numberLocale = locale === "en" ? "en-US" : "es-PY";
+  // The door's own hard filters narrow this rail like every other listing
+  // query on the domain (VerticalConfig.filters).
+  const vertical = await currentVertical();
   const [origin, hub, cities, recent] = await Promise.all([
     siteOrigin(),
     getOperationHubData(op),
     listCities(),
-    getRecentListingsBy({ operation: op }, 8),
+    getRecentListingsBy({ operation: op, vertical }, 8),
   ]);
 
   const topCity = hub.cities[0]?.slug ?? "asuncion";

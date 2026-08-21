@@ -16,8 +16,15 @@ import {
   listCities,
   type CategoryFilters,
   type LocationRow,
-  type SortOption,
 } from "@/lib/queries";
+import {
+  facetSearchParams,
+  hasUserFacets,
+  parseFacetParams,
+  FACET_PARAM,
+} from "@/lib/facets";
+import { currentVertical } from "@/lib/vertical-context";
+import type { VerticalConfig } from "@/config/verticals";
 import {
   parseOperation,
   parseCategorySegments,
@@ -61,21 +68,23 @@ function parsePage(v: string | string[] | undefined): number {
   return Number.isInteger(n) && n >= 2 ? n : 1;
 }
 
-/** Reads ?precio_min=&precio_max=&dormitorios=&orden= into typed filters. Bad/missing values are just dropped, never an error. */
-function parseFilters(sp: Record<string, string | string[] | undefined>): CategoryFilters {
-  const num = (v: string | string[] | undefined) => {
-    if (typeof v !== "string") return undefined;
-    const n = Number(v);
-    return Number.isFinite(n) && n > 0 ? n : undefined;
-  };
-  const sortRaw = typeof sp.orden === "string" ? sp.orden : undefined;
-  const sort: SortOption | undefined =
-    sortRaw === "precio_asc" || sortRaw === "precio_desc" ? sortRaw : undefined;
+/**
+ * The visitor's own narrowing (?precio_min=&precio_max=&dormitorios=&orden=).
+ *
+ * Parsed by the shared facet layer rather than here: the map endpoint reads
+ * the same query string, and two parsers is how the grid and the map start
+ * disagreeing about what was asked for. Operation and type come from the
+ * path on this page, so they are dropped from what the parser returns.
+ */
+function parseFilters(
+  sp: Record<string, string | string[] | undefined>,
+): CategoryFilters {
+  const f = parseFacetParams(sp);
   return {
-    priceMin: num(sp.precio_min),
-    priceMax: num(sp.precio_max),
-    minBedrooms: num(sp.dormitorios),
-    sort,
+    priceMin: f.priceMin,
+    priceMax: f.priceMax,
+    minBedrooms: f.minBedrooms,
+    sort: f.sort,
   };
 }
 
@@ -101,8 +110,18 @@ interface Resolved {
 const subtreeIds = cache(citySubtreeIds);
 
 const countFor = cache(
-  (operation: Operation, locationIds: number[], type: PropertyType | null) =>
-    countCategory({ operation, locationIds, type: type ?? undefined }),
+  (
+    operation: Operation,
+    locationIds: number[],
+    type: PropertyType | null,
+    vertical: VerticalConfig,
+  ) =>
+    countCategory({
+      operation,
+      locationIds,
+      type: type ?? undefined,
+      vertical,
+    }),
 );
 
 /** Shared resolution for metadata + page (structure + DB lookups, no listings). */
@@ -181,9 +200,15 @@ export async function generateMetadata({
   if (!r) return { title: t.metaNotFound };
 
   const page = parsePage((await searchParams).page);
-  const count = await countFor(r.operation, r.locationIds, r.type);
+  const vertical = await currentVertical();
+  const count = await countFor(r.operation, r.locationIds, r.type, vertical);
   const parentIndexable = r.barrio
-    ? (await countFor(r.operation, await subtreeIds(r.city.id), r.type)) >= 3
+    ? (await countFor(
+        r.operation,
+        await subtreeIds(r.city.id),
+        r.type,
+        vertical,
+      )) >= 3
     : undefined;
   const ix = getIndexability({
     listingCount: count,
@@ -218,18 +243,29 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   const r = await resolve(operacion, segments);
   if (!r) notFound();
 
+  // The door this request came through. Its `filters` (VerticalConfig) narrow
+  // the grid, the count that decides indexability and the map's pins alike —
+  // one vertical, one listing set, no surface disagreeing with another.
+  const vertical = await currentVertical();
+
   const baseQuery = {
     operation: r.operation,
     locationIds: r.locationIds,
     type: r.type ?? undefined,
+    vertical,
   };
 
   // Indexability is always computed from the canonical (unfiltered) count —
   // a visitor's price/bedroom filter must never change whether this page
   // is indexable or gate it behind the 404/redirect below.
-  const count = await countFor(r.operation, r.locationIds, r.type);
+  const count = await countFor(r.operation, r.locationIds, r.type, vertical);
   const parentIndexable = r.barrio
-    ? (await countFor(r.operation, await subtreeIds(r.city.id), r.type)) >= 3
+    ? (await countFor(
+        r.operation,
+        await subtreeIds(r.city.id),
+        r.type,
+        vertical,
+      )) >= 3
     : undefined;
   const ix = getIndexability({
     listingCount: count,
@@ -258,9 +294,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
 
   const filters = parseFilters(sp);
   const page = parsePage(sp.page);
-  const hasActiveFilters = Boolean(
-    filters.priceMin || filters.priceMax || filters.minBedrooms || filters.sort,
-  );
+  const hasActiveFilters = hasUserFacets(filters);
   const [{ listings, filteredCount }, cities] = await Promise.all([
     getFilteredCategoryListings(
       { ...baseQuery, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
@@ -325,13 +359,21 @@ export default async function CategoryPage({ params, searchParams }: Params) {
       ? { lat: Number(centre.lat), lng: Number(centre.lng) }
       : null;
 
-  // Forwarded verbatim to /api/mapa so the pins match the grid's filters.
+  /**
+   * Forwarded to /api/mapa so the pins are the grid's rows.
+   *
+   * Built by the shared facet layer, which is also what the endpoint parses it
+   * back with — and it carries the location too. Without `ciudad`/`barrio` the
+   * map answered the viewport alone, so panning an Asunción page surfaced pins
+   * this page's grid would never list.
+   */
   const mapQuery: Record<string, string> = {
-    operacion: operationSlug(r.operation),
-    ...(r.type ? { tipo: typePlural(r.type) } : {}),
-    ...(filters.priceMin ? { precio_min: String(filters.priceMin) } : {}),
-    ...(filters.priceMax ? { precio_max: String(filters.priceMax) } : {}),
-    ...(filters.minBedrooms ? { dormitorios: String(filters.minBedrooms) } : {}),
+    ...facetSearchParams(filters, {
+      operationSlug: operationSlug(r.operation),
+      typeSlug: r.type ? typePlural(r.type) : undefined,
+    }),
+    [FACET_PARAM.city]: r.city.slug,
+    ...(r.barrio ? { [FACET_PARAM.barrio]: r.barrio.slug } : {}),
   };
 
   const controls = (
