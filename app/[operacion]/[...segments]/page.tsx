@@ -79,9 +79,13 @@ function parsePage(v: string | string[] | undefined): number {
 function parseFilters(
   sp: Record<string, string | string[] | undefined>,
 ): CategoryFilters {
-  const { operation: _op, propertyType: _type, ...filters } =
-    parseFacetParams(sp);
-  return filters;
+  const f = parseFacetParams(sp);
+  return {
+    priceMin: f.priceMin,
+    priceMax: f.priceMax,
+    minBedrooms: f.minBedrooms,
+    sort: f.sort,
+  };
 }
 
 interface Resolved {

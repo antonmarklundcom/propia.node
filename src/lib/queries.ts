@@ -182,11 +182,23 @@ export interface CategoryFilters {
   sort?: SortOption;
 }
 
-/** categoryConds() narrowed by the visitor's own price/bedroom choices. */
+/**
+ * categoryConds() narrowed by the visitor's own price/bedroom choices.
+ *
+ * The visitor's fields are named one by one rather than spread: a spread would
+ * let a `locationIds` key that happened to be present-and-undefined on `f`
+ * overwrite the category's own location set with nothing, which reads as "this
+ * city page suddenly lists the whole country".
+ */
 function filterConds(q: CategoryQuery, f: CategoryFilters) {
   return and(
     eq(listings.status, "published"),
-    ...facetConds({ ...categoryFacets(q), ...f }),
+    ...facetConds({
+      ...categoryFacets(q),
+      priceMin: f.priceMin,
+      priceMax: f.priceMax,
+      minBedrooms: f.minBedrooms,
+    }),
     ...(q.vertical ? verticalConds(q.vertical) : []),
   );
 }
