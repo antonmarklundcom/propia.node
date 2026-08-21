@@ -29,6 +29,7 @@ import { categoryUrl } from "@/lib/urls";
 import { brandTaglineFor } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
+import { languageAlternates } from "@/lib/alternates";
 import { CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
 import { safeImageUrl } from "@/lib/external-image";
@@ -129,7 +130,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
     description: (await dict()).home.metaDescription,
     // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
-    alternates: { canonical: await siteOrigin() },
+    // `languages` is empty while every door is Spanish — see alternates.ts.
+    alternates: {
+      canonical: await siteOrigin(),
+      languages: languageAlternates({ path: "/", scope: "site" }),
+    },
     // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
     // is the size every network crops to.
     openGraph: {

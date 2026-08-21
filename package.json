@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks",
-    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n",
+    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -24,6 +24,7 @@
     "verify:import": "tsx --tsconfig scripts/tsconfig.json scripts/verify-import.ts",
     "verify:facets": "tsx --tsconfig scripts/tsconfig.json scripts/verify-facets.ts",
     "verify:i18n": "tsx --tsconfig scripts/tsconfig.json scripts/verify-i18n.ts",
+    "verify:seo": "tsx --tsconfig scripts/tsconfig.json scripts/verify-seo.ts",
     "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",
     "backfill:images": "tsx --tsconfig scripts/tsconfig.json scripts/backfill-images.ts",
     "verify:scopes": "tsx --tsconfig scripts/tsconfig.json scripts/verify-scopes.ts",

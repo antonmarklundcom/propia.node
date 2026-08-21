@@ -285,7 +285,15 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
            sitemap — one flag, both effects, no separate sitemap change.
         4. **hreflang** between the two hosts' listing pages must ship in
            the same release, or the two now-distinct language versions
-           compete instead of pairing. Not built yet.
+           compete instead of pairing. **The mechanism landed 2026-08-21**
+           (`src/lib/alternates.ts`, wired into home, the operation hubs,
+           indexable category pages and `/propiedad`): it reads the same
+           `verticals.ts` entries this checklist edits, so items 2–3 turn the
+           tags on by themselves — there is no separate hreflang commit to
+           forget. It emits nothing today by design (two Spanish doors are a
+           canonical problem, not a translation pair). `npm run verify:seo`
+           drives it against a synthetic post-flip table, so flip-day output
+           is proven before flip day.
         5. **CLAUDE.md**: update the domain table (both hosts change role)
            and its `CANONICAL_HOST` warning — the trap it describes is
            precisely items 1–3 being done separately. CLAUDE.md is the file

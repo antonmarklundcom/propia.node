@@ -42,6 +42,7 @@ import {
 } from "@/lib/precios-queries";
 import { itemListJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { siteOrigin, listingCanonicalOrigin } from "@/lib/origin";
+import { languageAlternates } from "@/lib/alternates";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { CategoryFilterBar } from "@/components/CategoryFilterBar";
@@ -224,12 +225,21 @@ export async function generateMetadata({
       ? `${await siteOrigin()}${r.canonicalPath}?page=${page}`
       : `${await siteOrigin()}${r.canonicalPath}`;
 
+  // hreflang belongs on indexed canonical URLs only: a ?page=2 self-canonical
+  // and a thin category are both noindex here, and pairing a noindex URL with
+  // its translation asks Google to weigh a page we asked it to ignore.
+  const indexed = ix.state === "index" && page === 1;
+
   return {
     title: page > 1 ? t.titlePaged(r.title, page) : r.title,
     description: t.metaDescription(count, r.title, brand),
-    alternates: { canonical },
-    robots:
-      ix.state === "index" && page === 1
+    alternates: {
+      canonical,
+      languages: indexed
+        ? languageAlternates({ path: r.canonicalPath, scope: "site" })
+        : undefined,
+    },
+    robots: indexed
         ? { index: true, follow: true }
         : { index: false, follow: true },
   };

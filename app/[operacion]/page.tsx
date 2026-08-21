@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
 import { currentLocale, dict } from "@/i18n/server";
 import { siteOrigin } from "@/lib/origin";
+import { languageAlternates } from "@/lib/alternates";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
@@ -44,7 +45,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${copy.h1}`,
     description: copy.lead,
-    alternates: { canonical: `${await siteOrigin()}/${operationSlug(op)}` },
+    alternates: {
+      canonical: `${await siteOrigin()}/${operationSlug(op)}`,
+      languages: languageAlternates({
+        path: `/${operationSlug(op)}`,
+        scope: "site",
+      }),
+    },
     // og:title doesn't inherit title.template, so the brand is explicit (F47).
     openGraph: { title: `${copy.h1} — ${brand}`, description: copy.lead },
   };

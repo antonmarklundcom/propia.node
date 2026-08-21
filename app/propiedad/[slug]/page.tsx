@@ -28,7 +28,12 @@ import {
 import { esPrecios, inquiryPrefillFor } from "@/i18n/es";
 import { currentLocale, dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
-import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
+import {
+  hostOwnsListingDetail,
+  listingCanonicalOrigin,
+  siteOrigin,
+} from "@/lib/origin";
+import { languageAlternates } from "@/lib/alternates";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
@@ -70,11 +75,17 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     dict().then((d) => d.listing),
   ]);
   const canonical = `${await listingCanonicalOrigin()}${listingUrl(listing)}`;
+  // Only a host that OWNS its detail pages is a language version of anything;
+  // a feeder canonicalises this page away, and hreflang on a non-canonical URL
+  // is a contradiction. Same predicate the sitemap gates on (origin.ts).
+  const languages = (await hostOwnsListingDetail())
+    ? languageAlternates({ path: listingUrl(listing), scope: "listing" })
+    : undefined;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
     title: t.metaTitle(listing.title, formatPrice(listing)),
     description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
-    alternates: { canonical },
+    alternates: { canonical, languages },
     openGraph: {
       // og:title doesn't inherit title.template — brand goes in by hand (F47).
       title: t.ogTitle(listing.title, brand),

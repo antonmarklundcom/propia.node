@@ -13,4 +13,6 @@ echo "pre-push: verify:facets…"
 npm run --silent verify:facets
 echo "pre-push: verify:i18n…"
 npm run --silent verify:i18n
+echo "pre-push: verify:seo…"
+npm run --silent verify:seo
 echo "pre-push: OK"
