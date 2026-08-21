@@ -1,15 +1,17 @@
 import { headers } from "next/headers";
 import { VERTICALS, resolveVertical, type VerticalConfig } from "@/config/verticals";
+import { rawHostFrom } from "./host";
 
 /**
  * Read the vertical the middleware resolved for this request.
  *
- * The fallback is `resolveVertical(null)` — the CANONICAL_HOST entry, the host
- * this deployment actually answers to, never a disabled feeder domain. A
- * request that somehow reaches a page without the middleware header (a route
- * outside the matcher, a direct render in a test) must not be described by a
- * vertical that serves no traffic. Going through `resolveVertical` also keeps
- * this in step with the middleware's own no-host fallback.
+ * Without the header, fall back to the Host header — and only then to
+ * `resolveVertical(null)`, the CANONICAL_HOST entry. The middleware matcher
+ * deliberately excludes `/sitemap.xml` and `/robots.txt`, so on exactly the
+ * two routes whose whole job is to speak for one domain, `x-vertical` is
+ * absent; reading the host there is what stops them describing the primary's
+ * listing set to a feeder's crawler. `origin.ts` resolves those same routes
+ * from the host for the same reason, so the two now agree by construction.
  */
 export async function currentVertical(): Promise<VerticalConfig> {
   const h = await headers();
@@ -17,5 +19,5 @@ export async function currentVertical(): Promise<VerticalConfig> {
   const v = key
     ? Object.values(VERTICALS).find((v) => v.key === key)
     : undefined;
-  return v ?? resolveVertical(null);
+  return v ?? resolveVertical(rawHostFrom(h));
 }

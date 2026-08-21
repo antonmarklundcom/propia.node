@@ -31,6 +31,7 @@ import type { Dictionary } from "@/i18n";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
+import { currentVertical } from "@/lib/vertical-context";
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
@@ -207,6 +208,7 @@ export default async function ListingPage({ params }: Params) {
   // inside it, the await ran to completion before the other two branches were
   // even started, so the "parallel" block was three serial round-trips.
   const similarLocationIds = city ? await subtreeIds(city.id) : null;
+  const vertical = await currentVertical();
 
   const [similar, fromAgency, financingProgram, cityPrices] = await Promise.all([
     city && similarLocationIds
@@ -216,6 +218,7 @@ export default async function ListingPage({ params }: Params) {
           type: listing.propertyType,
           locationIds: similarLocationIds,
           limit: 4,
+          vertical,
         })
       : Promise.resolve([]),
     listing.agencyId

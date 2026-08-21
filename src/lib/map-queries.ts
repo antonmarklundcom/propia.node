@@ -13,10 +13,12 @@
  * future caller cannot forget it.
  */
 import "server-only";
-import { and, eq, gte, isNotNull, lte, sql, type SQL } from "drizzle-orm";
+import { and, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { listings, locations } from "@/db/schema";
-import type { Operation, PropertyType } from "@/lib/import/types";
+import { facetConds, verticalConds } from "@/lib/facet-sql";
+import type { ListingFacets } from "@/lib/facets";
+import type { VerticalConfig } from "@/config/verticals";
 
 /**
  * 3 decimals ≈ 110 m at this latitude. Enough for "this block", not enough to
@@ -38,13 +40,16 @@ export interface MapBounds {
   maxLng: number;
 }
 
-export interface MapFilters {
-  operation?: Operation;
-  type?: PropertyType;
-  priceMin?: number;
-  priceMax?: number;
-  minBedrooms?: number;
-}
+/**
+ * The map narrows by exactly the same vocabulary as the grid — it *is*
+ * `ListingFacets` (src/lib/facets.ts), not a parallel type. That is the whole
+ * point of the shared layer: a facet the grid understands and the map does not
+ * is how the two start showing different sets of the same city.
+ *
+ * `sort` is the one field the map ignores: pins have no order a visitor sees,
+ * and the response is capped by price for determinism (below).
+ */
+export type MapFilters = Omit<ListingFacets, "sort">;
 
 export interface MapPin {
   publicId: string;
@@ -77,16 +82,6 @@ function round(value: number): number {
   return Math.round(value * f) / f;
 }
 
-function filterConds(f: MapFilters): SQL[] {
-  const conds: SQL[] = [];
-  if (f.operation) conds.push(eq(listings.operation, f.operation));
-  if (f.type) conds.push(eq(listings.propertyType, f.type));
-  if (f.priceMin != null) conds.push(gte(listings.priceUsd, String(f.priceMin)));
-  if (f.priceMax != null) conds.push(lte(listings.priceUsd, String(f.priceMax)));
-  if (f.minBedrooms != null) conds.push(gte(listings.bedrooms, f.minBedrooms));
-  return conds;
-}
-
 /**
  * Published listings whose position falls inside the box.
  *
@@ -98,6 +93,7 @@ function filterConds(f: MapFilters): SQL[] {
 export async function listingsInBounds(
   bounds: MapBounds,
   filters: MapFilters = {},
+  vertical?: VerticalConfig | null,
 ): Promise<MapPin[]> {
   if (!boundsAreSane(bounds)) return [];
 
@@ -131,7 +127,8 @@ export async function listingsInBounds(
         lte(posLat, String(bounds.maxLat)),
         gte(posLng, String(bounds.minLng)),
         lte(posLng, String(bounds.maxLng)),
-        ...filterConds(filters),
+        ...facetConds(filters),
+        ...(vertical ? verticalConds(vertical) : []),
       ),
     )
     // Cheapest first is arbitrary but stable, so a capped response is at least

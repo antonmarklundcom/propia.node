@@ -9,4 +9,6 @@ echo "pre-push: build…"
 npm run --silent build
 echo "pre-push: verify:import…"
 npm run --silent verify:import
+echo "pre-push: verify:facets…"
+npm run --silent verify:facets
 echo "pre-push: OK"
