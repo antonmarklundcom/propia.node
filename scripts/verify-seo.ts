@@ -1,5 +1,6 @@
 /**
- * Verify the hreflang layer — pure, no database, no network.
+ * Verify the hreflang layer and the vertical table's SEO invariants — pure,
+ * no database, no network.
  *
  * `src/lib/alternates.ts` emits nothing today (both enabled doors are Spanish),
  * so a check that only exercised the live vertical table would prove the one
@@ -178,9 +179,87 @@ const selfListed = Object.values(home ?? {}).includes(
 );
 check("the set is self-referential (host-independent by construction)", selfListed);
 
+/**
+ * The vertical table is hand-written TypeScript, so the traps below all
+ * compile. Each one is a live SEO regression that no page would report: the
+ * site keeps rendering and Google quietly does the wrong thing with it. The
+ * flip checklist (PLAN.md D6) edits exactly these fields, one host at a time,
+ * which is when a half-applied edit is most likely — so the half-applied state
+ * fails a push instead of a quarter of indexing.
+ */
+console.log("\nvertical table: traps that are not type errors");
+
+const servedNow = servedDoors(CANONICAL_HOST);
+
+check(
+  "CANONICAL_HOST has an entry",
+  Boolean(VERTICALS[CANONICAL_HOST]),
+  `${CANONICAL_HOST} is not a key of VERTICALS — every page would be branded with a domain nobody owns (audit F41)`,
+);
+
+for (const host of Object.keys(VERTICALS)) {
+  check(
+    `"${host}" is in the form VERTICALS is looked up by`,
+    host === host.toLowerCase().replace(/^www\./, "").split(":")[0],
+    "resolveVertical() lowercases, strips www. and drops the port before this lookup, so any other spelling silently never matches",
+  );
+}
+
+const keys = Object.values(VERTICALS).map((v) => v.key);
+check(
+  "vertical keys are unique",
+  new Set(keys).size === keys.length,
+  "currentVertical() resolves the x-vertical header by finding the FIRST entry with that key — two hosts sharing one would serve whichever comes first in the file",
+);
+
+/**
+ * The duplicate-content trap, and the reason `inmobiliaria.com.py` ships
+ * `ownsListingDetail: false` today: two hosts serving the same rows in the
+ * same language, each self-canonicalising its detail pages, is two domains
+ * publishing identical content. Flipping that flag alone — without the locale
+ * flip that makes one of them a translation — is the single-line edit that
+ * causes it.
+ */
+const detailOwners = servedNow.filter(
+  (d) => d.host === CANONICAL_HOST || d.config.ownsListingDetail,
+);
+const localesOwningDetail = detailOwners.map((d) => d.config.locale);
+check(
+  "no two served doors own their detail pages in the same language",
+  new Set(localesOwningDetail).size === localesOwningDetail.length,
+  detailOwners.map((d) => `${d.host} (${d.config.locale})`).join(" + "),
+);
+
+check(
+  "a directory/projects door does not claim listing detail",
+  servedNow.every((d) => !d.config.mode || d.config.mode === "portal" || !d.config.ownsListingDetail),
+  "those doors render a different shell entirely and have no /propiedad to be canonical for",
+);
+
+const brands = servedNow.map((d) => d.config.brand);
+check(
+  "every served door has its own brand name",
+  brands.every(Boolean) && new Set(brands).size === brands.length,
+  brands.join(" / ") + " — the domain IS the brand (CLAUDE.md), so two doors sharing a name means one of them is wearing the other's",
+);
+
+/**
+ * `origin.ts` treats the primary host as owning its detail pages whatever its
+ * row says. If the row disagrees, the code is right and the table is lying to
+ * the next reader. Note the limit: CANONICAL_HOST comes from the environment,
+ * and on flip day the env moves in hPanel — a local run of this check still
+ * sees the code default, so it catches the mismatch only for whoever runs it
+ * with the new value set.
+ */
+check(
+  "the primary host's row agrees that it owns its detail pages",
+  VERTICALS[CANONICAL_HOST]?.ownsListingDetail !== false,
+  `${CANONICAL_HOST} is primary, so origin.ts self-canonicalises its /propiedad pages regardless of the flag`,
+);
+
 console.log(
   failures === 0
-    ? "\nhreflang: all checks passed\n"
-    : `\nhreflang: ${failures} check(s) FAILED\n`,
+    ? "\nseo: all checks passed\n"
+    : `\nseo: ${failures} check(s) FAILED\n`,
 );
 process.exit(failures === 0 ? 0 : 1);

@@ -25,6 +25,13 @@ Consequences that bite:
   `/propiedad` entries when `hostOwnsListingDetail()` is false. Keep any new
   host-specific page type on that same rule — submitting a URL you
   canonicalise elsewhere is a Search Console error, not a neutral extra.
+- **The vertical table's SEO invariants are a check, not a convention.**
+  `npm run verify:seo` refuses a push where two served doors would own their
+  `/propiedad` pages in the same language (that is the duplicate-content trap
+  `inmobiliaria.com.py`'s `ownsListingDetail: false` exists to avoid — and
+  flipping that one flag alone is how it happens), where two doors share a
+  vertical key (`currentVertical()` resolves the header by first match), or
+  where a host key is spelled in a form `resolveVertical()` never looks up.
 - **hreflang is derived, not hand-maintained.** `languageAlternates()`
   (`src/lib/alternates.ts`) builds a page's language map from the same
   `verticals.ts` entries, so the D6 flip turns the tags on with no separate
