@@ -822,8 +822,14 @@ the product more usable than the last.
       vertical captured it, the listing it came from, and a one-tap WhatsApp
       reply. This is the only place `routed_to = 'internal'` leads (valuation,
       seller) are visible at all — no agency panel shows them.
-      Note: `/admin` now has five tabs, which is past what fits one row on a
-      phone; the next addition should group rather than append.
+      Note: `/admin` reached eight tabs, past what fits one row on a phone.
+      **Grouped 2026-08-21** rather than appended: `PanelTab.group` splits the
+      row into the daily work (revisión / propiedades / consultas) and a
+      quieter "Administración" row for the records behind it (guías, importar,
+      inmobiliarias, agentes, usuarios). A second row, not a disclosure — the
+      panel ships no client JS, so a collapsed menu could not remember its
+      state, and a menu that hides where you are is worse than one that is
+      merely quieter. `/agencia` is untouched: `group` defaults to `"main"`.
 
 ### Step 4 — Finish M4 (search, filters & map)
 

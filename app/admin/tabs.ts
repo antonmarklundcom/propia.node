@@ -1,7 +1,14 @@
 import type { PanelTab } from "@/components/panel/PanelBar";
 import { esPanel } from "@/i18n/es";
 
-/** The /admin tabs, with the active one flagged and the review count badged. */
+/**
+ * The /admin tabs, with the active one flagged and the review count badged.
+ *
+ * Two groups, not one list of eight (PanelBar's `group`): the first row is
+ * what an operator opens because something arrived — a listing to review, a
+ * lead to answer — and the second is the records behind it, edited when
+ * something changes rather than every day.
+ */
 export function adminTabs(
   active:
     | "review"
@@ -42,27 +49,32 @@ export function adminTabs(
     },
     {
       href: "/admin/guias",
+      group: "manage",
       label: "Guías y notas",
       count: draftPostCount,
       active: active === "posts",
     },
     {
       href: "/admin/importar",
+      group: "manage",
       label: esPanel.adminImportTitle,
       active: active === "import",
     },
     {
       href: "/admin/inmobiliarias",
+      group: "manage",
       label: esPanel.adminAgenciesTitle,
       active: active === "agencies",
     },
     {
       href: "/admin/agentes",
+      group: "manage",
       label: esPanel.adminAgentsTitle,
       active: active === "agents",
     },
     {
       href: "/admin/usuarios",
+      group: "manage",
       label: esPanel.adminUsersTitle,
       active: active === "users",
     },

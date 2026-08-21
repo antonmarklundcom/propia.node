@@ -286,6 +286,9 @@ export const esPanel = {
 
   // Admin — usuarios
   adminUsersTitle: "Usuarios",
+  /** Labels for the two panel tab rows — see PanelBar's `group`. */
+  navMain: "Secciones del panel",
+  navManage: "Administración",
   adminUsersEmpty: "Todavía no hay usuarios.",
   adminUsersNewTitle: "Crear usuario",
   adminUsersListTitle: "Usuarios del panel",
