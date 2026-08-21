@@ -45,6 +45,7 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
 const ROUTED_LABEL: Record<string, string> = {
   agency: "Inmobiliaria",
   agent: "Agente",
+  owner: "Particular",
   internal: "Interno",
   developer: "Desarrolladora",
 };

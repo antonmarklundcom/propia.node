@@ -40,7 +40,7 @@ export interface LeadPayload {
     operation: string;
   };
   project?: { slug: string; name: string };
-  routedTo: "agency" | "agent" | "internal" | "developer";
+  routedTo: "agency" | "agent" | "owner" | "internal" | "developer";
 }
 
 /**

@@ -18,7 +18,9 @@ import type { EditScope } from "@/lib/listing-edit";
 export function homeForRole(user: SessionUser): string {
   if (isSuperAdmin(user.role)) return "/admin";
   if (isAgencyRole(user.role)) return "/agencia";
-  return "/";
+  // A consumer account exists because somebody published a property; their
+  // own avisos are the only panel they have (D8).
+  return "/mis-avisos";
 }
 
 /** Any authenticated user, or bounce to /login (optionally preserving a target). */
@@ -87,6 +89,30 @@ export async function requireAgencyContext(): Promise<AgencyContext> {
  */
 export function canManageTeam(ctx: AgencyContext): boolean {
   return ctx.user.role === "agency_admin" && ctx.agencyId != null;
+}
+
+/**
+ * Owner-scoped access (/mis-avisos) — the FSBO seller's panel (PLAN.md D8).
+ *
+ * Deliberately NOT an agency role check. A private seller is not a
+ * professional: they get no `agents` row, no /agente/[slug] profile and none
+ * of the trust signals that come with one (CLAUDE.md, FSBO loop). What they
+ * get is a scope, `owner_user_id`, which is the same claim /publicar already
+ * writes and the same one listingScopeWhere() has always understood.
+ *
+ * Staff surfaces win when a user has one: an agency account or an independent
+ * agent already has the richer /agencia panel over the very same rows, so
+ * sending them here too would be two doors onto one inbox.
+ */
+export async function requireOwnerContext(): Promise<{
+  user: SessionUser;
+  scope: EditScope;
+}> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login?next=%2Fmis-avisos");
+  if (isSuperAdmin(user.role)) redirect("/admin");
+  if (isAgencyRole(user.role)) redirect("/agencia");
+  return { user, scope: { kind: "owner", userId: user.id } };
 }
 
 export function panelScope(ctx: AgencyContext): EditScope {

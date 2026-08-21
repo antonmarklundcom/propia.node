@@ -506,11 +506,26 @@ export const leads = mysqlTable(
     email: varchar("email", { length: 190 }),
     message: text("message"),
     utm: json("utm"),
+    /**
+     * Which inbox owns this lead.
+     *
+     * `owner` is the FSBO lane (PLAN.md D8): a listing with no agent and no
+     * agency, published by a private seller through /publicar. Before it
+     * existed those leads fell into `internal` alongside valuation and seller
+     * leads, where only /admin/leads could see them and the founder forwarded
+     * each one by hand. The lane is what lets the seller's own panel find them.
+     */
     routedTo: mysqlEnum("routed_to", [
       "agency",
       "agent",
       "internal",
       "developer",
+      // Appended, not slotted next to `agent` where it reads better. MySQL
+      // stores an ENUM as the ordinal of its value, so inserting a member in
+      // the middle renumbers every member after it and makes the ALTER rewrite
+      // and remap existing rows. Appending is a pure add: no stored row changes
+      // meaning. Keep new lanes at the end.
+      "owner",
     ]).notNull(),
     ghlContactId: varchar("ghl_contact_id", { length: 80 }), // set by the GHL webhook response
     createdAt: createdAt(),
