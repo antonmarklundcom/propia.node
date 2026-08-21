@@ -242,9 +242,24 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
           *data* is still Spanish — `title_en`/`description_en` have no writer
           — so this closes the copy half of the flip precondition, not the
           translation half.
-        - There is **no per-vertical theming** — no token set, no shell
-          variant, no `copy` branch. `VerticalConfig.copy` ("ownership" |
-          "foreign" | ...) is declared and never read.
+        - ~~There is **no per-vertical theming**~~ — **the token wire
+          exists** (`src/design/themes.ts`, written onto `<html>` by
+          `app/layout.tsx` for the resolved vertical, so every rule reading
+          `var(--color-*)` follows the domain). `OVERRIDES` is empty on
+          purpose: giving a door its own palette is an entry in that file, not
+          a refactor. What is genuinely unbuilt is a **shell variant** — a
+          different homepage composition per door — which is the founder's
+          "fully separate visual identity" ask and is design work, not wiring.
+        - **`VerticalConfig.copy` is still declared and never read — and
+          re-checked 2026-08-21, it does NOT block the flip.** The two doors
+          the flip concerns differ by *locale*, and `en.ts` is already written
+          for foreign buyers (D6's own translation-scope decision), so
+          `copy: "foreign"` would select copy the locale already selected.
+          Its only non-redundant consumers are the Spanish feeder doors that
+          share `es` but need a different pitch — `terreno` ("land"),
+          `alquiler` ("rental") — and neither domain is owned. Consuming it
+          today means writing copy for doors that may never open. Leave it
+          declared; build the branch when a feeder actually launches.
         - ~~**`VerticalConfig.filters` is never applied to a query.**~~
           **FIXED 2026-08-21.** `verticalConds()` (`src/lib/facet-sql.ts`) is
           now ANDed into the category grid and its indexability count, the map
@@ -1109,8 +1124,14 @@ localhost database, and this change does not touch panel scoping.
 **Next in these lanes, for whoever picks it up:**
 - Batch 3 layer 3 — the translation batch job filling `title_en` /
   `description_en` (MIGRATION for `title_en`, needs `ANTHROPIC_API_KEY`).
-- The rest of the D6 consumption layer — per-vertical theme tokens and the
-  `copy` branch — is still unbuilt, and still blocks the flip.
+- The rest of the D6 consumption layer, re-checked 2026-08-21: theme **tokens**
+  exist (`src/design/themes.ts`, consumed in `app/layout.tsx`; the overrides map
+  is deliberately empty), and the `copy` branch turns out **not** to block the
+  flip — locale already selects the foreign-buyer copy, and `copy`'s only
+  distinct consumers are unowned feeder domains. What is left of the flip
+  precondition is the **translation job** (`title_en` / `description_en` have
+  no writer) and the founder's separate-visual-identity design pass, which is
+  design work rather than wiring.
 
 ## Standing rules
 
