@@ -211,12 +211,44 @@ queries don't run. Tags, TTLs and the invalidation helpers live in
 also the zero-match category surface, and it must not become a 500 during the
 exact incident where MySQL is the thing that is unwell.
 
+## Listing filters — one vocabulary, two files
+
+Every surface that narrows a listing set goes through the same layer. Adding a
+facet in a page or a route handler instead is how the grid and its map start
+disagreeing about what the visitor asked for.
+
+- **`src/lib/facets.ts`** — pure. The `ListingFacets` type, the query-string
+  names (`precio_min`, `dormitorios`, `orden`, `ciudad`, …), `parseFacetParams`
+  and its inverse `facetSearchParams`. No `next/*`, no drizzle: the filter bar
+  is a client component and shares this. Same split as `brand.ts`.
+- **`src/lib/facet-sql.ts`** — `server-only`. `facetConds()`, `verticalConds()`
+  and `publishedFacetWhere()`. The only place a facet becomes a WHERE clause,
+  and the only place that knows price filters run on `price_usd` (the
+  normalized, indexed column) rather than `price_amount`.
+
+Two rules that bite:
+
+- **`VerticalConfig.filters` is now read** (it was declared and consumed by
+  nothing until 2026-08-21). It narrows the grid, the count that decides
+  indexability, the map pins, the home rails, the operation hub, similar
+  listings and the sitemap. A door may only ever *narrow* what a visitor asked
+  for — the conditions are ANDed, never merged over the visitor's choice.
+- **A cached query that filters by vertical must put the vertical key in its
+  cache key.** The home payload and the sitemap entries do; a new one that
+  forgets will serve one door's listing set to another. No enabled vertical
+  declares filters today, so a mistake here is silent until flip day.
+
+`npm run verify:facets` covers the pure half (parse ∘ build is the identity,
+every facet maps to its own column, every filter value declared in
+`verticals.ts` is a real enum member). It runs in the pre-push hook.
+
 ## i18n — read this before touching any visitor-facing string
 
 The site is **Spanish-only** and stays that way until the Spanish site is
-finished (both live hosts are `locale: "es"`). What exists today is the
-plumbing, not a second language: there is **no `en.ts`** — that is Batch 3
-layer 2 in PLAN.md.
+finished (both live hosts are `locale: "es"`). `src/i18n/en.ts` exists as of
+2026-08-21 (Batch 3 layer 2) but **no host serves it** — a door renders
+English only once its `verticals.ts` entry says `locale: "en"`, and that is
+the whole D6 flip checklist, never a one-line change.
 
 - **Strings live in `src/i18n/es.ts`.** Buyer-facing copy — home, the operation
   hubs, the category grid, `SearchBar`, `CategoryFilterBar`, `ListingCard` and
@@ -236,9 +268,22 @@ layer 2 in PLAN.md.
 - **`src/i18n/index.ts` must never import `next/headers`**, directly or
   transitively. `SearchBar` and five other client components consume it. The
   request-scoped half is `server.ts`, which is `server-only`.
-- `Dictionary` is derived from the Spanish dictionary (`typeof esDictionary`),
-  so when `en.ts` lands a missing key is a type error, not a blank string on a
-  live page. Until then `en` resolves to the Spanish dictionary.
+- **`en.ts` is a peer of `es.ts`, not a copy of its sentences.** The English
+  door is pitched at foreign buyers (PLAN.md D6), so *cuota* is "estimated
+  monthly payment", *en pozo* is "pre-construction", and `enCategory.title`
+  puts the operation where English wants it. Translate intent; never invent a
+  fact the Spanish does not state.
+- `Dictionary` is `Widen<typeof esDictionary>` — the Spanish shape with its
+  literal strings widened to `string`. Widening is what makes a second locale
+  satisfiable at all (`as const` would otherwise require the exact Spanish
+  sentence); the structure is not widened, so a missing key or a wrong leaf
+  type is still a type error. Both dictionaries are checked with `satisfies`
+  where they are assembled in `index.ts`.
+- **Add a key to `es.ts` ⇒ add it to `en.ts` in the same commit.** The type
+  gate catches a missing key; it does *not* catch a function that quietly takes
+  fewer arguments (TypeScript allows that), which is what `npm run verify:i18n`
+  is for — keys, arity, array lengths, empty strings, both dictionaries walked
+  side by side. It runs in the pre-push hook.
 - **Numbers are not copy.** `toLocaleString` takes a number locale derived from
   the request (`es-PY` / `en-US`), not the dictionary — the thousands separator
   differs even where the words don't.
@@ -257,8 +302,10 @@ shared quota on a deploy path that does not use it.
   refuses to stage them. If a task genuinely needs one, state the case and stop
   — explicit yes first.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
-  `npm run build`, `npm run verify:import`. Same thing by hand:
-  `npm run verify:local`.
+  `npm run build`, `npm run verify:import`, `npm run verify:facets`,
+  `npm run verify:i18n`. Same thing by hand: `npm run verify:local`. The last
+  three are pure — no database, no network — which is why they belong in a
+  hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath
   .githooks`).
