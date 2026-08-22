@@ -1081,11 +1081,50 @@ Hostinger deploys code only, it never runs migrations):
 ```powershell
 # PowerShell, from a checkout of current main
 $env:DATABASE_URL = "mysql://<prod user>:<prod password>@<prod host>:3306/<prod db>"
-npm run db:migrate
+
+npm run db:status -- --probe   # 1. look: what is actually pending?
+npm run db:migrate             # 2. apply everything pending, in order
+npm run db:status -- --probe   # 3. prove the owner lane inserts
 ```
 
 Run it just before or immediately after merging #69. `db:migrate` applies
 every pending migration in order, so this run also clears 0002 above.
+
+**Read step 1's output before running step 2 — it is not a formality.** This
+file has claimed different pending sets at different times (the [YOU] block
+above still lists 0003 as pending, which cannot be true if 0008 is applied:
+0008 drops an index on the table 0003 creates). `db:migrate` decides what to
+run from `__drizzle_migrations`, not from this file, and README step 2
+documents pasting a migration into phpMyAdmin as an accepted path — which
+applies the SQL and records nothing. So the tracking table can under-report,
+and a `db:migrate` that trusts it would replay a `CREATE TABLE` that already
+exists. MySQL autocommits DDL, so a replay that fails halfway leaves the run
+partly applied with no rollback.
+
+`npm run db:status` (`scripts/check-migrations.ts`) is the look-before-you-fire
+step: read-only, it hashes each `drizzle/*.sql` the same way drizzle's migrator
+does (sha256 over the whole file) and matches it against what prod recorded, so
+it reports the real pending set rather than a remembered one. It also flags a
+recorded hash with **no** matching file — prod ran SQL this checkout does not
+have — which is the one case where `db:migrate` is the wrong tool and a human
+has to reconcile first.
+
+Two things it prints that shape the recovery, not just the fix:
+
+- **`sql_mode`.** Strict mode makes the bad insert an error, so the lead never
+  reached the table and is gone. Non-strict makes MySQL store `''` and warn,
+  which is the shape a "leads vanish quietly" report takes — and those rows are
+  recoverable. `db:status` counts `routed_to = ''` rows for exactly that.
+- **`--probe`** inserts one `routed_to = 'owner'` lead inside a transaction and
+  always rolls it back (in a `finally`, so a throw cannot leave a row behind).
+  Reading the enum definition proves the column changed; the probe proves an
+  insert the app would make now succeeds.
+
+Verified end to end against a scratch MySQL on 2026-08-22: with 0000–0008
+applied and 0009 pending, `db:status --probe` reported `PENDING 0009` and the
+probe failed with `Data truncated for column 'routed_to'` — the production
+symptom exactly. After `db:migrate`, the same command reported 10/10 applied
+and the probe inserted cleanly. `db:migrate` run twice was a no-op.
 
 ## 2026-08-21 session — facet layer, vertical filters, en.ts
 

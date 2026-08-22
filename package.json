@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:status": "tsx --tsconfig scripts/tsconfig.json scripts/check-migrations.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "seed:financing": "tsx --tsconfig scripts/tsconfig.json scripts/seed-financing.ts",
