@@ -1131,6 +1131,27 @@ recorded hash with **no** matching file — prod ran SQL this checkout does not
 have — which is the one case where `db:migrate` is the wrong tool and a human
 has to reconcile first.
 
+**Since 2026-08-26 it also answers the question the migration list is only a
+proxy for: does this database have what the deployed code selects?** It reads
+`src/db/schema.ts` through drizzle's own metadata, diffs it against
+`information_schema`, and names every missing table, missing column and
+missing enum value. That matters because drizzle emits `SELECT` with every
+column of a table spelled out, so one absent column is not a broken feature —
+it is a 500 on every page that reads that table. Run it **before** merging a
+schema PR and **again right after** `db:migrate`; "no drift" is the only
+green there is. It also reconciles the two lists and says which way they
+disagree:
+
+- **0 pending but columns missing** → a migration's row was recorded without
+  its SQL (or the SQL was rolled back). `db:migrate` will do nothing; this
+  needs hand-written DDL.
+- **pending but nothing missing** → the SQL was pasted into phpMyAdmin without
+  recording a row. `db:migrate` would replay it; read each pending file first.
+
+Verified against a scratch server in all four states: clean, a database behind
+on 0010/0011 (four columns named), a hand-applied schema with the tracking
+table behind, and a missing table.
+
 Two things it prints that shape the recovery, not just the fix:
 
 - **`sql_mode`.** Strict mode makes the bad insert an error, so the lead never
