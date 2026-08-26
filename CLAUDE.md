@@ -224,6 +224,17 @@ queries don't run. Tags, TTLs and the invalidation helpers live in
   re-wraps them in its exported wrapper — see `listFinancingPrograms` and the
   `revive*` helpers in `post-queries.ts` — not in each consumer.
 
+**The sitemap has two halves and they are not interchangeable.**
+`src/lib/sitemap.ts` decides *what* is listed — the half that must agree with
+`getIndexability()` and `hostOwnsListingDetail()`, and where a new page type
+goes. `src/lib/sitemap-xml.ts` decides how it is served: the hour-long cache
+every chunk shares, the 10 000-URL chunking, and the XML. `/sitemap.xml`
+renders a `<urlset>` while the site fits in one chunk and a `<sitemapindex>`
+past it, so `robots.txt` keeps pointing at one address either way. It is a
+route handler rather than Next's `generateSitemaps()` **because that
+enumerates its chunk ids at build time and this build has no database** — the
+same constraint that keeps every route dynamic.
+
 `app/not-found.tsx` deliberately does `listCities().catch(() => [])`: a 404 is
 also the zero-match category surface, and it must not become a 500 during the
 exact incident where MySQL is the thing that is unwell.
