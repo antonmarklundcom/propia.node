@@ -344,6 +344,21 @@ the whole D6 flip checklist, never a one-line change.
   fewer arguments (TypeScript allows that), which is what `npm run verify:i18n`
   is for — keys, arity, array lengths, empty strings, both dictionaries walked
   side by side. It runs in the pre-push hook.
+- **The English *data* layer is `cron:translate`, and it is not a hook.**
+  `listings.title_en` / `description_en` are written only by
+  `npm run cron:translate` (`src/lib/translate.ts` + `scripts/translate-listings.ts`),
+  never by a form and never in a request. What needs work is decided by
+  `listings.translation_hash` — a sha256 of the title and Spanish description
+  the stored English came from — so an edit is picked up by the next run
+  without any publish-path hook. **Do not add one:** a publish must not depend
+  on a third party being up, and a multi-second outbound call inside a server
+  action is the exact shape of the 503 post-mortem in PLAN.md. Without
+  `ANTHROPIC_API_KEY` the job refuses to run and writes nothing; the site is
+  unaffected either way, because no host serves `locale: "en"` yet.
+- **Nothing reads `title_en`/`description_en` yet** — wiring the detail page,
+  the card and the metadata to prefer them on an English door is flip-day work
+  (PLAN.md D6), listed in the checklist there. The columns being populated is
+  the *precondition* for the flip, not the flip.
 - **Numbers are not copy.** `toLocaleString` takes a number locale derived from
   the request (`es-PY` / `en-US`), not the dictionary — the thousands separator
   differs even where the words don't.

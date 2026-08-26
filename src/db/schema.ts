@@ -73,7 +73,21 @@ export const listings = mysqlTable(
 
     title: varchar("title", { length: 180 }).notNull(),
     descriptionEs: text("description_es"),
-    descriptionEn: text("description_en"), // filled lazily (Claude API) for realestateinparaguay.com
+    /**
+     * The English door's copy (PLAN.md D6). Written only by
+     * `npm run cron:translate` (src/lib/translate.ts) — never by a form, never
+     * in the request path, and never by hand: an operator edit here would be
+     * silently overwritten the next time the Spanish text changes.
+     */
+    titleEn: varchar("title_en", { length: 180 }),
+    descriptionEn: text("description_en"),
+    /**
+     * sha256 of the Spanish source the English above was translated from. It
+     * is what separates "already translated" from "translated, then the seller
+     * rewrote the description": without it the job would either re-translate
+     * the whole table every run or never refresh a word of it.
+     */
+    translationHash: char("translation_hash", { length: 64 }),
 
     priceAmount: decimal("price_amount", { precision: 14, scale: 2 }).notNull(),
     priceCurrency: mysqlEnum("price_currency", ["USD", "PYG"]).notNull(),

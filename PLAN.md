@@ -174,10 +174,19 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
         free-text description. Barrio/location names are assumed
         identical in Spanish and English and are NOT translated (confirm
         this holds for every barrio in the DB before relying on it — some
-        neighborhood names may not be). Needs new `*_en` columns beyond
-        `description_en` (e.g. title) plus a batch job (Claude API,
-        `.env.example` already reserves this) that runs on publish/edit,
-        not per-request.
+        neighborhood names may not be). **The batch job is BUILT**
+        (2026-08-26, migration 0011): `npm run cron:translate` fills
+        `title_en` / `description_en`, and `translation_hash` is what tells it
+        an edit happened, so it is picked up without a publish-path hook (see
+        `src/lib/translate.ts` for why a hook would be the wrong shape).
+        **What is still missing is the reader half** — nothing prefers the
+        English columns yet. That is flip-day work, and the sites are:
+        `app/propiedad/[slug]/page.tsx` (title, description, `generateMetadata`),
+        `src/components/ListingCard.tsx` (card title), `src/lib/jsonld.ts`
+        (`description`), and the OG title. All four should read the `*_en`
+        column when the resolved vertical's locale is `en` **and the column is
+        non-null**, falling back to Spanish otherwise — a listing published
+        five minutes before the cron runs must render, not blank.
       - **Flip timing (decided): wait.** `realestateinparaguay.com` is
         live and Spanish-indexed today — do not touch its `locale`/
         `filters` in `verticals.ts` yet. Sequence: (1) launch
@@ -696,7 +705,8 @@ panel scoping.
   forwarding it from /admin/leads.
 - **Batch 3 — i18n (strictly sequential):** ~~string extraction →
   `getDictionary`~~ (**DONE 2026-08-20**) → ~~`en.ts`~~ (**DONE 2026-08-21**,
-  see the section at the end) → translation job (MIGRATION for `title_en`).
+  see the section at the end) → ~~translation job~~ (**DONE 2026-08-26**,
+  MIGRATION 0011 for `title_en` + `translation_hash`).
   Flip day itself stays gated on D6's checklist and is NOT part of the batch.
 - **Batch 4 — retention & monetisation (mostly parallel):** favorites +
   saved-search/alert engine (D9, MIGRATION), ~~valuation→publish funnel~~
@@ -1063,6 +1073,15 @@ counter deliberately avoids the same trick; see `recordListingView`.
 
 ## Pending migration
 
+**`drizzle/0011` (Batch 3 layer 3, the English columns) is generated and NOT
+applied to production.** It adds `listings.title_en` and
+`listings.translation_hash` — two additive nullable columns, no data touched,
+no index. Same standing hazard as 0010 and for the same reason (deployed code
+selects every column in `schema.ts`), so it lands in the same window as its
+merge. It is otherwise inert: nothing reads the columns yet, and
+`npm run cron:translate` does nothing at all without `ANTHROPIC_API_KEY`.
+0010 and 0011 apply in one `db:migrate` run, in order.
+
 **`drizzle/0010` (F38, the display coordinate) is generated and NOT applied to
 production.** It adds `listings.display_lat` / `display_lng`, backfills them
 from `coalesce(listing coord, location centroid)`, and moves `idx_geo` onto
@@ -1282,6 +1301,32 @@ is deliberate), and the `copy` branch does **not** block the flip — locale
 already selects the foreign-buyer copy, and `copy`'s only distinct consumers
 are the unowned feeder domains. **The flip precondition is now one item: the
 translation job.**
+
+## 2026-08-26 session — F38, the translation job, sitemap chunking
+
+Three PRs, in dependency order. **Two of them carry migrations** and per D11
+neither auto-merges.
+
+1. **F38 — the display coordinate** (MIGRATION 0010). The map's bounding box
+   filtered `coalesce(listings.lat, locations.lat)`, which is not sargable, so
+   `idx_geo` was unused and every pan scanned the published set.
+   `listings.display_lat/display_lng` are now materialised at write time by
+   `src/lib/geo.ts`, `idx_geo` covers them, and the bbox query dropped the
+   `locations` join. Measured: `ALL` + block-nested-loop join → `range` on
+   `idx_geo`, key_len 13, 130 index entries at 3 000 listings, identical result
+   set. `npm run cron:geo` is the repair for the one staleness a write hook
+   cannot see — a centroid moving.
+2. **Batch 3 layer 3 — the translation job** (MIGRATION 0011). `title_en` and
+   `translation_hash` added; `npm run cron:translate` fills the English
+   columns via the Claude API. Not a publish hook, on purpose — see D6 above
+   and `src/lib/translate.ts`. Exercised end to end against a stub Messages
+   API: dry run, write, no-op re-run, edit detection, `--limit`, and a mid-batch
+   failure that isolates to its row and leaves it flagged for the next run.
+   **The flip precondition is met in code but not in data** — the job has never
+   run against production, so coverage is 0%. `cron:translate` prints coverage
+   on every run; D6's "only once translation coverage looks solid" is that
+   number.
+3. **F43 — sitemap chunking.** Separate PR; no migration.
 
 **Honest limit, same as the previous session:** no database was reachable (the
 sandbox blocks Docker Hub), so nothing was exercised against real rows — and
