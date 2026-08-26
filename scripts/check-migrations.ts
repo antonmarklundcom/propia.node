@@ -1,6 +1,16 @@
 /**
- * Report what the *production database* actually has, versus what `drizzle/`
- * claims — and whether the D8 `owner` lead lane can be written.
+ * Report what the *production database* actually has, versus what the code
+ * needs — the migration journal, the columns `src/db/schema.ts` declares, and
+ * whether the D8 `owner` lead lane can be written.
+ *
+ * The migration list answers "did drizzle record running these?". That is a
+ * proxy, and it can lie in both directions (below). **The question that
+ * actually matters is "does this database have what the deployed code
+ * selects?"** — because drizzle emits `SELECT` with every column in
+ * `schema.ts` named, so one missing column 500s every page that reads that
+ * table, not just the feature that added it. The schema-drift section answers
+ * that one directly, by reading `schema.ts` and `information_schema` and
+ * diffing them.
  *
  * Why this exists: `drizzle/meta/_journal.json` lists every migration the repo
  * has generated. It says nothing about which of them ran against prod. README
@@ -27,6 +37,9 @@ import { createHash } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import mysql from "mysql2/promise";
+import { is } from "drizzle-orm";
+import { getTableConfig, MySqlTable } from "drizzle-orm/mysql-core";
+import * as appSchema from "../src/db/schema";
 
 const url = process.env.DATABASE_URL ?? "";
 if (!url) {
@@ -96,6 +109,8 @@ async function main() {
     )) as [Array<{ table_schema: string }>, unknown];
 
     console.log("\n=== migrations ===");
+    /** Cross-referenced by the drift section below. Null = nothing recorded. */
+    let pendingCount: number | null = null;
     if (tracking.length === 0) {
       console.log(
         "No __drizzle_migrations table exists anywhere on this server.\n" +
@@ -140,11 +155,138 @@ async function main() {
               "\n  Production ran SQL this checkout does not have. Do not run db:migrate; investigate.",
           );
         }
+        pendingCount = pending;
         console.log(`\n  ${pending} pending, ${journal.entries.length - pending} applied.`);
         if (pending > 0) {
           console.log("  `npm run db:migrate` runs ALL of the above PENDING rows, in order.");
         }
       }
+    }
+
+    /* ---------------- schema drift ---------------- */
+
+    /**
+     * What `src/db/schema.ts` declares, flattened. Drizzle's own metadata, so
+     * it cannot drift from what the ORM actually emits — the point of reading
+     * the schema object rather than parsing the migrations.
+     */
+    const declared = Object.values(appSchema)
+      .filter((v) => is(v, MySqlTable))
+      .map((t) => getTableConfig(t as MySqlTable));
+
+    const [live] = (await c.query(
+      `SELECT table_name, column_name, column_type FROM information_schema.columns
+        WHERE table_schema = DATABASE()`,
+    )) as [
+      Array<{ table_name: string; column_name: string; column_type: string }>,
+      unknown,
+    ];
+
+    const liveByTable = new Map<string, Map<string, string>>();
+    for (const r of live) {
+      // information_schema casing follows the server's lower_case_table_names.
+      const table = r.table_name.toLowerCase();
+      if (!liveByTable.has(table)) liveByTable.set(table, new Map());
+      liveByTable.get(table)!.set(r.column_name.toLowerCase(), r.column_type);
+    }
+
+    const missingTables: string[] = [];
+    const missingColumns: string[] = [];
+    const missingEnumValues: string[] = [];
+    let declaredColumns = 0;
+
+    for (const t of declared) {
+      declaredColumns += t.columns.length;
+      const liveCols = liveByTable.get(t.name.toLowerCase());
+      if (!liveCols) {
+        // Its columns are missing too, but naming 30 of them under a table
+        // that does not exist is noise — the table line says it.
+        missingTables.push(t.name);
+        continue;
+      }
+      for (const col of t.columns) {
+        const liveType = liveCols.get(col.name.toLowerCase());
+        if (liveType === undefined) {
+          missingColumns.push(`${t.name}.${col.name}`);
+          continue;
+        }
+        /**
+         * An enum the database is missing a value for is the D8 incident
+         * generalised: the column exists, every SELECT is fine, and the one
+         * INSERT that uses the new value fails (or, on a non-strict server,
+         * silently stores ''). Comparing the declared values against the live
+         * column_type catches the next one of these before it ships.
+         */
+        const values = (col as unknown as { enumValues?: string[] }).enumValues;
+        if (Array.isArray(values) && liveType.startsWith("enum(")) {
+          for (const v of values) {
+            if (!liveType.includes(`'${v}'`)) {
+              missingEnumValues.push(`${t.name}.${col.name} is missing '${v}'`);
+            }
+          }
+        }
+      }
+    }
+
+    console.log("\n=== schema drift (src/db/schema.ts vs this database) ===");
+    console.log(
+      `${declared.length} tables, ${declaredColumns} columns declared in schema.ts.`,
+    );
+
+    if (missingTables.length === 0 && missingColumns.length === 0 && missingEnumValues.length === 0) {
+      console.log("Every declared table, column and enum value is present. No drift.");
+    }
+
+    if (missingTables.length > 0) {
+      console.log(
+        `\n  MISSING TABLES (${missingTables.length}) — every query against these fails:`,
+      );
+      for (const t of missingTables) console.log(`    ${t}`);
+    }
+
+    /**
+     * The headline, and the reason this section exists. Drizzle names every
+     * column of a table in its SELECT, so one column the database does not
+     * have is not a broken feature — it is a 500 on every page that reads that
+     * table. This is what to look at before merging a schema PR, and again
+     * right after running db:migrate.
+     */
+    if (missingColumns.length > 0) {
+      console.log(
+        `\n  MISSING COLUMNS (${missingColumns.length}) — deployed code SELECTs these by name,\n` +
+          "  so EVERY page that reads the table 500s until the migration runs:",
+      );
+      for (const col of missingColumns) console.log(`    ${col}`);
+    }
+
+    if (missingEnumValues.length > 0) {
+      console.log(
+        `\n  ENUM VALUES THE DATABASE WILL NOT ACCEPT (${missingEnumValues.length}) — reads are fine;\n` +
+          "  an INSERT or UPDATE using one of these fails, or on a non-strict server\n" +
+          "  stores '' with a warning nobody reads:",
+      );
+      for (const v of missingEnumValues) console.log(`    ${v}`);
+    }
+
+    /**
+     * The two reconciliations that matter, because each means the migration
+     * list above is lying and the fix is different in each direction.
+     */
+    const drifted =
+      missingTables.length + missingColumns.length + missingEnumValues.length;
+    if (pendingCount === 0 && drifted > 0) {
+      console.log(
+        "\n  WARNING: the tracking table says nothing is pending, yet the database is\n" +
+          "  missing things schema.ts declares. Something applied a migration's row\n" +
+          "  without its SQL, or the SQL was rolled back afterwards. `db:migrate` will\n" +
+          "  do NOTHING here — this needs a human and hand-written DDL.",
+      );
+    } else if (pendingCount !== null && pendingCount > 0 && drifted === 0) {
+      console.log(
+        "\n  Note: migrations are pending but nothing is missing — the schema changes\n" +
+          "  were applied by hand (phpMyAdmin) without recording a row. `db:migrate`\n" +
+          "  would replay them; read each pending file above before running it.",
+      );
     }
 
     /* ---------------- the actual incident ---------------- */

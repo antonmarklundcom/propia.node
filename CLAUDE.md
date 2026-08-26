@@ -390,6 +390,24 @@ shared quota on a deploy path that does not use it.
 - Because there is no required status check, **nothing auto-merges** — see
   PLAN.md D11/D20.
 
+## Migrations — `db:status` before you fire, and again after
+
+`npm run db:migrate` decides what to run from `__drizzle_migrations`, which can
+be wrong in both directions (README documents pasting SQL into phpMyAdmin,
+which records nothing). So the migration list is a proxy. The question that
+actually matters is **does this database have what the deployed code selects**,
+because drizzle names every column of a table in its `SELECT` — one missing
+column is a 500 on every page that reads that table, not a broken feature.
+
+`npm run db:status` answers both: the real pending set (hashing each
+`drizzle/*.sql` the way drizzle's migrator does), and a **schema-drift diff**
+of `src/db/schema.ts` against `information_schema` naming every missing table,
+column and enum value. Read-only; `--probe` additionally proves an `owner`-lane
+lead inserts, inside a transaction it always rolls back.
+
+Run it **before merging any PR that touches `schema.ts`** and **again
+immediately after `db:migrate`**. `No drift` is the only green.
+
 ## Working agreements with the founder
 
 - **Autonomous build + merge is authorised** for well-verified, low-risk work
