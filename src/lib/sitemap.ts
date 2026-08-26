@@ -5,8 +5,11 @@
  * agreement is what keeps this out of doorway-page territory).
  *
  * One query for listings + one for locations, aggregated in memory. At 15k
- * listings this is trivial; chunked child sitemaps (Next generateSitemaps)
- * are an M6 scale concern, not a launch one.
+ * listings this is trivial.
+ *
+ * This module decides *what* is in the sitemap — the part that has to agree
+ * with `getIndexability()` and `hostOwnsListingDetail()`. Caching, chunking
+ * and the XML itself live in `sitemap-xml.ts` (audit F43).
  */
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
