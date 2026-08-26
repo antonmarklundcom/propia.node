@@ -507,7 +507,7 @@ items. Still open / partial:
 | F63 | P3 | **CLOSED 2026-08-19** | No code change: ARCHITECTURE.md §4 already documents `0 → 404 (via notFound()) or redirect to parent — a true 410 would need a route handler and buys nothing over 404 for deindexing`. Code and doc agree; the audit row was stale |
 | F17 | P1 | **RESCOPED + DONE 2026-08-20** | The route-cache half is dead ground and the data-cache half is now finished. See "F17, re-measured" below |
 | F38 | P2 | **FIXED 2026-08-26** | `listings.display_lat/display_lng` materialised at write time (`src/lib/geo.ts`), `idx_geo` repointed at them, the bbox join dropped. MIGRATION `0010` — see "Pending migration" |
-| F43 | P2 | PARTIAL | Sitemap cached but unchunked; needed near ~25k listings, not before |
+| F43 | P2 | **FIXED 2026-08-26** | `/sitemap.xml` is a `<urlset>` under 10 000 URLs and a `<sitemapindex>` over it, with chunks at `/sitemap/{n}.xml`. Route handlers, not `generateSitemaps()` — that enumerates its ids at build time and the build has no database. No migration |
 
 ### F17, re-measured (2026-08-20) — the route cache is not the win
 
