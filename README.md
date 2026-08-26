@@ -20,6 +20,8 @@ npm run db:generate           # generate SQL migrations from src/db/schema.ts
 npm run db:migrate            # apply them
 npm run seed:financing        # financing_programs (verify rates before launch)
 npm run seed:locations        # Gran Asunción metro + major cities hierarchy
+                              # (follow it with `npm run cron:geo` — moving a
+                              #  centroid moves every pin borrowing it)
 npm run dev                   # http://localhost:3000
 npm run db:studio             # Drizzle Studio — interim admin UI
 ```
@@ -29,6 +31,7 @@ Cron-style jobs (idempotent; also run on a schedule in production):
 ```bash
 npm run cron:cuotas           # cache listings.cuota_gs (French amortization)
 npm run cron:medians          # market_medians for the current month
+npm run cron:geo              # repair listings.display_lat/lng after a centroid moves
 ```
 
 White-glove import (M2) — CSV/spreadsheet → pending_review listings:

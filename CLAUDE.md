@@ -270,6 +270,38 @@ Two rules that bite:
 every facet maps to its own column, every filter value declared in
 `verticals.ts` is a real enum member). It runs in the pre-push hook.
 
+## Map coordinates — materialized at write time, never coalesced in a query
+
+A listing is plotted at its own `lat`/`lng` when it has one and at its
+barrio/city centroid when it does not. That answer lives in
+`listings.display_lat` / `display_lng`, and `idx_geo` is
+`(status, display_lat, display_lng)`.
+
+- **The rule has one home: `src/lib/geo.ts`.** `syncDisplayCoords(conn, id)`
+  after any write that touched `lat`, `lng` or `location_id` — that is
+  `saveDraft`, `updateListing`, `createClaimedDraft`, both import writers and
+  the import rollback. A writer that only changes status, price or ownership
+  does not need it. `syncAllDisplayCoords()` is the same statement over the
+  whole table.
+- **Do not put the coalesce back into a query.** `coalesce(listings.lat,
+  locations.lat)` in a WHERE is a function of two columns across a join: not
+  sargable, so the bounding box could not use `idx_geo` and every map pan
+  scanned the published set (audit F38). Measured on 3 000 rows: `ALL` + a
+  block-nested-loop join before, `range` on `idx_geo` (key_len 13, 130 index
+  entries) after.
+- **`display_lat BETWEEN …` already excludes NULL — never add `IS NOT NULL`
+  next to it.** The redundant predicate is what made MariaDB fall back from
+  `range` to `ref` on `status` alone (734 entries instead of 130). It reads
+  like harmless defensiveness and costs the index.
+- **A centroid that moves is the one staleness no write hook can see.**
+  `npm run cron:geo` (`--dry` first) repairs the table and names published
+  listings with no position at all — those render everywhere except the map,
+  and nothing else in the app will ever mention it. Run it after
+  `npm run seed:locations` or any edit to `locations.lat/lng`.
+- The sync runs raw SQL rather than `db.update()` on purpose: `updatedAt`
+  carries a JS-side `$onUpdate`, and a recomputation a visitor cannot see must
+  not move a listing's sitemap `lastmod`.
+
 ## i18n — read this before touching any visitor-facing string
 
 The site is **Spanish-only** and stays that way until the Spanish site is

@@ -13,9 +13,9 @@
  * future caller cannot forget it.
  */
 import "server-only";
-import { and, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { listings, locations } from "@/db/schema";
+import { listings } from "@/db/schema";
 import { facetConds, verticalConds } from "@/lib/facet-sql";
 import type { ListingFacets } from "@/lib/facets";
 import type { VerticalConfig } from "@/config/verticals";
@@ -85,10 +85,17 @@ function round(value: number): number {
 /**
  * Published listings whose position falls inside the box.
  *
- * `coalesce(listing, barrio/city centroid)` is done in SQL so the bounding-box
- * test applies to the position we will actually show — filtering on the private
- * coordinate and then displaying a different one would put pins outside the box
- * the client asked for.
+ * The box is tested against `display_lat`/`display_lng` — the materialised
+ * "listing's own coordinate, else its location's centroid" (src/lib/geo.ts).
+ * That is the position we actually plot, and testing the private coordinate
+ * while displaying a different one would put pins outside the box the client
+ * asked for.
+ *
+ * It used to be `coalesce(listings.lat, locations.lat)` over a join, computed
+ * per query. Correct, and unindexable: `idx_geo` could not be used and every
+ * pan scanned the published set (audit F38). Materialising it turns the whole
+ * thing into one indexed range scan on one table, so the join is gone too —
+ * `approximate` now reads the listing's own lat, which we already had.
  */
 export async function listingsInBounds(
   bounds: MapBounds,
@@ -97,17 +104,13 @@ export async function listingsInBounds(
 ): Promise<MapPin[]> {
   if (!boundsAreSane(bounds)) return [];
 
-  // The position actually used: the listing's own, else its location's.
-  const posLat = sql<string>`coalesce(${listings.lat}, ${locations.lat})`;
-  const posLng = sql<string>`coalesce(${listings.lng}, ${locations.lng})`;
-
   const rows = await db
     .select({
       publicId: listings.publicId,
       slug: listings.slug,
       title: listings.title,
-      lat: posLat,
-      lng: posLng,
+      lat: listings.displayLat,
+      lng: listings.displayLng,
       ownLat: listings.lat,
       priceUsd: listings.priceUsd,
       priceAmount: listings.priceAmount,
@@ -117,16 +120,19 @@ export async function listingsInBounds(
       areaM2: listings.areaM2,
     })
     .from(listings)
-    .innerJoin(locations, eq(listings.locationId, locations.id))
     .where(
       and(
         eq(listings.status, "published"),
-        isNotNull(posLat),
-        isNotNull(posLng),
-        gte(posLat, String(bounds.minLat)),
-        lte(posLat, String(bounds.maxLat)),
-        gte(posLng, String(bounds.minLng)),
-        lte(posLng, String(bounds.maxLng)),
+        // No IS NOT NULL here, and that is deliberate: a NULL fails the
+        // BETWEEN anyway, and the redundant predicate is what stops MariaDB
+        // choosing a range seek — measured on 3 000 rows, it fell back to
+        // `ref` on status alone (734 index entries scanned) instead of
+        // `range` on (status, display_lat, display_lng) (130). A listing with
+        // no position at all is still excluded; `npm run cron:geo` names them.
+        gte(listings.displayLat, String(bounds.minLat)),
+        lte(listings.displayLat, String(bounds.maxLat)),
+        gte(listings.displayLng, String(bounds.minLng)),
+        lte(listings.displayLng, String(bounds.maxLng)),
         ...facetConds(filters),
         ...(vertical ? verticalConds(vertical) : []),
       ),

@@ -25,6 +25,7 @@ import {
   listingSources,
   listingViewsDaily,
 } from "@/db/schema";
+import { syncDisplayCoords } from "../geo";
 import type { ImportReport } from "./types";
 import type { CommittedRow } from "./upsert";
 import type { ListingSource } from "./types";
@@ -374,6 +375,10 @@ export async function rollbackImportJob(
           .update(listings)
           .set(columns as Record<string, never>)
           .where(eq(listings.id, row.listingId));
+        // The snapshot carries lat, lng and location_id (SNAPSHOT_COLUMNS in
+        // upsert.ts), so restoring it moves the pin back too. Derived from the
+        // restored row, never snapshotted itself — one source of truth.
+        await syncDisplayCoords(db, row.listingId);
       }
       if (Array.isArray(_images)) {
         await db

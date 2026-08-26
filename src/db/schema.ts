@@ -97,6 +97,18 @@ export const listings = mysqlTable(
     addressText: varchar("address_text", { length: 255 }), // never shown publicly at full precision
     lat: decimal("lat", { precision: 9, scale: 6 }),
     lng: decimal("lng", { precision: 9, scale: 6 }),
+    /**
+     * The position the map actually plots: the listing's own coordinate when
+     * it has one, else its location's centroid. Materialised at write time
+     * (src/lib/geo.ts) rather than computed per query, because
+     * `coalesce(listings.lat, locations.lat)` in the WHERE is not sargable —
+     * the bounding-box test could not use idx_geo and scanned every published
+     * row (audit F38). Never written by hand: every writer that touches
+     * `lat`, `lng` or `location_id` calls `syncDisplayCoords()`, and
+     * `npm run cron:geo` repairs the whole table after a centroid moves.
+     */
+    displayLat: decimal("display_lat", { precision: 9, scale: 6 }),
+    displayLng: decimal("display_lng", { precision: 9, scale: 6 }),
 
     agencyId: fk("agency_id"),
     agentId: fk("agent_id"),
@@ -149,7 +161,14 @@ export const listings = mysqlTable(
       t.publishedAt,
     ),
     index("idx_location").on(t.locationId, t.status, t.publishedAt),
-    index("idx_geo").on(t.status, t.lat, t.lng),
+    /**
+     * The map's bounding box, and the only reader of the display coordinate.
+     * It used to be on (status, lat, lng), which the bbox query could not use:
+     * it filters the *displayed* position, and that went through a coalesce
+     * onto the joined location. Materialising the column is what turns this
+     * index back on (audit F38).
+     */
+    index("idx_geo").on(t.status, t.displayLat, t.displayLng),
     index("idx_agency").on(t.agencyId, t.status),
     index("idx_project").on(t.projectId, t.status),
     index("idx_fresh").on(t.status, t.publishedAt),

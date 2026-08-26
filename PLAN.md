@@ -506,7 +506,7 @@ items. Still open / partial:
 | F61 | P3 | OPEN | Re-import overwrites manual edits → **D10** |
 | F63 | P3 | **CLOSED 2026-08-19** | No code change: ARCHITECTURE.md §4 already documents `0 → 404 (via notFound()) or redirect to parent — a true 410 would need a route handler and buys nothing over 404 for deindexing`. Code and doc agree; the audit row was stale |
 | F17 | P1 | **RESCOPED + DONE 2026-08-20** | The route-cache half is dead ground and the data-cache half is now finished. See "F17, re-measured" below |
-| F38 | P2 | PARTIAL | Map bbox still filters `coalesce(lat…)` so `idx_geo` unused; materialise a display coordinate (MIGRATION) |
+| F38 | P2 | **FIXED 2026-08-26** | `listings.display_lat/display_lng` materialised at write time (`src/lib/geo.ts`), `idx_geo` repointed at them, the bbox join dropped. MIGRATION `0010` — see "Pending migration" |
 | F43 | P2 | **FIXED 2026-08-26** | `/sitemap.xml` is a `<urlset>` under 10 000 URLs and a `<sitemapindex>` over it, with chunks at `/sitemap/{n}.xml`. Route handlers, not `generateSitemaps()` — that enumerates its ids at build time and the build has no database. No migration |
 
 ### F17, re-measured (2026-08-20) — the route cache is not the win
@@ -685,7 +685,8 @@ panel scoping.
   status check to gate on, so **auto-merge is off** — see the revised D11.
 - **Batch 1 — independent fixes (parallel PRs):** F1+trusted flag (per D7,
   MIGRATION for the flag column), ~~F48~~ (done), ~~F63~~ (closed, no change),
-  F17 finish, F38 display coordinate (MIGRATION), F61 per D10 (MIGRATION).
+  F17 finish, ~~F38 display coordinate~~ (**DONE 2026-08-26**, MIGRATION 0010),
+  F61 per D10 (MIGRATION).
   The three MIGRATION items are also the three gated on an unrecorded decision
   (D7, D10) — see the decision-record gap below.
 - **Batch 2 — FSBO loop (sequential, shared files):** ~~F4 contact fallback~~
@@ -1061,6 +1062,27 @@ counter deliberately avoids the same trick; see `recordListingView`.
   `listingScopeWhere`, `panelScope` or any panel query, run it.
 
 ## Pending migration
+
+**`drizzle/0010` (F38, the display coordinate) is generated and NOT applied to
+production.** It adds `listings.display_lat` / `display_lng`, backfills them
+from `coalesce(listing coord, location centroid)`, and moves `idx_geo` onto
+them. Unlike 0002 it is **not** optional-when-convenient, for the standing
+reason: deployed code selects every column in `schema.ts`, so from the moment
+the code is live and before the migration runs, every query that reads a
+listing row 500s — the map, the panels, the detail page. **Apply it in the same
+window as the merge**, same runbook as 0009 below (`db:status --probe`, then
+`db:migrate`, then `db:status` again). The backfill is a single indexed
+`UPDATE … JOIN` over the whole table; at this inventory it completes
+immediately. After it, `npm run cron:geo -- --dry` should report `0 listing(s)
+plotted at a stale position`.
+
+Verified on a scratch MySQL-compatible server on 2026-08-26: 0010 applied
+cleanly on top of 0000–0009, the backfill put centroid-borrowing rows on their
+barrio and coordinate-carrying rows on their own point, and `cron:geo` was a
+no-op on a second run. `EXPLAIN` on the bbox query went from `ALL` (full scan +
+block-nested-loop join) to `range` on `idx_geo`, key_len 13, 130 index entries
+at 3 000 listings — with the same 100 rows in the result set both ways.
+
 
 **`drizzle/0002` is generated but NOT applied to production.** It reorders
 `idx_search` and adds `idx_recent` on `listings` (see the EXPLAIN audit in step

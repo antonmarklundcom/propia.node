@@ -14,6 +14,7 @@ import "server-only";
 import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies, listings, locations } from "@/db/schema";
+import { syncDisplayCoords } from "@/lib/geo";
 import { toPriceUsd } from "@/lib/import/normalize";
 import { USD_TO_PYG } from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
@@ -386,6 +387,10 @@ export async function updateListing(params: {
     .update(listings)
     .set(patch)
     .where(guard ? and(eq(listings.id, id), guard) : eq(listings.id, id));
+  // location_id is editable here, and it is what a listing without its own
+  // coordinate is plotted by. Recompute rather than leave the map pointing at
+  // the previous barrio (src/lib/geo.ts).
+  if (res.affectedRows > 0) await syncDisplayCoords(db, id);
   return res.affectedRows;
 }
 
