@@ -32,6 +32,7 @@ Cron-style jobs (idempotent; also run on a schedule in production):
 npm run cron:cuotas           # cache listings.cuota_gs (French amortization)
 npm run cron:medians          # market_medians for the current month
 npm run cron:geo              # repair listings.display_lat/lng after a centroid moves
+npm run cron:translate        # fill listings.title_en/description_en (needs ANTHROPIC_API_KEY)
 ```
 
 White-glove import (M2) — CSV/spreadsheet → pending_review listings:
