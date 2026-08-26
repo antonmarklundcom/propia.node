@@ -12,6 +12,7 @@ import { db } from "@/db";
 import { financingPrograms, listings, locations, projects } from "@/db/schema";
 import type { FinancingProgram } from "@/lib/cuota";
 import { makePublicId, toPriceUsd } from "@/lib/import/normalize";
+import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
@@ -208,7 +209,12 @@ export async function saveDraft(params: {
           eq(listings.status, "draft"),
         ),
       );
-    return res.affectedRows > 0 ? draftId : 0;
+    if (res.affectedRows === 0) return 0;
+    // The wizard has no coordinate field, so a draft is plotted at its
+    // location's centroid — and step 2 is where the visitor can change that
+    // location. src/lib/geo.ts owns the rule.
+    await syncDisplayCoords(db, draftId);
+    return draftId;
   }
 
   const [res] = await db.insert(listings).values({
@@ -218,7 +224,9 @@ export async function saveDraft(params: {
     ownerUserId: userId,
     ...fields,
   });
-  return Number((res as unknown as { insertId: number }).insertId);
+  const newId = Number((res as unknown as { insertId: number }).insertId);
+  await syncDisplayCoords(db, newId);
+  return newId;
 }
 
 /**

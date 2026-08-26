@@ -16,6 +16,7 @@ import { and, eq, like, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { listings, listingSources, locations } from "@/db/schema";
 import { makePublicId, contentHash, dedupKey, toPriceUsd } from "./normalize";
+import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
 import { USD_TO_PYG } from "@/lib/publish-queries";
 import type { ParsedListing } from "./from-url";
@@ -133,6 +134,9 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
     .where(eq(listings.publicId, publicId))
     .limit(1);
   if (!created) throw new Error("draft insert did not produce a row");
+  // The link importer keeps no coordinate of its own, so the draft is plotted
+  // at its location's centroid until an operator adds one (src/lib/geo.ts).
+  await syncDisplayCoords(db, created.id);
 
   // Provenance. `contentHash`/`dedupKey` feed the existing dedup pipeline, so a
   // claimed import participates in change detection like any other source.

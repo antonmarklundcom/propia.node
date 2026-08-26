@@ -35,6 +35,7 @@ import {
   listingSources,
   locations,
 } from "../../db/schema";
+import { syncDisplayCoords } from "../geo";
 import { slugify } from "../slug";
 import {
   contentHash as computeContentHash,
@@ -441,6 +442,8 @@ export async function commitImport(
               ...(moneyChanged ? { cuotaGs: null } : {}),
             })
             .where(eq(listings.id, row.listingId!));
+          // lat/lng/location_id are all in listingFields above.
+          await syncDisplayCoords(tx, row.listingId!);
           await backfillOwnership(tx, row.listingId!, opts);
           await syncImages(tx, row.listingId!, raw.imageUrls);
           await tx
@@ -521,6 +524,7 @@ export async function commitImport(
           row.locationId!,
           opts,
         );
+        await syncDisplayCoords(tx, id);
         await syncImages(tx, id, raw.imageUrls);
         await tx.insert(listingSources).values({
           listingId: id,
