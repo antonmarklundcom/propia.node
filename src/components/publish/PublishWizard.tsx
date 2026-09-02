@@ -95,6 +95,22 @@ const EMPTY: WizardState = {
 
 const LS_KEY = "propia:publish-draft";
 
+/**
+ * A resend countdown, as a person reads a clock.
+ *
+ * This used to print raw seconds, which was fine while the only cooldown was
+ * `createOtp`'s 60 s. It stopped being fine when `requestOtpAction` grew an
+ * hourly per-account cap and started reporting that window: nobody counts in
+ * thousands of seconds, and "Reenviar en 3600s" reads like a bug rather than
+ * an hour's wait. Under a minute stays in seconds — `45s` is clearer than
+ * `0:45` — and anything longer becomes `m:ss`.
+ */
+function formatCooldown(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
 export function PublishWizard({
   locations,
   projects,
@@ -776,7 +792,9 @@ export function PublishWizard({
                     onClick={sendCode}
                     disabled={otpBusy || cooldown > 0}
                   >
-                    {cooldown > 0 ? `${esPublish.resendIn} ${cooldown}s` : esPublish.resend}
+                    {cooldown > 0
+                      ? `${esPublish.resendIn} ${formatCooldown(cooldown)}`
+                      : esPublish.resend}
                   </button>
                 </>
               )}
