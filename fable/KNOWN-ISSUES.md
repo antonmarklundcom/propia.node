@@ -62,3 +62,12 @@ it; none of them blocks a phase.
   staff-surface strings — so O2 added its copy to `esPanel` alone. This is a D6
   flip-day precondition for `/registro`, `/publicar` and `/agencia`, and it is
   larger than any phase in this plan.
+
+- **Q1 (package manager) is still unanswered.** `fable/REVIEW.md` Q1 asks
+  which package manager hPanel's build step actually runs for this site
+  (`pnpm install` or `npm ci` — check the build log). Until Anton answers,
+  plan §6.1's S1 phase leaves `pnpm-workspace.yaml`, `.npmrc` and
+  `package-lock.json` untouched rather than guessing. Whoever gets the answer:
+  if pnpm, commit a locally-generated `pnpm-lock.yaml` with the same major, add
+  `"packageManager": "pnpm@<version>"` to `package.json`, delete
+  `package-lock.json`; if npm, delete `pnpm-workspace.yaml` and `.npmrc`.

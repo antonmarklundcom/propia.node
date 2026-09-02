@@ -266,9 +266,9 @@ shared Brazil plan. None blocks O1–S2.
   `clientIpFrom` are used together in `app/api/leads/route.ts:80` and that is
   the pattern to copy. Remember O2 opens its PR and does **not** merge it.
 
-### O2 — public-write throttles (2026-09-02, PR #84 — **awaiting founder merge**)
+### O2 — public-write throttles (2026-09-02, PR #84 — merged by the founder)
 
-- **The PR is open and not merged**, per this plan's own rule: both files are
+- Opened unmerged, per this plan's own rule (the founder has since merged it): both files are
   auth surfaces and CLAUDE.md says flag before merging. Title carries
   `[auth — flag before merge]`.
 - `registerAction`: `allowRequest(\`register|${ip}\`, 5, 10 min)` on
@@ -301,6 +301,45 @@ shared Brazil plan. None blocks O1–S2.
   nothing here is stacked on it. It looks first at `README.md`'s production
   sections and `package.json`'s real `cron:*` list; Q1 is still unanswered, so
   the package-manager files stay alone.
+
+### S1 — docs, ops and build truth (2026-09-02, PR #85)
+
+- Branched from `origin/main` (807af87), **not** stacked on O2, per plan §5.2
+  and §4.2 — O2's PR #84 was still open at the time. It merged first, so this
+  branch carries a merge of `origin/main`; the two touch no common source file.
+- README: rewrote "Hostinger production setup" and "Launch blockers" (now
+  "Founder-only items — still open", since the site is already live) from
+  CLAUDE.md's domain table; the cron block now names all six `cron:*`
+  scripts (`cuotas`, `medians`, `geo`, `translate`, `resync`, `sessions`)
+  with the two orderings (`seed:financing` → `cron:cuotas`,
+  `seed:locations` → `cron:geo`); Stack line and repo map replace "GHL
+  (CRM/WhatsApp/OTP)" with the optional-webhook model from `.env.example`.
+- Fixed three stale docs findings (R12): CLAUDE.md's safe-fetch bullet (the
+  UA already reads `realestateinparaguay.com`, not propia-flavoured) and its
+  "Last verified" date; PLAN.md's banner date (was 2026-08-21, body runs to
+  2026-08-26) and its `[YOU]` cron list (was 2 of 6 scripts).
+- `docs/audit-2026-08.md`'s F1 row now reads FIXED — verified in code
+  (`AGENCY_STATUSES` in `src/lib/listing-edit.ts` no longer includes
+  `published`), not just asserted from REVIEW.md.
+- Two dead `propia.com.py` references removed: `package.json`'s
+  `description` (now names the live domain) and `next.config.ts`'s
+  `img.propia.com.py` `remotePattern` (R2 isn't configured yet; the real
+  domain goes in when it is). `grep -rn "propia.com.py" README.md
+  package.json next.config.ts` is empty.
+- ARCHITECTURE.md got a pointer blockquote at the top of §5, not a rewrite,
+  per plan §6.1.
+- Q1 (package manager) is still unanswered — `pnpm-workspace.yaml`,
+  `.npmrc` and `package-lock.json` untouched; recorded in
+  `fable/KNOWN-ISSUES.md`.
+- `npm run verify:local` green (typecheck, build, all four pure `verify:*`).
+  This phase touched only docs and config (README.md, ARCHITECTURE.md,
+  CLAUDE.md, PLAN.md, docs/audit-2026-08.md, package.json, next.config.ts) —
+  no `src/`, `app/` or `schema.ts` file, so Sonnet's hard limits (§4.7) were
+  never in tension.
+- Next phase (S2) looks first at `src/i18n/es.ts` / `en.ts` for the existing
+  namespace pattern (`esHome`, `esCategory`, …) and at
+  `app/[operacion]/page.tsx:56` for the `openGraph` shape to copy onto the
+  category template.
 
 ## §10 Backlog
 

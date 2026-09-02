@@ -5,9 +5,10 @@ every session that finishes a step** — mark items done, add new blockers.
 `[C]` = Claude does it (code/session work). `[YOU]` = founder must do it
 (hosting, accounts, real-world data — things code cannot reach).
 
-_Last updated: 2026-08-21 (second session: hreflang ahead of the flip, the
-vertical table's SEO invariants as a failing check, and /admin's tab row
-grouped — PRs #71–#73; see the two 2026-08-21 sections at the end)._
+_Last updated: 2026-08-26 (F38's display coordinate, the translation job, and
+sitemap chunking — see the 2026-08-26 session near the end; migrations 0010
+and 0011 are generated and NOT yet applied to production, see "Pending
+migration")._
 
 ---
 
@@ -469,7 +470,11 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       2. Search Console property + sitemap submission for the new domain
          (folds into the GA4/GSC item below).
 - [ ] GA4 + Search Console properties.
-- [ ] hPanel cron jobs: `cron:cuotas`, `cron:medians` (nightly).
+- [ ] hPanel cron jobs — every `cron:*` script in `package.json`, nightly:
+      `cron:cuotas`, `cron:medians`, `cron:geo`, `cron:translate`,
+      `cron:resync`, `cron:sessions`. Run `seed:financing` once before the
+      first `cron:cuotas` and `seed:locations` once before the first
+      `cron:geo` — see README's cron block.
 - [ ] **Security hygiene from the migration session:** rotate the MySQL
       password and the panel login password (both were typed into a chat
       transcript), and delete the `%` ("Any Host") Remote MySQL grant that was
