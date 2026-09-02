@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-08-20.
+Last verified against the code: 2026-09-02.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -100,9 +100,9 @@ How to read it, and the one mistake to avoid:
 - Still *propia*-flavoured and deliberately left alone (backend only, never
   rendered): the session cookie `propia_session`, the localStorage keys
   `propia:recently-viewed` / `propia:publish-draft`, the docker-compose DB
-  name/user, `package.json`'s name, and the import User-Agent in
-  `src/lib/safe-fetch.ts` (that file is being rewritten in the security PR —
-  change the UA there, not on a parallel branch).
+  name/user, and `package.json`'s name. `src/lib/safe-fetch.ts`'s import
+  User-Agent is no longer propia-flavoured — it already reads
+  `realestateinparaguay.com`.
 - The site is **Spanish-only** for now. Both hosts serve `locale: "es"`; the
   English vertical waits until the Spanish site is finished.
 

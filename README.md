@@ -8,7 +8,9 @@ supersedes the contract wherever they disagree.
 ## Stack
 
 Next.js (App Router) · TypeScript · Drizzle ORM · MySQL 8 (Hostinger) ·
-Cloudflare R2 (images) · MapLibre + OSM (maps) · GHL (CRM/WhatsApp/OTP).
+Cloudflare R2 (images) · MapLibre + OSM (maps) · an optional outbound webhook
+for WhatsApp/OTP delivery and CRM push (GoHighLevel, n8n, your own endpoint —
+see `.env.example`).
 
 ## Local development
 
@@ -26,13 +28,17 @@ npm run dev                   # http://localhost:3000
 npm run db:studio             # Drizzle Studio — interim admin UI
 ```
 
-Cron-style jobs (idempotent; also run on a schedule in production):
+Cron-style jobs (idempotent; also run on a schedule in production). Run
+`seed:financing` before the first `cron:cuotas`, and `seed:locations` before
+the first `cron:geo` — each cron reads what its seed writes:
 
 ```bash
 npm run cron:cuotas           # cache listings.cuota_gs (French amortization)
 npm run cron:medians          # market_medians for the current month
 npm run cron:geo              # repair listings.display_lat/lng after a centroid moves
 npm run cron:translate        # fill listings.title_en/description_en (needs ANTHROPIC_API_KEY)
+npm run cron:resync           # pause listings whose source feed has gone quiet (--dry first)
+npm run cron:sessions         # purge expired session rows
 ```
 
 White-glove import (M2) — CSV/spreadsheet → pending_review listings:
@@ -67,52 +73,59 @@ Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
    deploy), build command `npm run build`, start command `npm run start`.
    **After every deploy where `drizzle/` changed, run the migrations against
    the production DB** (`DATABASE_URL=<prod url> npm run db:migrate`, or paste
-   the new `drizzle/NNNN_*.sql` into phpMyAdmin). Deployed code selects every
-   column in `src/db/schema.ts`; a DB behind on migrations 500s entire page
-   trees (e.g. missing `listings.review_notes` broke every listing detail
-   page after M5).
-3. **Domains:** point propia.com.py (and later feeder domains) at the same
-   app. `middleware.ts` routes by Host header; disabled verticals resolve to
-   propia.
+   the new `drizzle/NNNN_*.sql` into phpMyAdmin), then `npm run db:status`
+   again to confirm `No drift`. Deployed code selects every column in
+   `src/db/schema.ts`; a DB behind on migrations 500s entire page trees (e.g.
+   missing `listings.review_notes` broke every listing detail page after M5).
+   PLAN.md's "Pending migration" section is the current runbook of what has
+   and has not been applied to prod.
+3. **Domains:** the live doors are `realestateinparaguay.com` (primary,
+   canonical) and `inmobiliaria.com.py`, both pointed at the same app. See
+   CLAUDE.md's domain table for which domains are owned before pointing a
+   new one here. `middleware.ts` routes by Host header; an unrecognized host
+   resolves to the canonical primary.
 4. **Cron jobs:** hPanel → Cron Jobs → schedule
-   `npx tsx scripts/<job>.ts` (medians nightly, cuota nightly, counts
-   hourly, sitemap nightly). Every script must stay idempotent.
-5. **R2:** create the bucket in Cloudflare, fill the `R2_*` envs, map
-   `img.propia.com.py` to it.
+   `npx tsx scripts/<job>.ts` for each `cron:*` script in `package.json`
+   (`cron:cuotas`, `cron:medians`, `cron:geo`, `cron:translate`,
+   `cron:resync`, `cron:sessions` — see the cron block above). Run
+   `seed:financing` once before `cron:cuotas` and `seed:locations` once before
+   `cron:geo` are ever scheduled. Every script is idempotent.
+5. **R2:** create the bucket in Cloudflare, fill the `R2_*` envs, then map
+   `R2_PUBLIC_BASE_URL` to the bucket's own public URL or a custom domain you
+   actually own and have mapped in Cloudflare (see `.env.example` — do not
+   point it at an unowned placeholder domain).
 
-## Launch blockers — what to fix before go-live
+## Founder-only items — still open
 
-Founder-only items that code cannot resolve. Nothing here blocks writing more
-code, but all must be cleared before propia.com.py serves real traffic.
+The site is **live** on `realestateinparaguay.com` (Hostinger Node.js app,
+domain attached). What follows is founder-only work code cannot resolve —
+see CLAUDE.md's domain table and backlog for the full, currently-verified
+list; this is the subset that touches production setup:
 
-1. **Hostinger Node.js plan (M0).** Confirm the plan has the Node.js app
-   option (Cloud/Business hPanel or a KVM VPS). MySQL is included on every
-   plan; the *app* tier is the gate. If missing → upgrade to Cloud or a small
-   KVM VPS in the São Paulo region.
-2. **Real financing rates.** `scripts/seed-financing.ts` ships PLACEHOLDER
+1. **Real financing rates.** `scripts/seed-financing.ts` ships PLACEHOLDER
    Che Róga Porã / AFD terms. Verified symptom: a US$160k home currently gets
    no cuota because the placeholder caps (~900M Gs ≈ US$123k) are too low.
    Replace `annualRate`, `maxTermMonths`, `maxAmountGs`, `minDownPct` with the
    current published AFD/MUVH terms, then `npm run seed:financing` +
    `npm run cron:cuotas`. The math is verified correct; only the data is a
    placeholder.
-3. **USD→PYG source.** Cuota and price normalization use `USD_TO_PYG`
+2. **USD→PYG source.** Cuota and price normalization use `USD_TO_PYG`
    (default 7300). Set it in `.env` to the rate you want quoted; wire a
    treasury feed later if desired.
-4. **Domain.** propia.com.py must be registered and pointed at the Hostinger
-   app before public launch (a temporary Hostinger subdomain is fine for M0
-   testing — see below). `NEXT_PUBLIC_CANONICAL_HOST` must match the live host
-   so canonical URLs and vertical routing are correct.
+3. **R2 image storage.** The code is complete and gated on `isR2Configured()`
+   — see step 5 above. Until the `R2_*` envs are set, imported photos hotlink
+   their source URLs instead of living on R2.
 
 ## Repo map
 
 ```
 ARCHITECTURE.md            the contract — read first
 src/db/schema.ts           entire data model (Drizzle, MySQL dialect)
-src/config/verticals.ts    domain → vertical routing config (propia only enabled)
+src/config/verticals.ts    domain → vertical routing config
 src/lib/indexability.ts    thin-page rule — the ONLY indexability logic
 src/lib/cuota.ts           French amortization / financing-program engine
-src/lib/crm.ts             CRM boundary — the only file that knows about GHL
+src/lib/crm.ts             CRM boundary — the only file that knows about the
+                           optional outbound webhook
 src/lib/slug.ts            shared diacritic-safe slugify + joinSlug
 src/lib/import/            intake pipeline: normalize → dedup → upsert (M2)
 src/lib/urls.ts            URL scheme (§4) — canonical build + inbound parse
@@ -122,7 +135,7 @@ src/lib/format.ts          es-PY price/cuota formatting, R2 image URLs
 src/lib/sitemap.ts         sitemap entries via getIndexability (single source)
 app/propiedad/[slug]/      listing detail page (canonical, JSON-LD, WhatsApp)
 app/[operacion]/[...]/     category pages (§4 shapes, indexability enforced)
-app/api/leads/             lead webhook → MySQL first, then GHL (crm.ts)
+app/api/leads/             leads → MySQL first, then the optional CRM webhook (crm.ts)
 app/sitemap.ts app/robots.ts   SEO surface
 src/i18n/es.ts             canonical voseo strings (never neutral Spanish)
 src/design/tokens.ts       design tokens v1

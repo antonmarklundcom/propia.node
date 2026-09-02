@@ -2,7 +2,7 @@
   "name": "propia",
   "version": "0.1.0",
   "private": true,
-  "description": "propia.com.py — Paraguay real-estate portal. One engine, multiple branded doors.",
+  "description": "realestateinparaguay.com — Paraguay real-estate portal. One engine, multiple branded doors.",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks",

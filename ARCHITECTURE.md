@@ -193,6 +193,13 @@ regenerated quarterly.
 
 ## 5. CRM strategy (GHL now, options later)
 
+> **Current reality (see CLAUDE.md / `.env.example`):** no CRM is required.
+> `LEAD_WEBHOOK_URL` is optional and provider-agnostic — GHL, n8n, or your own
+> endpoint all work the same way. Leads are recorded in MySQL first regardless
+> of whether a webhook is set, so nothing is lost with none configured. The
+> intent below (a clean boundary in `crm.ts`, GHL as the default choice) still
+> holds; only "GHL is required" is stale.
+
 **Now:** GHL is the CRM. The portal's entire CRM surface is
 `src/lib/crm.ts` (`CrmProvider` interface): `pushLead()` and `sendOtp()`.
 Leads are recorded in MySQL first (source of truth for the money report),
