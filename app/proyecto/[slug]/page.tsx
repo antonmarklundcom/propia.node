@@ -5,6 +5,8 @@ import { getProjectBySlug } from "@/lib/queries";
 import { listingUrl, categoryUrl } from "@/lib/urls";
 import { formatUsd, formatPrice } from "@/lib/format";
 import { inquiryPrefillFor } from "@/i18n/es";
+import { currentLocale, dict } from "@/i18n/server";
+import { numberLocaleFor, type Dictionary } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
 import { ContactForm } from "@/components/ContactForm";
 import { ProjectCard } from "@/components/ProjectCard";
@@ -17,31 +19,15 @@ import { safeImageUrl } from "@/lib/external-image";
 
 type Params = { params: Promise<{ slug: string }> };
 
-const STAGE_LABEL: Record<string, string> = {
-  en_pozo: "En pozo",
-  en_construccion: "En construcción",
-  entrega_inmediata: "Entrega inmediata",
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  edificio: "Edificio",
-  loteamiento: "Loteamiento",
-  condominio: "Condominio",
-  barrio_cerrado: "Barrio cerrado",
-};
-
-const STATE_LABEL: Record<string, string> = {
-  entrega_inmediata: "Entrega inmediata",
-  en_construccion: "En construcción",
-  en_pozo: "En pozo",
-  usado: "Usado",
-};
-
-function deliveryLabel(d: string | Date | null): string | null {
+function deliveryLabel(
+  d: string | Date | null,
+  t: Dictionary["project"],
+  numberLocale: string,
+): string | null {
   if (!d) return null;
   const date = new Date(d);
   if (Number.isNaN(date.getTime())) return null;
-  return `Entrega ${date.toLocaleDateString("es-PY", { month: "long", year: "numeric" })}`;
+  return t.delivery(date, numberLocale);
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -70,8 +56,11 @@ export default async function ProjectPage({ params }: Params) {
   if (!detail) notFound();
 
   const { project, developer, location, units, otherProjects } = detail;
+  const [d, locale] = await Promise.all([dict(), currentLocale()]);
+  const t = d.project;
+  const numberLocale = numberLocaleFor(locale);
   const minPrice = units.length > 0 ? Number(units[0].priceUsd) : null;
-  const delivery = deliveryLabel(project.deliveryDate);
+  const delivery = deliveryLabel(project.deliveryDate, t, numberLocale);
   const canonical = `${await siteOrigin()}/proyecto/${project.slug}`;
   const waMessage = inquiryPrefillFor(brand, project.name, canonical);
 
@@ -131,12 +120,12 @@ export default async function ProjectPage({ params }: Params) {
           <ul className="listing-facts">
             {project.stage && (
               <li className="listing-facts__item listing-facts__item--stage">
-                {STAGE_LABEL[project.stage] ?? project.stage}
+                {t.stageLabel[project.stage] ?? project.stage}
               </li>
             )}
             {delivery && <li className="listing-facts__item">📅 {delivery}</li>}
             <li className="listing-facts__item">
-              🏢 {TYPE_LABEL[project.projectType] ?? project.projectType}
+              🏢 {t.typeLabel[project.projectType] ?? project.projectType}
             </li>
             {units.length > 0 && (
               <li className="listing-facts__item">
@@ -209,8 +198,8 @@ export default async function ProjectPage({ params }: Params) {
                         <td>
                           <span className="units-table__state">
                             {u.propertyState
-                              ? STATE_LABEL[u.propertyState] ?? u.propertyState
-                              : "Disponible"}
+                              ? t.stateLabel[u.propertyState] ?? u.propertyState
+                              : t.available}
                           </span>
                         </td>
                       </tr>
@@ -246,7 +235,7 @@ export default async function ProjectPage({ params }: Params) {
                 {developer?.name ?? `Publicado en ${brand}`}
               </div>
               <div className="seller-card__kind">
-                {developer ? "Desarrolladora" : brand}
+                {developer ? t.developer : brand}
               </div>
             </div>
           </div>

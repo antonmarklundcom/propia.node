@@ -230,15 +230,19 @@ export async function generateMetadata({
   // its translation asks Google to weigh a page we asked it to ignore.
   const indexed = ix.state === "index" && page === 1;
 
+  const title = page > 1 ? t.titlePaged(r.title, page) : r.title;
+  const description = t.metaDescription(count, r.title, brand);
   return {
-    title: page > 1 ? t.titlePaged(r.title, page) : r.title,
-    description: t.metaDescription(count, r.title, brand),
+    title,
+    description,
     alternates: {
       canonical,
       languages: indexed
         ? languageAlternates({ path: r.canonicalPath, scope: "site" })
         : undefined,
     },
+    // og:title doesn't inherit title.template, so the brand is explicit (F47).
+    openGraph: { title: `${title} — ${brand}`, description },
     robots: indexed
         ? { index: true, follow: true }
         : { index: false, follow: true },

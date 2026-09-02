@@ -437,3 +437,39 @@ export const enListing = {
   publishedWeeksAgo: (n: number) => `Listed ${n} weeks ago`,
   publishedMonthsAgo: (n: number) => `Listed ${n} months ago`,
 } as const;
+
+/**
+ * Public agency and agent profile pages (/inmobiliaria/[slug], /agente/[slug]).
+ * `breadcrumbHome` and `verified` are not repeated here — both pages already
+ * read `listing.breadcrumbHome` and `listing.sellerVerified` for those.
+ */
+export const enProfile = {
+  navAriaLabel: "Breadcrumb",
+  emptyState: "No properties listed yet",
+} as const;
+
+/** Development project page (/proyecto/[slug]). */
+export const enProject = {
+  stageLabel: {
+    en_pozo: "Pre-construction",
+    en_construccion: "Under construction",
+    entrega_inmediata: "Ready to move in",
+  } as Record<string, string>,
+  typeLabel: {
+    edificio: "Building",
+    loteamiento: "Land development",
+    condominio: "Condominium",
+    barrio_cerrado: "Gated community",
+  } as Record<string, string>,
+  stateLabel: {
+    entrega_inmediata: "Ready to move in",
+    en_construccion: "Under construction",
+    en_pozo: "Pre-construction",
+    usado: "Resale",
+  } as Record<string, string>,
+  available: "Available",
+  developer: "Developer",
+  /** Locale-aware on purpose: month names are not universal. */
+  delivery: (date: Date, numberLocale: string) =>
+    `Delivery ${date.toLocaleDateString(numberLocale, { month: "long", year: "numeric" })}`,
+} as const;

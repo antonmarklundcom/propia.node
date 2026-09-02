@@ -15,6 +15,7 @@ import { getIndexability } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
 import { esAgentProfile, agentInquiryPrefillFor } from "@/i18n/es";
+import { dict } from "@/i18n/server";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { ContactForm } from "@/components/ContactForm";
@@ -55,6 +56,7 @@ export default async function AgentProfilePage({ params }: Params) {
   const r = await resolve(slug);
   if (!r) notFound();
   const { agent, listingCount } = r;
+  const d = await dict();
 
   // A brand-new agent with zero listings has nothing to show — same
   // gone-or-noindex rule every other thin page in the site follows
@@ -77,7 +79,7 @@ export default async function AgentProfilePage({ params }: Params) {
     .join("");
 
   const crumbs = [
-    { name: "Inicio", url: "/" },
+    { name: d.listing.breadcrumbHome, url: "/" },
     { name: agent.name, url: agentUrl(agent.slug) },
   ];
 
@@ -95,10 +97,10 @@ export default async function AgentProfilePage({ params }: Params) {
         />
       )}
 
-      <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
+      <nav className="breadcrumb-nav" aria-label={d.profile.navAriaLabel}>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Link className="breadcrumb-nav__link" href="/">
-            Inicio
+            {d.listing.breadcrumbHome}
           </Link>
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
