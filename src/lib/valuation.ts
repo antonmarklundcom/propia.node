@@ -17,7 +17,7 @@
  */
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { CACHE_TAGS } from "@/lib/cache";
+import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { marketMedians } from "@/db/schema";
@@ -163,12 +163,13 @@ async function estimateValueUncached(
 }
 
 /**
- * Cached for an hour, keyed by the request shape. The inputs are a short list
- * of cities × types × operations × a rounded area, so the cache actually hits;
- * the underlying medians only change when the nightly job runs.
+ * Cached for `CACHE_TTL.marketMedians`, keyed by the request shape. The inputs
+ * are a short list of cities × types × operations × a rounded area, so the
+ * cache actually hits; the underlying medians only change when the nightly job
+ * runs, and that job cannot drop the tag (see cache.ts), so the TTL is it.
  */
 export const estimateValue = unstable_cache(
   estimateValueUncached,
   ["valuation-estimate"],
-  { revalidate: 3600, tags: [CACHE_TAGS.marketMedians] },
+  { revalidate: CACHE_TTL.marketMedians, tags: [CACHE_TAGS.marketMedians] },
 );

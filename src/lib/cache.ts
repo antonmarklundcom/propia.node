@@ -32,7 +32,17 @@ export const CACHE_TAGS = {
   guides: "guides",
   /** The `locations` table — seed data, effectively immutable. */
   locations: "locations",
-  /** Computed price medians (precios-queries, valuation). */
+  /**
+   * Computed price medians (precios-queries, valuation).
+   *
+   * The one tag with no writer, by design: its only writer is
+   * `scripts/compute-medians.ts`, a tsx job run from a shell (`cron:medians`)
+   * with no Next.js runtime around it, so it cannot call `revalidateTag` at
+   * all. The TTL below is therefore the whole invalidation story — a fresh
+   * median is visible within it, and nothing in the app can shorten that.
+   * Do not "fix" this by adding a writer in a request path: no request
+   * recomputes medians.
+   */
   marketMedians: "market-medians",
 };
 
