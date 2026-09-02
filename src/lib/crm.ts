@@ -72,6 +72,25 @@ export interface CrmResult {
   error?: string;
 }
 
+/**
+ * Hard ceiling on one webhook round-trip.
+ *
+ * Every caller of `post()` awaits it inside a request — `/api/leads` and the
+ * publish flow's OTP step — and Node's fetch will otherwise wait up to 300 s
+ * for a provider that accepted the connection and went quiet. On this host a
+ * request that does not resolve keeps its Node process alive, and processes
+ * count against an account-wide cap shared with every other site (see the
+ * 503 post-mortem in PLAN.md and the pool limits in src/db/index.ts, which
+ * exist for the same reason). 12 s is generous for a webhook that normally
+ * answers in well under one, and short enough that a dead provider costs a
+ * visitor a slow submit rather than the whole account a process.
+ */
+const WEBHOOK_TIMEOUT_MS = 12_000;
+
+function isTimeout(e: unknown): boolean {
+  return e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
+}
+
 export interface CrmProvider {
   pushLead(lead: LeadPayload): Promise<CrmResult>;
   sendOtp(whatsapp: string, code: string): Promise<CrmResult>;
@@ -103,6 +122,9 @@ class WebhookProvider implements CrmProvider {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
+        // The signal covers the whole exchange — connect, headers and body —
+        // so a webhook that accepts the socket and then stalls is cut off too.
+        signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
       });
       if (!res.ok) return { ok: false, error: `webhook ${res.status}` };
       const data = (await res.json().catch(() => ({}))) as {
@@ -110,6 +132,9 @@ class WebhookProvider implements CrmProvider {
       };
       return { ok: true, contactId: data.contact_id };
     } catch (e) {
+      if (isTimeout(e)) {
+        return { ok: false, error: `webhook timeout after ${WEBHOOK_TIMEOUT_MS}ms` };
+      }
       return { ok: false, error: String(e) };
     }
   }
