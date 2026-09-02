@@ -14,7 +14,7 @@
  */
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { CACHE_TAGS } from "@/lib/cache";
+import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { locations, marketMedians } from "@/db/schema";
@@ -268,10 +268,12 @@ async function citiesWithPricesUncached(): Promise<
  * added several queries to every page view — which is what turned a host
  * already at its process cap into a 503 spiral.
  *
- * So the results are cached across requests for an hour. React's `cache()`
- * would only dedupe within one render, which is not the problem here.
+ * So the results are cached across requests, for the one TTL that governs
+ * every medians read (`CACHE_TTL.marketMedians` — the `market-medians` tag is
+ * TTL-only, and cache.ts says why). React's `cache()` would only dedupe within
+ * one render, which is not the problem here.
  */
-const PRICES_TTL_SECONDS = 3600;
+const PRICES_TTL_SECONDS = CACHE_TTL.marketMedians;
 
 export const getCityPrices = unstable_cache(
   getCityPricesUncached,

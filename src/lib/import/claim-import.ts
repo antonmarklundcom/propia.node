@@ -104,79 +104,88 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
   const priceUsd = toPriceUsd(input.priceAmount, input.priceCurrency, USD_TO_PYG);
   const publicId = makePublicId();
 
-  await db.insert(listings).values({
-    publicId,
-    slug: slugify(input.title) || "propiedad",
-    status: "draft",
-    operation: input.operation,
-    propertyType: input.propertyType,
-    title: input.title.slice(0, 180),
-    descriptionEs: input.descriptionEs,
-    priceAmount: String(input.priceAmount),
-    priceCurrency: input.priceCurrency,
-    priceUsd: String(priceUsd),
-    bedrooms: input.bedrooms,
-    bathrooms: input.bathrooms,
-    parking: input.parking,
-    areaM2: input.areaM2 != null ? String(input.areaM2) : null,
-    landM2: input.landM2 != null ? String(input.landM2) : null,
-    locationId: input.locationId,
-    agencyId: input.agencyId,
-    ownerUserId: input.userId,
-    isVerified: false,
-    // What the reviewer needs to know, on the row itself.
-    reviewNotes: `Importado por el usuario desde ${input.parsed.sourceUrl.slice(0, 200)} (declaró ser el titular)`,
+  /**
+   * One transaction, the same shape `upsert.ts` uses for the same reason
+   * (audit F46). The draft and its provenance row are one fact: a listing
+   * that exists without its `listing_sources` row is invisible to dedup and
+   * to `findExistingClaim`, so the agent cannot even re-claim their own URL
+   * to repair it — a half-write here is worse than no write at all.
+   */
+  return db.transaction(async (tx) => {
+    await tx.insert(listings).values({
+      publicId,
+      slug: slugify(input.title) || "propiedad",
+      status: "draft",
+      operation: input.operation,
+      propertyType: input.propertyType,
+      title: input.title.slice(0, 180),
+      descriptionEs: input.descriptionEs,
+      priceAmount: String(input.priceAmount),
+      priceCurrency: input.priceCurrency,
+      priceUsd: String(priceUsd),
+      bedrooms: input.bedrooms,
+      bathrooms: input.bathrooms,
+      parking: input.parking,
+      areaM2: input.areaM2 != null ? String(input.areaM2) : null,
+      landM2: input.landM2 != null ? String(input.landM2) : null,
+      locationId: input.locationId,
+      agencyId: input.agencyId,
+      ownerUserId: input.userId,
+      isVerified: false,
+      // What the reviewer needs to know, on the row itself.
+      reviewNotes: `Importado por el usuario desde ${input.parsed.sourceUrl.slice(0, 200)} (declaró ser el titular)`,
+    });
+
+    const [created] = await tx
+      .select({ id: listings.id })
+      .from(listings)
+      .where(eq(listings.publicId, publicId))
+      .limit(1);
+    if (!created) throw new Error("draft insert did not produce a row");
+    // The link importer keeps no coordinate of its own, so the draft is plotted
+    // at its location's centroid until an operator adds one (src/lib/geo.ts).
+    await syncDisplayCoords(tx, created.id);
+
+    // Provenance. `contentHash`/`dedupKey` feed the existing dedup pipeline, so a
+    // claimed import participates in change detection like any other source.
+    const raw: RawListing = {
+      source: sourceForHost(input.parsed.sourceUrl),
+      sourceUrl: input.parsed.sourceUrl,
+      title: input.title,
+      descriptionEs: input.descriptionEs ?? undefined,
+      operation: input.operation,
+      propertyType: input.propertyType,
+      priceAmount: input.priceAmount,
+      priceCurrency: input.priceCurrency,
+      bedrooms: input.bedrooms ?? undefined,
+      bathrooms: input.bathrooms ?? undefined,
+      parking: input.parking ?? undefined,
+      areaM2: input.areaM2 ?? undefined,
+      landM2: input.landM2 ?? undefined,
+      locationName: input.parsed.locationText ?? undefined,
+      imageUrls: input.parsed.imageUrls,
+    };
+
+    const now = new Date();
+    // 0 = unscoped, which is what an independent agent's claim is.
+    const scopeAgencyId = input.agencyId ?? 0;
+    await tx.insert(listingSources).values({
+      listingId: created.id,
+      source: sourceForHost(input.parsed.sourceUrl),
+      scopeAgencyId,
+      sourceUrl: input.parsed.sourceUrl.slice(0, 600),
+      contentHash: contentHash(raw, priceUsd),
+      // NULL when the claimed page carried no phone — the claim flow never sets
+      // one, so this is the normal case. A claim is already identified by its
+      // source URL (findExistingClaim), which is a far stronger signal than the
+      // fuzzy key, so nothing is lost by not having one.
+      dedupKey: dedupKey(raw, priceUsd, input.locationId, scopeAgencyId),
+      firstSeenAt: now,
+      lastSeenAt: now,
+    });
+
+    return created.id;
   });
-
-  const [created] = await db
-    .select({ id: listings.id })
-    .from(listings)
-    .where(eq(listings.publicId, publicId))
-    .limit(1);
-  if (!created) throw new Error("draft insert did not produce a row");
-  // The link importer keeps no coordinate of its own, so the draft is plotted
-  // at its location's centroid until an operator adds one (src/lib/geo.ts).
-  await syncDisplayCoords(db, created.id);
-
-  // Provenance. `contentHash`/`dedupKey` feed the existing dedup pipeline, so a
-  // claimed import participates in change detection like any other source.
-  const raw: RawListing = {
-    source: sourceForHost(input.parsed.sourceUrl),
-    sourceUrl: input.parsed.sourceUrl,
-    title: input.title,
-    descriptionEs: input.descriptionEs ?? undefined,
-    operation: input.operation,
-    propertyType: input.propertyType,
-    priceAmount: input.priceAmount,
-    priceCurrency: input.priceCurrency,
-    bedrooms: input.bedrooms ?? undefined,
-    bathrooms: input.bathrooms ?? undefined,
-    parking: input.parking ?? undefined,
-    areaM2: input.areaM2 ?? undefined,
-    landM2: input.landM2 ?? undefined,
-    locationName: input.parsed.locationText ?? undefined,
-    imageUrls: input.parsed.imageUrls,
-  };
-
-  const now = new Date();
-  // 0 = unscoped, which is what an independent agent's claim is.
-  const scopeAgencyId = input.agencyId ?? 0;
-  await db.insert(listingSources).values({
-    listingId: created.id,
-    source: sourceForHost(input.parsed.sourceUrl),
-    scopeAgencyId,
-    sourceUrl: input.parsed.sourceUrl.slice(0, 600),
-    contentHash: contentHash(raw, priceUsd),
-    // NULL when the claimed page carried no phone — the claim flow never sets
-    // one, so this is the normal case. A claim is already identified by its
-    // source URL (findExistingClaim), which is a far stronger signal than the
-    // fuzzy key, so nothing is lost by not having one.
-    dedupKey: dedupKey(raw, priceUsd, input.locationId, scopeAgencyId),
-    firstSeenAt: now,
-    lastSeenAt: now,
-  });
-
-  return created.id;
 }
 
 /**

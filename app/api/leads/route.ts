@@ -1,7 +1,8 @@
 /**
  * Lead capture (ARCHITECTURE.md §5). Order matters: record in MySQL first
- * (source of truth for the money report), THEN push to GHL through the
- * crm.ts boundary. A GHL failure never loses the lead — it's already stored.
+ * (source of truth for the money report), THEN push to the provider through
+ * the crm.ts boundary. A failed push never loses the lead — it's already
+ * stored, which is also why the push does not run inside the request.
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
@@ -141,7 +142,7 @@ export async function POST(req: NextRequest) {
   });
   const leadId = Number((res as unknown as { insertId: number }).insertId);
 
-  // 2. Push to GHL (best effort — never blocks the stored lead).
+  // 2. The payload for the deferred push below.
   const payload: LeadPayload = {
     leadType: parsed.leadType,
     vertical,
@@ -163,15 +164,23 @@ export async function POST(req: NextRequest) {
   };
 
   /**
-   * Ping the operator (audit I10). A solo operator otherwise finds a lead by
-   * opening /admin, and a lead found next week is a lead lost. It runs after
-   * the response so a slow or dead webhook never becomes the visitor's wait,
-   * and it is separate from the CRM push above: that one carries the record,
-   * this one is "go look", and a downstream flow routes them differently.
+   * Everything outbound happens after the response, on purpose.
+   *
+   * The row above is the record; the webhook push is a copy of it, and the
+   * operator ping is a "go look". Neither is worth a visitor's wait, and a
+   * provider that accepts the connection and goes quiet would otherwise hold
+   * this Node process open for as long as it stalls — the mechanism of the
+   * 2026-07-26 503 spiral (PLAN.md), on a host whose process cap is shared
+   * with ~90 other sites. `crm.ts` bounds each call at 5 s on top of this.
+   *
+   * The two pushes stay separate: this one carries the record, the alert is
+   * "a lead arrived, go look", and a downstream flow routes them differently.
+   * The response no longer reports whether the push landed — by the time it
+   * is sent, nobody knows yet, and no client ever read the old `crm` flag.
    */
   const adminUrl = `${await siteOrigin()}/admin/leads`;
-  after(() =>
-    alertOperator({
+  after(async () => {
+    await alertOperator({
       kind: "new_lead",
       title: esPanel.alertNewLeadTitle,
       detail: esPanel.alertNewLeadDetail({
@@ -181,16 +190,23 @@ export async function POST(req: NextRequest) {
         listingTitle: listing?.title ?? null,
       }),
       url: adminUrl,
-    }),
-  );
+    });
 
-  const crmResult = await getCrm().pushLead(payload);
-  if (crmResult.ok && crmResult.contactId) {
-    await db
-      .update(leads)
-      .set({ ghlContactId: crmResult.contactId })
-      .where(eq(leads.id, leadId));
-  }
+    // The provider's contact id is worth storing when it comes back, but a
+    // push that fails or times out leaves the lead exactly as complete as it
+    // already was. Nothing here may throw into the runtime's after() handler.
+    try {
+      const crmResult = await getCrm().pushLead(payload);
+      if (crmResult.ok && crmResult.contactId) {
+        await db
+          .update(leads)
+          .set({ ghlContactId: crmResult.contactId })
+          .where(eq(leads.id, leadId));
+      }
+    } catch {
+      /* the lead row is the record; a failed copy is not an incident */
+    }
+  });
 
-  return NextResponse.json({ ok: true, leadId, crm: crmResult.ok });
+  return NextResponse.json({ ok: true, leadId });
 }

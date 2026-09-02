@@ -236,7 +236,35 @@ shared Brazil plan. None blocks O1–S2.
 
 ## §9 Build log & handoff
 
-(empty — each phase appends before merging)
+### O1 — request-path hardening (2026-09-02, PR #83)
+
+- `src/lib/crm.ts`: the webhook bound is now **5 s**, down from the 12 s PR #81
+  landed. Deciding value, after re-reading the 503 post-mortem: after this PR
+  the only caller that awaits `post()` inside a request is the publish wizard's
+  OTP step, where a person watches a spinner, and 5 s keeps the webhook
+  strictly faster than the pool's own 8 s `connectTimeout` — a stalled provider
+  can never be the slowest hop in a request. Deferred work holds the process
+  too, so the bound matters in `after()` as well.
+- `app/api/leads/route.ts`: `pushLead` and the `ghl_contact_id` update moved
+  into the same `after()` as the operator alert, inside a `try`. The response
+  is `{ ok: true, leadId }` — the `crm` flag is gone; no client ever read it
+  (`ContactForm`, `LeadForm`, `PriceAlert` all check `res.ok` only). Exactly
+  one DB write is awaited before the response.
+- `createClaimedDraft` and `rollbackImportJob` each run in one
+  `db.transaction()`. In `jobs.ts` the read-only protection queries stay
+  outside it and `note`/`now` were hoisted so the return value still sees them.
+- Both medians call sites read `CACHE_TTL.marketMedians` (6 h, not the 1 h they
+  hard-coded); `cache.ts` now states why `market-medians` is the one tag with
+  no writer and must stay that way.
+- **Not proved against a database:** no Docker daemon and no localhost MySQL in
+  this sandbox, so the orphan-draft check plan §5.1 asks for, and
+  `verify:scopes`, did not run. Both are recorded in `fable/KNOWN-ISSUES.md`
+  along with `app/tasacion/actions.ts:69`, which still awaits a push in-request
+  (bounded, out of O1's file list).
+- Next phase (O2) looks first at `app/registro/actions.ts`,
+  `app/publicar/actions.ts` and `src/lib/rate-limit.ts`; `allowRequest` and
+  `clientIpFrom` are used together in `app/api/leads/route.ts:80` and that is
+  the pattern to copy. Remember O2 opens its PR and does **not** merge it.
 
 ## §10 Backlog
 

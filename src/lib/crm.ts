@@ -75,17 +75,21 @@ export interface CrmResult {
 /**
  * Hard ceiling on one webhook round-trip.
  *
- * Every caller of `post()` awaits it inside a request — `/api/leads` and the
- * publish flow's OTP step — and Node's fetch will otherwise wait up to 300 s
- * for a provider that accepted the connection and went quiet. On this host a
- * request that does not resolve keeps its Node process alive, and processes
- * count against an account-wide cap shared with every other site (see the
- * 503 post-mortem in PLAN.md and the pool limits in src/db/index.ts, which
- * exist for the same reason). 12 s is generous for a webhook that normally
- * answers in well under one, and short enough that a dead provider costs a
- * visitor a slow submit rather than the whole account a process.
+ * Node's fetch will otherwise wait up to 300 s for a provider that accepted
+ * the connection and went quiet, and on this host a request that does not
+ * resolve keeps its Node process alive — processes count against an
+ * account-wide cap shared with every other site (the 503 post-mortem in
+ * PLAN.md, and the pool limits in src/db/index.ts, which exist for the same
+ * reason). Work deferred with `after()` holds the process too, so the bound
+ * matters whether the caller awaits the push or not.
+ *
+ * 5 s, not longer: the one caller that still awaits this inside a request is
+ * the publish wizard's OTP step, where a person is watching a spinner, and
+ * that keeps the webhook strictly faster than the database's own 8 s connect
+ * timeout — a stalled provider can never be the slowest hop in a request.
+ * A webhook that normally answers in well under a second loses nothing.
  */
-const WEBHOOK_TIMEOUT_MS = 12_000;
+const WEBHOOK_TIMEOUT_MS = 5_000;
 
 function isTimeout(e: unknown): boolean {
   return e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
