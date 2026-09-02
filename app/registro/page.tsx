@@ -29,6 +29,7 @@ const ERRORS: Record<string, string> = {
   password: esPanel.registerErrorPassword,
   agency_name: esPanel.registerErrorAgencyName,
   invite: esPanel.registerErrorInvite,
+  throttled: esPanel.registerErrorThrottled,
   generic: esPanel.registerErrorGeneric,
 };
 

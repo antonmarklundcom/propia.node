@@ -9,17 +9,35 @@
  * On success the new user is logged straight in: making someone sign up and
  * then hunt for the login form is friction with no security value.
  */
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSession, getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
+import { clientIpFrom } from "@/lib/client-ip";
+import { allowRequest } from "@/lib/rate-limit";
 import {
   registerAccount,
   type AccountKind,
   type RegistrationError,
 } from "@/lib/registration";
 
+/**
+ * Sign-up is the one unauthenticated write that costs real CPU: `registerAccount`
+ * runs scrypt at N=16384 before it touches the database, so a script hitting this
+ * action in a loop burns the app process rather than the attacker's. On a host
+ * that shares a 200-process cap with ~90 other sites, that is the 503 shape from
+ * PLAN.md's post-mortem reached from the outside.
+ *
+ * Five per IP per ten minutes: an agency signing up its team from one office
+ * connection is the widest honest burst anyone could describe, and it is well
+ * under five. Same fixed-window helper as `/api/leads`, so the limits stay one
+ * mechanism; per process, per `rate-limit.ts`.
+ */
+const REGISTER_MAX = 5;
+const REGISTER_WINDOW_MS = 10 * 60_000;
+
 function bounce(
-  error: RegistrationError | "generic",
+  error: RegistrationError | "generic" | "throttled",
   kind: string,
   invite: string,
 ): never {
@@ -46,6 +64,14 @@ export async function registerAction(formData: FormData): Promise<void> {
       : rawKind === "agency"
         ? "agency"
         : "independent";
+
+  // Before any hashing or insert: a refused attempt must cost nothing but this
+  // Map lookup. `clientIpFrom` reads the proxy's own last hop, so the key
+  // cannot be rotated by a spoofed x-forwarded-for.
+  const ip = clientIpFrom(await headers());
+  if (!allowRequest(`register|${ip}`, REGISTER_MAX, REGISTER_WINDOW_MS)) {
+    bounce("throttled", kind, invite);
+  }
 
   const result = await registerAccount({
     kind,

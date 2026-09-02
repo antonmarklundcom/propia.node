@@ -33,6 +33,36 @@ it; none of them blocks a phase.
   no `listingScopeWhere`, `panelScope` or panel query, so it is not implicated;
   a session with a local database should still run it opportunistically.
 
+- **A refused OTP request renders its countdown in raw seconds.** Found in O2.
+  `PublishWizard.tsx:779` prints `${esPublish.resendIn} ${cooldown}s`, which was
+  written when the only cooldown was `createOtp`'s 60 s — the new hourly cap
+  reports the window itself, so a capped publisher reads "Reenviar en 3600s".
+  Correct and honest, but nobody counts in thousands of seconds. Not fixed here
+  because the phase's own rule is that a refusal reuses the existing result
+  shape so no client change is needed. Fix: format `cooldown` as `m:ss` (or
+  hours) in that one template literal, with the copy in `esPublish`.
+
+- **`src/lib/rate-limit.ts` has no automated regression test.** O2 fixed a real
+  bug in it — the sweep expired every bucket against whichever caller's window
+  happened to trigger it, so a 5-minute `import-url` request wiped an hour-long
+  `otp` bucket six minutes in and handed the counted user a fresh allowance.
+  The fix (a per-entry `windowMs`) was proved with a throwaway script that fakes
+  `Date.now`, reproduced against `origin/main` first; the script is not in the
+  repo because the module is `server-only` and a `verify:` script would have to
+  strip that import to load it. Anyone adding a third window should re-do that
+  proof. A permanent check needs a decision about how a pure verify script
+  imports `server-only` modules.
+
+- **The `esPanel`, `esPublish` and `esOwner` namespaces have no English peer.**
+  Noticed in O2 while adding `registerErrorThrottled`. Only eight namespaces are
+  assembled into `Dictionary` (`src/i18n/index.ts:51`); the panel, publish and
+  owner surfaces are read as direct `esPanel.*` imports, so `verify:i18n` never
+  walks them and there is nothing to add an English string *to*. Adding one key
+  to a non-existent `enPanel` is not a one-line change — it is porting ~400
+  staff-surface strings — so O2 added its copy to `esPanel` alone. This is a D6
+  flip-day precondition for `/registro`, `/publicar` and `/agencia`, and it is
+  larger than any phase in this plan.
+
 - **Q1 (package manager) is still unanswered.** `fable/REVIEW.md` Q1 asks
   which package manager hPanel's build step actually runs for this site
   (`pnpm install` or `npm ci` — check the build log). Until Anton answers,
