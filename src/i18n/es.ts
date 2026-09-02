@@ -168,6 +168,8 @@ export const esPanel = {
   registerErrorPassword: "La contraseña necesita al menos 8 caracteres.",
   registerErrorAgencyName: "Escribí el nombre de la inmobiliaria.",
   registerErrorGeneric: "No pudimos crear la cuenta. Probá de nuevo.",
+  registerErrorThrottled:
+    "Demasiados intentos desde esta conexión. Esperá unos minutos y volvé a probar.",
 
   // Registro por invitación de una inmobiliaria
   registerKindInvite: (agencyName: string) => `Unirme a ${agencyName}`,
