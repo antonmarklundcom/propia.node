@@ -22,6 +22,7 @@ import {
 import { esPanel } from "@/i18n/es";
 import { siteOrigin } from "@/lib/origin";
 import { createOtp, verifyOtp } from "@/lib/otp";
+import { allowRequest } from "@/lib/rate-limit";
 import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
 
 /** Which agency (if any) a publisher belongs to — never read from the client. */
@@ -123,6 +124,18 @@ export async function saveDraftAction(
   return { ok: true, draftId };
 }
 
+/**
+ * OTP requests allowed per account per window, on top of the per-number resend
+ * cooldown in `createOtp`. The cooldown only stops a fast loop on one number:
+ * a signed-in caller could still walk a list of numbers, one message per
+ * number, and every message costs the founder money at the provider. Five an
+ * hour is more than a person publishing a listing ever needs (a code lives
+ * long enough to be typed, and the wizard resends on demand). Defaults, not
+ * policy.
+ */
+const OTP_MAX = 5;
+const OTP_WINDOW_MS = 60 * 60_000;
+
 export type RequestOtpResult =
   | { ok: true }
   | {
@@ -139,11 +152,22 @@ export type RequestOtpResult =
 export async function requestOtpAction(
   rawWhatsapp: string,
 ): Promise<RequestOtpResult> {
-  await requireUser("/publicar");
+  const user = await requireUser("/publicar");
   const whatsapp = canonPhone(rawWhatsapp);
   if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
 
   if (!isMessagingConfigured()) return { ok: false, error: "undeliverable" };
+
+  // Keyed on the account, not the number, because the number is the thing an
+  // abuser varies. Counted before createOtp so a refusal costs neither an
+  // insert nor a provider call. The result reuses the cooldown shape the
+  // wizard already renders; `cooldownMs` is the window length rather than the
+  // exact remainder — the fixed-window counter does not expose when the
+  // window opened, and an honest upper bound is better than a countdown that
+  // expires while the caller is still blocked.
+  if (!allowRequest(`otp|${user.id}`, OTP_MAX, OTP_WINDOW_MS)) {
+    return { ok: false, error: "cooldown", cooldownMs: OTP_WINDOW_MS };
+  }
 
   const created = await createOtp(whatsapp);
   if (!created.ok)

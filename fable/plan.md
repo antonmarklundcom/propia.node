@@ -266,6 +266,38 @@ shared Brazil plan. None blocks O1–S2.
   `clientIpFrom` are used together in `app/api/leads/route.ts:80` and that is
   the pattern to copy. Remember O2 opens its PR and does **not** merge it.
 
+### O2 — public-write throttles (2026-09-02, PR pending — **awaiting founder merge**)
+
+- `app/registro/actions.ts`: `registerAction` counts `register|<ip>` (5 per
+  10 min, `clientIpFrom(await headers())`) *before* `registerAccount`, i.e.
+  before the email lookup, the scrypt hash and the inserts. A refusal reuses
+  the page's `?error=` contract with a new `too_many` value, so nothing on the
+  client changed; the copy is `esPanel.registerErrorTooMany`. `esPanel` is a
+  staff/auth namespace with no `en` peer and is not part of the `Dictionary`,
+  so no `en.ts` key was added and `verify:i18n` stays green.
+- `app/publicar/actions.ts`: `requestOtpAction` counts `otp|<user.id>` (5 per
+  hour) right after `requireUser`, before `createOtp` and the provider call.
+  Keyed on the account rather than the number because the number is what an
+  abuser varies — the per-number `RESEND_COOLDOWN_MS` in `createOtp` only
+  stops a fast loop on one number. A refusal returns the existing
+  `{ ok: false, error: "cooldown", cooldownMs }` shape, so `PublishWizard`
+  needs no change. `cooldownMs` is the window length: the fixed-window counter
+  does not expose when the window opened, and an upper bound beats a countdown
+  that expires while the caller is still blocked.
+- `src/lib/rate-limit.ts`: comment only. "One Node process on shared hosting"
+  was wrong — `src/db/index.ts:27` says Passenger may run several, so the
+  effective ceiling is `max × processes`. Recorded as accepted, with the
+  shared store left in §10.
+- Deviation: branch is `claude/build-plan-progress-vrc92b` (the session's
+  designated branch), not `claude/fable-o2-write-throttles`. Nothing else in
+  the phase changed.
+- `npm run verify:local` green. `verify:scopes` still not run — no localhost
+  MySQL in this sandbox (already in `fable/KNOWN-ISSUES.md`); this phase
+  touches no panel query or scope helper.
+- Next phase (S1, Sonnet) branches from `origin/main`, not from this PR: the
+  two touch no common file. It looks first at `README.md`'s Hostinger/cron
+  sections and `package.json`'s real `cron:*` list.
+
 ## §10 Backlog
 
 - R13: batch the `recompute-cuotas.ts` UPDATE when inventory passes ~10 k.

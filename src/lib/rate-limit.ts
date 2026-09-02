@@ -7,7 +7,11 @@
  * form, where every request counts and there is no "success" to forgive.
  *
  * Same trade as the auth limiter: per-process Map, no schema, resets on
- * deploy. One Node process on shared hosting, so per-process is per-app.
+ * deploy. Passenger may run more than one Node process per app (that is why
+ * `src/db/index.ts` keeps the pool small), so a limit here is **per process**,
+ * not per app: the effective ceiling is `max × processes`. That is accepted —
+ * the numbers exist to stop a loop, not to meter a quota. A shared store is
+ * only worth building if the process count grows.
  */
 import "server-only";
 
