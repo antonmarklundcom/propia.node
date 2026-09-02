@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
+import { dict } from "@/i18n/server";
 import {
   getAgencyBySlug,
   getAgencyListings,
@@ -53,6 +54,7 @@ export default async function AgencyProfilePage({ params }: Params) {
   const r = await resolve(slug);
   if (!r) notFound();
   const { agency, listingCount } = r;
+  const d = await dict();
 
   // A brand-new agency with zero listings has nothing to show — same
   // gone-or-noindex rule every other thin page in the site follows
@@ -72,7 +74,7 @@ export default async function AgencyProfilePage({ params }: Params) {
     .join("");
 
   const crumbs = [
-    { name: "Inicio", url: "/" },
+    { name: d.listing.breadcrumbHome, url: "/" },
     { name: agency.name, url: agencyUrl(agency.slug) },
   ];
 
@@ -90,10 +92,10 @@ export default async function AgencyProfilePage({ params }: Params) {
         />
       )}
 
-      <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
+      <nav className="breadcrumb-nav" aria-label={d.profile.navAriaLabel}>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Link className="breadcrumb-nav__link" href="/">
-            Inicio
+            {d.listing.breadcrumbHome}
           </Link>
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -117,7 +119,7 @@ export default async function AgencyProfilePage({ params }: Params) {
           <h1 className="agency-profile__name">
             {agency.name}
             {agency.isVerified && (
-              <span className="agency-profile__verified" title="Verificado">
+              <span className="agency-profile__verified" title={d.listing.sellerVerified}>
                 ✓
               </span>
             )}
@@ -126,7 +128,7 @@ export default async function AgencyProfilePage({ params }: Params) {
             Inmobiliaria ·{" "}
             {listingCount > 0
               ? `${listingCount} ${listingCount === 1 ? "propiedad publicada" : "propiedades publicadas"}`
-              : "Sin propiedades publicadas por el momento"}
+              : d.profile.emptyState}
           </p>
           {(agency.whatsapp || agency.email) && (
             <div className="agency-profile__contact">

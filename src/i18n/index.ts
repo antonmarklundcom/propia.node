@@ -26,6 +26,8 @@ import {
   esHome,
   esHub,
   esListing,
+  esProfile,
+  esProject,
   esSearchBar,
 } from "./es";
 import {
@@ -36,6 +38,8 @@ import {
   enHome,
   enHub,
   enListing,
+  enProfile,
+  enProject,
   enSearchBar,
 } from "./en";
 
@@ -57,6 +61,8 @@ const esDictionary = {
   hub: esHub,
   category: esCategory,
   listing: esListing,
+  profile: esProfile,
+  project: esProject,
 } as const;
 
 /**
@@ -103,6 +109,8 @@ const enDictionary = {
   hub: enHub,
   category: enCategory,
   listing: enListing,
+  profile: enProfile,
+  project: enProject,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {
@@ -117,4 +125,14 @@ export function getDictionary(locale: Locale): Dictionary {
 /** Narrow an arbitrary header value to a locale we actually have. */
 export function parseLocale(value: string | null | undefined): Locale {
   return value === "en" || value === "es" ? value : DEFAULT_LOCALE;
+}
+
+/**
+ * `toLocaleString`/`toLocaleDateString` locale for a request. Not the same
+ * axis as `Locale` above — CLAUDE.md's i18n rule is that a thousands
+ * separator or a month name is not copy, so it comes from this rather than
+ * from a dictionary string.
+ */
+export function numberLocaleFor(locale: Locale): string {
+  return locale === "en" ? "en-US" : "es-PY";
 }

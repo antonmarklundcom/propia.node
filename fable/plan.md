@@ -341,6 +341,49 @@ shared Brazil plan. None blocks O1–S2.
   `app/[operacion]/page.tsx:56` for the `openGraph` shape to copy onto the
   category template.
 
+### S2 — i18n and OG on profile, project and category pages (2026-09-02, PR #88 — last phase)
+
+- New `esProfile`/`enProfile` (`navAriaLabel`, `emptyState`) and
+  `esProject`/`enProject` (`stageLabel`, `typeLabel`, `stateLabel`,
+  `available`, `developer`, `delivery(date, numberLocale)`) namespaces, wired
+  into `esDictionary`/`enDictionary` in `src/i18n/index.ts`. Per plan §6.2,
+  `breadcrumbHome` and `verified` are **not** duplicated into `esProfile` —
+  `/inmobiliaria/[slug]` and `/agente/[slug]` read `d.listing.breadcrumbHome`
+  and `d.listing.sellerVerified` directly, since both already existed in the
+  dictionary with the exact needed text.
+- `app/proyecto/[slug]/page.tsx`'s `STAGE_LABEL`/`TYPE_LABEL`/`STATE_LABEL`
+  module-level `Record`s and the hard-coded `"Entrega ${…toLocaleDateString("es-PY"…)}"`
+  are gone; `deliveryLabel()` now takes `(d, t: Dictionary["project"],
+  numberLocale)` and calls `t.delivery`. The `es-PY`/`en-US` ternary itself
+  moved to a new pure `numberLocaleFor(locale)` in `src/i18n/index.ts` rather
+  than living inline in the page — plan §6.2's exit list requires `grep -n
+  "es-PY" app/proyecto` to be empty, which an inline ternary (the pattern
+  `app/propiedad/[slug]/page.tsx` uses) would have failed.
+- `app/[operacion]/[...segments]/page.tsx`'s `generateMetadata` now returns
+  `openGraph: { title: \`${title} — ${brand}\`, description }`, matching
+  `app/[operacion]/page.tsx:56`; paged titles keep `t.titlePaged`'s page
+  number since `title` is computed once and reused for both `title` and
+  `openGraph.title`.
+- Proved `verify:i18n` sees the new namespaces: removed
+  `enProfile.emptyState`, ran the check (`FAIL dict.profile.emptyState —
+  present in es, missing in en`), restored it, ran clean again.
+- **Deviation, recorded in `fable/KNOWN-ISSUES.md` rather than widened into
+  this PR:** `app/agente/[slug]/page.tsx` already imported `esAgentProfile`
+  directly from `@/i18n/es` (bypassing `dict()`) before this phase — it
+  predates the "Batch 3" dictionary namespaces entirely and has no English
+  peer, the same shape already on record for `esPanel`/`esPublish`/`esOwner`.
+  This phase added `dict()` to that page only for the two strings it shares
+  with the agency profile page (breadcrumb home, nav aria-label) and left
+  `esAgentProfile`'s other ~10 agent-only keys untouched — porting them to an
+  `enAgentProfile` is a job of its own, not in this phase's file list.
+- `verify:local` green (typecheck, build, all four pure `verify:*`); the
+  three plan §6.2 exit greps confirmed empty; category route's metadata
+  contains `openGraph`.
+- **This was the last phase in the plan.** No next phase to spawn — see the
+  closing report to Anton instead (four PR links, `fable/KNOWN-ISSUES.md`
+  contents, and `fable/plan.md` §7's still-open items as numbered manual
+  steps).
+
 ## §10 Backlog
 
 - R13: batch the `recompute-cuotas.ts` UPDATE when inventory passes ~10 k.

@@ -54,6 +54,21 @@ it; none of them blocks a phase.
   flip-day precondition for `/registro`, `/publicar` and `/agencia`, and it is
   larger than any phase in this plan.
 
+- **`esAgentProfile` (`src/i18n/es.ts`) is imported directly into
+  `app/agente/[slug]/page.tsx` rather than read through `dict()`, and has no
+  English peer.** Found in S2 while adding the `profile`/`project`
+  namespaces — the same shape KNOWN-ISSUES already records for `esPanel`,
+  `esPublish` and `esOwner`. It predates this plan (it is above the "Batch 3"
+  comment block in `es.ts`, not part of it) and covers ~10 agent-profile-only
+  strings (contact copy, meta title/description, "Trabaja en", …), so porting
+  it to an `enAgentProfile` is a job of its own, not a one-line addition. S2
+  only pulled the two strings this page shared with the agency profile page
+  (breadcrumb nav label, empty-state line) into the new `profile` namespace
+  and left the rest of `esAgentProfile` as-is — `verify:i18n` cannot see it
+  either way, since it never enters `Dictionary`. Fix: fold `esAgentProfile`
+  into `dict()` with an `enProfile`/`agent`-shaped English translation, same
+  D6 flip-day precondition as the panel/publish/owner namespaces.
+
 - **Q1 (package manager) is still unanswered.** `fable/REVIEW.md` Q1 asks
   which package manager hPanel's build step actually runs for this site
   (`pnpm install` or `npm ci` — check the build log). Until Anton answers,
