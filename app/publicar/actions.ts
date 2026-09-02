@@ -22,6 +22,7 @@ import {
 import { esPanel } from "@/i18n/es";
 import { siteOrigin } from "@/lib/origin";
 import { createOtp, verifyOtp } from "@/lib/otp";
+import { allowRequest } from "@/lib/rate-limit";
 import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
 
 /** Which agency (if any) a publisher belongs to — never read from the client. */
@@ -132,6 +133,23 @@ export type RequestOtpResult =
     };
 
 /**
+ * Per-account cap on OTP requests, on top of `createOtp`'s 60 s cooldown.
+ *
+ * The cooldown is keyed on the *number*, which stops a resend storm at one
+ * number but not the abuse it was never asked to see: an account can walk a new
+ * number every 61 s and WhatsApp-bomb strangers on the operator's messaging
+ * quota — and `/registro` hands out accounts to anyone. Keying the cap on the
+ * user is what closes that, because the account is the only thing an attacker
+ * has to spend to get here.
+ *
+ * Five an hour: publishing one listing needs one code, a mistyped number and a
+ * resend make three, so five leaves an honest publisher room and still bounds a
+ * single account to five messages an hour rather than fifty-nine.
+ */
+const OTP_MAX = 5;
+const OTP_WINDOW_MS = 60 * 60_000;
+
+/**
  * Issue and deliver a WhatsApp OTP for the publisher's number. Only reachable
  * when a messaging provider exists — see publishDraftAction for the path that
  * runs when none does.
@@ -139,11 +157,22 @@ export type RequestOtpResult =
 export async function requestOtpAction(
   rawWhatsapp: string,
 ): Promise<RequestOtpResult> {
-  await requireUser("/publicar");
+  const user = await requireUser("/publicar");
   const whatsapp = canonPhone(rawWhatsapp);
   if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
 
   if (!isMessagingConfigured()) return { ok: false, error: "undeliverable" };
+
+  // Before `createOtp` reads or writes a row. Deliberately after the two pure
+  // guards above: neither can send a message, so a fat-fingered number must not
+  // spend an hour's budget. `cooldown` rather than a new error so the wizard's
+  // existing countdown handles it with no client change — `allowRequest` does
+  // not expose how much of the window is left, so this reports the window
+  // itself, which is the upper bound on the wait and never asks for a retry
+  // that would only be refused again.
+  if (!allowRequest(`otp|${user.id}`, OTP_MAX, OTP_WINDOW_MS)) {
+    return { ok: false, error: "cooldown", cooldownMs: OTP_WINDOW_MS };
+  }
 
   const created = await createOtp(whatsapp);
   if (!created.ok)

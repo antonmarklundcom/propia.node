@@ -266,6 +266,42 @@ shared Brazil plan. None blocks O1–S2.
   `clientIpFrom` are used together in `app/api/leads/route.ts:80` and that is
   the pattern to copy. Remember O2 opens its PR and does **not** merge it.
 
+### O2 — public-write throttles (2026-09-02, PR #NN — **awaiting founder merge**)
+
+- **The PR is open and not merged**, per this plan's own rule: both files are
+  auth surfaces and CLAUDE.md says flag before merging. Title carries
+  `[auth — flag before merge]`.
+- `registerAction`: `allowRequest(\`register|${ip}\`, 5, 10 min)` on
+  `clientIpFrom(await headers())`, placed after the kind/invite parse (the
+  bounce needs both) and before `registerAccount` — so a refusal never reaches
+  scrypt or the insert. Refusal reuses the existing redirect: a new
+  `throttled` value on `bounce`, mapped in `app/registro/page.tsx`'s `ERRORS`
+  to a new `esPanel.registerErrorThrottled`.
+- `requestOtpAction`: `allowRequest(\`otp|${user.id}\`, 5, 1 h)` after
+  `requireUser`, and deliberately after the invalid-number and
+  `isMessagingConfigured` guards — neither can send a message, so a typo must
+  not spend an hour's budget — but before `createOtp` touches a row. Refusal
+  returns the existing `{ ok: false, error: "cooldown", cooldownMs }`, so the
+  wizard needed no change. `cooldownMs` is the window length: `allowRequest`
+  does not expose the remainder, and the window is the upper bound, so the UI
+  never invites a retry that would be refused again.
+- **Deviation, and the reason the hourly cap works at all:** `rate-limit.ts`
+  was to be a comment-only edit, but its sweep expired every bucket against
+  whichever *caller's* window triggered it, and `buckets` is shared. The
+  existing 5-minute `import-url` limiter therefore wipes an hour-long `otp`
+  bucket six minutes in. Reproduced against `origin/main` and fixed by storing
+  `windowMs` per entry — same helper, no new limiter. Also two files past the
+  list: `app/registro/page.tsx` (one `ERRORS` row, or the new copy renders as
+  the generic error) and no `en.ts` change, because `esPanel` has no English
+  peer at all — see `fable/KNOWN-ISSUES.md`.
+- Not proved against a database: no localhost MySQL here, and neither limiter
+  needs one. `verify:local` is green; `verify:scopes` is still unrun (O2
+  touches no scope query).
+- Next phase (S1, **Sonnet**) starts from `origin/main`, not from this branch —
+  nothing here is stacked on it. It looks first at `README.md`'s production
+  sections and `package.json`'s real `cron:*` list; Q1 is still unanswered, so
+  the package-manager files stay alone.
+
 ## §10 Backlog
 
 - R13: batch the `recompute-cuotas.ts` UPDATE when inventory passes ~10 k.
