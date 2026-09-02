@@ -266,7 +266,7 @@ shared Brazil plan. None blocks O1–S2.
   `clientIpFrom` are used together in `app/api/leads/route.ts:80` and that is
   the pattern to copy. Remember O2 opens its PR and does **not** merge it.
 
-### O2 — public-write throttles (2026-09-02, PR #NN — **awaiting founder merge**)
+### O2 — public-write throttles (2026-09-02, PR #84 — **awaiting founder merge**)
 
 - **The PR is open and not merged**, per this plan's own rule: both files are
   auth surfaces and CLAUDE.md says flag before merging. Title carries
