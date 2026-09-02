@@ -33,15 +33,6 @@ it; none of them blocks a phase.
   no `listingScopeWhere`, `panelScope` or panel query, so it is not implicated;
   a session with a local database should still run it opportunistically.
 
-- **A refused OTP request renders its countdown in raw seconds.** Found in O2.
-  `PublishWizard.tsx:779` prints `${esPublish.resendIn} ${cooldown}s`, which was
-  written when the only cooldown was `createOtp`'s 60 s — the new hourly cap
-  reports the window itself, so a capped publisher reads "Reenviar en 3600s".
-  Correct and honest, but nobody counts in thousands of seconds. Not fixed here
-  because the phase's own rule is that a refusal reuses the existing result
-  shape so no client change is needed. Fix: format `cooldown` as `m:ss` (or
-  hours) in that one template literal, with the copy in `esPublish`.
-
 - **`src/lib/rate-limit.ts` has no automated regression test.** O2 fixed a real
   bug in it — the sweep expired every bucket against whichever caller's window
   happened to trigger it, so a 5-minute `import-url` request wiped an hour-long
