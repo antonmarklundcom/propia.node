@@ -266,25 +266,25 @@ export const enVender = {
     },
     {
       title: "A network of sites",
-      text: "Your property visible on inmobiliaria.com.py, realestateinparaguay.com, terreno.com.py and the rest of the network.",
+      text: "Your property visible on inmobiliaria.com.py and on realestateinparaguay.com, the door for buyers from abroad.",
     },
   ],
   foreignTitle: "Buyers from abroad",
   foreignText:
-    "Every property is translated and published on realestateinparaguay.com, the portal's door for buyers searching from another country. Same listing, same data, in the language of whoever is looking.",
+    "Every property is also published on realestateinparaguay.com, the portal's door for buyers searching from another country, with its listing on its way to being translated into English.",
   foreignPoints: [
-    "Listing translated into English",
+    "Also published on realestateinparaguay.com",
     "Reference price in US dollars",
     "Direct WhatsApp contact, no middleman",
   ],
   foreignImageLabel: "Preview of realestateinparaguay.com",
   foreignImagePlaceholderNote: "Reference image — pending replacement",
   behindTitle: "Who's behind it",
-  behindName: "Anton Marklund",
+  behindName: "Anton Marklund (name to confirm)",
   behindRole: "Founder of Inmobiliaria Paraguay and the portal's network of sites.",
-  behindCompany: (brand: string) => `${brand} is a service of EAS.`,
-  behindLicense:
-    "Professional license pending with SERPLAID (verify status before publishing).",
+  behindCompany: (brand: string) =>
+    `${brand} is a service of EAS (legal entity name to confirm).`,
+  behindLicense: "No professional license currently published.",
   behindPhotoLabel: "Founder's photo",
   behindPhotoPlaceholderNote: "Reference image — pending replacement",
   faqTitle: "Questions from sellers",

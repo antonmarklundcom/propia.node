@@ -961,14 +961,25 @@ export const esVender = {
     },
     {
       title: "Red de sitios",
-      text: "Tu propiedad visible en inmobiliaria.com.py, realestateinparaguay.com, terreno.com.py y el resto de la red.",
+      // Named only the two sites that actually carry the same listing today
+      // (inmobiliaria.com.py + its English translation) — terreno.com.py
+      // filters to property_type: ["terreno"] (verticals.ts) and would never
+      // show a casa/departamento, and "el resto de la red" implied doors
+      // beyond the three that exist. Review finding: don't overclaim reach.
+      text: "Tu propiedad visible en inmobiliaria.com.py y en realestateinparaguay.com, la puerta de entrada para compradores del exterior.",
     },
   ],
   foreignTitle: "Compradores del exterior",
+  // Softened from "se traduce y se publica" (present tense, claims the
+  // translation already happened): per CLAUDE.md, npm run cron:translate has
+  // never run against the live database, so title_en/description_en are
+  // still empty and every listing shows its Spanish fallback on the English
+  // door today. The listing itself IS already live there (that part is
+  // true) — only the translation step is described as in progress, not done.
   foreignText:
-    "Cada propiedad se traduce y se publica en realestateinparaguay.com, la puerta de entrada del portal para quien busca desde otro país. Mismo aviso, mismos datos, en el idioma de quien está mirando.",
+    "Cada propiedad se publica también en realestateinparaguay.com, la puerta de entrada del portal para quien busca desde otro país, con su ficha en camino de traducirse al inglés.",
   foreignPoints: [
-    "Ficha traducida al inglés",
+    "Publicada también en realestateinparaguay.com",
     "Precio de referencia en dólares",
     "Contacto directo por WhatsApp, sin intermediarios",
   ],
@@ -979,16 +990,29 @@ export const esVender = {
   foreignImagePlaceholderNote: "Imagen de referencia — pendiente de reemplazo",
   behindTitle: "Quién está detrás",
   // PLACEHOLDER (guide §5.6): founder's name inferred from the repository
-  // owner, not sourced from app copy anywhere else — confirm before launch.
-  behindName: "Anton Marklund",
+  // owner, not sourced from app copy anywhere else. Review finding: an
+  // inferred name must carry the same visible marker the photo and the
+  // laptop mock already do, not ship as unmarked fact — so the rendered
+  // string itself says so, the same way the photo/mock captions do.
+  behindName: "Anton Marklund (nombre a confirmar)",
   behindRole:
     "Fundador de Inmobiliaria Paraguay y de la red de sitios del portal.",
-  behindCompany: (brand: string) => `${brand} es un servicio de EAS.`,
-  // PLACEHOLDER (guide §5.6): stated honestly from verticals.ts's own note
-  // ("EAS/SERPLAID license issues (~Oct 2026)") — no license is claimed.
-  // Confirm the exact wording/registration number before launch.
-  behindLicense:
-    "Matrícula profesional en trámite ante SERPLAID (verificar estado antes de publicar).",
+  // PLACEHOLDER (guide §5.6 asks for "the EAS company named" — a real razón
+  // social, not the type of entity). "EAS" is the only company reference
+  // anywhere in this codebase (src/i18n/es.ts's existing disclaimer line,
+  // reused here) and isn't itself a company name — no real razón social
+  // exists in this repo to reuse. Flagged rather than invented.
+  behindCompany: (brand: string) =>
+    `${brand} es un servicio de EAS (razón social a confirmar).`,
+  // PLACEHOLDER (guide §5.6): stated without a specific status this codebase
+  // doesn't establish. verticals.ts's own note only says "license issues
+  // (~Oct 2026)" generally — it does not say a licence application is
+  // actually filed/"en trámite", so this no longer claims that. The
+  // "confirm before launch" instruction lives in this comment now, not in
+  // the rendered string (review finding: a builder-to-founder note had
+  // leaked into visitor-facing copy) — confirm the real status before
+  // publishing.
+  behindLicense: "Sin matrícula profesional publicada.",
   behindPhotoLabel: "Foto del fundador",
   behindPhotoPlaceholderNote: "Imagen de referencia — pendiente de reemplazo",
   faqTitle: "Preguntas de vendedores",
