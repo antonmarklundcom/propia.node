@@ -19,7 +19,7 @@ cuota finding (§6.3) and the link-contrast bug (§5.3) still stand.
 
 ## Recommended order
 
-1. **Preview in Claude Design** with the prompts in `preview-prompts.md`
+1. **Preview in Claude Design** with the prompts in `preview-prompts.md` (three canvases: inmobiliaria, realestate guide-first, realestate directory-first)
    (one canvas per domain, Sonnet is enough). Cheap, and it settles the
    two decisions a palette table cannot: whether Lora/Figtree feels local
    or merely soft, and whether the framed English card beats the scrim

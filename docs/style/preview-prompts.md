@@ -46,3 +46,35 @@ to type and colour in context, not to design the whole site.
 > Include a five-step "How buying works" strip with brass numerals 01–05
 > and a small costs table. Tone: broadsheet, factual, no "stunning" or
 > "exclusive". No navy, no gold-on-navy, no gradients on text.
+
+## realestateinparaguay.com — variant B, directory-first
+
+Run this as a separate canvas and compare with the guide-first variant
+above. Same palette, same type, same components; only the emphasis and
+the order change. Both use the attached style guide.
+
+> Design four artboards for an English-language property portal for
+> foreigners buying or renting in Paraguay, following the attached style
+> guide exactly (palette "Petrol", Newsreader + IBM Plex Sans, radius 0,
+> hairline structure, framed listing cards). This variant is
+> listings-first: the hero is a full-width photo of Asunción with the
+> scrim, eyebrow "Property in Paraguay · For international buyers", H1
+> "Homes, apartments and land in Paraguay, priced in US dollars", and a
+> large search bar with a Buy / Rent toggle, City, Type, Max price (USD)
+> and Search. Directly under the hero a thin one-line facts bar
+> (Freehold for foreigners · USD · ≈ 3–5 % closing costs · Public deed),
+> each a link, not a big block. Then "New this week" with eight framed
+> cards (US$ 145,000 · US$ 806/m² / 3 bed · 2 bath · 1,938 sq ft / Villa
+> Morra, Asunción), then "Furnished rentals" with four cards showing
+> monthly USD ("US$ 1,200/month · furnished · 12-month min"), then "Where
+> to buy" city tiles with median US$/m², and only then a compact
+> three-column "How buying works / Costs / Residency" section linking to
+> guides. Detail page and mobile as in the guide: no monthly-payment
+> line, inquiry form first, WhatsApp +595 second, "We reply in English".
+> Tone: factual, no "stunning" or "exclusive". No navy, no gold-on-navy.
+
+How to compare the two: on the guide-first canvas the visitor who has
+never heard of Paraguay is reassured before they see a price; on the
+directory-first canvas the visitor who already wants a flat in Villa Morra
+gets to it one scroll sooner and rentals are visible on the home page.
+Pick by which visitor you expect more of in the first year.
