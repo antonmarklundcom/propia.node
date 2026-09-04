@@ -13,7 +13,9 @@
  *
  * `accent` (#C19A4D) is 2.6:1 on cream — still below WCAG AA for body text.
  * It is for fills, hairlines, labels and large numerals; body text and links on
- * cream use `link` (#B5893C, 4.6:1), which is the same hue darkened to pass.
+ * cream use `link` (#8A6626, ~4.7:1), the same hue darkened enough to pass —
+ * the previous `link` value (#B5893C) measured 2.87:1, not the 4.6:1 an
+ * earlier version of this comment claimed.
  *
  * CSS can't import this module, so `app/globals.css` duplicates the values in
  * `:root`. Change both, and prefer `var(--color-*)` in new CSS so the
@@ -27,8 +29,8 @@ export const tokens = {
     accent: "#C19A4D", // dorado — primary button, labels, hairlines
     accentHover: "#DDBC7C",
     accentSoft: "#F1EDE4", // the one tint that may fill a block on cream
-    link: "#B5893C",
-    linkHover: "#8C6829",
+    link: "#8A6626",
+    linkHover: "#6B4F1C",
     whatsapp: "#1FAC54", // floating button only; never repurposed
     ink: "#16211B",
     inkSecondary: "#56605A",
@@ -38,20 +40,43 @@ export const tokens = {
     border: "rgba(22,33,27,0.12)", // on cream
     borderOnDark: "rgba(255,255,255,0.18)",
     borderAccent: "rgba(193,154,77,0.24)",
+    /** Text sitting on an accent (gold) fill — decoupled from `primary` so a
+     *  vertical can retheme its accent-fill text without retheming its brand
+     *  primary. Same value as `primary` today. */
+    onAccent: "#0E1F17",
+    /** Accent-colored text/icons on a dark (primary) ground. Same value as
+     *  `accent` today. */
+    accentOnDark: "#C19A4D",
     success: "#1E8E4E",
     error: "#C4453B",
   },
   /** Rectangles only — see the note above. */
-  radius: { card: "0", input: "0", chip: "0" },
+  radius: {
+    card: "0",
+    input: "0",
+    chip: "0",
+    /** Form controls and buttons. */
+    control: "0",
+    /** Photo cards. */
+    photo: "0",
+  },
   font: {
     display: "'Cormorant Garamond', Georgia, 'Times New Roman', serif",
     family: "Jost, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
     minBody: "16px",
   },
+  /** Uppercase micro-label tracking (`.ds-label`, buttons). */
+  label: { tracking: "3.4px" },
+  /** Button text-transform. */
+  button: { case: "uppercase" },
+  shadow: { float: "none" },
   /** Photo overlays. Text sits on the image; these keep it readable. */
   overlay: {
     hero: "linear-gradient(95deg, rgba(9,20,14,0.96) 0%, rgba(9,20,14,0.84) 34%, rgba(9,20,14,0.34) 62%, rgba(9,20,14,0.42) 100%)",
-    card: "linear-gradient(to top, rgba(7,15,11,0.94) 0%, rgba(7,15,11,0.42) 38%, rgba(7,15,11,0) 66%)",
+    /** Deepened ramp (audit F-scrim): holds ~0.9 through the text block
+     *  instead of releasing at 0.42, so bright photos don't wash out white
+     *  card text. Mirrors app/globals.css's `--overlay-card`. */
+    card: "linear-gradient(to top, rgba(7,15,11,0.95) 0%, rgba(7,15,11,0.9) 24%, rgba(7,15,11,0.62) 46%, rgba(7,15,11,0.22) 70%, rgba(7,15,11,0) 100%)",
     zone: "linear-gradient(to top, rgba(7,15,11,0.88) 0%, rgba(7,15,11,0.2) 52%, rgba(7,15,11,0) 78%)",
   },
   space: {

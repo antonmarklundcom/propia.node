@@ -42,10 +42,11 @@
   --color-accent: #C19A4D;
   --color-accent-hover: #DDBC7C;
   /* accent is 2.6:1 on cream (below WCAG AA for text) — fills/labels/hairlines/
-     numerals only. Body links use --color-link, the same hue at 4.6:1. */
+     numerals only. Body links use --color-link, the same hue darkened to
+     ~4.7:1 (the previous value, #B5893C, measured 2.87:1). */
   --color-accent-soft: #F1EDE4;
-  --color-link: #B5893C;
-  --color-link-hover: #8C6829;
+  --color-link: #8A6626;
+  --color-link-hover: #6B4F1C;
   --color-ink: #16211B;
   --color-ink-secondary: #56605A;
   --color-ink-muted: #7D857F;
@@ -54,10 +55,26 @@
   --color-border: rgba(22, 33, 27, 0.12);
   --color-border-dark: rgba(255, 255, 255, 0.18);
   --color-border-accent: rgba(193, 154, 77, 0.24);
+  /* Text on an accent (gold) fill — decoupled from --color-primary so a
+     vertical can retheme accent-fill text independently of its brand
+     primary. Same value as --color-primary today. */
+  --color-on-accent: #0E1F17;
+  /* Accent-colored text/icons on a dark (primary) ground. Same value as
+     --color-accent today. */
+  --color-accent-on-dark: #C19A4D;
   --color-whatsapp: #1FAC54;
 
   --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-sans: Jost, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Controls (buttons, fields) and photo cards — both 0 (no rounded corners,
+     see tokens.ts). A vertical override changes both by overriding these. */
+  --radius-control: 0;
+  --radius-photo: 0;
+  /* .ds-label and button letter-spacing / case. */
+  --label-tracking: 3.4px;
+  --button-case: uppercase;
+  --shadow-float: none;
 
   /* Height of the sticky .site-header (18px padding x2 + the stacked brand
      lockup). Measured, not computed — it exists so the hero can subtract it
@@ -112,7 +129,7 @@ html {
 /* No global link rule existed, so any anchor a component didn't style itself
    fell back to the browser's blue-and-underlined default — visible on
    /login's "Registrate" link and anywhere else a page relied on defaults.
-   --color-link is the accent darkened to 4.6:1, which passes AA on cream. */
+   --color-link is the accent darkened to ~4.7:1, which passes AA on cream. */
 a {
   color: var(--color-link);
   text-decoration: none;
@@ -124,7 +141,7 @@ a:hover {
 
 ::selection {
   background: var(--color-accent);
-  color: var(--color-primary);
+  color: var(--color-on-accent);
 }
 
 /* Display face: headings and prices only. Everything else is Jost. */
@@ -153,7 +170,7 @@ h2 {
    section numbers, eyebrows, card chips, form labels. */
 .ds-label {
   font-size: 10px;
-  letter-spacing: 3.4px;
+  letter-spacing: var(--label-tracking);
   text-transform: uppercase;
   color: var(--color-accent);
 }
@@ -199,12 +216,12 @@ h2 {
   justify-content: center;
   gap: 11px;
   border: 1px solid transparent;
-  border-radius: 0;
+  border-radius: var(--radius-control);
   padding: 18px 32px;
   font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 2px;
-  text-transform: uppercase;
+  text-transform: var(--button-case);
   text-decoration: none;
   cursor: pointer;
   transition: background 0.2s var(--ease), color 0.2s var(--ease),
@@ -239,7 +256,7 @@ h2 {
 
 .ds-btn--outline-gold:hover {
   background: var(--color-accent);
-  color: var(--color-primary);
+  color: var(--color-on-accent);
 }
 
 .ds-btn--on-photo {
@@ -276,7 +293,7 @@ h2 {
   width: 100%;
   background: var(--color-surface);
   border: 1px solid rgba(22, 33, 27, 0.18);
-  border-radius: 0;
+  border-radius: var(--radius-control);
   color: var(--color-ink);
   padding: 15px 14px;
   font-family: var(--font-sans);
@@ -306,6 +323,7 @@ h2 {
   position: relative;
   display: block;
   overflow: hidden;
+  border-radius: var(--radius-photo);
   color: #fff;
   text-decoration: none;
   height: clamp(320px, 30vw, 400px);
@@ -359,7 +377,7 @@ h2 {
   font-size: 9px;
   letter-spacing: 2.2px;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-on-accent);
   background: rgba(221, 188, 124, 0.92);
   padding: 6px 10px;
 }
@@ -642,7 +660,7 @@ body {
 
 .site-header__cta:hover {
   background: var(--color-accent);
-  color: var(--color-primary);
+  color: var(--color-on-accent);
   border-color: var(--color-accent);
 }
 
