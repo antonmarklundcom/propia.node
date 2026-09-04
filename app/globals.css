@@ -7136,6 +7136,335 @@ summary.panel-btn::-webkit-details-marker {
   max-width: 50ch;
 }
 
+/* ---------------------------------------------------------------------- */
+/* /vender — seller landing page (docs/style/inmobiliaria.com.py.md §5)   */
+/* Spanish door only. Reuses .nh-hero/.nh-hero__grid, .nh-proof (via       */
+/* <ProofRow>), .nh-process (via <SalesProcessSection>), .mk-* (Section,   */
+/* FeatureGrid, .mk-faq) — everything below is new, page-specific surface. */
+/* ---------------------------------------------------------------------- */
+
+.vd-hero__lines {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vd-hero__lines li {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--color-ink-secondary);
+  padding-left: 22px;
+  position: relative;
+}
+
+.vd-hero__lines li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.vd-hero__form-wrap {
+  background: var(--color-surface);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-float);
+  padding: 24px;
+}
+
+/* ---- Form (hero + closing CTA share this component) --------------------- */
+
+.vd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vd-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vd-form__label {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--color-ink);
+}
+
+.vd-form__input {
+  width: 100%;
+  padding: 12px 13px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--color-ink);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.vd-form__input:focus {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 1px;
+}
+
+/* Same caret data-URI .search-bar__select already uses. */
+.vd-form__select {
+  appearance: none;
+  padding-right: 34px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" stroke="%235B6470" stroke-width="1.5" fill="none" fill-rule="evenodd"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  cursor: pointer;
+}
+
+.vd-form__textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.vd-form__submit {
+  width: 100%;
+}
+
+.vd-form__note {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+  text-align: center;
+}
+
+/* Same literal .lead-form__error uses — --color-error isn't wired into
+   :root anywhere in this codebase yet (pre-existing, out of scope here). */
+.vd-form__error {
+  margin: 0;
+  font-size: 13.5px;
+  color: #a3302b;
+}
+
+.vd-form__fineprint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-ink-secondary);
+  text-align: center;
+}
+
+.vd-form__fineprint a {
+  color: var(--color-link);
+}
+
+.vd-form--done {
+  text-align: center;
+  padding: 30px 12px;
+}
+
+.vd-form__done-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--color-ink);
+}
+
+.vd-form__done-text {
+  margin: 0;
+  color: var(--color-ink-secondary);
+  line-height: 1.6;
+}
+
+/* ---- "Qué hacemos distinto" stroke icons --------------------------------- */
+
+.vd-feature__icon {
+  color: var(--color-accent);
+  margin-bottom: 4px;
+}
+
+/* ---- "Compradores del exterior" ------------------------------------------ */
+
+.vd-foreign__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--grid-gap);
+  align-items: center;
+}
+
+@media (max-width: 800px) {
+  .vd-foreign__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vd-foreign__text {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--color-ink-secondary);
+  margin: 12px 0 18px;
+  max-width: 52ch;
+}
+
+.vd-foreign__points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vd-foreign__points li {
+  font-size: 14px;
+  color: var(--color-ink);
+  padding-left: 20px;
+  position: relative;
+}
+
+.vd-foreign__points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+/* Placeholder "laptop with a screenshot" mock — a marked frame, never a
+   fabricated screenshot. Founder replaces this with a real capture of
+   realestateinparaguay.com. */
+.vd-foreign__mock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vd-foreign__mock-screen {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--color-primary);
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14px;
+  border: 6px solid var(--color-primary-soft);
+}
+
+.vd-foreign__mock-url {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.vd-foreign__mock-base {
+  width: 60%;
+  height: 10px;
+  background: var(--color-primary-soft);
+  border-radius: 0 0 8px 8px;
+}
+
+.vd-foreign__mock-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--color-ink-muted);
+  text-align: center;
+}
+
+/* ---- "Quién está detrás" --------------------------------------------------- */
+
+.vd-behind__grid {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .vd-behind__grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}
+
+/* Placeholder founder photo — a marked frame, never a fabricated portrait. */
+.vd-behind__photo {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-ink-muted);
+  padding: 12px;
+  text-align: center;
+}
+
+.vd-behind__photo-note {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--color-ink-muted);
+}
+
+.vd-behind__name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 10px 0 4px;
+}
+
+.vd-behind__line {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary);
+  margin: 0 0 6px;
+  max-width: 60ch;
+}
+
+.vd-behind__line--license {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+/* ---- Closing CTA ------------------------------------------------------- */
+
+.vd-closing__inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--grid-gap);
+  align-items: center;
+  background: var(--color-background);
+  border-radius: var(--radius-control);
+  padding: 40px;
+}
+
+@media (max-width: 800px) {
+  .vd-closing__inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vd-closing__text {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--color-ink-secondary);
+  margin: 10px 0 0;
+  max-width: 46ch;
+}
+
 /* ---- "Variant A, guide-first" home (realestateinparaguay.com) ------------ */
 /* Selected via homeLayout()/EnHome — a dedicated component, not a branch
    inside the default home JSX. Radius 0 everywhere (var(--radius-*) is 0 for
