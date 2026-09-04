@@ -28,6 +28,18 @@
  * is a type error rather than a blank string on a live page.
  */
 
+/**
+ * English peer of `esSiteNotice` (es.ts). Not part of the `Dictionary` shape
+ * (same as `esSiteNotice` itself) — `SiteNotice` reads whichever one matches
+ * the request locale directly, the same pattern `esPrecios`/`inquiryPrefillFor`
+ * already use outside the dictionary.
+ */
+export const enSiteNotice = {
+  label: "Site under construction",
+  body: (brand: string) =>
+    `We're preparing the launch of ${brand}. The properties you see are sample listings: they are not real properties for sale, and the data and photos may not correspond to any existing property.`,
+} as const;
+
 export const en = {
   searchPlaceholder: "Where do you want to live?",
   publishCta: "List for free",
@@ -112,6 +124,9 @@ export const enCard = {
   foreignPill: "Listed in English",
   featuredPill: "Featured",
   cuotaLine: (cuota: string) => `Est. payment ${cuota}`,
+  // "Variant A, guide-first" card variant (realestateinparaguay.com guide §5
+  // "Listing card"): `US$ 806/m²` next to the native price line.
+  cardPerM2: (v: string) => `${v}/m²`,
 } as const;
 
 /**
@@ -185,6 +200,153 @@ export const enNordico = {
   partnersText:
     "Publish your whole portfolio, gain international exposure and get your own leads with no middleman.",
   partnersCta: "Learn more",
+} as const;
+
+/**
+ * "Variant A, guide-first" strings (docs/style/realestateinparaguay.com.md),
+ * the English door's own home page, header/footer chrome, card and detail
+ * additions. Tone per guide §1: "plain declarative English, facts before
+ * adjectives, numbers with sources... never stunning, exclusive, paradise."
+ *
+ * Every rate, fee, timeline and legal claim below is a placeholder pending a
+ * real source — marked "(verify before launch)" rather than stated as fact,
+ * per build-prompt.md's explicit instruction and the lesson CLAUDE.md
+ * already records about a fabricated "48h" figure that shipped once. None of
+ * these numbers should reach a visitor unverified; see the PR description.
+ */
+export const enGuideEn = {
+  chromeNav: [
+    { label: "Buy", href: "/venta" },
+    { label: "Rent", href: "/alquiler" },
+    { label: "Land", href: "/venta/asuncion/terrenos" },
+    { label: "New developments", href: "/proyectos" },
+    { label: "How it works", href: "/guias/buying-property-in-paraguay" },
+    { label: "Guides", href: "/guias" },
+  ],
+  footerBuyTitle: "Buy",
+  footerBuyLinks: [
+    { label: "Property in Asunción", href: "/venta/asuncion" },
+    { label: "Property in San Bernardino", href: "/venta/san-bernardino" },
+    { label: "Property in Encarnación", href: "/venta/encarnacion" },
+    { label: "Property in Ciudad del Este", href: "/venta/ciudad-del-este" },
+    { label: "Land for sale", href: "/venta/asuncion/terrenos" },
+    { label: "New developments", href: "/proyectos" },
+  ],
+  footerGuidesTitle: "Guides",
+  footerGuidesLinks: [
+    { label: "How buying works", href: "/guias/buying-property-in-paraguay" },
+    { label: "Costs and taxes", href: "/guias/costs-and-taxes-buying-in-paraguay" },
+    { label: "Residency", href: "/guias/residency-in-paraguay" },
+    { label: "All guides", href: "/guias" },
+  ],
+  footerAreasTitle: "Areas",
+  footerAreasLinks: [
+    { label: "Asunción — Villa Morra", href: "/venta/asuncion" },
+    { label: "San Bernardino", href: "/venta/san-bernardino" },
+    { label: "Encarnación", href: "/venta/encarnacion" },
+    { label: "Ciudad del Este", href: "/venta/ciudad-del-este" },
+    { label: "Luque", href: "/venta/luque" },
+  ],
+  footerCompanyTitle: "Company",
+  footerCompanyLinks: [
+    { label: "About", href: "/nosotros" },
+    { label: "Contact", href: "/contacto" },
+  ],
+  footerLegalTitle: "Legal",
+  footerLegalLinks: [
+    { label: "Terms", href: "/terminos" },
+    { label: "Privacy policy", href: "/privacidad" },
+  ],
+  footerVersionEs: "Versión en español",
+  footerTagline:
+    "A guide-first portal for buying property in Paraguay from abroad — freehold ownership, USD pricing and the public-deed process, alongside real listings.",
+  footerContactUs: "Contact us",
+  footerAddress: "Asunción, Paraguay",
+  footerLegalLine: (brand: string) =>
+    `${brand} is a service of EAS. Published reference prices and cost estimates are indicative only and do not constitute legal, tax or financial advice.`,
+  heroKicker: "Property in Paraguay · For international buyers",
+  heroTitle: "Buy property in Paraguay. Freehold, in US dollars, from abroad.",
+  heroStrap:
+    "Foreigners can own land and homes outright; purchases are priced and paid in USD; title passes by public deed before a notary and is registered nationally.",
+  heroGuideLink: "Or start with the guide: How buying works →",
+  factsStrip: [
+    { numeral: "Freehold", label: "Foreign ownership allowed (verify before launch)" },
+    { numeral: "USD", label: "Priced and paid in US dollars" },
+    { numeral: "≈ 3–5%", label: "Total purchase costs (verify before launch)" },
+    { numeral: "Public deed", label: "Notarised and registered" },
+  ],
+  newWeekTitle: "New this week",
+  newWeekMore: "See all →",
+  whyTitle: "Why Paraguay",
+  whyReadGuide: "Read the guide →",
+  whyCards: [
+    {
+      title: "Ownership",
+      text: "Freehold for foreigners in most cases — some rural and border-zone land carries restrictions (verify before launch).",
+      href: "/guias/buying-property-in-paraguay",
+    },
+    {
+      title: "Cost of living and taxes",
+      text: "A territorial tax system, with a flat 10% rate (verify before launch).",
+      href: "/guias/costs-and-taxes-buying-in-paraguay",
+    },
+    {
+      title: "Residency",
+      text: "Temporary through permanent — requirements and timelines (verify before launch).",
+      href: "/guias/residency-in-paraguay",
+    },
+  ],
+  whereTitle: "Where to buy",
+  whereTiles: [
+    { name: "Asunción — Villa Morra", slug: "asuncion", why: "The capital's most established business and lifestyle district." },
+    { name: "San Bernardino", slug: "san-bernardino", why: "Weekend houses on Lake Ypacaraí." },
+    { name: "Encarnación", slug: "encarnacion", why: "On the Paraná river, milder climate, high quality of life." },
+    { name: "Ciudad del Este", slug: "ciudad-del-este", why: "Commercial border crossing with Brazil and Argentina." },
+    { name: "Luque", slug: "luque", why: "Growing metro-area suburb, near the airport." },
+  ],
+  howTitle: "How buying works",
+  howSteps: [
+    { title: "Choose and verify", text: "Find the property and verify the basic facts of its title.", who: "Buyer", time: "Varies" },
+    { title: "Offer and reservation", text: "A price is agreed and a reservation is signed.", who: "Buyer and seller", time: "1–2 weeks (verify before launch)" },
+    { title: "Due diligence on title", text: "Verification with the Registro Público (Public Registry).", who: "Notary (escribano)", time: "2–4 weeks (verify before launch)" },
+    { title: "Public deed before a notary", text: "Signing before an escribano.", who: "Notary (escribano)", time: "1 day (verify before launch)" },
+    { title: "Registration and handover", text: "Registration and key handover.", who: "Notary (escribano)", time: "2–6 weeks (verify before launch)" },
+  ],
+  costsTableTitle: "Costs of buying",
+  costsTableHead: ["Item", "Who pays", "Typical %"],
+  costsRows: [
+    { item: "Transfer tax", who: "Buyer", typical: "≈ 1.5–2% (verify before launch)" },
+    { item: "Notary fees", who: "Buyer", typical: "≈ 1–3% (verify before launch)" },
+    { item: "Registration", who: "Buyer", typical: "≈ 0.5–1% (verify before launch)" },
+    { item: "Agent commission", who: "Seller (typically)", typical: "≈ 3–5% (verify before launch)" },
+  ],
+  relocationTitle: "Relocation",
+  relocationCards: [
+    { title: "Moving", text: "What to bring and how to enter the country (verify before launch).", href: "/guias/residency-in-paraguay" },
+    { title: "Banking", text: "Opening an account as a foreigner (verify before launch).", href: "/guias/costs-and-taxes-buying-in-paraguay" },
+    { title: "Schools", text: "Bilingual options in and around Asunción.", href: "/guias/residency-in-paraguay" },
+    { title: "Healthcare", text: "Private and public coverage (verify before launch).", href: "/guias/residency-in-paraguay" },
+  ],
+  faqTitle: "Frequently asked questions",
+  faqSubtitle: (brand: string) => `What you need to know before buying, from ${brand}.`,
+  faq: [
+    { q: "Can foreigners own land in Paraguay?", a: "Yes, freehold in most cases (verify before launch)." },
+    { q: "Do I need to be there in person?", a: "Not always — a power of attorney can authorise someone to sign on your behalf (verify before launch)." },
+    { q: "How do I send money?", a: "International bank transfer to a Paraguayan account or the notary's escrow (verify before launch)." },
+    { q: "What is a cédula?", a: "The Paraguayan national ID document; not always required to buy (verify before launch)." },
+  ],
+  cardPerM2: (v: string) => `${v}/m²`,
+  cardSqftArea: (sqft: string, m2: string) => `${sqft} sq ft (${m2} m²)`,
+  foreignerBoxTitle: "Buying this property as a foreigner",
+  foreignerBoxOwnershipLabel: "Ownership type",
+  foreignerBoxOwnershipValue: "Freehold (verify before launch)",
+  foreignerBoxTitleStatusLabel: "Title status",
+  foreignerBoxTitleStatusValue: "Verify with the Registro Público",
+  foreignerBoxCostsLabel: "Estimated closing costs",
+  foreignerBoxCostsValue: (v: string) => `≈ ${v} (verify before launch)`,
+  foreignerBoxNextStepLabel: "Next step",
+  foreignerBoxNextStepValue: "Contact the seller and request a title verification.",
+  replyInEnglish: "We reply in English",
 } as const;
 
 /** Home page. */

@@ -17,7 +17,7 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
-import { formatPrice, formatCuota, formatUsd, imageUrl, imageThumbUrl } from "@/lib/format";
+import { formatPrice, formatCuota, formatUsd, formatSqft, imageUrl, imageThumbUrl } from "@/lib/format";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -37,7 +37,7 @@ import { languageAlternates } from "@/lib/alternates";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
-import { showCuota, stickyMobileContactBar } from "@/design/sections";
+import { showCuota, stickyMobileContactBar, secondaryAreaUnit, foreignerBox } from "@/design/sections";
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink, waPhone } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
@@ -94,7 +94,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     : undefined;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: t.metaTitle(title, formatPrice(listing)),
+    title: t.metaTitle(title, formatPrice(listing, locale === "en" ? "en-US" : "es-PY")),
     description: description?.slice(0, 160) ?? title,
     alternates: { canonical, languages },
     openGraph: {
@@ -175,6 +175,24 @@ export default async function ListingPage({ params }: Params) {
     agent?.whatsapp ?? agency?.whatsapp ?? ownerUser?.whatsapp ?? null;
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
   const area = listing.areaM2 ?? listing.landM2;
+  // English door only (guide §3/§6): "sq ft" next to every m² figure, and a
+  // US$/m² line next to the native price — secondaryAreaUnit() gates both,
+  // never a vertical-key check inline.
+  const showSqft = secondaryAreaUnit(vertical.key) === "sqft";
+  const areaSqft = showSqft && area != null ? formatSqft(Number(area)) : null;
+  const pricePerM2 =
+    showSqft && area != null && Number(area) > 0 && listing.operation === "venta"
+      ? formatUsd(Number(listing.priceUsd) / Number(area), "en-US")
+      : null;
+  const showForeignerBox = foreignerBox(vertical.key);
+  // Guide §5: "estimated closing costs at this price" — the same 3–5% band
+  // the home facts strip cites, applied to this listing's own price. Marked
+  // "(verify before launch)" like every other figure this door hasn't
+  // sourced yet — see the PR description.
+  const closingCostsEstimate =
+    showForeignerBox && listing.operation === "venta"
+      ? `${formatUsd(Number(listing.priceUsd) * 0.03, "en-US")}–${formatUsd(Number(listing.priceUsd) * 0.05, "en-US")}`
+      : null;
   const origin = await listingCanonicalOrigin();
   const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
@@ -431,7 +449,10 @@ export default async function ListingPage({ params }: Params) {
               <li className="listing-facts__item">🚗 {t.factParking(listing.parking)}</li>
             )}
             {area && (
-              <li className="listing-facts__item">📐 {t.factArea(Math.round(Number(area)))}</li>
+              <li className="listing-facts__item">
+                📐 {t.factArea(Math.round(Number(area)))}
+                {areaSqft && <> ({areaSqft})</>}
+              </li>
             )}
             {publishedAgo && (
               <li className="listing-facts__item listing-facts__item--muted">
@@ -444,11 +465,14 @@ export default async function ListingPage({ params }: Params) {
             {listing.operation !== "venta" ? (
               <>
                 <span className="listing-price__label">{t.priceRentLabel}</span>{" "}
-                <span className="listing-price__amount">{formatPrice(listing)}</span>
+                <span className="listing-price__amount">{formatPrice(listing, numberLocale)}</span>
                 <span className="listing-price__period">{t.priceRentPeriod}</span>
               </>
             ) : (
-              <span className="listing-price__amount">{formatPrice(listing)}</span>
+              <span className="listing-price__amount">{formatPrice(listing, numberLocale)}</span>
+            )}
+            {pricePerM2 && (
+              <span className="listing-price__perm2">{d.card.cardPerM2(pricePerM2)}</span>
             )}
             <PriceAlert
               listingPublicId={listing.publicId}
@@ -456,6 +480,34 @@ export default async function ListingPage({ params }: Params) {
               leadType={leadType}
             />
           </div>
+
+          {showForeignerBox && (
+            <div className="foreigner-box">
+              <div className="foreigner-box__title">{d.guideEn.foreignerBoxTitle}</div>
+              <div className="foreigner-box__grid">
+                <div>
+                  <div className="foreigner-box__label">{d.guideEn.foreignerBoxOwnershipLabel}</div>
+                  <div className="foreigner-box__value">{d.guideEn.foreignerBoxOwnershipValue}</div>
+                </div>
+                <div>
+                  <div className="foreigner-box__label">{d.guideEn.foreignerBoxTitleStatusLabel}</div>
+                  <div className="foreigner-box__value">{d.guideEn.foreignerBoxTitleStatusValue}</div>
+                </div>
+                {closingCostsEstimate && (
+                  <div>
+                    <div className="foreigner-box__label">{d.guideEn.foreignerBoxCostsLabel}</div>
+                    <div className="foreigner-box__value">
+                      {d.guideEn.foreignerBoxCostsValue(closingCostsEstimate)}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div className="foreigner-box__label">{d.guideEn.foreignerBoxNextStepLabel}</div>
+                  <div className="foreigner-box__value">{d.guideEn.foreignerBoxNextStepValue}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Financing module — the cuota differentiator (ARCHITECTURE.md §3) */}
           {cuota && financingProgram && (
@@ -576,6 +628,13 @@ export default async function ListingPage({ params }: Params) {
             variant="card"
             locale={locale}
           />
+          {/* Guide §5 "Detail page": inquiry form first (already true —
+              ContactForm's primary submit renders before its WhatsApp
+              continuation for every vertical, see contactPrimaryFirst() in
+              src/design/sections.ts), "We reply in English" second. */}
+          {showForeignerBox && (
+            <p className="seller-card__reply-note">{d.guideEn.replyInEnglish}</p>
+          )}
         </aside>
       </div>
 
@@ -695,7 +754,7 @@ export default async function ListingPage({ params }: Params) {
       <div className="listing-cta-bar">
         <div className="listing-cta-bar__price">
           <span className="listing-cta-bar__amount">
-            {formatPrice(listing)}
+            {formatPrice(listing, numberLocale)}
             {listing.operation !== "venta" && t.priceRentPeriod}
           </span>
           {cuota && <span className="listing-cta-bar__cuota">💳 {cuota}</span>}

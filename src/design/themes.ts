@@ -92,6 +92,7 @@ const EDITORIAL: ThemeVars = {
   "--footer-fg-faint": tokens.footer.fgFaint,
   "--footer-tagline-color": tokens.footer.taglineColor,
   "--footer-hairline": tokens.footer.hairline,
+  "--site-notice-label-color": tokens.siteNotice.labelColor,
 };
 
 /**
@@ -181,6 +182,101 @@ const OVERRIDES: Partial<Record<VerticalKey, ThemeVars>> = {
     "--footer-fg-faint": "var(--color-ink-muted)",
     "--footer-tagline-color": "var(--color-ink-secondary)",
     "--footer-hairline": "var(--color-border)",
+  },
+
+  /**
+   * "Variant A, guide-first" (docs/style/realestateinparaguay.com.md, locked
+   * 2026-09-04). Palette "Petrol" — cool, deep, maritime, distinct from every
+   * navy/gold competitor by hue and from the green Spanish portals in the
+   * region. Newsreader (display) + IBM Plex Sans (text). Radius 0, hairline
+   * borders everywhere, brass (#BFA265) IS the primary button fill here
+   * (unlike Nórdico's black button) — guide §5 "Buttons": "Primary: brass
+   * fill, petrol text". Contrast ratios below are computed (WCAG relative
+   * luminance), not eyeballed — see the PR description for the full table.
+   */
+  en: {
+    "--color-primary": "#0E2A30", // header, footer, dark sections, hero base
+    "--color-primary-dark": "#0A2025", // footer bottom bar
+    "--color-primary-soft": "#143A42", // search panel, dark cards
+    "--color-accent": "#BFA265", // muted brass — fills, hairlines, labels/numerals on dark (6.16:1 on petrol)
+    "--color-accent-hover": "#D9C48C",
+    "--color-accent-soft": "#ECECE4", // facts strip / table header tint
+    "--color-link": "#7A652F", // 5.06:1 on background
+    "--color-link-hover": "#5C4B22", // 7.59:1 on background
+    "--color-ink": "#131D1F",
+    "--color-ink-secondary": "#4E5C5F", // 6.25:1
+    "--color-ink-muted": "#77868A",
+    "--color-background": "#F3F3EE", // paper — less yellow than the Spanish cream
+    "--color-border": "rgba(19,29,31,0.12)",
+    "--color-border-accent": "rgba(191,162,101,0.24)",
+    "--color-on-accent": "#0E2A30", // text on brass fills — 6.16:1
+    "--color-accent-on-dark": "#BFA265",
+    // §3: Newsreader for display, IBM Plex Sans for text/UI.
+    "--font-display":
+      "'Newsreader Variable', Georgia, 'Times New Roman', serif",
+    "--font-sans":
+      "'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    // §4 shape: radius 0, structure drawn with hairlines, no shadows.
+    "--radius-control": "0",
+    "--radius-photo": "0",
+    "--label-tracking": "0.14em",
+    "--button-case": "uppercase",
+    "--shadow-float": "none",
+    // §5 "Buttons": primary is a brass fill / petrol text (not black, unlike
+    // Nórdico) — the guide's own rule for this domain.
+    "--button-primary-bg": "#BFA265",
+    "--button-primary-bg-hover": "#D9C48C",
+    "--button-primary-fg": "#0E2A30",
+    // Photo scrims: neutral near-black on the existing ramps, same reasoning
+    // as Nórdico's (guide §2 "photos are colour-graded neither warm nor
+    // cold; the palette does the temperature work").
+    "--overlay-hero":
+      "linear-gradient(95deg, rgba(6,18,22,0.80) 0%, rgba(6,18,22,0.56) 34%, rgba(6,18,22,0.22) 62%, rgba(6,18,22,0.30) 100%)",
+    "--overlay-card":
+      "linear-gradient(to top, rgba(6,18,22,0.88) 0%, rgba(6,18,22,0.8) 24%, rgba(6,18,22,0.5) 46%, rgba(6,18,22,0.16) 70%, rgba(6,18,22,0) 100%)",
+    "--overlay-zone":
+      "linear-gradient(to top, rgba(6,18,22,0.78) 0%, rgba(6,18,22,0.16) 52%, rgba(6,18,22,0) 78%)",
+    // §4: container 1280, section rhythm clamp(80px,9vw,128px), grid gap 24.
+    "--container": "1280px",
+    "--section-y": "clamp(80px, 9vw, 128px)",
+    "--grid-gap": "24px",
+    // §5 "Header": petrol, 64px, wordmark in Newsreader. No login on this
+    // domain (build-prompt.md / guide §8) — SiteHeader omits it via the
+    // registry, not this token layer.
+    "--header-bg": "var(--color-primary)",
+    "--header-border": "rgba(191,162,101,0.16)",
+    "--header-brand-color": "#fff",
+    "--header-nav-color": "rgba(255,255,255,0.82)",
+    "--header-nav-size": "14px",
+    "--header-nav-tracking": "0.02em",
+    "--header-nav-case": "none",
+    "--header-panel-bg": "var(--color-primary-soft)",
+    "--header-panel-border": "var(--color-border-accent)",
+    "--header-panel-label-color": "#fff",
+    "--header-panel-desc-color": "rgba(255,255,255,0.6)",
+    "--header-panel-hover-bg": "rgba(191,162,101,0.12)",
+    "--header-cta-border": "var(--button-primary-bg)",
+    "--header-cta-bg": "var(--button-primary-bg)",
+    "--header-cta-fg": "var(--button-primary-fg)",
+    "--header-cta-hover-bg": "var(--button-primary-bg-hover)",
+    "--header-cta-hover-fg": "var(--button-primary-fg)",
+    // §5 "Footer": petrol, five columns, bottom bar in primary-dark.
+    "--footer-bg": "var(--color-primary)",
+    "--footer-border": "var(--color-border-accent)",
+    "--footer-fg": "rgba(255,255,255,0.72)", // 8.44:1 on petrol
+    "--footer-fg-strong": "#fff",
+    "--footer-fg-muted": "rgba(255,255,255,0.5)",
+    "--footer-fg-faint": "rgba(255,255,255,0.45)",
+    "--footer-tagline-color": "rgba(255,255,255,0.62)",
+    "--footer-hairline": "rgba(255,255,255,0.12)",
+    // .site-notice__label (SiteNotice, renders site-wide): the EDITORIAL
+    // baseline (#8C6829) is only 4.28:1 on THIS domain's --color-accent-soft
+    // (#ECECE4) — below AA. Overridden here, for this vertical only, to the
+    // same value as --color-link-hover (#5C4B22, 7.12:1 on #ECECE4,
+    // computed) — a dedicated token rather than reusing --color-link-hover
+    // directly, so this domain's SiteNotice color can change without ever
+    // touching the other two verticals' (PR3 review, round 2).
+    "--site-notice-label-color": "#5C4B22",
   },
 };
 

@@ -5,6 +5,13 @@ import "./globals.css";
 // downloadable — only inmobiliaria.com.py's theme override actually selects
 // it via --font-display/--font-sans; every other door keeps Cormorant/Jost).
 import "@fontsource-variable/manrope";
+// Self-hosted Newsreader + IBM Plex Sans (400/500/600), unconditionally
+// available the same way — only realestateinparaguay.com's theme override
+// (OVERRIDES.en) actually selects them via --font-display/--font-sans.
+import "@fontsource-variable/newsreader";
+import "@fontsource/ibm-plex-sans/400.css";
+import "@fontsource/ibm-plex-sans/500.css";
+import "@fontsource/ibm-plex-sans/600.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNotice } from "@/components/SiteNotice";

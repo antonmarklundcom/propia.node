@@ -7,6 +7,7 @@ import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { currentVertical } from "@/lib/vertical-context";
 import { homeSections, homeLayout } from "@/design/sections";
 import { NordicoHome } from "@/components/home/NordicoHome";
+import { EnHome } from "@/components/home/EnHome";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import {
   getRecentListings,
@@ -238,6 +239,18 @@ export default async function Home() {
         cities={cities}
         cityTiles={ZONE_CARDS}
         faq={faq}
+      />
+    );
+  }
+
+  if (homeLayout(vertical.key) === "guide-en") {
+    return (
+      <EnHome
+        vertical={vertical}
+        d={d}
+        brand={brand}
+        recent={recent}
+        cities={cities}
       />
     );
   }

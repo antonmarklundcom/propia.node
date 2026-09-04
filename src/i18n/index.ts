@@ -24,6 +24,7 @@ import {
   esCategory,
   esContactForm,
   esFilters,
+  esGuideEn,
   esHome,
   esHub,
   esListing,
@@ -38,6 +39,7 @@ import {
   enCategory,
   enContactForm,
   enFilters,
+  enGuideEn,
   enHome,
   enHub,
   enListing,
@@ -68,6 +70,7 @@ const esDictionary = {
   profile: esProfile,
   project: esProject,
   nordico: esNordico,
+  guideEn: esGuideEn,
   contactForm: esContactForm,
 } as const;
 
@@ -118,6 +121,7 @@ const enDictionary = {
   profile: enProfile,
   project: enProject,
   nordico: enNordico,
+  guideEn: enGuideEn,
   contactForm: enContactForm,
 } satisfies Dictionary;
 

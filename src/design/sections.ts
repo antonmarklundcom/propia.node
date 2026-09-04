@@ -41,7 +41,16 @@ export type HomeSectionId =
   | "proceso-venta"
   | "buscar-ciudad"
   | "por-que-vender"
-  | "para-inmobiliarias-row";
+  | "para-inmobiliarias-row"
+  // "Variant A, guide-first" sections (docs/style/realestateinparaguay.com.md
+  // §6). These only ever appear for a vertical whose homeLayout() is
+  // "guide-en" — see EnHome.tsx.
+  | "facts-strip"
+  | "new-this-week"
+  | "why-paraguay"
+  | "where-to-buy"
+  | "how-buying-works"
+  | "relocation";
 
 /**
  * Home page sections and their order. `homeLayout()` (below) decides whether
@@ -66,6 +75,21 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
       "faq",
     ];
   }
+  if (key === "en") {
+    // Guide §6, in order: split hero with the three facts and search · facts
+    // strip · new this week · why Paraguay · where to buy · how buying works
+    // (with the costs table) · relocation · faq.
+    return [
+      "hero",
+      "facts-strip",
+      "new-this-week",
+      "why-paraguay",
+      "where-to-buy",
+      "how-buying-works",
+      "relocation",
+      "faq",
+    ];
+  }
   return [
     "hero",
     "zonas",
@@ -86,40 +110,55 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
   ];
 }
 
-export type HomeLayout = "default" | "nordico";
+export type HomeLayout = "default" | "nordico" | "guide-en";
 
 /**
  * Which component renders the home page. `app/page.tsx` is the one allowed
  * fork point (it already resolves `vertical` for the page); it renders
- * `NordicoHome` when this returns "nordico" and its own default JSX
- * otherwise. No other file branches on this.
+ * `NordicoHome` when this returns "nordico", `EnHome` when it returns
+ * "guide-en", and its own default JSX otherwise. No other file branches on
+ * this.
  */
 export function homeLayout(key: VerticalKey): HomeLayout {
-  return key === "inmobiliaria" ? "nordico" : "default";
+  if (key === "inmobiliaria") return "nordico";
+  if (key === "en") return "guide-en";
+  return "default";
 }
 
-export type HeroVariant = "split-photo" | "split-search-under";
+export type HeroVariant =
+  | "split-photo"
+  | "split-search-under"
+  | "split-fact-strap";
 
 /**
  * Home hero layout. "split-photo": today's full-bleed photo hero with the
- * search bar on the dark panel. "split-search-under" (guide §5 "Hero
+ * search bar on the dark panel. "split-search-under" (Nórdico guide §5 "Hero
  * (home)"): 55/45 split, white ground, the search bar as its own white
- * rounded row underneath rather than layered on the photo.
+ * rounded row underneath rather than layered on the photo. "split-fact-strap"
+ * (realestateinparaguay.com guide §5 "Hero"): 55/45 split, left = H1 + the
+ * three-fact strap paragraph + search, right = a place photograph.
  */
 export function heroVariant(key: VerticalKey): HeroVariant {
-  return key === "inmobiliaria" ? "split-search-under" : "split-photo";
+  if (key === "inmobiliaria") return "split-search-under";
+  if (key === "en") return "split-fact-strap";
+  return "split-photo";
 }
 
-export type CardVariant = "photo-scrim" | "framed-pill";
+export type CardVariant = "photo-scrim" | "framed-pill" | "framed-fact";
 
 /**
  * Listing card layout. "photo-scrim": today's photo-is-the-card, text over a
- * gradient. "framed-pill" (guide §5 "Listing card"): white framed card,
- * rounded photo, price/title/specs block below it, and a pill row
+ * gradient. "framed-pill" (Nórdico guide §5 "Listing card"): white framed
+ * card, rounded photo, price/title/specs block below it, and a pill row
  * ("Publicado en inglés" when foreign_exposure, "Destacada" when featured).
+ * "framed-fact" (realestateinparaguay.com guide §4/§5): a hairline-framed
+ * card, price/specs block below the photo on paper (never on the scrim) with
+ * `US$/m²` and `sq ft`, and never a cuota line.
  */
 export function cardVariant(key: VerticalKey): CardVariant {
-  return key === "inmobiliaria" ? "framed-pill" : "photo-scrim";
+  if (key === "inmobiliaria") return "framed-pill";
+  if (key === "en") return "framed-fact";
+  return "photo-scrim";
 }
 
 export type DetailSidebarSlot = "financing" | "contact";
@@ -131,20 +170,40 @@ export function detailSidebarOrder(_key: VerticalKey): DetailSidebarSlot[] {
 
 /**
  * Whether this door's audience is a fit for the AFD/MUVH cuota estimate
- * (Paraguayan residency-linked financing) — today every door shows it
- * unconditionally, which is a known bug for a foreign-exposure door
- * (CLAUDE.md, docs/style/README.md §"cuota finding"). A later PR flips this
- * to false for the English door; this PR only adds the gate.
+ * (Paraguayan residency-linked financing) — every door used to show it
+ * unconditionally, which was a known bug for a foreign-exposure door
+ * (CLAUDE.md, docs/style/README.md §"cuota finding": "the only active
+ * financing programme is a resident first-home scheme and quoting it to a
+ * foreign buyer is a false promise", guide §5 "Listing card"). This PR flips
+ * it to false for the English door — `ListingCard` and the detail page both
+ * already read this gate (PR1), so no cuota string, financing box or cuota
+ * chip renders anywhere on realestateinparaguay.com from here on.
  */
-export function showCuota(_key: VerticalKey): boolean {
-  return true;
+export function showCuota(key: VerticalKey): boolean {
+  return key !== "en";
 }
 
-export type AreaUnit = "m2";
+export type AreaUnit = "m2" | "sqft";
 
-/** Secondary area unit shown alongside m². Every key gets none today. */
-export function secondaryAreaUnit(_key: VerticalKey): AreaUnit | null {
-  return null;
+/**
+ * Secondary area unit shown alongside m². The English door adds `sq ft`
+ * (guide §3/§6: `sqft = Math.round(m2 * 10.7639)`, `en-US` formatted) next to
+ * every area figure a foreign buyer sees — the card, the price line and the
+ * facts strip on the detail page.
+ */
+export function secondaryAreaUnit(key: VerticalKey): AreaUnit | null {
+  return key === "en" ? "sqft" : null;
+}
+
+/**
+ * Whether the detail page shows the "Buying this property as a foreigner"
+ * box (guide §5 "Detail page"): ownership type, title status if known,
+ * estimated closing costs at this price, next step. English door only — a
+ * Paraguayan buyer on the Spanish door doesn't need to be told foreigners can
+ * own land here.
+ */
+export function foreignerBox(key: VerticalKey): boolean {
+  return key === "en";
 }
 
 export type SellerCta = "publicar";
@@ -205,4 +264,51 @@ export function stickyMobileContactBar(key: VerticalKey): boolean {
  */
 export function contactPrimaryFirst(_key: VerticalKey): boolean {
   return true;
+}
+
+export type ChromeVariant = "default" | "guide-en";
+
+/**
+ * Which header/footer nav content and visibility rules apply. `SiteHeader`
+ * and `SiteFooter` read this rather than `vertical.key` directly — the guide
+ * text itself (English nav labels, footer columns) lives in the i18n
+ * dictionary's `guideEn` namespace, keyed by locale like everything else.
+ */
+export function chromeVariant(key: VerticalKey): ChromeVariant {
+  return key === "en" ? "guide-en" : "default";
+}
+
+/**
+ * Whether the header/mobile-drawer shows a login link. realestateinparaguay.com
+ * guide §5 "Header": "No login in the header on this domain; foreign
+ * visitors are buyers." Also build-prompt.md's explicit override: "No login,
+ * newsletter or publicar entry points in this domain's chrome."
+ */
+export function chromeShowLogin(key: VerticalKey): boolean {
+  return key !== "en";
+}
+
+/**
+ * Whether the header/mobile-drawer shows a "publish/sell" CTA that routes
+ * into the `/publicar` FSBO wizard. The guide's own §8 "Notes for the
+ * builder" is explicit and takes precedence over §5's "'List with us' ghost
+ * link" sketch (no such route exists to link it to, and §8 rules the whole
+ * publicar flow out of this domain's chrome): "Do not add a login link, a
+ * newsletter block, or the publicar flow to this domain's chrome." So the
+ * English door's header/footer/mobile-drawer render with no sell-side CTA at
+ * all — resolved this way in PR3, noted in its description.
+ */
+export function chromeShowPublishCta(key: VerticalKey): boolean {
+  return key !== "en";
+}
+
+/**
+ * Whether the home page includes a newsletter signup block. Every door but
+ * the English one keeps it — guide §8 / build-prompt.md: "No login,
+ * newsletter or publicar entry points in this domain's chrome." (`EnHome`
+ * simply never includes "newsletter" in its own section list — this flag
+ * exists for any other newsletter entry point a future page might add.)
+ */
+export function chromeShowNewsletter(key: VerticalKey): boolean {
+  return key !== "en";
 }

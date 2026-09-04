@@ -8,6 +8,9 @@ import {
   FOOTER_TYPES,
 } from "@/config/site-nav";
 import { brandName } from "@/lib/brand-server";
+import { dict } from "@/i18n/server";
+import { currentVertical } from "@/lib/vertical-context";
+import { chromeVariant } from "@/design/sections";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
 
@@ -27,7 +30,7 @@ function Column({
   links,
 }: {
   title: string;
-  links: { label: string; href: string }[];
+  links: readonly { label: string; href: string }[];
 }) {
   return (
     <div>
@@ -47,10 +50,76 @@ function Column({
 
 export async function SiteFooter() {
   // Per-host wordmark: the domain is the brand (src/lib/brand.ts).
-  const brand = await brandName();
+  const [brand, vertical, d] = await Promise.all([
+    brandName(),
+    currentVertical(),
+    dict(),
+  ]);
   const year = new Date().getFullYear();
   const whatsapp = CONTACT_WHATSAPP;
   const waHref = waLink(whatsapp);
+  const isGuideEn = chromeVariant(vertical.key) === "guide-en";
+
+  if (isGuideEn) {
+    const t = d.guideEn;
+    return (
+      <footer className="site-footer">
+        <div className="site-footer__inner">
+          <div className="site-footer__about">
+            <div className="site-footer__brand">{brand}</div>
+            <p className="site-footer__tagline">{t.footerTagline}</p>
+            <ul className="site-footer__contact">
+              {waHref && (
+                <li>
+                  <a
+                    className="site-footer__link"
+                    href={waHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    💬 WhatsApp {whatsapp}
+                  </a>
+                </li>
+              )}
+              <li>
+                {CONTACT_EMAIL ? (
+                  <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
+                    ✉️ {CONTACT_EMAIL}
+                  </a>
+                ) : (
+                  <Link className="site-footer__link" href="/contacto">
+                    ✉️ {t.footerContactUs}
+                  </Link>
+                )}
+              </li>
+              <li>
+                <span className="site-footer__muted">📍 {t.footerAddress}</span>
+              </li>
+            </ul>
+          </div>
+
+          <Column title={t.footerBuyTitle} links={t.footerBuyLinks} />
+          <Column title={t.footerGuidesTitle} links={t.footerGuidesLinks} />
+          <Column title={t.footerAreasTitle} links={t.footerAreasLinks} />
+          <Column title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
+          <Column title={t.footerLegalTitle} links={t.footerLegalLinks} />
+        </div>
+
+        <div className="site-footer__bottom">
+          <span>
+            © {year} {brand}
+          </span>
+          <span className="site-footer__legal">
+            <Link className="site-footer__link" href="https://inmobiliaria.com.py">
+              {t.footerVersionEs}
+            </Link>
+          </span>
+        </div>
+
+        <div className="site-footer__disclaimer">{t.footerLegalLine(brand)}</div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="site-footer">
