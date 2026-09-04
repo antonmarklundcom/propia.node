@@ -919,6 +919,10 @@ export const esGuideEn = {
   footerCompanyTitle: "Empresa",
   footerLegalTitle: "Legal",
   footerVersionEs: "Versión en español",
+  footerTagline:
+    "Un portal guía-primero para comprar una propiedad en Paraguay desde el exterior — título pleno, precios en dólares y el proceso de escritura pública, junto con avisos reales.",
+  footerContactUs: "Contactanos",
+  footerAddress: "Asunción, Paraguay",
   footerLegalLine: (brand: string) =>
     `${brand} es un servicio de EAS. Los precios de referencia y los cálculos de costos publicados son orientativos y no constituyen asesoramiento legal, fiscal ni financiero.`,
   heroKicker: "Propiedades en Paraguay · Para compradores internacionales",
@@ -940,7 +944,7 @@ export const esGuideEn = {
   whyCards: [
     {
       title: "Propiedad",
-      text: "Título pleno para extranjeros — sin restricciones sobre la mayoría de las propiedades urbanas y rurales.",
+      text: "Título pleno para extranjeros en la mayoría de los casos — algunos terrenos rurales y de zona de frontera tienen restricciones (verificar antes de publicar).",
       href: "/guias/buying-property-in-paraguay",
     },
     {
@@ -965,9 +969,9 @@ export const esGuideEn = {
   howTitle: "Cómo funciona la compra",
   howSteps: [
     { title: "Elegir y verificar", text: "Encontrá la propiedad y verificá los datos básicos del título.", who: "Comprador", time: "Variable" },
-    { title: "Oferta y reserva", text: "Se acuerda un precio y se firma una reserva.", who: "Comprador y vendedor", time: "1–2 semanas" },
+    { title: "Oferta y reserva", text: "Se acuerda un precio y se firma una reserva.", who: "Comprador y vendedor", time: "1–2 semanas (verificar)" },
     { title: "Diligencia sobre el título", text: "Verificación en el Registro Público.", who: "Escribano", time: "2–4 semanas (verificar)" },
-    { title: "Escritura pública", text: "Firma ante escribano.", who: "Escribano", time: "1 día" },
+    { title: "Escritura pública", text: "Firma ante escribano.", who: "Escribano", time: "1 día (verificar)" },
     { title: "Inscripción y entrega", text: "Inscripción registral y entrega de llaves.", who: "Escribano", time: "2–6 semanas (verificar)" },
   ],
   costsTableTitle: "Costos de la compra",

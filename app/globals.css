@@ -508,7 +508,14 @@ body {
   text-transform: uppercase;
   letter-spacing: 2px;
   font-size: 10px;
-  color: #8C6829;
+  /* Was a bare literal (#8C6829, 4.28:1 on this domain's palette per the PR3
+     review — below AA for small text). Tokenized to --color-link-hover
+     rather than --color-link: --color-link itself computes to only ~4.48:1
+     against the default theme's --color-accent-soft (the site-notice
+     background), a hair under the 4.5:1 threshold; --color-link-hover
+     clears 6.5:1+ against --color-accent-soft in all three themes
+     (default, Nórdico, en — computed). */
+  color: var(--color-link-hover);
 }
 
 .site-notice__label::after {
@@ -7486,6 +7493,19 @@ summary.panel-btn::-webkit-details-marker {
 
 .eh-faq .home-faq__title {
   text-align: left;
+}
+
+/* .home-section__more:hover reads var(--color-accent) globally, which is
+   brass here — 2.20:1 on this domain's paper background, the exact pairing
+   guide §2 forbids for text ("decorative only... never small text").
+   Scoped to .eh-home only: a global change to the shared selector would
+   also repaint inmobiliaria.com.py/terreno.com.py's hover state, breaking
+   their pixel-identical-to-main guarantee. --color-link-hover is the
+   correct high-contrast option this domain's own palette already defines
+   (7.59:1, computed). */
+.eh-home .home-section__more:hover {
+  color: var(--color-link-hover);
+  border-color: var(--color-link-hover);
 }
 
 /* ---- Detail page: "Buying this property as a foreigner" box -------------- */

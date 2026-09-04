@@ -42,7 +42,7 @@ const GUIDES: GuideSeed[] = [
 1. **Choose and verify.** Find the property and verify the basic facts of its title with the seller or agency.
 2. **Offer and reservation.** A price is agreed and a reservation is signed, typically with a deposit (verify before launch — confirm typical deposit percentage).
 3. **Due diligence on title.** Your notary or attorney checks the title against the Registro Público — liens, boundary disputes and ownership history. Typical time: 2–4 weeks (verify before launch).
-4. **Public deed before a notary.** Both parties sign the escritura pública before an escribano, who is a public official in Paraguay's system, not merely a private notary. Typical time: one day for the signing itself.
+4. **Public deed before a notary.** Both parties sign the escritura pública before an escribano, who is a public official in Paraguay's system, not merely a private notary. Typical time: one day for the signing itself (verify before launch).
 5. **Registration and handover.** The notary files the deed for registration and coordinates key handover. Typical time: 2–6 weeks (verify before launch).
 
 ## What you need before you start

@@ -239,6 +239,10 @@ export const enGuideEn = {
     { label: "Privacy policy", href: "/privacidad" },
   ],
   footerVersionEs: "Versión en español",
+  footerTagline:
+    "A guide-first portal for buying property in Paraguay from abroad — freehold ownership, USD pricing and the public-deed process, alongside real listings.",
+  footerContactUs: "Contact us",
+  footerAddress: "Asunción, Paraguay",
   footerLegalLine: (brand: string) =>
     `${brand} is a service of EAS. Published reference prices and cost estimates are indicative only and do not constitute legal, tax or financial advice.`,
   heroKicker: "Property in Paraguay · For international buyers",
@@ -259,7 +263,7 @@ export const enGuideEn = {
   whyCards: [
     {
       title: "Ownership",
-      text: "Freehold for foreigners — no restriction on most urban and rural property.",
+      text: "Freehold for foreigners in most cases — some rural and border-zone land carries restrictions (verify before launch).",
       href: "/guias/buying-property-in-paraguay",
     },
     {
@@ -284,9 +288,9 @@ export const enGuideEn = {
   howTitle: "How buying works",
   howSteps: [
     { title: "Choose and verify", text: "Find the property and verify the basic facts of its title.", who: "Buyer", time: "Varies" },
-    { title: "Offer and reservation", text: "A price is agreed and a reservation is signed.", who: "Buyer and seller", time: "1–2 weeks" },
+    { title: "Offer and reservation", text: "A price is agreed and a reservation is signed.", who: "Buyer and seller", time: "1–2 weeks (verify before launch)" },
     { title: "Due diligence on title", text: "Verification with the Registro Público (Public Registry).", who: "Notary (escribano)", time: "2–4 weeks (verify before launch)" },
-    { title: "Public deed before a notary", text: "Signing before an escribano.", who: "Notary (escribano)", time: "1 day" },
+    { title: "Public deed before a notary", text: "Signing before an escribano.", who: "Notary (escribano)", time: "1 day (verify before launch)" },
     { title: "Registration and handover", text: "Registration and key handover.", who: "Notary (escribano)", time: "2–6 weeks (verify before launch)" },
   ],
   costsTableTitle: "Costs of buying",

@@ -67,11 +67,7 @@ export async function SiteFooter() {
         <div className="site-footer__inner">
           <div className="site-footer__about">
             <div className="site-footer__brand">{brand}</div>
-            <p className="site-footer__tagline">
-              A guide-first portal for buying property in Paraguay from
-              abroad — freehold ownership, USD pricing and the public-deed
-              process, alongside real listings.
-            </p>
+            <p className="site-footer__tagline">{t.footerTagline}</p>
             <ul className="site-footer__contact">
               {waHref && (
                 <li>
@@ -92,12 +88,12 @@ export async function SiteFooter() {
                   </a>
                 ) : (
                   <Link className="site-footer__link" href="/contacto">
-                    ✉️ Contact us
+                    ✉️ {t.footerContactUs}
                   </Link>
                 )}
               </li>
               <li>
-                <span className="site-footer__muted">📍 Asunción, Paraguay</span>
+                <span className="site-footer__muted">📍 {t.footerAddress}</span>
               </li>
             </ul>
           </div>
