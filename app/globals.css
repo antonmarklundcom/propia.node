@@ -6759,3 +6759,286 @@ summary.panel-btn::-webkit-details-marker {
   font-size: 13px;
   color: var(--color-ink-secondary);
 }
+
+/* ---- Nórdico home layout (guide §6, inmobiliaria.com.py only) ------------ */
+/* Selected via homeLayout()/NordicoHome — a dedicated component, not a branch
+   inside the default home JSX. White ground, one dark section, everything
+   else reads var(--*) so it inherits OVERRIDES.inmobiliaria automatically. */
+
+.nordico-home {
+  background: var(--color-background);
+}
+
+.nh-hero {
+  background: var(--color-surface);
+  padding-top: 56px;
+  padding-bottom: 40px;
+}
+
+.nh-hero__grid {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: var(--grid-gap);
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .nh-hero__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nh-hero__copy .ds-label {
+  margin-bottom: 18px;
+}
+
+.nh-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4.2vw, 64px);
+  line-height: 1.0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  margin: 0 0 18px;
+}
+
+.nh-hero__subtitle {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--color-ink-secondary);
+  max-width: 48ch;
+  margin: 0 0 28px;
+}
+
+.nh-hero__actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.nh-hero__photo-wrap {
+  position: relative;
+  border-radius: var(--radius-photo);
+  overflow: hidden;
+  aspect-ratio: 4 / 3.4;
+}
+
+.nh-hero__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nh-search {
+  margin-top: 40px;
+  background: var(--color-surface);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-float);
+  padding: 12px;
+}
+
+.nh-proof {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding-block: 40px;
+}
+
+.nh-proof__row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--grid-gap);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .nh-proof__row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.nh-proof__numeral {
+  font-family: var(--font-sans);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+  line-height: 1.15;
+}
+
+.nh-proof__label {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+  margin-top: 6px;
+}
+
+.nh-process {
+  text-align: center;
+}
+
+.nh-process__title {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0 0 48px;
+}
+
+.nh-process__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--grid-gap);
+  text-align: left;
+}
+
+@media (max-width: 800px) {
+  .nh-process__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.nh-process__num {
+  display: block;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--color-accent-on-dark);
+  margin-bottom: 10px;
+}
+
+.nh-process__step-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.nh-process__step-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0;
+}
+
+.nh-process__cta {
+  margin-top: 48px;
+}
+
+.nh-city-tile {
+  cursor: pointer;
+}
+
+.nh-why__title {
+  text-align: center;
+}
+
+.nh-why__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--grid-gap);
+  margin-top: 32px;
+}
+
+@media (max-width: 800px) {
+  .nh-why__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nh-why__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 28px;
+}
+
+.nh-why__card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+
+.nh-why__card-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-ink-secondary);
+  margin: 0;
+}
+
+.nh-why__cta {
+  display: flex;
+  margin: 32px auto 0;
+  width: fit-content;
+}
+
+.nh-partners {
+  padding-block: 48px;
+}
+
+.nh-partners__inner {
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-control);
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  color: #fff;
+}
+
+.nh-partners__title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.nh-partners__text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.78);
+  margin: 0;
+  max-width: 50ch;
+}
+
+/* ---- Sticky mobile contact bar (guide §5 "Detail page", mobile) ---------- */
+
+.mobile-contact-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: none;
+  gap: 10px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 720px) {
+  .mobile-contact-bar {
+    display: flex;
+  }
+}
+
+.mobile-contact-bar__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mobile-contact-bar__btn--wa {
+  background: var(--color-whatsapp);
+  color: #fff;
+}
+
+.mobile-contact-bar__btn--call {
+  background: var(--color-ink);
+  color: #fff;
+}
