@@ -32,6 +32,30 @@ export const esSiteNotice = {
   body: (brand: string) => `Estamos preparando el lanzamiento de ${brand}. Las propiedades que ves son ejemplos de prueba: no son inmuebles reales en venta ni ofertas comerciales, y los datos y las fotos pueden no corresponder a ninguna propiedad existente.`,
 } as const;
 
+/**
+ * ContactForm (src/components/ContactForm.tsx) — a client component, so it
+ * reaches this via getDictionary(locale) rather than dict(). Was hardcoded
+ * Spanish regardless of locale until this namespace existed; every string a
+ * visitor sees in the form now comes from here.
+ */
+export const esContactForm = {
+  nameLabel: "Nombre",
+  namePlaceholder: "Ingresa tu nombre",
+  emailLabel: "Email",
+  emailPlaceholder: "Ingresa tu email",
+  phoneLabel: "Teléfono",
+  phonePlaceholder: "981 234 567",
+  messageLabel: "Mensaje",
+  submitIdle: "Enviar Mensaje",
+  submitSending: "Enviando…",
+  submitSent: "¡Mensaje enviado!",
+  waContinue: "💬 Continuar en WhatsApp",
+  errorText: "No pudimos enviar tu consulta. Probá de nuevo en unos segundos.",
+  directNote: "✓ Tu consulta llega directamente al vendedor",
+  waLinkLabel: "💬 WhatsApp",
+  phoneLinkLabel: "📞 Ver teléfono",
+} as const;
+
 /** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
 export const esTasacion = {
   title: "¿Cuánto vale tu propiedad?",

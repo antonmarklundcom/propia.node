@@ -244,6 +244,7 @@ export default async function ProjectPage({ params }: Params) {
             leadType="buyer"
             prefillMessage={waMessage}
             variant="card"
+            locale={locale}
           />
         </aside>
       </div>
@@ -271,6 +272,7 @@ export default async function ProjectPage({ params }: Params) {
           leadType="buyer"
           prefillMessage={waMessage}
           variant="panel"
+          locale={locale}
         />
       </section>
     </main>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { es } from "@/i18n/es";
-import { waLink } from "@/lib/wa";
+import { getDictionary, type Locale } from "@/i18n";
+import { waLink, waPhone } from "@/lib/wa";
 
 /**
  * Full contact form for a listing (ARCHITECTURE.md §3 sticky WhatsApp
@@ -27,6 +27,7 @@ export function ContactForm({
   leadType,
   prefillMessage,
   variant = "card",
+  locale = "es",
 }: {
   /** Omit for non-listing inquiries (e.g. a project page). */
   listingPublicId?: string;
@@ -34,7 +35,14 @@ export function ContactForm({
   leadType: "buyer" | "renter";
   prefillMessage: string;
   variant?: "card" | "panel";
+  /** A client component takes its locale as a prop rather than calling
+   * dict() — see src/i18n/index.ts's module doc comment. Defaults to "es"
+   * for the two existing call sites that don't pass it yet, both of which
+   * only ever render on the Spanish door today. */
+  locale?: Locale;
 }) {
+  const d = getDictionary(locale);
+  const t = d.contactForm;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -86,23 +94,23 @@ export function ContactForm({
   const fieldsRow = (
     <div className={`contact-form__row${variant === "panel" ? " contact-form__row--split" : ""}`}>
       <label className="contact-form__field">
-        <span className="contact-form__label">Nombre</span>
+        <span className="contact-form__label">{t.nameLabel}</span>
         <input
           className="contact-form__input"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Ingresa tu nombre"
+          placeholder={t.namePlaceholder}
         />
       </label>
       <label className="contact-form__field">
-        <span className="contact-form__label">Email</span>
+        <span className="contact-form__label">{t.emailLabel}</span>
         <input
           className="contact-form__input"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Ingresa tu email"
+          placeholder={t.emailPlaceholder}
         />
       </label>
     </div>
@@ -113,7 +121,7 @@ export function ContactForm({
       {fieldsRow}
 
       <label className="contact-form__field">
-        <span className="contact-form__label">Teléfono</span>
+        <span className="contact-form__label">{t.phoneLabel}</span>
         <div className="contact-form__phone">
           <span className="contact-form__phone-prefix" aria-hidden>
             🇵🇾 +595
@@ -125,13 +133,13 @@ export function ContactForm({
             minLength={6}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="981 234 567"
+            placeholder={t.phonePlaceholder}
           />
         </div>
       </label>
 
       <div className="contact-form__chips">
-        {es.quickQuestions.map((q) => (
+        {d.common.quickQuestions.map((q) => (
           <button
             key={q}
             type="button"
@@ -144,7 +152,7 @@ export function ContactForm({
       </div>
 
       <label className="contact-form__field">
-        <span className="contact-form__label">Mensaje</span>
+        <span className="contact-form__label">{t.messageLabel}</span>
         <textarea
           className="contact-form__textarea"
           rows={variant === "panel" ? 3 : 4}
@@ -159,10 +167,10 @@ export function ContactForm({
         disabled={state === "sending"}
       >
         {state === "sent"
-          ? "¡Mensaje enviado!"
+          ? t.submitSent
           : state === "sending"
-            ? "Enviando…"
-            : "Enviar Mensaje"}
+            ? t.submitSending
+            : t.submitIdle}
       </button>
 
       {state === "sent" && waHref && (
@@ -172,12 +180,12 @@ export function ContactForm({
           target="_blank"
           rel="noopener noreferrer"
         >
-          💬 Continuar en WhatsApp
+          {t.waContinue}
         </a>
       )}
       {state === "error" && (
         <p className="contact-form__error" role="alert">
-          No pudimos enviar tu consulta. Probá de nuevo en unos segundos.
+          {t.errorText}
         </p>
       )}
 
@@ -187,9 +195,7 @@ export function ContactForm({
             operator's inbox instead, and promising otherwise is a lie the
             buyer can't check (audit F4). */}
         {waHref && (
-          <span className="contact-form__note">
-            ✓ Tu consulta llega directamente al vendedor
-          </span>
+          <span className="contact-form__note">{t.directNote}</span>
         )}
         {waHref && (
           <div className="contact-form__altlinks">
@@ -199,11 +205,16 @@ export function ContactForm({
               target="_blank"
               rel="noopener noreferrer"
             >
-              💬 WhatsApp
+              {t.waLinkLabel}
             </a>
-            <a className="contact-form__altlink" href={`tel:${contactWhatsapp}`}>
-              📞 Ver teléfono
-            </a>
+            {waPhone(contactWhatsapp) && (
+              <a
+                className="contact-form__altlink"
+                href={`tel:+${waPhone(contactWhatsapp)}`}
+              >
+                {t.phoneLinkLabel}
+              </a>
+            )}
           </div>
         )}
       </div>
