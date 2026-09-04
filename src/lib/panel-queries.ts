@@ -501,6 +501,15 @@ export interface LeadRow {
   listingTitle: string | null;
   listingPublicId: string | null;
   listingSlug: string | null;
+  /**
+   * There is no dedicated `leads.source` column — `/vender` (PR4) stamps
+   * `utm.source = "vender"` on every lead it captures instead, so
+   * `/admin/leads` can tell it apart from `/contacto`'s general "seller"
+   * leads without a schema change. See VenderForm.tsx. Optional: only
+   * `listAllLeads` (the super-admin inbox) selects it — the agency/agent
+   * panel's own `getPanelLeads` has no use for it yet.
+   */
+  utm?: Record<string, string> | null;
 }
 
 /**
@@ -567,6 +576,9 @@ export async function listAllLeads(params: {
       listingTitle: listings.title,
       listingPublicId: listings.publicId,
       listingSlug: listings.slug,
+      // leads.utm is an untyped json column — narrowed to the shape every
+      // writer actually stores (a flat string map).
+      utm: sql<Record<string, string> | null>`${leads.utm}`,
       vertical: leads.vertical,
       routedTo: leads.routedTo,
       agencyName: agencies.name,
