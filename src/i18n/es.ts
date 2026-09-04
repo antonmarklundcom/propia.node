@@ -1189,6 +1189,7 @@ export const esListing = {
 
   ctaBarWhatsapp: "Contactar por WhatsApp",
   ctaBarConsult: "Consultar",
+  ctaBarCall: "Llamar",
 
   publishedToday: "Publicado hoy",
   publishedYesterday: "Publicado ayer",

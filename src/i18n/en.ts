@@ -514,6 +514,7 @@ export const enListing = {
 
   ctaBarWhatsapp: "Contact on WhatsApp",
   ctaBarConsult: "Enquire",
+  ctaBarCall: "Call",
 
   publishedToday: "Listed today",
   publishedYesterday: "Listed yesterday",

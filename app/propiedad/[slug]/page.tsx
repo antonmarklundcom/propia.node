@@ -37,7 +37,7 @@ import { languageAlternates } from "@/lib/alternates";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
-import { showCuota } from "@/design/sections";
+import { showCuota, stickyMobileContactBar } from "@/design/sections";
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
@@ -710,9 +710,22 @@ export default async function ListingPage({ params }: Params) {
               💬
             </a>
           )}
-          <a className="listing-cta-bar__btn listing-cta-bar__btn--primary" href="#contacto">
-            {t.ctaBarConsult}
-          </a>
+          {/* Guide §5 "Detail page" (mobile): WhatsApp + Llamar for Nórdico —
+              stickyMobileContactBar() gates it rather than a vertical-key
+              check here. Every other door keeps the existing WhatsApp +
+              "Consultar" scroll-to-form pair. */}
+          {stickyMobileContactBar(vertical.key) && contactWhatsapp ? (
+            <a
+              className="listing-cta-bar__btn listing-cta-bar__btn--primary"
+              href={`tel:${contactWhatsapp}`}
+            >
+              {t.ctaBarCall}
+            </a>
+          ) : (
+            <a className="listing-cta-bar__btn listing-cta-bar__btn--primary" href="#contacto">
+              {t.ctaBarConsult}
+            </a>
+          )}
         </div>
       </div>
     </main>
