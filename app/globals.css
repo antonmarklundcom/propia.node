@@ -148,6 +148,15 @@
   --footer-fg-faint: rgba(255, 255, 255, 0.45);
   --footer-tagline-color: rgba(255, 255, 255, 0.62);
   --footer-hairline: rgba(255, 255, 255, 0.12);
+
+  /* .site-notice__label color — decoupled from --color-link-hover on
+     purpose (PR3 review, round 2): SiteNotice renders site-wide, not scoped
+     to one vertical's pages, so this must be its own token with the
+     literal it replaces as the baseline — reusing --color-link-hover
+     directly would have repainted this label on every vertical, since that
+     token's value differs per theme (#6B4F1C default, #245741 Nórdico,
+     #5C4B22 en). Baseline here is byte-identical to the pre-PR3 literal. */
+  --site-notice-label-color: #8C6829;
 }
 
 /* ---- Design-system primitives ------------------------------------------- */
@@ -508,14 +517,17 @@ body {
   text-transform: uppercase;
   letter-spacing: 2px;
   font-size: 10px;
-  /* Was a bare literal (#8C6829, 4.28:1 on this domain's palette per the PR3
-     review — below AA for small text). Tokenized to --color-link-hover
-     rather than --color-link: --color-link itself computes to only ~4.48:1
-     against the default theme's --color-accent-soft (the site-notice
-     background), a hair under the 4.5:1 threshold; --color-link-hover
-     clears 6.5:1+ against --color-accent-soft in all three themes
-     (default, Nórdico, en — computed). */
-  color: var(--color-link-hover);
+  /* Was a bare literal (#8C6829, 4.28:1 on this domain's palette — below AA
+     for small text). SiteNotice renders site-wide (all three verticals), so
+     this reads its own dedicated token rather than --color-link-hover
+     directly — that token's value differs per vertical (#6B4F1C default,
+     #245741 Nórdico, #5C4B22 en), and reusing it here would have repainted
+     this label on inmobiliaria.com.py/terreno.com.py too (PR3 review, round
+     2 — the exact "reused-token baseline must match the literal" trap).
+     EDITORIAL's --site-notice-label-color stays #8C6829 (byte-identical to
+     before); only OVERRIDES.en raises it for this domain's palette. See
+     src/design/themes.ts. */
+  color: var(--site-notice-label-color);
 }
 
 .site-notice__label::after {

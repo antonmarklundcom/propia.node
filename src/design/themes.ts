@@ -92,6 +92,7 @@ const EDITORIAL: ThemeVars = {
   "--footer-fg-faint": tokens.footer.fgFaint,
   "--footer-tagline-color": tokens.footer.taglineColor,
   "--footer-hairline": tokens.footer.hairline,
+  "--site-notice-label-color": tokens.siteNotice.labelColor,
 };
 
 /**
@@ -268,6 +269,14 @@ const OVERRIDES: Partial<Record<VerticalKey, ThemeVars>> = {
     "--footer-fg-faint": "rgba(255,255,255,0.45)",
     "--footer-tagline-color": "rgba(255,255,255,0.62)",
     "--footer-hairline": "rgba(255,255,255,0.12)",
+    // .site-notice__label (SiteNotice, renders site-wide): the EDITORIAL
+    // baseline (#8C6829) is only 4.28:1 on THIS domain's --color-accent-soft
+    // (#ECECE4) — below AA. Overridden here, for this vertical only, to the
+    // same value as --color-link-hover (#5C4B22, 7.12:1 on #ECECE4,
+    // computed) — a dedicated token rather than reusing --color-link-hover
+    // directly, so this domain's SiteNotice color can change without ever
+    // touching the other two verticals' (PR3 review, round 2).
+    "--site-notice-label-color": "#5C4B22",
   },
 };
 

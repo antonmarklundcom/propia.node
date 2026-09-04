@@ -117,6 +117,15 @@ export const tokens = {
     taglineColor: "rgba(255,255,255,0.62)",
     hairline: "rgba(255,255,255,0.12)",
   },
+  /**
+   * `.site-notice__label` — the pre-launch banner's "SITIO EN CONSTRUCCIÓN"
+   * kicker. `SiteNotice` renders site-wide (every vertical, not just one
+   * door's pages), so this is its own token rather than reusing
+   * `color.linkHover`: that value differs per vertical, and a vertical that
+   * only means to retheme its own label color must not also repaint every
+   * other door's (PR3 review, round 2). Same literal the label always had.
+   */
+  siteNotice: { labelColor: "#8C6829" },
   /** Photo overlays. Text sits on the image; these keep it readable. */
   overlay: {
     hero: "linear-gradient(95deg, rgba(9,20,14,0.96) 0%, rgba(9,20,14,0.84) 34%, rgba(9,20,14,0.34) 62%, rgba(9,20,14,0.42) 100%)",
