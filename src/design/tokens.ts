@@ -80,6 +80,43 @@ export const tokens = {
     primaryFg: "#12100a",
   },
   shadow: { float: "none" },
+  /**
+   * Site header surface — today's dark-translucent-over-photo bar (guide
+   * "system-agnostic" default), decoupled from `color.primary` so a vertical
+   * whose header is meant to be a plain white bar (Nórdico) doesn't drag its
+   * dark section along with it. All eight are read-only defaults; only
+   * `OVERRIDES.inmobiliaria` diverges from them today.
+   */
+  header: {
+    bg: "rgba(14,31,23,0.88)",
+    border: "rgba(193,154,77,0.16)",
+    brandColor: "#fff",
+    navColor: "rgba(255,255,255,0.82)",
+    navSize: "10.5px",
+    navTracking: "1.7px",
+    navCase: "uppercase",
+    panelBg: "var(--color-primary-soft)",
+    panelBorder: "var(--color-border-accent)",
+    panelLabelColor: "#fff",
+    panelDescColor: "rgba(255,255,255,0.6)",
+    panelHoverBg: "rgba(193,154,77,0.12)",
+    ctaBorder: "rgba(193,154,77,0.75)",
+    ctaBg: "transparent",
+    ctaFg: "var(--color-accent-hover)",
+    ctaHoverBg: "var(--color-accent)",
+    ctaHoverFg: "var(--color-on-accent)",
+  },
+  /** Site footer surface — same decoupling reason as `header` above. */
+  footer: {
+    bg: "var(--color-primary)",
+    border: "var(--color-border-accent)",
+    fg: "rgba(255,255,255,0.72)",
+    fgStrong: "#fff",
+    fgMuted: "rgba(255,255,255,0.5)",
+    fgFaint: "rgba(255,255,255,0.45)",
+    taglineColor: "rgba(255,255,255,0.62)",
+    hairline: "rgba(255,255,255,0.12)",
+  },
   /** Photo overlays. Text sits on the image; these keep it readable. */
   overlay: {
     hero: "linear-gradient(95deg, rgba(9,20,14,0.96) 0%, rgba(9,20,14,0.84) 34%, rgba(9,20,14,0.34) 62%, rgba(9,20,14,0.42) 100%)",

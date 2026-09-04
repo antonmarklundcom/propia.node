@@ -111,10 +111,11 @@ export const enNordico = {
     "Professional photography, digital marketing and buyers from abroad. You bring the property, we bring the process.",
   heroSell: "List your property",
   heroSearch: "Search properties",
-  proofSoldRecent: (days: number, price: string) =>
-    `Sold in ${days} days · ${price}`,
   proofRow: [
-    { numeral: "48 h", label: "Average response time" },
+    {
+      numeral: "Digital marketing",
+      label: "Included with every property listed",
+    },
     {
       numeral: "Professional photography",
       label: "Included with every listing",
@@ -122,11 +123,6 @@ export const enNordico = {
     { numeral: "2 languages", label: "Spanish and English, one listing" },
     { numeral: "3 sites", label: "Your property, across the network" },
   ],
-  searchOperation: "Operation",
-  searchCity: "City or neighborhood",
-  searchType: "Type",
-  searchMaxPrice: "Up to US$",
-  searchSubmit: "Search",
   recentTitle: "Recently listed",
   recentMore: "See all",
   processTitle: "A selling process, not a listing.",
@@ -170,10 +166,6 @@ export const enNordico = {
   partnersText:
     "Publish your whole portfolio, gain international exposure and get your own leads with no middleman.",
   partnersCta: "Learn more",
-  detailSendMessage: "Send message",
-  detailWhatsapp: "WhatsApp",
-  detailCall: "Call",
-  cuotaCardTitle: "Estimated payment with AFD, subject to approval",
 } as const;
 
 /** Home page. */

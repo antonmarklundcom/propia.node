@@ -120,6 +120,34 @@
     rgba(7, 15, 11, 0.2) 52%,
     rgba(7, 15, 11, 0) 78%
   );
+
+  /* Header/footer surfaces — see the comment in src/design/tokens.ts. */
+  --header-bg: rgba(14, 31, 23, 0.88);
+  --header-border: rgba(193, 154, 77, 0.16);
+  --header-brand-color: #fff;
+  --header-nav-color: rgba(255, 255, 255, 0.82);
+  --header-nav-size: 10.5px;
+  --header-nav-tracking: 1.7px;
+  --header-nav-case: uppercase;
+  --header-panel-bg: var(--color-primary-soft);
+  --header-panel-border: var(--color-border-accent);
+  --header-panel-label-color: #fff;
+  --header-panel-desc-color: rgba(255, 255, 255, 0.6);
+  --header-panel-hover-bg: rgba(193, 154, 77, 0.12);
+  --header-cta-border: rgba(193, 154, 77, 0.75);
+  --header-cta-bg: transparent;
+  --header-cta-fg: var(--color-accent-hover);
+  --header-cta-hover-bg: var(--color-accent);
+  --header-cta-hover-fg: var(--color-on-accent);
+
+  --footer-bg: var(--color-primary);
+  --footer-border: var(--color-border-accent);
+  --footer-fg: rgba(255, 255, 255, 0.72);
+  --footer-fg-strong: #fff;
+  --footer-fg-muted: rgba(255, 255, 255, 0.5);
+  --footer-fg-faint: rgba(255, 255, 255, 0.45);
+  --footer-tagline-color: rgba(255, 255, 255, 0.62);
+  --footer-hairline: rgba(255, 255, 255, 0.12);
 }
 
 /* ---- Design-system primitives ------------------------------------------- */
@@ -259,8 +287,8 @@ h2 {
 }
 
 .ds-btn--outline-gold:hover {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
 }
 
 .ds-btn--on-photo {
@@ -498,9 +526,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(14, 31, 23, 0.88);
+  background: var(--header-bg);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(193, 154, 77, 0.16);
+  border-bottom: 1px solid var(--header-border);
 }
 
 .site-header__inner {
@@ -517,7 +545,7 @@ body {
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  color: #fff;
+  color: var(--header-brand-color);
   white-space: nowrap;
 }
 
@@ -531,7 +559,7 @@ body {
   font-size: 25px;
   letter-spacing: 0.5px;
   line-height: 1;
-  color: #fff;
+  color: var(--header-brand-color);
 }
 
 .site-header__brand-sub {
@@ -560,10 +588,10 @@ body {
   gap: 5px;
   padding: 10px 0;
   text-decoration: none;
-  font-size: 10.5px;
-  letter-spacing: 1.7px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--header-nav-size);
+  letter-spacing: var(--header-nav-tracking);
+  text-transform: var(--header-nav-case);
+  color: var(--header-nav-color);
   transition: color 0.2s var(--ease);
 }
 
@@ -576,14 +604,16 @@ body {
   opacity: 0.7;
 }
 
-/* Dropdown panel: solid green card, gold hairline, no radius, no shadow bloom. */
+/* Dropdown panel: solid green card, gold hairline, no radius, no shadow bloom
+   by default — a vertical whose header is a white bar (--header-panel-*)
+   gets a matching white panel instead. */
 .site-header__panel {
   position: absolute;
   top: 100%;
   left: 0;
   min-width: 260px;
-  background: var(--color-primary-soft);
-  border: 1px solid var(--color-border-accent);
+  background: var(--header-panel-bg);
+  border: 1px solid var(--header-panel-border);
   padding: 10px;
   opacity: 0;
   visibility: hidden;
@@ -607,15 +637,15 @@ body {
 }
 
 .site-header__panel-link:hover {
-  background: rgba(193, 154, 77, 0.12);
+  background: var(--header-panel-hover-bg);
 }
 
 .site-header__panel-label {
   display: block;
-  font-size: 10.5px;
-  letter-spacing: 1.7px;
-  text-transform: uppercase;
-  color: #fff;
+  font-size: var(--header-nav-size);
+  letter-spacing: var(--header-nav-tracking);
+  text-transform: var(--header-nav-case);
+  color: var(--header-panel-label-color);
 }
 
 .site-header__panel-desc {
@@ -623,7 +653,7 @@ body {
   font-size: 11.5px;
   font-weight: 300;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--header-panel-desc-color);
   margin-top: 5px;
 }
 
@@ -635,10 +665,10 @@ body {
 
 .site-header__login {
   text-decoration: none;
-  font-size: 10.5px;
-  letter-spacing: 1.7px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--header-nav-size);
+  letter-spacing: var(--header-nav-tracking);
+  text-transform: var(--header-nav-case);
+  color: var(--header-nav-color);
   white-space: nowrap;
   transition: color 0.2s var(--ease);
 }
@@ -650,12 +680,14 @@ body {
 .site-header__cta {
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(193, 154, 77, 0.75);
-  color: var(--color-accent-hover);
+  border: 1px solid var(--header-cta-border);
+  background: var(--header-cta-bg);
+  color: var(--header-cta-fg);
   padding: 12px 18px;
+  border-radius: var(--radius-control);
   font-size: 10.5px;
   letter-spacing: 1.6px;
-  text-transform: uppercase;
+  text-transform: var(--button-case);
   text-decoration: none;
   white-space: nowrap;
   transition: background 0.2s var(--ease), color 0.2s var(--ease),
@@ -663,9 +695,9 @@ body {
 }
 
 .site-header__cta:hover {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  border-color: var(--color-accent);
+  background: var(--header-cta-hover-bg);
+  color: var(--header-cta-hover-fg);
+  border-color: var(--header-cta-hover-bg);
 }
 
 .site-header__cta-short {
@@ -1139,8 +1171,8 @@ body {
   border-radius: 0;
   font-size: 12px;
   font-weight: 700;
-  color: #12100a;
-  background: var(--color-accent);
+  color: var(--button-primary-fg);
+  background: var(--button-primary-bg);
 }
 
 .project-card__body {
@@ -1479,9 +1511,9 @@ body {
 .home-cta__button {
   display: inline-block;
   padding: 12px 28px;
-  border-radius: 0;
-  background: var(--color-accent);
-  color: #12100a;
+  border-radius: var(--radius-control);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
   font-size: 16px;
   font-weight: 800;
   text-decoration: none;
@@ -1749,9 +1781,9 @@ body {
 .site-footer {
   flex-shrink: 0;
   margin-top: 0;
-  background: var(--color-primary);
-  color: rgba(255, 255, 255, 0.72);
-  border-top: 1px solid var(--color-border-accent);
+  background: var(--footer-bg);
+  color: var(--footer-fg);
+  border-top: 1px solid var(--footer-border);
 }
 
 .site-footer__inner {
@@ -1781,7 +1813,7 @@ body {
   font-size: 26px;
   font-weight: 400;
   letter-spacing: 0.5px;
-  color: #fff;
+  color: var(--footer-fg-strong);
 }
 
 .site-footer__tagline {
@@ -1789,7 +1821,7 @@ body {
   font-size: 13px;
   font-weight: 300;
   line-height: 1.85;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--footer-tagline-color);
   max-width: 38ch;
 }
 
@@ -1815,7 +1847,7 @@ body {
   text-decoration: none;
   font-size: 12.5px;
   font-weight: 300;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--footer-fg);
   transition: color 0.2s var(--ease);
 }
 
@@ -1828,10 +1860,10 @@ body {
   max-width: var(--container);
   margin: 0 auto;
   padding: 22px var(--container-pad);
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--footer-hairline);
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--footer-fg-muted);
 }
 
 /* ---- Listing card -------------------------------------------------------- */
@@ -4664,8 +4696,8 @@ summary.panel-btn::-webkit-details-marker {
   line-height: 1;
   color: var(--color-accent-hover);
   background: transparent;
-  border: 1px solid rgba(193, 154, 77, 0.5);
-  border-radius: 0;
+  border: 1px solid var(--header-cta-border);
+  border-radius: var(--radius-control);
   cursor: pointer;
 }
 
@@ -4825,7 +4857,7 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .site-footer__muted {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--footer-fg-muted);
 }
 
 .site-footer__bottom {
@@ -4849,7 +4881,7 @@ summary.panel-btn::-webkit-details-marker {
   font-size: 11.5px;
   font-weight: 300;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--footer-fg-faint);
 }
 
 /* ---- Home: cómo funciona ------------------------------------------------- */
@@ -5081,9 +5113,9 @@ summary.panel-btn::-webkit-details-marker {
 
 .home-pro__button {
   padding: 12px 22px;
-  border-radius: 0;
-  background: var(--color-accent);
-  color: #12100a;
+  border-radius: var(--radius-control);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
   font-weight: 700;
   text-decoration: none;
 }
@@ -5626,9 +5658,9 @@ summary.panel-btn::-webkit-details-marker {
   top: -12px;
   left: 22px;
   padding: 4px 12px;
-  border-radius: 0;
-  background: var(--color-accent);
-  color: #12100a;
+  border-radius: var(--radius-control);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
   font-size: 12px;
   font-weight: 700;
 }
@@ -6034,10 +6066,10 @@ summary.panel-btn::-webkit-details-marker {
   font: inherit;
   font-size: 15px;
   font-weight: 700;
-  color: #12100a;
-  background: var(--color-accent);
+  color: var(--button-primary-fg);
+  background: var(--button-primary-bg);
   border: none;
-  border-radius: 0;
+  border-radius: var(--radius-control);
   cursor: pointer;
   transition: filter 0.14s ease;
 }
@@ -6856,6 +6888,12 @@ summary.panel-btn::-webkit-details-marker {
   }
 }
 
+.nh-proof__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .nh-proof__numeral {
   font-family: var(--font-sans);
   font-size: 28px;
@@ -6923,6 +6961,10 @@ summary.panel-btn::-webkit-details-marker {
   margin-top: 48px;
 }
 
+.nh-city-grid {
+  margin-top: 32px;
+}
+
 .nh-city-tile {
   cursor: pointer;
 }
@@ -6974,8 +7016,13 @@ summary.panel-btn::-webkit-details-marker {
   padding-block: 48px;
 }
 
+/* A light tinted panel, not a second dark section — guide §2 is explicit
+   that there is exactly ONE dark section per page (the sales-process band
+   above). Review finding: the first pass put this on --color-primary-soft
+   with an ink-outline button, which read as a second unreadable dark block. */
 .nh-partners__inner {
-  background: var(--color-primary-soft);
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   padding: 40px;
   display: flex;
@@ -6983,18 +7030,19 @@ summary.panel-btn::-webkit-details-marker {
   justify-content: space-between;
   gap: 24px;
   flex-wrap: wrap;
-  color: #fff;
+  color: var(--color-ink);
 }
 
 .nh-partners__title {
   font-size: 24px;
   font-weight: 700;
   margin: 0 0 8px;
+  color: var(--color-ink);
 }
 
 .nh-partners__text {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--color-ink-secondary);
   margin: 0;
   max-width: 50ch;
 }

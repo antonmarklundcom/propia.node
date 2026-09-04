@@ -66,6 +66,32 @@ const EDITORIAL: ThemeVars = {
   "--container": tokens.space.container,
   "--section-y": tokens.space.section,
   "--grid-gap": tokens.space.grid,
+  // Header/footer surfaces — see the comment on tokens.header/footer.
+  "--header-bg": tokens.header.bg,
+  "--header-border": tokens.header.border,
+  "--header-brand-color": tokens.header.brandColor,
+  "--header-nav-color": tokens.header.navColor,
+  "--header-nav-size": tokens.header.navSize,
+  "--header-nav-tracking": tokens.header.navTracking,
+  "--header-nav-case": tokens.header.navCase,
+  "--header-panel-bg": tokens.header.panelBg,
+  "--header-panel-border": tokens.header.panelBorder,
+  "--header-panel-label-color": tokens.header.panelLabelColor,
+  "--header-panel-desc-color": tokens.header.panelDescColor,
+  "--header-panel-hover-bg": tokens.header.panelHoverBg,
+  "--header-cta-border": tokens.header.ctaBorder,
+  "--header-cta-bg": tokens.header.ctaBg,
+  "--header-cta-fg": tokens.header.ctaFg,
+  "--header-cta-hover-bg": tokens.header.ctaHoverBg,
+  "--header-cta-hover-fg": tokens.header.ctaHoverFg,
+  "--footer-bg": tokens.footer.bg,
+  "--footer-border": tokens.footer.border,
+  "--footer-fg": tokens.footer.fg,
+  "--footer-fg-strong": tokens.footer.fgStrong,
+  "--footer-fg-muted": tokens.footer.fgMuted,
+  "--footer-fg-faint": tokens.footer.fgFaint,
+  "--footer-tagline-color": tokens.footer.taglineColor,
+  "--footer-hairline": tokens.footer.hairline,
 };
 
 /**
@@ -123,6 +149,38 @@ const OVERRIDES: Partial<Record<VerticalKey, ThemeVars>> = {
     "--container": "1280px",
     "--section-y": "clamp(80px, 8vw, 120px)",
     "--grid-gap": "24px",
+    // §5 "Header": white, 72px, hairline bottom, sentence-case 15px nav —
+    // the default header is a dark bar meant for a photo hero; Nórdico's
+    // hero is white, so the header needs to actually be the white bar the
+    // guide describes rather than reusing the dark default (review finding:
+    // this was missing in the first pass, which also made the CTA's
+    // dark-green-on-dark-green text unreadable).
+    "--header-bg": "rgba(255,255,255,0.96)",
+    "--header-border": "var(--color-border)",
+    "--header-brand-color": "var(--color-ink)",
+    "--header-nav-color": "var(--color-ink)",
+    "--header-nav-size": "15px",
+    "--header-nav-tracking": "0",
+    "--header-nav-case": "none",
+    "--header-panel-bg": "var(--color-surface)",
+    "--header-panel-border": "var(--color-border)",
+    "--header-panel-label-color": "var(--color-ink)",
+    "--header-panel-desc-color": "var(--color-ink-secondary)",
+    "--header-panel-hover-bg": "var(--color-accent-soft)",
+    "--header-cta-border": "var(--button-primary-bg)",
+    "--header-cta-bg": "var(--button-primary-bg)",
+    "--header-cta-fg": "var(--button-primary-fg)",
+    "--header-cta-hover-bg": "var(--button-primary-bg-hover)",
+    "--header-cta-hover-fg": "var(--button-primary-fg)",
+    // §5 "Footer": white, hairline top.
+    "--footer-bg": "var(--color-surface)",
+    "--footer-border": "var(--color-border)",
+    "--footer-fg": "var(--color-ink-secondary)",
+    "--footer-fg-strong": "var(--color-ink)",
+    "--footer-fg-muted": "var(--color-ink-muted)",
+    "--footer-fg-faint": "var(--color-ink-muted)",
+    "--footer-tagline-color": "var(--color-ink-secondary)",
+    "--footer-hairline": "var(--color-border)",
   },
 };
 

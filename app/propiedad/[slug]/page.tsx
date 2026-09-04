@@ -39,7 +39,7 @@ import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
 import { showCuota, stickyMobileContactBar } from "@/design/sections";
 import { isBotUserAgent } from "@/lib/view-tracking";
-import { waLink } from "@/lib/wa";
+import { waLink, waPhone } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
@@ -714,10 +714,10 @@ export default async function ListingPage({ params }: Params) {
               stickyMobileContactBar() gates it rather than a vertical-key
               check here. Every other door keeps the existing WhatsApp +
               "Consultar" scroll-to-form pair. */}
-          {stickyMobileContactBar(vertical.key) && contactWhatsapp ? (
+          {stickyMobileContactBar(vertical.key) && waPhone(contactWhatsapp) ? (
             <a
               className="listing-cta-bar__btn listing-cta-bar__btn--primary"
-              href={`tel:${contactWhatsapp}`}
+              href={`tel:+${waPhone(contactWhatsapp)}`}
             >
               {t.ctaBarCall}
             </a>

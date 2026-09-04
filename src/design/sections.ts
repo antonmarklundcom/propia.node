@@ -171,17 +171,17 @@ export function sellerCtaHref(_key: VerticalKey): string {
 }
 
 /**
- * Extra header nav entry a vertical wants inserted after "Proyectos" (guide
- * §5 "Header": Comprar · Alquilar · Vender · Proyectos · Inmobiliarias).
- * `null` = no extra entry, today's nav is unchanged. Only inmobiliaria adds
- * one; `SiteHeader` reads this rather than branching on the vertical key.
+ * Whether this vertical wants an extra header nav entry inserted after
+ * "Proyectos" (guide §5 "Header": Comprar · Alquilar · Vender · Proyectos ·
+ * Inmobiliarias) and, if so, where it points — `sellerCtaHref()` (currently
+ * `/publicar`; TODO(PR4): `/vender` once it exists). `SiteHeader` supplies
+ * the *label* itself, from `dict().nordico.headerVender`, so the registry
+ * never hardcodes a Spanish string outside the i18n dictionary — this
+ * function only decides the structural question (does the nav get an extra
+ * entry, and where does it lead), never the copy.
  */
-export function headerExtraNavLink(
-  key: VerticalKey,
-): { label: string; href: string } | null {
-  if (key !== "inmobiliaria") return null;
-  // TODO(PR4): point at /vender once it exists (see sellerCtaHref above).
-  return { label: "Vender", href: sellerCtaHref(key) };
+export function headerExtraNavHref(key: VerticalKey): string | null {
+  return key === "inmobiliaria" ? sellerCtaHref(key) : null;
 }
 
 /**

@@ -4,6 +4,8 @@ import type { Dictionary } from "@/i18n";
 import type { ListingCard as Card, LocationRow } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { SearchBar } from "@/components/SearchBar";
+import { JsonLd } from "@/components/JsonLd";
+import { faqJsonLd } from "@/lib/jsonld";
 import { homeSections, sellerCtaHref } from "@/design/sections";
 
 /**
@@ -40,6 +42,11 @@ export async function NordicoHome({
 
   return (
     <main className="nordico-home">
+      {/* app/page.tsx's default template renders this at the top level for
+          every other vertical — NordicoHome renders its own FAQ section
+          (below) and must carry the same JSON-LD, or the primary Spanish
+          door loses its FAQPage structured data entirely (review finding). */}
+      <JsonLd data={[faqJsonLd(faq)]} />
       {sections.includes("hero") && (
         <section className="nh-hero">
           <div className="ds-container nh-hero__grid">
@@ -69,6 +76,13 @@ export async function NordicoHome({
             </div>
           </div>
           <div className="ds-container">
+            {/* Deliberate simplification, noted per build-prompt.md's own
+                rule for a guide value left unbuilt: this reuses the shared
+                `SearchBar` (Operación/Ciudad/Tipo/Presupuesto, already
+                labels-above-values) inside the guide's white shadowed row,
+                rather than a second bespoke search-bar component with its
+                own copy — the shared component already covers the same
+                fields, and duplicating it risked the two drifting apart. */}
             <div className="nh-search">
               <SearchBar cities={cities} locale={vertical.locale} />
             </div>

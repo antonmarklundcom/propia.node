@@ -4,7 +4,7 @@ import { brandName } from "@/lib/brand-server";
 import { HEADER_NAV } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
 import { currentVertical } from "@/lib/vertical-context";
-import { headerExtraNavLink, sellerCtaHref } from "@/design/sections";
+import { headerExtraNavHref, sellerCtaHref } from "@/design/sections";
 import { dict } from "@/i18n/server";
 
 /**
@@ -23,23 +23,29 @@ import { dict } from "@/i18n/server";
 export async function SiteHeader() {
   // The wordmark IS the domain, so it has to follow the host rather than a
   // build-time constant — see src/lib/brand.ts.
-  const [brand, vertical] = await Promise.all([brandName(), currentVertical()]);
-  // No `vertical.key === ...` here — the registry decides both the extra nav
-  // entry and where the CTA points; this component only reads its answer.
-  const extraNav = headerExtraNavLink(vertical.key);
+  const [brand, vertical, d] = await Promise.all([
+    brandName(),
+    currentVertical(),
+    dict(),
+  ]);
+  // No `vertical.key === ...` here — the registry decides both whether there
+  // is an extra nav entry and where the CTA points; the *label* comes from
+  // the i18n dictionary (never a hardcoded Spanish literal), so this
+  // component reads both rather than branching on the vertical itself.
+  const extraNavHref = headerExtraNavHref(vertical.key);
   const ctaHref = sellerCtaHref(vertical.key);
-  const nordicoCta = extraNav
-    ? (await dict()).nordico
-    : { headerVenderCtaFull: "", headerVenderCtaShort: "" };
+  const nordicoCta = extraNavHref ? d.nordico : null;
   // §5 "Header": Comprar · Alquilar · Vender · Proyectos · Inmobiliarias — the
   // extra entry (when the registry adds one) sits right after "Proyectos".
-  const nav = extraNav
+  const nav = extraNavHref
     ? [
         ...HEADER_NAV.slice(0, 3),
-        { label: extraNav.label, href: extraNav.href, links: [] },
+        { label: d.nordico.headerVender, href: extraNavHref, links: [] },
         ...HEADER_NAV.slice(3),
       ]
     : HEADER_NAV;
+  const ctaLabelFull = nordicoCta ? nordicoCta.headerVenderCtaFull : "Publicar propiedad";
+  const ctaLabelShort = nordicoCta ? nordicoCta.headerVenderCtaShort : "Publicar";
   return (
     <header className="site-header">
       <div className="site-header__inner">
@@ -104,14 +110,10 @@ export async function SiteHeader() {
           {/* Two labels, one shown at a time — on a 320px screen the full label
               plus the brand no longer fit on one line (globals.css @560px). */}
           <Link className="site-header__cta" href={ctaHref}>
-            <span className="site-header__cta-full">
-              {extraNav ? nordicoCta.headerVenderCtaFull : "Publicar propiedad"}
-            </span>
-            <span className="site-header__cta-short">
-              {extraNav ? nordicoCta.headerVenderCtaShort : "Publicar"}
-            </span>
+            <span className="site-header__cta-full">{ctaLabelFull}</span>
+            <span className="site-header__cta-short">{ctaLabelShort}</span>
           </Link>
-          <MobileMenu />
+          <MobileMenu nav={nav} ctaHref={ctaHref} ctaLabel={ctaLabelFull} />
         </div>
       </div>
     </header>

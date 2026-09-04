@@ -800,10 +800,16 @@ export const esNordico = {
     "Fotografía profesional, marketing digital y compradores del exterior. Vos ponés la propiedad, nosotros el proceso.",
   heroSell: "Vender mi propiedad",
   heroSearch: "Buscar propiedades",
-  proofSoldRecent: (days: number, price: string) =>
-    `Vendida en ${days} días · ${price}`,
+  // Guide §5: "only true figures... a placeholder number in a mockup is not
+  // a licence to ship it." No response-time metric exists to measure yet
+  // (that was a fabricated "48 h" in an earlier pass — cut, not filled with
+  // a real number that doesn't exist), so this cell states a true service
+  // fact instead, same pattern as the photography cell next to it.
   proofRow: [
-    { numeral: "48 h", label: "Tiempo de respuesta promedio" },
+    {
+      numeral: "Marketing digital",
+      label: "Incluido en cada propiedad publicada",
+    },
     {
       numeral: "Fotografía profesional",
       label: "Incluida en cada aviso",
@@ -811,11 +817,6 @@ export const esNordico = {
     { numeral: "2 idiomas", label: "Español e inglés, un mismo aviso" },
     { numeral: "3 sitios", label: "Tu propiedad, en toda la red" },
   ],
-  searchOperation: "Operación",
-  searchCity: "Ciudad o barrio",
-  searchType: "Tipo",
-  searchMaxPrice: "Hasta US$",
-  searchSubmit: "Buscar",
   recentTitle: "Recién publicadas",
   recentMore: "Ver todas",
   processTitle: "Un proceso de venta, no un aviso.",
@@ -859,10 +860,6 @@ export const esNordico = {
   partnersText:
     "Publicá tu cartera completa, sumá exposición internacional y recibí tus propios leads sin intermediarios.",
   partnersCta: "Conocer más",
-  detailSendMessage: "Enviar mensaje",
-  detailWhatsapp: "WhatsApp",
-  detailCall: "Llamar",
-  cuotaCardTitle: "Cuota estimada con AFD, sujeto a aprobación",
 } as const;
 
 /** Home page. */
