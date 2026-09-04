@@ -68,7 +68,17 @@ export const tokens = {
   /** Uppercase micro-label tracking (`.ds-label`, buttons). */
   label: { tracking: "3.4px" },
   /** Button text-transform. */
-  button: { case: "uppercase" },
+  button: {
+    case: "uppercase",
+    /** `.ds-btn--primary` fill/text — decoupled from `accent` so a vertical
+     *  whose accent is not a button colour (Nórdico's green, kept for links
+     *  and tags only) can still retheme its primary button. Same values as
+     *  `color.accent` / the fixed dark text today, so this is a no-op until
+     *  a vertical overrides it. */
+    primaryBg: "#C19A4D",
+    primaryBgHover: "#DDBC7C",
+    primaryFg: "#12100a",
+  },
   shadow: { float: "none" },
   /** Photo overlays. Text sits on the image; these keep it readable. */
   overlay: {

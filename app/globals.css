@@ -75,6 +75,10 @@
   --label-tracking: 3.4px;
   --button-case: uppercase;
   --shadow-float: none;
+  /* .ds-btn--primary fill/text — see the comment in src/design/tokens.ts. */
+  --button-primary-bg: #C19A4D;
+  --button-primary-bg-hover: #DDBC7C;
+  --button-primary-fg: #12100a;
 
   /* Height of the sticky .site-header (18px padding x2 + the stacked brand
      lockup). Measured, not computed — it exists so the hero can subtract it
@@ -229,13 +233,13 @@ h2 {
 }
 
 .ds-btn--primary {
-  background: var(--color-accent);
-  color: #12100a;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
 }
 
 .ds-btn--primary:hover {
-  background: var(--color-accent-hover);
-  color: #12100a;
+  background: var(--button-primary-bg-hover);
+  color: var(--button-primary-fg);
 }
 
 .ds-btn--secondary {
