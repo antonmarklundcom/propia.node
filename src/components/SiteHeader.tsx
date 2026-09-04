@@ -4,7 +4,13 @@ import { brandName } from "@/lib/brand-server";
 import { HEADER_NAV } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
 import { currentVertical } from "@/lib/vertical-context";
-import { headerExtraNavHref, sellerCtaHref } from "@/design/sections";
+import {
+  headerExtraNavHref,
+  sellerCtaHref,
+  chromeVariant,
+  chromeShowLogin,
+  chromeShowPublishCta,
+} from "@/design/sections";
 import { dict } from "@/i18n/server";
 
 /**
@@ -35,15 +41,28 @@ export async function SiteHeader() {
   const extraNavHref = headerExtraNavHref(vertical.key);
   const ctaHref = sellerCtaHref(vertical.key);
   const nordicoCta = extraNavHref ? d.nordico : null;
-  // §5 "Header": Comprar · Alquilar · Vender · Proyectos · Inmobiliarias — the
-  // extra entry (when the registry adds one) sits right after "Proyectos".
-  const nav = extraNavHref
-    ? [
-        ...HEADER_NAV.slice(0, 3),
-        { label: d.nordico.headerVender, href: extraNavHref, links: [] },
-        ...HEADER_NAV.slice(3),
-      ]
-    : HEADER_NAV;
+  const isGuideEn = chromeVariant(vertical.key) === "guide-en";
+  const showLogin = chromeShowLogin(vertical.key);
+  const showPublishCta = chromeShowPublishCta(vertical.key);
+  // realestateinparaguay.com guide §5 "Header": Buy · Rent · Land · New
+  // developments · How it works · Guides — a flat nav with no dropdown
+  // panels, sourced from the i18n dictionary rather than HEADER_NAV (which
+  // is Spanish-only and shaped for the Spanish door's dropdowns). No login,
+  // newsletter or publicar entry point on this domain's chrome (guide §8 /
+  // build-prompt.md PR3 — see chromeShowLogin/chromeShowPublishCta).
+  const guideEnNav = d.guideEn.chromeNav.map((l) => ({ ...l, links: [] as never[] }));
+  // §5 "Header" (Nórdico): Comprar · Alquilar · Vender · Proyectos ·
+  // Inmobiliarias — the extra entry (when the registry adds one) sits right
+  // after "Proyectos".
+  const nav = isGuideEn
+    ? guideEnNav
+    : extraNavHref
+      ? [
+          ...HEADER_NAV.slice(0, 3),
+          { label: d.nordico.headerVender, href: extraNavHref, links: [] },
+          ...HEADER_NAV.slice(3),
+        ]
+      : HEADER_NAV;
   const ctaLabelFull = nordicoCta ? nordicoCta.headerVenderCtaFull : "Publicar propiedad";
   const ctaLabelShort = nordicoCta ? nordicoCta.headerVenderCtaShort : "Publicar";
   return (
@@ -104,16 +123,27 @@ export async function SiteHeader() {
         </nav>
 
         <div className="site-header__actions">
-          <Link className="site-header__login" href="/login">
-            Ingresar
-          </Link>
+          {showLogin && (
+            <Link className="site-header__login" href="/login">
+              Ingresar
+            </Link>
+          )}
           {/* Two labels, one shown at a time — on a 320px screen the full label
-              plus the brand no longer fit on one line (globals.css @560px). */}
-          <Link className="site-header__cta" href={ctaHref}>
-            <span className="site-header__cta-full">{ctaLabelFull}</span>
-            <span className="site-header__cta-short">{ctaLabelShort}</span>
-          </Link>
-          <MobileMenu nav={nav} ctaHref={ctaHref} ctaLabel={ctaLabelFull} />
+              plus the brand no longer fit on one line (globals.css @560px).
+              No CTA at all on the English door — no login, newsletter or
+              publicar entry point in this domain's chrome (guide §8 /
+              build-prompt.md PR3). */}
+          {showPublishCta && (
+            <Link className="site-header__cta" href={ctaHref}>
+              <span className="site-header__cta-full">{ctaLabelFull}</span>
+              <span className="site-header__cta-short">{ctaLabelShort}</span>
+            </Link>
+          )}
+          <MobileMenu
+            nav={nav}
+            ctaHref={showPublishCta ? ctaHref : null}
+            ctaLabel={ctaLabelFull}
+          />
         </div>
       </div>
     </header>

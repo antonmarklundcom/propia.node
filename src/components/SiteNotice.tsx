@@ -1,7 +1,9 @@
 import { headers } from "next/headers";
 import { UNDER_CONSTRUCTION, isInternalPath } from "@/config/site-status";
 import { esSiteNotice } from "@/i18n/es";
+import { enSiteNotice } from "@/i18n/en";
 import { brandName } from "@/lib/brand-server";
+import { currentLocale } from "@/i18n/server";
 
 /**
  * Standing pre-launch disclosure, above the header on every public page.
@@ -18,13 +20,14 @@ export async function SiteNotice() {
   if (!UNDER_CONSTRUCTION) return null;
   const pathname = (await headers()).get("x-pathname");
   if (isInternalPath(pathname)) return null;
-  const brand = await brandName();
+  const [brand, locale] = await Promise.all([brandName(), currentLocale()]);
+  const t = locale === "en" ? enSiteNotice : esSiteNotice;
 
   return (
     <div className="site-notice" role="status">
       <p className="site-notice__inner">
-        <strong className="site-notice__label">{esSiteNotice.label}</strong>
-        <span>{esSiteNotice.body(brand)}</span>
+        <strong className="site-notice__label">{t.label}</strong>
+        <span>{t.body(brand)}</span>
       </p>
     </div>
   );

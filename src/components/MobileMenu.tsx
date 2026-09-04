@@ -25,7 +25,12 @@ export function MobileMenu({
   ctaLabel,
 }: {
   nav: NavGroup[];
-  ctaHref: string;
+  /** null = no sell-side CTA in this drawer (realestateinparaguay.com —
+   *  no login/newsletter/publicar entry points in this domain's chrome,
+   *  guide §8 / build-prompt.md PR3). The "Sobre nosotros" company-links
+   *  group below stays for every vertical — Company/Legal links are not
+   *  one of the three forbidden entry points. */
+  ctaHref: string | null;
   ctaLabel: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -119,9 +124,11 @@ export function MobileMenu({
               </ul>
             </div>
 
-            <Link className="mobile-menu__cta" href={ctaHref}>
-              {ctaLabel}
-            </Link>
+            {ctaHref && (
+              <Link className="mobile-menu__cta" href={ctaHref}>
+                {ctaLabel}
+              </Link>
+            )}
             </div>
           </div>,
           document.body,

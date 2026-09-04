@@ -2072,6 +2072,72 @@ body {
   border: 1px solid var(--color-border);
 }
 
+/* ---- "Variant A, guide-first" card variant (framed-fact, guide §4/§5) ---- */
+/* Hairline frame, radius 0 (var(--radius-photo) is 0 for OVERRIDES.en), photo
+   inset 12px inside the frame rather than flush like Nórdico's, price/specs
+   below the photo on paper — never a cuota line (the caller only reaches
+   this branch once showCuota() is already false). Selected by cardVariant()
+   — realestateinparaguay.com only. */
+
+.listing-card--framed-fact {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-photo);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  padding: 12px;
+}
+
+.listing-card__photo--inset {
+  border-radius: 0;
+  aspect-ratio: 4 / 3;
+}
+
+.listing-card--framed-fact .listing-card__framed-body {
+  padding: 14px 4px 4px;
+}
+
+.listing-card__badge--fact {
+  border-radius: 0;
+  left: 0;
+  top: 0;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.listing-card__fact-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.listing-card__fact-perm2 {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.listing-card--framed-fact .listing-card__specs {
+  border-top: none;
+  padding-top: 6px;
+  margin-top: 6px;
+  color: var(--color-ink-secondary);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.listing-card--framed-fact .listing-card__tick {
+  border-color: var(--color-ink-muted);
+}
+
+.listing-card--framed-fact:hover .listing-card__photo-img {
+  transform: scale(1.03);
+}
+
 /* ---- Listing detail page -------------------------------------------------- */
 
 .listing-main {
@@ -7049,4 +7115,440 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink-secondary);
   margin: 0;
   max-width: 50ch;
+}
+
+/* ---- "Variant A, guide-first" home (realestateinparaguay.com) ------------ */
+/* Selected via homeLayout()/EnHome — a dedicated component, not a branch
+   inside the default home JSX. Radius 0 everywhere (var(--radius-*) is 0 for
+   OVERRIDES.en), hairline borders draw the structure instead of shadows,
+   Newsreader for headings, IBM Plex Sans for everything else. */
+
+.eh-home {
+  background: var(--color-background);
+}
+
+.eh-serif-title {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  margin: 0 0 8px;
+}
+
+.eh-centered {
+  text-align: center;
+}
+
+.eh-hero {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding-block: 56px;
+}
+
+.eh-hero__grid {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: var(--grid-gap);
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .eh-hero__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.eh-hero__kicker {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-link);
+  margin: 0 0 18px;
+}
+
+.eh-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4.4vw, 60px);
+  line-height: 1.02;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  color: var(--color-ink);
+  margin: 0 0 20px;
+}
+
+.eh-hero__strap {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--color-ink-secondary);
+  max-width: 60ch;
+  margin: 0 0 28px;
+}
+
+.eh-hero__search {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 12px;
+}
+
+.eh-hero__guide-link {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--color-link);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border-accent);
+}
+
+.eh-hero__guide-link:hover {
+  color: var(--color-link-hover);
+  border-color: var(--color-link-hover);
+}
+
+.eh-hero__photo-wrap {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3.4;
+}
+
+.eh-hero__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Facts strip: accent-soft tint, hairline top/bottom, four bordered cells. */
+.eh-facts {
+  background: var(--color-accent-soft);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding-block: 32px;
+}
+
+.eh-facts__row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+@media (max-width: 700px) {
+  .eh-facts__row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+.eh-facts__cell {
+  text-align: center;
+  padding: 0 16px;
+  border-left: 1px solid var(--color-border);
+}
+
+.eh-facts__cell:first-child {
+  border-left: none;
+}
+
+@media (max-width: 700px) {
+  .eh-facts__cell {
+    border-left: none;
+  }
+}
+
+.eh-facts__numeral {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--color-ink);
+}
+
+.eh-facts__label {
+  font-size: 12px;
+  color: var(--color-ink-secondary);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.eh-why__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--grid-gap);
+  margin-top: 32px;
+}
+
+@media (max-width: 800px) {
+  .eh-why__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.eh-why__card {
+  border: 1px solid var(--color-border);
+  padding: 28px;
+}
+
+.eh-why__card-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 10px;
+  color: var(--color-ink);
+}
+
+.eh-why__card-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary);
+  margin: 0 0 12px;
+}
+
+.eh-why__card-link {
+  font-size: 13px;
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+.eh-why__card-link:hover {
+  color: var(--color-link-hover);
+}
+
+.eh-where__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--grid-gap);
+  margin-top: 24px;
+}
+
+@media (max-width: 800px) {
+  .eh-where__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.eh-where__tile {
+  display: block;
+  border: 1px solid var(--color-border);
+  padding: 20px;
+  text-decoration: none;
+  transition: border-color 0.2s var(--ease);
+}
+
+.eh-where__tile:hover {
+  border-color: var(--color-accent);
+}
+
+.eh-where__name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--color-ink);
+  margin-bottom: 6px;
+}
+
+.eh-where__why {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+  line-height: 1.5;
+}
+
+.eh-how__steps {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--grid-gap);
+}
+
+@media (max-width: 900px) {
+  .eh-how__steps {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.eh-how__step {
+  border-top: 2px solid var(--color-accent);
+  padding-top: 14px;
+}
+
+.eh-how__num {
+  display: block;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13px;
+  /* var(--color-accent) is brass — guide §2 is explicit that on cream it is
+     decorative only (2.2:1) and must never be small text. --color-link is
+     the same hue family, darkened to pass (5.06:1 on this domain's palette,
+     tokens.ts / OVERRIDES.en). */
+  color: var(--color-link);
+  margin-bottom: 8px;
+}
+
+.eh-how__step-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 500;
+  margin: 0 0 6px;
+  color: var(--color-ink);
+}
+
+.eh-how__step-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-ink-secondary);
+  margin: 0 0 8px;
+}
+
+.eh-how__step-meta {
+  font-size: 11px;
+  /* ink-muted is 3.39:1 on this domain's background — below AA for small
+     text (computed). ink-secondary is 6.25:1 on the same background. */
+  color: var(--color-ink-secondary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.eh-how__costs-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  margin: 56px 0 16px;
+  color: var(--color-ink);
+}
+
+.eh-table-wrap {
+  overflow-x: auto;
+}
+
+.eh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.eh-table th,
+.eh-table td {
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.eh-table th {
+  background: var(--color-accent-soft);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-ink);
+}
+
+.eh-table tr:hover td {
+  background: var(--color-accent-soft);
+}
+
+.eh-relocation__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--grid-gap);
+  margin-top: 24px;
+}
+
+@media (max-width: 800px) {
+  .eh-relocation__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.eh-relocation__card {
+  display: block;
+  border: 1px solid var(--color-border);
+  padding: 20px;
+  text-decoration: none;
+  transition: border-color 0.2s var(--ease);
+}
+
+.eh-relocation__card:hover {
+  border-color: var(--color-accent);
+}
+
+.eh-relocation__title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--color-ink);
+  margin: 0 0 6px;
+}
+
+.eh-relocation__text {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.eh-faq .home-faq__title {
+  text-align: left;
+}
+
+/* ---- Detail page: "Buying this property as a foreigner" box -------------- */
+/* guide §5 "Detail page": bordered box — ownership type, title status if
+   known, estimated closing costs at this price, next step. Only rendered
+   when foreignerBox(vertical.key) is true (English door). */
+
+.foreigner-box {
+  border: 1px solid var(--color-border);
+  background: var(--color-accent-soft);
+  padding: 24px;
+  margin: 20px 0;
+}
+
+.foreigner-box__title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 14px;
+  color: var(--color-ink);
+}
+
+.foreigner-box__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 24px;
+}
+
+@media (max-width: 560px) {
+  .foreigner-box__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.foreigner-box__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  /* ink-muted is 3.18:1 on accent-soft here — below AA for small text.
+     ink-secondary is 5.86:1 on the same fill (computed). */
+  color: var(--color-ink-secondary);
+  margin-bottom: 4px;
+}
+
+.foreigner-box__value {
+  font-size: 14px;
+  color: var(--color-ink);
+}
+
+/* Detail page: US$/m² next to the native price line (English door only). */
+.listing-price__perm2 {
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-ink-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* "We reply in English" line under the sidebar contact card. */
+.seller-card__reply-note {
+  font-size: 12px;
+  /* ink-muted is 3.78:1 on the surface here — below AA. ink-secondary is
+     the readable option (computed against this domain's palette). */
+  color: var(--color-ink-secondary);
+  margin-top: 10px;
 }

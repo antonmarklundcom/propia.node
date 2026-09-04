@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { formatPrice, formatCuota, imageThumbUrl } from "@/lib/format";
+import { formatPrice, formatCuota, formatUsd, formatSqft, imageThumbUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
 import { dict, currentLocale } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
-import { showCuota, cardVariant } from "@/design/sections";
+import { showCuota, cardVariant, secondaryAreaUnit } from "@/design/sections";
 
 /**
  * Category-grid / homepage card, in the editorial system: **the photo is the
@@ -56,6 +56,19 @@ export async function ListingCard({ card }: { card: Card }) {
         cuota={cuota}
         isFeatured={isFeatured}
         specs={specs}
+        t={t}
+      />
+    );
+  }
+
+  if (cardVariant(vertical.key) === "framed-fact") {
+    return (
+      <FramedFactCard
+        card={card}
+        title={title}
+        cover={cover}
+        specs={specs}
+        area={area}
         t={t}
       />
     );
@@ -191,6 +204,96 @@ function FramedPillCard({
             {isFeatured && (
               <span className="listing-card__pill listing-card__pill--featured">
                 {t.featuredPill}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+/**
+ * "Variant A, guide-first" card variant (realestateinparaguay.com guide §4
+ * "Shape and surfaces" / §5 "Listing card"): a hairline-framed card, the
+ * photo inset 12px inside the frame rather than flush like Nórdico's, price
+ * and specs below the photo on paper (never on the scrim) with `US$/m²` and
+ * `sq ft` alongside the native price and area, and never a cuota line — the
+ * caller only reaches this branch when `showCuota()` is already false for
+ * this vertical. No location line on the scrim (there never was one for any
+ * card variant — `ListingCard`'s query type carries `locationId`, not a
+ * resolved name, so there is nothing to show below the photo either; see the
+ * PR description for this gap between the guide and the current query).
+ */
+function FramedFactCard({
+  card,
+  title,
+  cover,
+  specs,
+  area,
+  t,
+}: {
+  card: Card;
+  title: string;
+  cover: string | null;
+  specs: string[];
+  area: string | number | null;
+  t: Awaited<ReturnType<typeof dict>>["card"];
+}) {
+  const areaNum = area != null ? Number(area) : null;
+  // US$/m² is a purchase-price figure — dividing a monthly rent by area
+  // would print a meaningless "rate", so this only ever shows for venta.
+  const perM2 =
+    card.operation === "venta" && areaNum && areaNum > 0
+      ? formatUsd(Number(card.priceUsd) / areaNum, "en-US")
+      : null;
+  const sqft = areaNum ? formatSqft(areaNum) : null;
+
+  return (
+    <Link className="listing-card listing-card--framed-fact" href={listingUrl(card)}>
+      <div className="listing-card__photo listing-card__photo--inset">
+        {/* eslint-disable-next-line @next/next/no-img-element -- pre-sized R2
+            thumb derivative (imageThumbUrl); next/image would only add a proxy hop. */}
+        <img
+          className="listing-card__photo-img"
+          src={cover ?? "/img/listing-fallback.webp"}
+          alt={title}
+          loading="lazy"
+          decoding="async"
+        />
+        <span className="listing-card__badge listing-card__badge--fact">
+          {t.operationBadge[card.operation]}
+        </span>
+        {!cover && (
+          <span className="listing-card__nophoto listing-card__nophoto--framed">
+            {t.noPhoto}
+          </span>
+        )}
+      </div>
+      <div className="listing-card__framed-body">
+        <div className="listing-card__fact-price-row">
+          <span className="ds-photo-card__price listing-card__framed-price">
+            {formatPrice(card, "en-US")}
+          </span>
+          {perM2 && (
+            <span className="listing-card__fact-perm2">{t.cardPerM2(perM2)}</span>
+          )}
+        </div>
+        <div className="listing-card__title listing-card__framed-title">
+          {title}
+        </div>
+        {(specs.length > 0 || sqft) && (
+          <div className="listing-card__specs">
+            {specs.map((s) => (
+              <span className="listing-card__spec" key={s}>
+                <span className="listing-card__tick" aria-hidden />
+                {s}
+              </span>
+            ))}
+            {sqft && (
+              <span className="listing-card__spec">
+                <span className="listing-card__tick" aria-hidden />
+                {sqft}
               </span>
             )}
           </div>

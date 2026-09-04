@@ -783,6 +783,9 @@ export const esCard = {
   foreignPill: "Publicado en inglés",
   featuredPill: "Destacada",
   cuotaLine: (cuota: string) => `Cuota est. ${cuota}`,
+  // "Variant A" card variant only (realestateinparaguay.com guide §5) — never
+  // rendered on this dictionary's own (Spanish) door.
+  cardPerM2: (v: string) => `${v}/m²`,
 } as const;
 
 /**
@@ -860,6 +863,148 @@ export const esNordico = {
   partnersText:
     "Publicá tu cartera completa, sumá exposición internacional y recibí tus propios leads sin intermediarios.",
   partnersCta: "Conocer más",
+} as const;
+
+/**
+ * "Variant A, guide-first" strings (docs/style/realestateinparaguay.com.md),
+ * used only where `homeLayout(vertical.key) === "guide-en"` or
+ * `cardVariant`/`heroVariant`/`chromeVariant` select its components — never
+ * on the default template. This Spanish copy is never rendered (the English
+ * door is the only one that reads `enGuideEn`); it exists purely so
+ * `Dictionary`'s shape is derived from a real, non-empty namespace the way
+ * every other one is (`npm run verify:i18n` walks both dictionaries and
+ * rejects an empty string).
+ */
+export const esGuideEn = {
+  chromeNav: [
+    { label: "Comprar", href: "/venta" },
+    { label: "Alquilar", href: "/alquiler" },
+    { label: "Terrenos", href: "/venta/asuncion/terrenos" },
+    { label: "Proyectos nuevos", href: "/proyectos" },
+    { label: "Cómo funciona la compra", href: "/guias/buying-property-in-paraguay" },
+    { label: "Guías", href: "/guias" },
+  ],
+  footerBuyTitle: "Comprar",
+  footerBuyLinks: [
+    { label: "Propiedades en Asunción", href: "/venta/asuncion" },
+    { label: "Propiedades en San Bernardino", href: "/venta/san-bernardino" },
+    { label: "Propiedades en Encarnación", href: "/venta/encarnacion" },
+    { label: "Propiedades en Ciudad del Este", href: "/venta/ciudad-del-este" },
+    { label: "Terrenos en venta", href: "/venta/asuncion/terrenos" },
+    { label: "Proyectos nuevos", href: "/proyectos" },
+  ],
+  footerGuidesTitle: "Guías",
+  footerGuidesLinks: [
+    { label: "Cómo funciona la compra", href: "/guias/buying-property-in-paraguay" },
+    { label: "Costos e impuestos", href: "/guias/costs-and-taxes-buying-in-paraguay" },
+    { label: "Residencia", href: "/guias/residency-in-paraguay" },
+    { label: "Todas las guías", href: "/guias" },
+  ],
+  footerAreasTitle: "Zonas",
+  footerAreasLinks: [
+    { label: "Asunción — Villa Morra", href: "/venta/asuncion" },
+    { label: "San Bernardino", href: "/venta/san-bernardino" },
+    { label: "Encarnación", href: "/venta/encarnacion" },
+    { label: "Ciudad del Este", href: "/venta/ciudad-del-este" },
+    { label: "Luque", href: "/venta/luque" },
+  ],
+  footerCompanyLinks: [
+    { label: "Nosotros", href: "/nosotros" },
+    { label: "Contacto", href: "/contacto" },
+  ],
+  footerLegalLinks: [
+    { label: "Términos", href: "/terminos" },
+    { label: "Política de privacidad", href: "/privacidad" },
+  ],
+  footerCompanyTitle: "Empresa",
+  footerLegalTitle: "Legal",
+  footerVersionEs: "Versión en español",
+  footerLegalLine: (brand: string) =>
+    `${brand} es un servicio de EAS. Los precios de referencia y los cálculos de costos publicados son orientativos y no constituyen asesoramiento legal, fiscal ni financiero.`,
+  heroKicker: "Propiedades en Paraguay · Para compradores internacionales",
+  heroTitle:
+    "Comprá una propiedad en Paraguay. Título pleno, en dólares, desde el exterior.",
+  heroStrap:
+    "Los extranjeros pueden ser dueños plenos de tierras y viviendas; las compras se cotizan y se pagan en dólares; el título se transfiere por escritura pública ante escribano y se inscribe a nivel nacional.",
+  heroGuideLink: "O empezá por la guía: Cómo funciona la compra →",
+  factsStrip: [
+    { numeral: "Título pleno", label: "Propiedad extranjera permitida (verificar)" },
+    { numeral: "USD", label: "Se cotiza y se paga en dólares" },
+    { numeral: "≈ 3–5 %", label: "Costos totales de compra (verificar)" },
+    { numeral: "Escritura pública", label: "Escriturado e inscripto" },
+  ],
+  newWeekTitle: "Nuevo esta semana",
+  newWeekMore: "Ver todas →",
+  whyTitle: "Por qué Paraguay",
+  whyReadGuide: "Leer la guía →",
+  whyCards: [
+    {
+      title: "Propiedad",
+      text: "Título pleno para extranjeros — sin restricciones sobre la mayoría de las propiedades urbanas y rurales.",
+      href: "/guias/buying-property-in-paraguay",
+    },
+    {
+      title: "Costo de vida e impuestos",
+      text: "Sistema tributario territorial, impuesto plano del 10 % (verificar antes de publicar).",
+      href: "/guias/costs-and-taxes-buying-in-paraguay",
+    },
+    {
+      title: "Residencia",
+      text: "De temporal a permanente — requisitos y plazos (verificar antes de publicar).",
+      href: "/guias/residency-in-paraguay",
+    },
+  ],
+  whereTitle: "Dónde comprar",
+  whereTiles: [
+    { name: "Asunción — Villa Morra", slug: "asuncion", why: "El barrio de negocios y estilo de vida más establecido de la capital." },
+    { name: "San Bernardino", slug: "san-bernardino", why: "Casas de fin de semana sobre el lago Ypacaraí." },
+    { name: "Encarnación", slug: "encarnacion", why: "Sobre el río Paraná, calidad de vida y clima más templado." },
+    { name: "Ciudad del Este", slug: "ciudad-del-este", why: "Frontera comercial con Brasil y Argentina." },
+    { name: "Luque", slug: "luque", why: "Zona metropolitana en crecimiento, cerca del aeropuerto." },
+  ],
+  howTitle: "Cómo funciona la compra",
+  howSteps: [
+    { title: "Elegir y verificar", text: "Encontrá la propiedad y verificá los datos básicos del título.", who: "Comprador", time: "Variable" },
+    { title: "Oferta y reserva", text: "Se acuerda un precio y se firma una reserva.", who: "Comprador y vendedor", time: "1–2 semanas" },
+    { title: "Diligencia sobre el título", text: "Verificación en el Registro Público.", who: "Escribano", time: "2–4 semanas (verificar)" },
+    { title: "Escritura pública", text: "Firma ante escribano.", who: "Escribano", time: "1 día" },
+    { title: "Inscripción y entrega", text: "Inscripción registral y entrega de llaves.", who: "Escribano", time: "2–6 semanas (verificar)" },
+  ],
+  costsTableTitle: "Costos de la compra",
+  costsTableHead: ["Concepto", "Quién paga", "% típico"],
+  costsRows: [
+    { item: "Impuesto de transferencia", who: "Comprador", typical: "≈ 1,5–2 % (verificar)" },
+    { item: "Honorarios del escribano", who: "Comprador", typical: "≈ 1–3 % (verificar)" },
+    { item: "Inscripción registral", who: "Comprador", typical: "≈ 0,5–1 % (verificar)" },
+    { item: "Comisión de la inmobiliaria", who: "Vendedor (habitual)", typical: "≈ 3–5 % (verificar)" },
+  ],
+  relocationTitle: "Mudarse a Paraguay",
+  relocationCards: [
+    { title: "Mudanza", text: "Qué traer y cómo entrar al país (verificar antes de publicar).", href: "/guias/residency-in-paraguay" },
+    { title: "Bancos", text: "Abrir una cuenta como extranjero (verificar antes de publicar).", href: "/guias/costs-and-taxes-buying-in-paraguay" },
+    { title: "Colegios", text: "Opciones bilingües en Asunción y alrededores.", href: "/guias/residency-in-paraguay" },
+    { title: "Salud", text: "Cobertura privada y pública (verificar antes de publicar).", href: "/guias/residency-in-paraguay" },
+  ],
+  faqTitle: "Preguntas frecuentes",
+  faqSubtitle: (brand: string) => `Lo que necesitás saber antes de comprar en ${brand}.`,
+  faq: [
+    { q: "¿Pueden los extranjeros ser dueños de tierras en Paraguay?", a: "Sí, con título pleno en la mayoría de los casos (verificar antes de publicar)." },
+    { q: "¿Necesito estar presente en persona?", a: "No siempre — un poder notarial puede autorizar la firma en tu nombre (verificar antes de publicar)." },
+    { q: "¿Cómo envío el dinero?", a: "Transferencia bancaria internacional a una cuenta paraguaya o del escribano (verificar antes de publicar)." },
+    { q: "¿Qué es una cédula?", a: "El documento de identidad paraguayo; no siempre es obligatorio para comprar (verificar antes de publicar)." },
+  ],
+  cardPerM2: (v: string) => `${v}/m²`,
+  cardSqftArea: (sqft: string, m2: string) => `${sqft} pies² (${m2} m²)`,
+  foreignerBoxTitle: "Comprar esta propiedad como extranjero",
+  foreignerBoxOwnershipLabel: "Tipo de propiedad",
+  foreignerBoxOwnershipValue: "Título pleno (verificar)",
+  foreignerBoxTitleStatusLabel: "Estado del título",
+  foreignerBoxTitleStatusValue: "Verificar en el Registro Público",
+  foreignerBoxCostsLabel: "Costos de cierre estimados",
+  foreignerBoxCostsValue: (v: string) => `≈ ${v} (verificar)`,
+  foreignerBoxNextStepLabel: "Siguiente paso",
+  foreignerBoxNextStepValue: "Contactá al vendedor y pedí una verificación de título.",
+  replyInEnglish: "We reply in English",
 } as const;
 
 /** Home page. */
