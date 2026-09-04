@@ -30,6 +30,7 @@ import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 import type { VerticalConfig } from "@/config/verticals";
 import { verticalConds } from "./facet-sql";
+import { sellerLandingEnabled } from "@/design/sections";
 
 export interface SitemapEntry {
   path: string;
@@ -91,8 +92,15 @@ export async function buildSitemapEntries(
 
   // 0. Hand-authored pages (home, company, sales, guides, legal). Listed in
   //    src/config/site-nav.ts next to the nav that links them, so a new page
-  //    can't be added to the menu and forgotten by the sitemap.
-  const entries: SitemapEntry[] = STATIC_SITEMAP_PATHS.map((path) => ({ path }));
+  //    can't be added to the menu and forgotten by the sitemap. /vender is
+  //    the one entry here that isn't host-agnostic — it 404s/redirects on
+  //    every door but the Spanish one (sellerLandingEnabled()), so it is
+  //    dropped from every other host's sitemap the same way a feeder's
+  //    /propiedad URLs are dropped by includeListingDetail below.
+  const venderAllowed = vertical ? sellerLandingEnabled(vertical.key) : false;
+  const entries: SitemapEntry[] = STATIC_SITEMAP_PATHS.filter(
+    (path) => path !== "/vender" || venderAllowed,
+  ).map((path) => ({ path }));
 
   // 1. Listing detail pages — always indexable when published, but only on a
   //    host that actually owns them. The published rows are still read either
