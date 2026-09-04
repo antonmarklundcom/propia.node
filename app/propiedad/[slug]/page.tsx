@@ -574,6 +574,7 @@ export default async function ListingPage({ params }: Params) {
             leadType={leadType}
             prefillMessage={waMessage}
             variant="card"
+            locale={locale}
           />
         </aside>
       </div>
@@ -589,6 +590,7 @@ export default async function ListingPage({ params }: Params) {
           leadType={leadType}
           prefillMessage={waMessage}
           variant="panel"
+          locale={locale}
         />
       </section>
 
