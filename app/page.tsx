@@ -5,7 +5,8 @@ import { dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { currentVertical } from "@/lib/vertical-context";
-import { homeSections } from "@/design/sections";
+import { homeSections, homeLayout } from "@/design/sections";
+import { NordicoHome } from "@/components/home/NordicoHome";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import {
   getRecentListings,
@@ -221,6 +222,25 @@ export default async function Home() {
   const cityShortcuts = CITY_SHORTCUTS.map((name) =>
     cities.find((c) => c.name === name),
   ).filter((c): c is (typeof cities)[number] => Boolean(c));
+
+  // `app/page.tsx` is the one place allowed to fork on a registry return
+  // value (it already resolves `vertical`) — the Nórdico layout lives in its
+  // own component rather than a conditional inside this one (see the
+  // component's own header comment and src/design/sections.ts's
+  // homeLayout()).
+  if (homeLayout(vertical.key) === "nordico") {
+    return (
+      <NordicoHome
+        vertical={vertical}
+        d={d}
+        brand={brand}
+        recent={recent}
+        cities={cities}
+        cityTiles={ZONE_CARDS}
+        faq={faq}
+      />
+    );
+  }
 
   return (
     <main>

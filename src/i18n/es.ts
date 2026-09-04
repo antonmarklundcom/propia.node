@@ -778,6 +778,88 @@ export const esCard = {
   bedroomsShort: (n: number) => `${n} dorm.`,
   bathrooms: (n: number) => `${n} ${n === 1 ? "baño" : "baños"}`,
   area: (m2: number) => `${m2} m²`,
+  // Nórdico card variant pills (guide §5 "Listing card") — the framed-pill
+  // CardVariant only, never rendered on the default photo-scrim card.
+  foreignPill: "Publicado en inglés",
+  featuredPill: "Destacada",
+  cuotaLine: (cuota: string) => `Cuota est. ${cuota}`,
+} as const;
+
+/**
+ * Nórdico-only strings (docs/style/inmobiliaria.com.py.md), used only where
+ * `homeLayout(vertical.key) === "nordico"` or `cardVariant`/`heroVariant`
+ * select the Nórdico components — never on the default template.
+ */
+export const esNordico = {
+  headerVender: "Vender",
+  headerVenderCtaFull: "Vender mi propiedad",
+  headerVenderCtaShort: "Vender",
+  heroKicker: "Venta y alquiler en Paraguay",
+  heroTitle: "La forma moderna de vender tu propiedad en Paraguay",
+  heroSubtitle:
+    "Fotografía profesional, marketing digital y compradores del exterior. Vos ponés la propiedad, nosotros el proceso.",
+  heroSell: "Vender mi propiedad",
+  heroSearch: "Buscar propiedades",
+  // Guide §5: "only true figures... a placeholder number in a mockup is not
+  // a licence to ship it." No response-time metric exists to measure yet
+  // (that was a fabricated "48 h" in an earlier pass — cut, not filled with
+  // a real number that doesn't exist), so this cell states a true service
+  // fact instead, same pattern as the photography cell next to it.
+  proofRow: [
+    {
+      numeral: "Marketing digital",
+      label: "Incluido en cada propiedad publicada",
+    },
+    {
+      numeral: "Fotografía profesional",
+      label: "Incluida en cada aviso",
+    },
+    { numeral: "2 idiomas", label: "Español e inglés, un mismo aviso" },
+    { numeral: "3 sitios", label: "Tu propiedad, en toda la red" },
+  ],
+  recentTitle: "Recién publicadas",
+  recentMore: "Ver todas",
+  processTitle: "Un proceso de venta, no un aviso.",
+  processSteps: [
+    {
+      title: "Tasación con datos",
+      text: "Un rango de precio basado en ventas comparables reales, no en una corazonada.",
+    },
+    {
+      title: "Fotos y styling",
+      text: "Fotografía profesional y una puesta en escena pensada para vender, no solo para mostrar.",
+    },
+    {
+      title: "Publicación en español e inglés",
+      text: "El mismo aviso llega a compradores locales y a compradores del exterior.",
+    },
+    {
+      title: "Negociación y cierre",
+      text: "Te acompañamos hasta la firma, con el proceso documentado en cada paso.",
+    },
+  ],
+  processCta: "Empezar a vender",
+  citiesTitle: "Buscar por ciudad",
+  whySellTitle: "Por qué vender acá",
+  whySellCards: [
+    {
+      title: "Fotografía y styling",
+      text: "Cada propiedad se presenta con fotografía profesional y una puesta en escena que ayuda a vender más rápido.",
+    },
+    {
+      title: "Marketing digital",
+      text: "Tu aviso se promociona en redes y buscadores, no solo publicado y olvidado.",
+    },
+    {
+      title: "Compradores del exterior",
+      text: "El mismo aviso se traduce y se publica en realestateinparaguay.com, la puerta de entrada para compradores extranjeros.",
+    },
+  ],
+  whySellCta: "Quiero vender así",
+  partnersTitle: "Para inmobiliarias",
+  partnersText:
+    "Publicá tu cartera completa, sumá exposición internacional y recibí tus propios leads sin intermediarios.",
+  partnersCta: "Conocer más",
 } as const;
 
 /** Home page. */
@@ -1104,6 +1186,7 @@ export const esListing = {
 
   ctaBarWhatsapp: "Contactar por WhatsApp",
   ctaBarConsult: "Consultar",
+  ctaBarCall: "Llamar",
 
   publishedToday: "Publicado hoy",
   publishedYesterday: "Publicado ayer",

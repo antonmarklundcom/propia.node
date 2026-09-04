@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HEADER_NAV, FOOTER_COMPANY } from "@/config/site-nav";
+import { FOOTER_COMPANY, type NavGroup } from "@/config/site-nav";
 
 /**
  * Phone navigation. Below 900px the desktop nav is hidden (globals.css) and
@@ -12,10 +12,22 @@ import { HEADER_NAV, FOOTER_COMPANY } from "@/config/site-nav";
  * its links on mobile, which on a portal where most traffic is a phone meant
  * the whole site was one CTA wide.
  *
- * Client component because it holds open/closed state; the links themselves
- * come from the same config the server-rendered desktop nav uses.
+ * Client component because it holds open/closed state; the links come from
+ * `SiteHeader` as a prop rather than importing `HEADER_NAV` directly — that
+ * server component already resolved the vertical's extra nav entry (e.g.
+ * "Vender") and the registry-driven CTA, and this drawer must show the same
+ * list rather than a second, un-extended copy of it (review finding: the
+ * "Vender" link was reaching the desktop nav but not this drawer).
  */
-export function MobileMenu() {
+export function MobileMenu({
+  nav,
+  ctaHref,
+  ctaLabel,
+}: {
+  nav: NavGroup[];
+  ctaHref: string;
+  ctaLabel: string;
+}) {
   const [open, setOpen] = useState(false);
   const [top, setTop] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -71,7 +83,7 @@ export function MobileMenu() {
             style={{ top }}
           >
             <div className="mobile-menu__inner">
-            {HEADER_NAV.map((group) => (
+            {nav.map((group) => (
               <div key={group.label} className="mobile-menu__group">
                 <Link className="mobile-menu__group-title" href={group.href}>
                   {group.label}
@@ -107,8 +119,8 @@ export function MobileMenu() {
               </ul>
             </div>
 
-            <Link className="mobile-menu__cta" href="/publicar">
-              Publicar propiedad
+            <Link className="mobile-menu__cta" href={ctaHref}>
+              {ctaLabel}
             </Link>
             </div>
           </div>,

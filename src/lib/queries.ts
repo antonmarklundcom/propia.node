@@ -228,6 +228,7 @@ export type ListingCard = Pick<
   | "landM2"
   | "locationId"
   | "featuredUntil"
+  | "foreignExposure"
 > & { coverKey: string | null };
 
 /**
@@ -257,6 +258,7 @@ export async function getFilteredCategoryListings(
         priceAmount: listings.priceAmount,
         priceCurrency: listings.priceCurrency,
         cuotaGs: listings.cuotaGs,
+        foreignExposure: listings.foreignExposure,
         bedrooms: listings.bedrooms,
         bathrooms: listings.bathrooms,
         areaM2: listings.areaM2,
@@ -472,6 +474,7 @@ function cardColumns() {
     priceAmount: listings.priceAmount,
     priceCurrency: listings.priceCurrency,
     cuotaGs: listings.cuotaGs,
+    foreignExposure: listings.foreignExposure,
     bedrooms: listings.bedrooms,
     bathrooms: listings.bathrooms,
     areaM2: listings.areaM2,

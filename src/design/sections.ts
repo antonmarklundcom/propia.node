@@ -32,18 +32,40 @@ export type HomeSectionId =
   | "profesional"
   | "cta"
   | "newsletter"
-  | "faq";
+  | "faq"
+  // Nórdico-only sections (docs/style/inmobiliaria.com.py.md §6). These only
+  // ever appear for a vertical whose homeLayout() is "nordico" — see the
+  // dedicated component note below.
+  | "proof-row"
+  | "recientes"
+  | "proceso-venta"
+  | "buscar-ciudad"
+  | "por-que-vender"
+  | "para-inmobiliarias-row";
 
 /**
- * Home page sections. Every key gets every section today — `app/page.tsx`
- * only reads membership (`sections.includes(id)`) to gate each section's
- * existing hard-coded position, it does not yet render from the array's
- * order. A PR that needs to actually reorder sections per vertical must
- * also change `app/page.tsx` to render from this list (map over it into a
- * `Record<HomeSectionId, ReactNode>`) rather than assume reordering this
- * array alone does anything.
+ * Home page sections and their order. `homeLayout()` (below) decides whether
+ * `app/page.tsx` renders the default template (which still only reads
+ * membership — its JSX order is hard-coded to the default list's order) or
+ * a dedicated per-vertical component that renders from this array's actual
+ * order (`src/components/home/NordicoHome.tsx` for "nordico"). A layout that
+ * needs true reordering of the *default* template's own sections would need
+ * to teach `app/page.tsx` to map over this list — not required yet because
+ * every non-default layout so far uses its own component instead.
  */
-export function homeSections(_key: VerticalKey): HomeSectionId[] {
+export function homeSections(key: VerticalKey): HomeSectionId[] {
+  if (key === "inmobiliaria") {
+    return [
+      "hero",
+      "proof-row",
+      "recientes",
+      "proceso-venta",
+      "buscar-ciudad",
+      "por-que-vender",
+      "para-inmobiliarias-row",
+      "faq",
+    ];
+  }
   return [
     "hero",
     "zonas",
@@ -64,18 +86,40 @@ export function homeSections(_key: VerticalKey): HomeSectionId[] {
   ];
 }
 
-export type HeroVariant = "split-photo";
+export type HomeLayout = "default" | "nordico";
 
-/** Home hero layout. Every key gets the current full-bleed photo hero. */
-export function heroVariant(_key: VerticalKey): HeroVariant {
-  return "split-photo";
+/**
+ * Which component renders the home page. `app/page.tsx` is the one allowed
+ * fork point (it already resolves `vertical` for the page); it renders
+ * `NordicoHome` when this returns "nordico" and its own default JSX
+ * otherwise. No other file branches on this.
+ */
+export function homeLayout(key: VerticalKey): HomeLayout {
+  return key === "inmobiliaria" ? "nordico" : "default";
 }
 
-export type CardVariant = "photo-scrim";
+export type HeroVariant = "split-photo" | "split-search-under";
 
-/** Listing card layout. Every key gets the current photo-with-scrim card. */
-export function cardVariant(_key: VerticalKey): CardVariant {
-  return "photo-scrim";
+/**
+ * Home hero layout. "split-photo": today's full-bleed photo hero with the
+ * search bar on the dark panel. "split-search-under" (guide §5 "Hero
+ * (home)"): 55/45 split, white ground, the search bar as its own white
+ * rounded row underneath rather than layered on the photo.
+ */
+export function heroVariant(key: VerticalKey): HeroVariant {
+  return key === "inmobiliaria" ? "split-search-under" : "split-photo";
+}
+
+export type CardVariant = "photo-scrim" | "framed-pill";
+
+/**
+ * Listing card layout. "photo-scrim": today's photo-is-the-card, text over a
+ * gradient. "framed-pill" (guide §5 "Listing card"): white framed card,
+ * rounded photo, price/title/specs block below it, and a pill row
+ * ("Publicado en inglés" when foreign_exposure, "Destacada" when featured).
+ */
+export function cardVariant(key: VerticalKey): CardVariant {
+  return key === "inmobiliaria" ? "framed-pill" : "photo-scrim";
 }
 
 export type DetailSidebarSlot = "financing" | "contact";
@@ -112,4 +156,53 @@ export type SellerCta = "publicar";
  */
 export function sellerCta(_key: VerticalKey): SellerCta {
   return "publicar";
+}
+
+/**
+ * The href every Nórdico "sell" CTA points at — the header's "Vender mi
+ * propiedad" button, the sales-process section's "Empezar a vender", the
+ * hero's black button. `/vender` doesn't exist yet (PLAN.md / build-prompt.md
+ * PR4); every one of these points at `/publicar` until then.
+ *
+ * TODO(PR4): repoint to "/vender" once that route ships.
+ */
+export function sellerCtaHref(_key: VerticalKey): string {
+  return "/publicar";
+}
+
+/**
+ * Whether this vertical wants an extra header nav entry inserted after
+ * "Proyectos" (guide §5 "Header": Comprar · Alquilar · Vender · Proyectos ·
+ * Inmobiliarias) and, if so, where it points — `sellerCtaHref()` (currently
+ * `/publicar`; TODO(PR4): `/vender` once it exists). `SiteHeader` supplies
+ * the *label* itself, from `dict().nordico.headerVender`, so the registry
+ * never hardcodes a Spanish string outside the i18n dictionary — this
+ * function only decides the structural question (does the nav get an extra
+ * entry, and where does it lead), never the copy.
+ */
+export function headerExtraNavHref(key: VerticalKey): string | null {
+  return key === "inmobiliaria" ? sellerCtaHref(key) : null;
+}
+
+/**
+ * Whether the detail page shows a sticky bottom contact bar on mobile
+ * (WhatsApp + Llamar, guide §5 "Detail page"). Today only inmobiliaria opts
+ * in; the component itself must not branch on the vertical key to decide
+ * this — it reads the flag.
+ */
+export function stickyMobileContactBar(key: VerticalKey): boolean {
+  return key === "inmobiliaria";
+}
+
+/**
+ * Detail-page contact card affordance order: the shared `ContactForm`
+ * component's primary submit ("Enviar mensaje") already renders before its
+ * post-submit WhatsApp continuation for every vertical — guide §5's
+ * "WhatsApp-second sidebar" requirement is already true of the current
+ * component and needed no reordering. This flag exists so a future vertical
+ * that wants WhatsApp first has a registry entry to flip rather than a
+ * conditional inside `ContactForm`.
+ */
+export function contactPrimaryFirst(_key: VerticalKey): boolean {
+  return true;
 }

@@ -5,7 +5,7 @@ import { isPlaceholderPhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
 import { dict, currentLocale } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
-import { showCuota } from "@/design/sections";
+import { showCuota, cardVariant } from "@/design/sections";
 
 /**
  * Category-grid / homepage card, in the editorial system: **the photo is the
@@ -46,6 +46,20 @@ export async function ListingCard({ card }: { card: Card }) {
     card.bathrooms != null ? t.bathrooms(card.bathrooms) : null,
     area ? t.area(Math.round(Number(area))) : null,
   ].filter((s): s is string => s !== null);
+
+  if (cardVariant(vertical.key) === "framed-pill") {
+    return (
+      <FramedPillCard
+        card={card}
+        title={title}
+        cover={cover}
+        cuota={cuota}
+        isFeatured={isFeatured}
+        specs={specs}
+        t={t}
+      />
+    );
+  }
 
   return (
     <Link className="ds-photo-card listing-card" href={listingUrl(card)}>
@@ -93,6 +107,90 @@ export async function ListingCard({ card }: { card: Card }) {
             {cuota && (
               <span className="listing-card__spec listing-card__spec--cuota">
                 {cuota}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+/**
+ * Nórdico card variant (guide §5 "Listing card"): a white framed card rather
+ * than the photo-as-card default — hairline border, 10px radius, price/title
+ * /specs block below the photo, and a pill row (green "Publicado en inglés"
+ * when the listing opted into foreign exposure, "Destacada" second when
+ * featured). Selected by `cardVariant()`, never by a vertical-key check.
+ */
+function FramedPillCard({
+  card,
+  title,
+  cover,
+  cuota,
+  isFeatured,
+  specs,
+  t,
+}: {
+  card: Card;
+  title: string;
+  cover: string | null;
+  cuota: string | null;
+  isFeatured: boolean;
+  specs: string[];
+  t: Awaited<ReturnType<typeof dict>>["card"];
+}) {
+  return (
+    <Link className="listing-card listing-card--framed" href={listingUrl(card)}>
+      <div className="listing-card__photo">
+        {/* eslint-disable-next-line @next/next/no-img-element -- pre-sized R2
+            thumb derivative (imageThumbUrl); next/image would only add a proxy hop. */}
+        <img
+          className="listing-card__photo-img"
+          src={cover ?? "/img/listing-fallback.webp"}
+          alt={title}
+          loading="lazy"
+          decoding="async"
+        />
+        <span className="listing-card__badge">
+          {t.operationBadge[card.operation]}
+        </span>
+        {!cover && (
+          <span className="listing-card__nophoto listing-card__nophoto--framed">
+            {t.noPhoto}
+          </span>
+        )}
+      </div>
+      <div className="listing-card__framed-body">
+        <div className="ds-photo-card__price listing-card__framed-price">
+          {formatPrice(card)}
+        </div>
+        <div className="listing-card__title listing-card__framed-title">
+          {title}
+        </div>
+        {specs.length > 0 && (
+          <div className="listing-card__specs">
+            {specs.map((s) => (
+              <span className="listing-card__spec" key={s}>
+                <span className="listing-card__tick" aria-hidden />
+                {s}
+              </span>
+            ))}
+          </div>
+        )}
+        {cuota && (
+          <div className="listing-card__cuota-line">{t.cuotaLine(cuota)}</div>
+        )}
+        {(card.foreignExposure || isFeatured) && (
+          <div className="listing-card__pill-row">
+            {card.foreignExposure && (
+              <span className="listing-card__pill listing-card__pill--foreign">
+                {t.foreignPill}
+              </span>
+            )}
+            {isFeatured && (
+              <span className="listing-card__pill listing-card__pill--featured">
+                {t.featuredPill}
               </span>
             )}
           </div>

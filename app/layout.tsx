@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
+// Self-hosted Manrope, unconditionally available (just makes the font files
+// downloadable — only inmobiliaria.com.py's theme override actually selects
+// it via --font-display/--font-sans; every other door keeps Cormorant/Jost).
+import "@fontsource-variable/manrope";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNotice } from "@/components/SiteNotice";
