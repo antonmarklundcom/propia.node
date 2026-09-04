@@ -2,11 +2,13 @@
  * Domain routing layer — how one engine serves every door (ARCHITECTURE.md §2.8).
  *
  * Lives in code, not the database: it changes at deploy cadence and wants
- * type safety. Two hosts are enabled today — realestateinparaguay.com (the
- * interim primary) and inmobiliaria.com.py (the Spanish primary in waiting,
- * PLAN.md D6); the remaining feeder domains are pre-declared so routing,
- * canonical URLs, and lead attribution never need a schema change when they
- * switch on.
+ * type safety. Three hosts are enabled today — realestateinparaguay.com (the
+ * interim primary), inmobiliaria.com.py (the Spanish primary in waiting,
+ * PLAN.md D6), and terreno.com.py (consolidated onto this app from its own
+ * former standalone Node deployment, 2026-09-04: a terrenos-only feeder,
+ * same database, canonicalizing /propiedad back to the primary); the
+ * remaining feeder domains are pre-declared so routing, canonical URLs, and
+ * lead attribution never need a schema change when they switch on.
  */
 
 export type VerticalKey =
@@ -55,7 +57,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     locale: "es",
     filters: { property_type: ["terreno"] },
     copy: "land",
-    enabled: false,
+    enabled: true,
     ownsListingDetail: false,
   },
   "alquiler.com.py": {

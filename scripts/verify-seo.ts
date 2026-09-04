@@ -48,7 +48,7 @@ check(
 );
 check(
   "disabled feeders are not served doors",
-  !servedDoors(CANONICAL_HOST).some((d) => d.host === "terreno.com.py"),
+  !servedDoors(CANONICAL_HOST).some((d) => d.host === "alquiler.com.py"),
 );
 
 console.log("\nhreflang: the post-flip table (PLAN.md D6)");
