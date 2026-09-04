@@ -7,6 +7,8 @@ import { SearchBar } from "@/components/SearchBar";
 import { JsonLd } from "@/components/JsonLd";
 import { faqJsonLd } from "@/lib/jsonld";
 import { homeSections, sellerCtaHref } from "@/design/sections";
+import { ProofRow } from "@/components/home/ProofRow";
+import { SalesProcessSection } from "@/components/home/SalesProcessSection";
 
 /**
  * Home page for the Nórdico layout (docs/style/inmobiliaria.com.py.md §6).
@@ -90,18 +92,7 @@ export async function NordicoHome({
         </section>
       )}
 
-      {sections.includes("proof-row") && (
-        <section className="nh-proof">
-          <div className="ds-container nh-proof__row">
-            {t.proofRow.map((p) => (
-              <div key={p.label} className="nh-proof__cell">
-                <div className="nh-proof__numeral">{p.numeral}</div>
-                <div className="nh-proof__label">{p.label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {sections.includes("proof-row") && <ProofRow rows={t.proofRow} />}
 
       {sections.includes("recientes") && recent.length > 0 && (
         <section className="ds-section ds-container">
@@ -120,25 +111,12 @@ export async function NordicoHome({
       )}
 
       {sections.includes("proceso-venta") && (
-        <section className="ds-section ds-section--dark nh-process">
-          <div className="ds-container">
-            <h2 className="nh-process__title">{t.processTitle}</h2>
-            <div className="nh-process__grid">
-              {t.processSteps.map((s, i) => (
-                <div key={s.title} className="nh-process__step">
-                  <span className="nh-process__num" aria-hidden>
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="nh-process__step-title">{s.title}</h3>
-                  <p className="nh-process__step-text">{s.text}</p>
-                </div>
-              ))}
-            </div>
-            <Link className="ds-btn ds-btn--on-photo nh-process__cta" href={sellHref}>
-              {t.processCta}
-            </Link>
-          </div>
-        </section>
+        <SalesProcessSection
+          title={t.processTitle}
+          steps={t.processSteps}
+          ctaLabel={t.processCta}
+          ctaHref={sellHref}
+        />
       )}
 
       {sections.includes("buscar-ciudad") && (

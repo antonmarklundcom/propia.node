@@ -202,6 +202,13 @@ export default async function AdminLeadsPage({
                     </span>
                     {/* Which door captured it — matters once feeders are on. */}
                     <span>{lead.vertical}</span>
+                    {/* No dedicated `leads.source` column — /vender (PR4)
+                        stamps utm.source instead (VenderForm.tsx). */}
+                    {lead.utm?.source === "vender" ? (
+                      <span className="panel-chip panel-chip--active">
+                        /vender
+                      </span>
+                    ) : null}
                     {lead.listingTitle &&
                     lead.listingPublicId &&
                     lead.listingSlug ? (

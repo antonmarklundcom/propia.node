@@ -220,13 +220,27 @@ export function sellerCta(_key: VerticalKey): SellerCta {
 /**
  * The href every Nórdico "sell" CTA points at — the header's "Vender mi
  * propiedad" button, the sales-process section's "Empezar a vender", the
- * hero's black button. `/vender` doesn't exist yet (PLAN.md / build-prompt.md
- * PR4); every one of these points at `/publicar` until then.
- *
- * TODO(PR4): repoint to "/vender" once that route ships.
+ * hero's black button. `/vender` (PR4, build-prompt.md) is the Spanish
+ * door's own seller landing page, so only `inmobiliaria` repoints to it;
+ * every other key keeps `/publicar` — `/vender` 404s/redirects on every
+ * other door (`sellerLandingEnabled()` below), so nothing outside the
+ * Spanish door should ever link to it.
  */
-export function sellerCtaHref(_key: VerticalKey): string {
-  return "/publicar";
+export function sellerCtaHref(key: VerticalKey): string {
+  return key === "inmobiliaria" ? "/vender" : "/publicar";
+}
+
+/**
+ * Whether `/vender` (docs/style/inmobiliaria.com.py.md §5) renders for this
+ * door at all. Spanish door only — build-prompt.md PR4: "Build /vender on
+ * the Spanish door only (the English door 404s it or redirects to /)."
+ * `terreno.com.py` isn't named explicitly by the guide; treated the same as
+ * the English door here (redirect to home) since `/vender` is a Nórdico-
+ * branded, Spanish-marketplace-primary page terreno's feeder audience never
+ * asked for — see the PR description for the reasoning.
+ */
+export function sellerLandingEnabled(key: VerticalKey): boolean {
+  return key === "inmobiliaria";
 }
 
 /**

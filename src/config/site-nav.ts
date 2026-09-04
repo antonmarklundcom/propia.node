@@ -265,6 +265,10 @@ export const STATIC_SITEMAP_PATHS: string[] = [
   "/guias",
   "/precios",
   "/tasacion",
+  // Spanish-door-only (sellerLandingEnabled(), src/design/sections.ts) —
+  // buildSitemapEntries() (src/lib/sitemap.ts) filters this one path by
+  // vertical before emitting it; every other entry here is host-agnostic.
+  "/vender",
   "/financiamiento",
   "/como-funciona",
   "/preguntas-frecuentes",

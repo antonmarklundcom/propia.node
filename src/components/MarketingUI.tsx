@@ -68,7 +68,10 @@ export function FeatureGrid({
   items,
   columns = 3,
 }: {
-  items: { icon?: string; title: string; text: string }[];
+  /** `icon` takes any node — a plain emoji string (every existing caller)
+   *  or an inline stroke SVG (docs/style/inmobiliaria.com.py.md §5 "Qué
+   *  hacemos distinto": "small stroke icon, an H3 and two lines"). */
+  items: { icon?: ReactNode; title: string; text: string }[];
   columns?: 2 | 3 | 4;
 }) {
   return (

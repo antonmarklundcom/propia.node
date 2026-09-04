@@ -501,6 +501,15 @@ export interface LeadRow {
   listingTitle: string | null;
   listingPublicId: string | null;
   listingSlug: string | null;
+  /**
+   * There is no dedicated `leads.source` column — `/vender` (PR4) stamps
+   * `utm.source = "vender"` on every lead it captures instead, so
+   * `/admin/leads` can tell it apart from `/contacto`'s general "seller"
+   * leads without a schema change. See VenderForm.tsx. Optional: only
+   * `listAllLeads` (the super-admin inbox) selects it — the agency/agent
+   * panel's own `getPanelLeads` has no use for it yet.
+   */
+  utm?: Record<string, string> | null;
 }
 
 /**
@@ -554,7 +563,7 @@ export async function listAllLeads(params: {
     if (match) filters.push(match);
   }
 
-  return db
+  const rows = await db
     .select({
       id: leads.id,
       leadType: leads.leadType,
@@ -567,6 +576,14 @@ export async function listAllLeads(params: {
       listingTitle: listings.title,
       listingPublicId: listings.publicId,
       listingSlug: listings.slug,
+      // leads.utm is an untyped json column, and on this stack (MariaDB) it
+      // comes back from mysql2 as a raw JSON *string*, not an auto-parsed
+      // object — confirmed against information_schema (data_type: longtext)
+      // and by actually reading a real row back through this query. Selected
+      // as unknown here and parsed in the map() below rather than trusted at
+      // the type level, which is what made the /vender source chip silently
+      // never render (utm.source was always undefined on a string).
+      utm: leads.utm,
       vertical: leads.vertical,
       routedTo: leads.routedTo,
       agencyName: agencies.name,
@@ -589,6 +606,29 @@ export async function listAllLeads(params: {
     .where(filters.length ? and(...filters) : undefined)
     .orderBy(desc(leads.createdAt))
     .limit(params.limit ?? 300);
+
+  return rows.map((r) => ({ ...r, utm: parseUtm(r.utm) }));
+}
+
+/**
+ * `leads.utm` comes back from mysql2/MariaDB as a raw JSON string (see the
+ * comment on `listAllLeads`'s select above), not an auto-parsed object — a
+ * driver/DB quirk this is apparently the first read of `leads.utm` to hit.
+ * Parses defensively: a malformed or legacy row must not 500 the admin
+ * panel, it should just read as "no utm data".
+ */
+function parseUtm(value: unknown): Record<string, string> | null {
+  if (value == null) return null;
+  if (typeof value === "object") return value as Record<string, string>;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 /** Lead counts per type for the admin filter chips — one GROUP BY, not one query each. */
