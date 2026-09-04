@@ -6,8 +6,8 @@ written to be handed to a builder session as-is.
 
 | Domain | Guide | Status |
 | --- | --- | --- |
-| inmobiliaria.com.py | `inmobiliaria.com.py.md` | spec, not built |
-| realestateinparaguay.com | `realestateinparaguay.com.md` | spec, not built |
+| inmobiliaria.com.py | `inmobiliaria.com.py.md` | **locked: Nórdico** (2026-09-04), not built |
+| realestateinparaguay.com | `realestateinparaguay.com.md` | **locked: variant A, guide-first** (2026-09-04), not built |
 | terreno.com.py | — | keeps the current green/gold editorial baseline |
 | landforsaleinparaguay.com | — | not a vertical yet; inherits the terreno baseline when added |
 
@@ -16,6 +16,8 @@ explored directions and the reasoning behind the palettes. Its "sister
 sites" framing (§1, §2 last paragraph) is superseded by the decision to run
 the domains as separate brands; the palettes, the plumbing list (§5), the
 cuota finding (§6.3) and the link-contrast bug (§5.3) still stand.
+
+Canvas with all explored directions (Tierra, Nórdico, Atelier for the Spanish site; A and B for the English site): https://claude.ai/code/artifact/95203f37-491f-4bb0-8279-f54c027df98e
 
 ## Recommended order
 
