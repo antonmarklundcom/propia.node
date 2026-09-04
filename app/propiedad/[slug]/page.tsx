@@ -626,6 +626,7 @@ export default async function ListingPage({ params }: Params) {
             leadType={leadType}
             prefillMessage={waMessage}
             variant="card"
+            locale={locale}
           />
           {/* Guide §5 "Detail page": inquiry form first (already true —
               ContactForm's primary submit renders before its WhatsApp
@@ -648,6 +649,7 @@ export default async function ListingPage({ params }: Params) {
           leadType={leadType}
           prefillMessage={waMessage}
           variant="panel"
+          locale={locale}
         />
       </section>
 

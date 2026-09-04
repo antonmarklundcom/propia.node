@@ -15,7 +15,7 @@ import { getIndexability } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
 import { esAgentProfile, agentInquiryPrefillFor } from "@/i18n/es";
-import { dict } from "@/i18n/server";
+import { currentLocale, dict } from "@/i18n/server";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { ContactForm } from "@/components/ContactForm";
@@ -56,7 +56,7 @@ export default async function AgentProfilePage({ params }: Params) {
   const r = await resolve(slug);
   if (!r) notFound();
   const { agent, listingCount } = r;
-  const d = await dict();
+  const [d, locale] = await Promise.all([dict(), currentLocale()]);
 
   // A brand-new agent with zero listings has nothing to show — same
   // gone-or-noindex rule every other thin page in the site follows
@@ -173,6 +173,7 @@ export default async function AgentProfilePage({ params }: Params) {
             leadType="buyer"
             prefillMessage={agentInquiryPrefillFor(brand, agent.name, canonical)}
             variant="panel"
+            locale={locale}
           />
         </section>
       )}

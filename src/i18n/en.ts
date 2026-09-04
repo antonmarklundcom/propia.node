@@ -58,6 +58,25 @@ export const en = {
   quickQuestions: ["Still available?", "Can I visit?", "What is required?"],
 } as const;
 
+/** Peer of esContactForm — see that namespace's comment. */
+export const enContactForm = {
+  nameLabel: "Name",
+  namePlaceholder: "Enter your name",
+  emailLabel: "Email",
+  emailPlaceholder: "Enter your email",
+  phoneLabel: "Phone",
+  phonePlaceholder: "981 234 567",
+  messageLabel: "Message",
+  submitIdle: "Send Message",
+  submitSending: "Sending…",
+  submitSent: "Message sent!",
+  waContinue: "💬 Continue on WhatsApp",
+  errorText: "We couldn't send your inquiry. Please try again in a moment.",
+  directNote: "✓ Your inquiry goes straight to the seller",
+  waLinkLabel: "💬 WhatsApp",
+  phoneLinkLabel: "📞 See phone number",
+} as const;
+
 export const enSearchBar = {
   operationLabel: "I want to",
   operationBuy: "Buy",

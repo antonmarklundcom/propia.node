@@ -394,14 +394,16 @@ the fallback until it does.
   tier: a ONE-TIME 1,000,000-character credit, not a recurring monthly
   allowance** — run `cron:translate` with `--limit` and watch usage in the
   DeepL dashboard, don't run it wide open assuming it refills. Gemini
-  (`gemini-3.6-flash` by default — `gemini-2.5-flash` 404s for a new
-  project's key as of 2026-09-04; check `GET /v1beta/models?key=...` if
-  Google cycles the lineup again) is the intended ongoing path once that
-  credit is spent. Cheaper than Claude per the ~$0.15/$1.25-per-million
-  sticker price, but 3.6-flash is a "thinking" model with real hidden
-  token overhead that inflates the actual per-call cost — see the
-  `GEMINI_MODEL` comment in `translate.ts` before assuming the sticker
-  price. Claude stays wired only as the last-resort fallback.
+  (`gemini-3.5-flash-lite` by default — `gemini-2.5-flash` 404s for a new
+  project's key as of 2026-09-04; `gemini-3.6-flash` works but is a
+  "thinking" model with real hidden token overhead billed at the output
+  rate, confirmed absent on 3.5-flash-lite; check `GET
+  /v1beta/models?key=...` if Google cycles the lineup again) is the
+  intended ongoing path once that credit is spent — $0.30/$2.50 per
+  million input/output tokens, cheaper than Claude and, unlike
+  3.6-flash, no hidden overhead inflating that price. See the
+  `GEMINI_MODEL` comment in `translate.ts` for the full comparison.
+  Claude stays wired only as the last-resort fallback.
   **Run it against the live database now that `realestateinparaguay.com`
   serves `locale: "en"`** — `DATABASE_URL="…" DEEPL_API_KEY="…" npm run
   cron:translate` (`--dry` first) — every listing is currently showing its
