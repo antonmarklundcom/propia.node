@@ -3321,9 +3321,9 @@ body {
 .panel-tab__count {
   margin-left: 6px;
   padding: 1px 7px;
-  border-radius: 0;
-  background: var(--color-accent);
-  color: #12100a;
+  border-radius: var(--radius-control);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
   font-size: 11.5px;
   font-weight: 800;
 }
@@ -4696,7 +4696,11 @@ summary.panel-btn::-webkit-details-marker {
   line-height: 1;
   color: var(--color-accent-hover);
   background: transparent;
-  border: 1px solid var(--header-cta-border);
+  /* Its own literal, not --header-cta-border: that token's baseline is
+     0.75 alpha, this element's was always 0.5 — coupling them drifted the
+     burger's border on every vertical that doesn't override it (review
+     finding). */
+  border: 1px solid rgba(193, 154, 77, 0.5);
   border-radius: var(--radius-control);
   cursor: pointer;
 }
@@ -4808,13 +4812,13 @@ summary.panel-btn::-webkit-details-marker {
 .mobile-menu__cta {
   margin-top: 8px;
   padding: 18px;
-  border-radius: 0;
+  border-radius: var(--radius-control);
   text-align: center;
   font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #12100a;
-  background: var(--color-accent);
+  color: var(--button-primary-fg);
+  background: var(--button-primary-bg);
   text-decoration: none;
 }
 
