@@ -4,6 +4,8 @@ import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
 import { dict, currentLocale } from "@/i18n/server";
+import { currentVertical } from "@/lib/vertical-context";
+import { showCuota } from "@/design/sections";
 
 /**
  * Category-grid / homepage card, in the editorial system: **the photo is the
@@ -18,9 +20,10 @@ import { dict, currentLocale } from "@/i18n/server";
  * "Foto próximamente" stays on top of it.
  */
 export async function ListingCard({ card }: { card: Card }) {
-  const [t, locale] = await Promise.all([
+  const [t, locale, vertical] = await Promise.all([
     dict().then((d) => d.card),
     currentLocale(),
+    currentVertical(),
   ]);
   // English requests fall back to the Spanish title when cron:translate
   // hasn't produced titleEn yet — never render blank.
@@ -31,7 +34,7 @@ export async function ListingCard({ card }: { card: Card }) {
   const cover = isPlaceholderPhoto(card.coverKey)
     ? null
     : imageThumbUrl(card.coverKey);
-  const cuota = formatCuota(card.cuotaGs);
+  const cuota = showCuota(vertical.key) ? formatCuota(card.cuotaGs) : null;
   const area = card.areaM2 ?? card.landM2;
   // new Date() re-wrap: cards that crossed an unstable_cache boundary carry
   // featuredUntil as an ISO string, and string > Date is silently false.

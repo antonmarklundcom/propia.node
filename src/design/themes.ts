@@ -38,6 +38,19 @@ const EDITORIAL: ThemeVars = {
   "--color-ink-muted": tokens.color.inkMuted,
   "--color-background": tokens.color.background,
   "--color-border": tokens.color.border,
+  "--color-border-accent": tokens.color.borderAccent,
+  "--color-on-accent": tokens.color.onAccent,
+  "--color-accent-on-dark": tokens.color.accentOnDark,
+  "--font-display": tokens.font.display,
+  "--font-sans": tokens.font.family,
+  "--radius-control": tokens.radius.control,
+  "--radius-photo": tokens.radius.photo,
+  "--label-tracking": tokens.label.tracking,
+  "--button-case": tokens.button.case,
+  "--shadow-float": tokens.shadow.float,
+  "--overlay-hero": tokens.overlay.hero,
+  "--overlay-card": tokens.overlay.card,
+  "--overlay-zone": tokens.overlay.zone,
 };
 
 /**

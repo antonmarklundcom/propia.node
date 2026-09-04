@@ -5,6 +5,7 @@ import { dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { currentVertical } from "@/lib/vertical-context";
+import { homeSections } from "@/design/sections";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import {
   getRecentListings,
@@ -200,6 +201,7 @@ export default async function Home() {
   const tCommon = d.common;
   const faq = faqHome(brand);
   const vertical = await currentVertical();
+  const sections = homeSections(vertical.key);
   // Number formatting follows the request's locale, not the copy: the
   // thousands separator is not the same character everywhere.
   const numberLocale = vertical.locale === "en" ? "en-US" : "es-PY";
@@ -227,6 +229,7 @@ export default async function Home() {
       {/* Hero — full-bleed photograph, text on the gradient (design system
           §"Superposiciones sobre foto"). The search bar sits on the dark panel
           inside the hero rather than below it. */}
+      {sections.includes("hero") && (
       <section className="home-hero">
         <img
           className="home-hero__photo"
@@ -284,10 +287,12 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Zonas — four photographed cards, the design's "tarjeta de zona".
           Cities are matched by name against the DB so a card never links to a
           category page that doesn't exist. */}
+      {sections.includes("zonas") && (
       <section className="ds-section ds-container" id="zonas">
         <div className="home-section__head">
           <div>
@@ -317,8 +322,10 @@ export default async function Home() {
           ))}
         </div>
       </section>
+      )}
 
       {/* Cómo funciona — the "what is this site" answer, before any listing */}
+      {sections.includes("como-funciona") && (
       <section className="home-how">
         <div className="home-how__inner">
           <h2 className="home-how__title">{t.howTitle}</h2>
@@ -342,10 +349,12 @@ export default async function Home() {
           </Link>
         </div>
       </section>
+      )}
 
       {/* Editorial pair: the seller pitch on cream, the investor pitch on
           green. Two backgrounds per page is the system's rule, and these are
           the two. */}
+      {sections.includes("editorial-vender") && (
       <section className="ds-section ds-container editorial">
         <div className="editorial__media">
           <img
@@ -369,7 +378,9 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
+      {sections.includes("editorial-invertir") && (
       <section className="ds-section ds-section--dark">
         <div className="ds-container editorial editorial--reverse">
           <div className="editorial__media">
@@ -395,9 +406,10 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Nuevos proyectos — renders only once real projects exist */}
-      {featuredProjects.length > 0 && (
+      {sections.includes("proyectos") && featuredProjects.length > 0 && (
         <section className="home-projects" id="proyectos">
           <div className="home-projects__inner">
             <div className="home-section__head">
@@ -414,7 +426,7 @@ export default async function Home() {
       )}
 
       {/* City shortcuts */}
-      {cityShortcuts.length > 0 && (
+      {sections.includes("ciudades") && cityShortcuts.length > 0 && (
         <section className="home-cities">
           <div className="home-cities__inner">
             <h2 className="home-cities__title">{t.citiesTitle}</h2>
@@ -433,6 +445,7 @@ export default async function Home() {
         </section>
       )}
 
+      {sections.includes("listados") && (
       <div className="home-body">
         <RecentlyViewed />
         <Row
@@ -467,9 +480,10 @@ export default async function Home() {
           </p>
         )}
       </div>
+      )}
 
       {/* Desarrolladoras destacadas — renders only once developers exist */}
-      {featuredDevelopers.length > 0 && (
+      {sections.includes("desarrolladoras") && featuredDevelopers.length > 0 && (
         <section className="home-devs">
           <div className="home-devs__inner">
             <div className="home-section__head">
@@ -500,7 +514,7 @@ export default async function Home() {
 
       {/* Market data — the reason to come back between searches. Renders only
           when the medians job has produced a defensible sample. */}
-      {priceCities.length > 0 && (
+      {sections.includes("precios") && priceCities.length > 0 && (
         <section className="home-prices">
           <div className="home-prices__inner">
             <div className="home-section__head">
@@ -529,6 +543,7 @@ export default async function Home() {
       )}
 
       {/* Value proposition strip */}
+      {sections.includes("valores") && (
       <section className="home-values">
         <div className="home-values__inner">
           {t.values.map((v) => (
@@ -544,8 +559,10 @@ export default async function Home() {
           ))}
         </div>
       </section>
+      )}
 
       {/* Descubre más — secondary product surfaces */}
+      {sections.includes("descubre") && (
       <section className="home-discover">
         <div className="home-discover__inner">
           <h2 className="home-discover__title">{t.discoverTitle(brand)}</h2>
@@ -563,9 +580,11 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Professional lane — the revenue side of the marketplace. Guests see
           what publishing a whole portfolio gets them, not just one property. */}
+      {sections.includes("profesional") && (
       <section className="home-pro">
         <div className="home-pro__inner">
           <div className="home-pro__copy">
@@ -604,8 +623,10 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Publish CTA banner */}
+      {sections.includes("cta") && (
       <section className="home-cta">
         <div className="home-cta__inner">
           <h2 className="home-cta__title">{t.ctaTitle}</h2>
@@ -629,8 +650,10 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Newsletter */}
+      {sections.includes("newsletter") && (
       <section className="home-newsletter">
         <div className="home-newsletter__inner">
           <div>
@@ -640,8 +663,10 @@ export default async function Home() {
           <NewsletterSignup />
         </div>
       </section>
+      )}
 
       {/* FAQ */}
+      {sections.includes("faq") && (
       <section className="home-faq">
         <div className="home-faq__inner">
           <h2 className="home-faq__title">{t.faqTitle}</h2>
@@ -657,6 +682,7 @@ export default async function Home() {
           </Link>
         </div>
       </section>
+      )}
     </main>
   );
 }

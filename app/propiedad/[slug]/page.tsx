@@ -37,6 +37,7 @@ import { languageAlternates } from "@/lib/alternates";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
+import { showCuota } from "@/design/sections";
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
@@ -162,7 +163,8 @@ export default async function ListingPage({ params }: Params) {
       }
     });
   }
-  const cuota = formatCuota(listing.cuotaGs);
+  const vertical = await currentVertical();
+  const cuota = showCuota(vertical.key) ? formatCuota(listing.cuotaGs) : null;
   /**
    * Contact chain, most specific first. `ownerUser` is the FSBO tail: a
    * listing published through /publicar belongs to a person, not an agency,
@@ -237,7 +239,6 @@ export default async function ListingPage({ params }: Params) {
   // inside it, the await ran to completion before the other two branches were
   // even started, so the "parallel" block was three serial round-trips.
   const similarLocationIds = city ? await subtreeIds(city.id) : null;
-  const vertical = await currentVertical();
 
   const [similar, fromAgency, financingProgram, cityPrices] = await Promise.all([
     city && similarLocationIds
