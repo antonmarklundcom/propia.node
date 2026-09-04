@@ -97,7 +97,7 @@ export default async function VenderPage() {
   const faq = [...t.faq];
 
   return (
-    <main className="nordico-home vd-page">
+    <main className="nordico-home">
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [

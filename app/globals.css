@@ -7446,7 +7446,12 @@ summary.panel-btn::-webkit-details-marker {
   grid-template-columns: 1fr 1fr;
   gap: var(--grid-gap);
   align-items: center;
-  background: var(--color-background);
+  /* var(--color-surface), not --color-background: the form's own fields
+     are --color-background, so a --color-background panel behind them left
+     only a 1.23:1 hairline border to tell them apart (review finding). The
+     hero form doesn't have this problem — its wrap is already --color-
+     surface (white) against --color-background fields. */
+  background: var(--color-surface);
   border-radius: var(--radius-control);
   padding: 40px;
 }

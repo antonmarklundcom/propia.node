@@ -108,7 +108,7 @@ export function VenderForm({
   const id = (field: string) => `${idPrefix}-${field}`;
 
   return (
-    <form className="vd-form" onSubmit={onSubmit}>
+    <form className="vd-form" onSubmit={onSubmit} aria-label={t.formTitle}>
       <label className="vd-form__field" htmlFor={id("name")}>
         <span className="vd-form__label">{t.formNameLabel}</span>
         <input
