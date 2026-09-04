@@ -2,11 +2,19 @@
  * Fill `listings.title_en` / `description_en` from the Spanish source
  * (PLAN.md D6, Batch 3 layer 3).
  *
- *   DATABASE_URL="mysql://..." ANTHROPIC_API_KEY="sk-..." npm run cron:translate
+ *   DATABASE_URL="mysql://..." DEEPL_API_KEY="...:fx" npm run cron:translate
+ *   ... GEMINI_API_KEY="AQ...." npm run cron:translate       # or Gemini alone
+ *   ... ANTHROPIC_API_KEY="sk-..." npm run cron:translate    # or Claude alone
  *   ... npm run cron:translate -- --dry            # what would run, no API calls
  *   ... npm run cron:translate -- --limit 25       # bound the spend of one run
  *   ... npm run cron:translate -- --id 1234        # one listing, ignores the hash
  *   ... npm run cron:translate -- --force          # re-translate everything
+ *
+ * Provider order: DeepL, then Gemini, then Claude — any subset of the three
+ * keys may be set; a row falls through to the next configured provider if
+ * one throws. See src/lib/translate.ts's module doc comment for why this
+ * order (DeepL's free "Developer" tier is a one-time character credit, not a
+ * recurring monthly one — spend it with --limit, don't run it wide open).
  *
  * **What needs translating** is decided by `translation_hash`: the sha256 of
  * the title and Spanish description the stored English was made from. A row
@@ -95,10 +103,10 @@ async function* candidates(): AsyncGenerator<Candidate> {
 async function main() {
   if (!isTranslationConfigured() && !dry) {
     console.error(
-      "ANTHROPIC_API_KEY is not set — nothing was translated.\n" +
+      "None of DEEPL_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY is set — nothing was translated.\n" +
         "This is a disabled feature, not a failure: the English door reads\n" +
         "title_en/description_en straight from the row and simply shows the\n" +
-        "Spanish text until they are filled. Re-run with the key set, or with\n" +
+        "Spanish text until they are filled. Re-run with a key set, or with\n" +
         "--dry to see what a run would do.",
     );
     process.exit(1);
