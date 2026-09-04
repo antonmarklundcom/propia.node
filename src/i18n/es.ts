@@ -890,6 +890,140 @@ export const esNordico = {
 } as const;
 
 /**
+ * `/vender` seller landing page strings (docs/style/inmobiliaria.com.py.md
+ * §5 "Seller landing page /vender"). Rendered only on the Spanish door —
+ * `sellerLandingEnabled()` (src/design/sections.ts) redirects every other
+ * vertical's `/vender` request to `/` before this page ever mounts.
+ *
+ * Every placeholder is marked explicitly in both the string and the PR
+ * description that shipped it (guide §1: "a placeholder number in a mockup
+ * is not a licence to ship it" — the placeholders below are content the
+ * founder must confirm, not numbers pretending to be real).
+ */
+export const esVender = {
+  metaTitle: "Vendé tu propiedad al mejor precio",
+  metaDescription: (brand: string) =>
+    `Vendé con ${brand}: fotografía profesional, marketing digital, tasación con datos del mercado y compradores del exterior. Sin costo, sin exclusividad.`,
+  heroKicker: "Vender con nosotros",
+  heroTitle: "Vendé al mejor precio, con un proceso que se ve.",
+  // Guide §5.1: "what the seller gets, in three lines."
+  heroSubtitleLines: [
+    "Fotografía profesional y home styling para tu propiedad.",
+    "Marketing digital y publicación en español e inglés.",
+    "Un proceso de venta documentado, no un aviso más.",
+  ],
+  formTitle: "Quiero una tasación",
+  formNameLabel: "Nombre",
+  formPhoneLabel: "Teléfono (WhatsApp)",
+  formCityLabel: "Ciudad / barrio",
+  formCityPlaceholder: "Elegí tu ciudad",
+  formTypeLabel: "Tipo de propiedad",
+  formTypePlaceholder: "Elegí el tipo",
+  formMessageLabel: "Mensaje (opcional)",
+  formMessagePlaceholder: "Contanos algo más sobre tu propiedad",
+  formSubmit: "Quiero una tasación",
+  formSending: "Enviando…",
+  // Guide §5.1: "Sin costo. Sin compromiso. Respondemos en < 24 h (only if
+  // true)." No measured response-time figure exists — the same reasoning
+  // esNordico.proofRow's comment already gives for cutting a fabricated
+  // "48 h" claim — so this states only the two facts that are true today.
+  formNote: "Sin costo. Sin compromiso.",
+  formSuccessTitle: "¡Listo! Recibimos tus datos.",
+  formSuccessText: "Te contactamos por WhatsApp para coordinar la tasación.",
+  formError:
+    "No pudimos enviar tu mensaje. Probá de nuevo o escribinos por WhatsApp.",
+  formPhoneError: "Ingresá un número de WhatsApp válido.",
+  formFineprintPrefix: "Al enviar aceptás",
+  formFineprintAnd: "y la",
+  formTerms: "nuestros términos",
+  formPrivacy: "política de privacidad",
+  differentTitle: "Qué hacemos distinto",
+  differentCards: [
+    {
+      title: "Fotografía y video profesional",
+      text: "Fotografía profesional y video corto de cada propiedad, incluidos en la publicación.",
+    },
+    {
+      title: "Home styling",
+      text: "Puesta en escena pensada para mostrar el potencial de cada ambiente, no solo para retratarlo.",
+    },
+    {
+      title: "Tasación con datos del mercado",
+      text: "Un rango de precio basado en ventas comparables reales de la zona, no en una corazonada.",
+    },
+    {
+      title: "Publicación en español e inglés",
+      text: "El mismo aviso llega a compradores locales y a compradores que buscan desde el exterior.",
+    },
+    {
+      title: "Marketing digital",
+      text: "Promoción paga en Meta, Google y portales — tu aviso se promociona, no solo se publica.",
+    },
+    {
+      title: "Red de sitios",
+      text: "Tu propiedad visible en inmobiliaria.com.py, realestateinparaguay.com, terreno.com.py y el resto de la red.",
+    },
+  ],
+  foreignTitle: "Compradores del exterior",
+  foreignText:
+    "Cada propiedad se traduce y se publica en realestateinparaguay.com, la puerta de entrada del portal para quien busca desde otro país. Mismo aviso, mismos datos, en el idioma de quien está mirando.",
+  foreignPoints: [
+    "Ficha traducida al inglés",
+    "Precio de referencia en dólares",
+    "Contacto directo por WhatsApp, sin intermediarios",
+  ],
+  // PLACEHOLDER (guide §5.4): a real screenshot of realestateinparaguay.com
+  // on a laptop belongs here — this renders a marked placeholder frame
+  // instead of a fabricated screenshot.
+  foreignImageLabel: "Vista previa de realestateinparaguay.com",
+  foreignImagePlaceholderNote: "Imagen de referencia — pendiente de reemplazo",
+  behindTitle: "Quién está detrás",
+  // PLACEHOLDER (guide §5.6): founder's name inferred from the repository
+  // owner, not sourced from app copy anywhere else — confirm before launch.
+  behindName: "Anton Marklund",
+  behindRole:
+    "Fundador de Inmobiliaria Paraguay y de la red de sitios del portal.",
+  behindCompany: (brand: string) => `${brand} es un servicio de EAS.`,
+  // PLACEHOLDER (guide §5.6): stated honestly from verticals.ts's own note
+  // ("EAS/SERPLAID license issues (~Oct 2026)") — no license is claimed.
+  // Confirm the exact wording/registration number before launch.
+  behindLicense:
+    "Matrícula profesional en trámite ante SERPLAID (verificar estado antes de publicar).",
+  behindPhotoLabel: "Foto del fundador",
+  behindPhotoPlaceholderNote: "Imagen de referencia — pendiente de reemplazo",
+  faqTitle: "Preguntas de vendedores",
+  // Guide §5.7: comisión, plazo, exclusividad, qué pasa si no se vende, quién
+  // atiende las visitas. Answers adapted from the portal's own existing
+  // policy copy (src/config/faq.ts's "¿Cobran comisión por la operación?" and
+  // /terminos's "licencia no exclusiva y gratuita"), not invented fresh.
+  faq: [
+    {
+      q: "¿Cobran comisión por vender con ustedes?",
+      a: "No cobramos comisión sobre la venta. Publicar es gratis; si tu propiedad la gestiona una inmobiliaria o agente de la red, sus honorarios los acordás directamente con esa persona.",
+    },
+    {
+      q: "¿Cuánto tarda en venderse mi propiedad?",
+      a: "Depende del precio, la zona y el estado del mercado — no damos un plazo genérico. Una tasación basada en datos reales evita el error más común: publicar por encima del precio de mercado y pasar meses sin consultas.",
+    },
+    {
+      q: "¿Tengo que darles exclusividad?",
+      a: "No. Al publicar nos das una licencia no exclusiva y gratuita para mostrar tu propiedad — podés seguir vendiéndola por tu cuenta o con otra inmobiliaria al mismo tiempo.",
+    },
+    {
+      q: "¿Qué pasa si no se vende?",
+      a: "No hay costo ni compromiso de plazo. Podés ajustar el precio, actualizar las fotos o pausar el aviso cuando quieras.",
+    },
+    {
+      q: "¿Quién atiende las visitas?",
+      a: "Las consultas te llegan directo por WhatsApp. Si publicás como particular, coordinás vos las visitas; si tu propiedad la gestiona una inmobiliaria o agente de la red, ellos se encargan del contacto y las visitas.",
+    },
+  ],
+  closingTitle: "¿Listo para vender?",
+  closingText:
+    "Dejanos tus datos y te contactamos para empezar con la tasación.",
+} as const;
+
+/**
  * "Variant A, guide-first" strings (docs/style/realestateinparaguay.com.md),
  * used only where `homeLayout(vertical.key) === "guide-en"` or
  * `cardVariant`/`heroVariant`/`chromeVariant` select its components — never

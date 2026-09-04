@@ -203,6 +203,118 @@ export const enNordico = {
 } as const;
 
 /**
+ * English peer of `esVender` (src/i18n/es.ts) — required for `Dictionary`'s
+ * shape (`npm run verify:i18n` walks both dictionaries) even though this
+ * copy is never rendered: `/vender` exists on the Spanish door only, and
+ * `sellerLandingEnabled()` (src/design/sections.ts) redirects the English
+ * door's `/vender` request to `/` before any page reads this namespace. Same
+ * inverse situation as `esGuideEn` (Spanish copy that only exists for shape
+ * parity), mirrored the other way around.
+ */
+export const enVender = {
+  metaTitle: "Sell your property for the best price",
+  metaDescription: (brand: string) =>
+    `Sell with ${brand}: professional photography, digital marketing, data-based valuation and buyers from abroad. No cost, no exclusivity.`,
+  heroKicker: "Sell with us",
+  heroTitle: "Sell for the best price, with a process you can see.",
+  heroSubtitleLines: [
+    "Professional photography and home styling for your property.",
+    "Digital marketing and listing in Spanish and English.",
+    "A documented sales process, not just another listing.",
+  ],
+  formTitle: "I want a valuation",
+  formNameLabel: "Name",
+  formPhoneLabel: "Phone (WhatsApp)",
+  formCityLabel: "City / neighborhood",
+  formCityPlaceholder: "Choose your city",
+  formTypeLabel: "Property type",
+  formTypePlaceholder: "Choose the type",
+  formMessageLabel: "Message (optional)",
+  formMessagePlaceholder: "Tell us more about your property",
+  formSubmit: "I want a valuation",
+  formSending: "Sending…",
+  formNote: "No cost. No commitment.",
+  formSuccessTitle: "Done! We received your details.",
+  formSuccessText: "We'll reach out on WhatsApp to schedule the valuation.",
+  formError: "We couldn't send your message. Try again or write to us on WhatsApp.",
+  formPhoneError: "Enter a valid WhatsApp number.",
+  formFineprintPrefix: "By submitting you accept",
+  formFineprintAnd: "and the",
+  formTerms: "our terms",
+  formPrivacy: "privacy policy",
+  differentTitle: "What we do differently",
+  differentCards: [
+    {
+      title: "Professional photography and video",
+      text: "Professional photography and a short video for every property, included in the listing.",
+    },
+    {
+      title: "Home styling",
+      text: "Staging designed to show each room's potential, not just photograph it as-is.",
+    },
+    {
+      title: "Data-based valuation",
+      text: "A price range based on real comparable sales in the area, not a guess.",
+    },
+    {
+      title: "Listed in Spanish and English",
+      text: "The same listing reaches local buyers and buyers searching from abroad.",
+    },
+    {
+      title: "Digital marketing",
+      text: "Paid promotion on Meta, Google and portals — your listing is promoted, not just posted.",
+    },
+    {
+      title: "A network of sites",
+      text: "Your property visible on inmobiliaria.com.py, realestateinparaguay.com, terreno.com.py and the rest of the network.",
+    },
+  ],
+  foreignTitle: "Buyers from abroad",
+  foreignText:
+    "Every property is translated and published on realestateinparaguay.com, the portal's door for buyers searching from another country. Same listing, same data, in the language of whoever is looking.",
+  foreignPoints: [
+    "Listing translated into English",
+    "Reference price in US dollars",
+    "Direct WhatsApp contact, no middleman",
+  ],
+  foreignImageLabel: "Preview of realestateinparaguay.com",
+  foreignImagePlaceholderNote: "Reference image — pending replacement",
+  behindTitle: "Who's behind it",
+  behindName: "Anton Marklund",
+  behindRole: "Founder of Inmobiliaria Paraguay and the portal's network of sites.",
+  behindCompany: (brand: string) => `${brand} is a service of EAS.`,
+  behindLicense:
+    "Professional license pending with SERPLAID (verify status before publishing).",
+  behindPhotoLabel: "Founder's photo",
+  behindPhotoPlaceholderNote: "Reference image — pending replacement",
+  faqTitle: "Questions from sellers",
+  faq: [
+    {
+      q: "Do you charge a commission to sell with you?",
+      a: "We don't charge a commission on the sale. Listing is free; if your property is handled by an agency or agent from the network, their fees are agreed directly with them.",
+    },
+    {
+      q: "How long does it take to sell my property?",
+      a: "It depends on price, location and market conditions — we don't give a generic timeline. A data-based valuation avoids the most common mistake: listing above market price and going months with no inquiries.",
+    },
+    {
+      q: "Do I have to give you exclusivity?",
+      a: "No. Publishing grants us a non-exclusive, free license to show your property — you can keep selling it on your own or with another agency at the same time.",
+    },
+    {
+      q: "What happens if it doesn't sell?",
+      a: "There's no cost and no time commitment. You can adjust the price, update the photos or pause the listing whenever you want.",
+    },
+    {
+      q: "Who handles the showings?",
+      a: "Inquiries reach you directly on WhatsApp. If you're listing as a private seller, you coordinate showings yourself; if your property is handled by an agency or agent from the network, they handle contact and showings.",
+    },
+  ],
+  closingTitle: "Ready to sell?",
+  closingText: "Leave your details and we'll reach out to start the valuation.",
+} as const;
+
+/**
  * "Variant A, guide-first" strings (docs/style/realestateinparaguay.com.md),
  * the English door's own home page, header/footer chrome, card and detail
  * additions. Tone per guide §1: "plain declarative English, facts before

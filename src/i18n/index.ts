@@ -32,6 +32,7 @@ import {
   esProfile,
   esProject,
   esSearchBar,
+  esVender,
 } from "./es";
 import {
   en,
@@ -47,6 +48,7 @@ import {
   enProfile,
   enProject,
   enSearchBar,
+  enVender,
 } from "./en";
 
 export type Locale = "es" | "en";
@@ -71,6 +73,7 @@ const esDictionary = {
   project: esProject,
   nordico: esNordico,
   guideEn: esGuideEn,
+  vender: esVender,
   contactForm: esContactForm,
 } as const;
 
@@ -122,6 +125,7 @@ const enDictionary = {
   project: enProject,
   nordico: enNordico,
   guideEn: enGuideEn,
+  vender: enVender,
   contactForm: enContactForm,
 } satisfies Dictionary;
 
