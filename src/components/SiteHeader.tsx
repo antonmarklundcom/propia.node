@@ -23,7 +23,23 @@ import { dict } from "@/i18n/server";
 export async function SiteHeader() {
   // The wordmark IS the domain, so it has to follow the host rather than a
   // build-time constant — see src/lib/brand.ts.
-  const brand = await brandName();
+  const [brand, vertical] = await Promise.all([brandName(), currentVertical()]);
+  // No `vertical.key === ...` here — the registry decides both the extra nav
+  // entry and where the CTA points; this component only reads its answer.
+  const extraNav = headerExtraNavLink(vertical.key);
+  const ctaHref = sellerCtaHref(vertical.key);
+  const nordicoCta = extraNav
+    ? (await dict()).nordico
+    : { headerVenderCtaFull: "", headerVenderCtaShort: "" };
+  // §5 "Header": Comprar · Alquilar · Vender · Proyectos · Inmobiliarias — the
+  // extra entry (when the registry adds one) sits right after "Proyectos".
+  const nav = extraNav
+    ? [
+        ...HEADER_NAV.slice(0, 3),
+        { label: extraNav.label, href: extraNav.href, links: [] },
+        ...HEADER_NAV.slice(3),
+      ]
+    : HEADER_NAV;
   return (
     <header className="site-header">
       <div className="site-header__inner">
@@ -51,7 +67,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="site-header__nav" aria-label="Principal">
-          {HEADER_NAV.map((group) => (
+          {nav.map((group) => (
             <div key={group.label} className="site-header__group">
               <Link className="site-header__link" href={group.href}>
                 {group.label}
@@ -87,9 +103,13 @@ export async function SiteHeader() {
           </Link>
           {/* Two labels, one shown at a time — on a 320px screen the full label
               plus the brand no longer fit on one line (globals.css @560px). */}
-          <Link className="site-header__cta" href="/publicar">
-            <span className="site-header__cta-full">Publicar propiedad</span>
-            <span className="site-header__cta-short">Publicar</span>
+          <Link className="site-header__cta" href={ctaHref}>
+            <span className="site-header__cta-full">
+              {extraNav ? nordicoCta.headerVenderCtaFull : "Publicar propiedad"}
+            </span>
+            <span className="site-header__cta-short">
+              {extraNav ? nordicoCta.headerVenderCtaShort : "Publicar"}
+            </span>
           </Link>
           <MobileMenu />
         </div>
