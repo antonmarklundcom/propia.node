@@ -26,6 +26,7 @@ import {
   esHome,
   esHub,
   esListing,
+  esNordico,
   esProfile,
   esProject,
   esSearchBar,
@@ -38,6 +39,7 @@ import {
   enHome,
   enHub,
   enListing,
+  enNordico,
   enProfile,
   enProject,
   enSearchBar,
@@ -63,6 +65,7 @@ const esDictionary = {
   listing: esListing,
   profile: esProfile,
   project: esProject,
+  nordico: esNordico,
 } as const;
 
 /**
@@ -111,6 +114,7 @@ const enDictionary = {
   listing: enListing,
   profile: enProfile,
   project: enProject,
+  nordico: enNordico,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

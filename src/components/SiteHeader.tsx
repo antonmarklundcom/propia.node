@@ -3,6 +3,9 @@ import { BRAND_KICKER } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
 import { HEADER_NAV } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
+import { currentVertical } from "@/lib/vertical-context";
+import { headerExtraNavLink, sellerCtaHref } from "@/design/sections";
+import { dict } from "@/i18n/server";
 
 /**
  * Global top bar (portal shell). Brand + grouped nav + a "publish" CTA.

@@ -90,6 +90,90 @@ export const enCard = {
   bedroomsShort: (n: number) => `${n} bed`,
   bathrooms: (n: number) => `${n} ${n === 1 ? "bath" : "baths"}`,
   area: (m2: number) => `${m2} m²`,
+  foreignPill: "Listed in English",
+  featuredPill: "Featured",
+  cuotaLine: (cuota: string) => `Est. payment ${cuota}`,
+} as const;
+
+/**
+ * English peer of esNordico. Not currently rendered anywhere —
+ * realestateinparaguay.com keeps its own guide-first design (PR 3) and never
+ * selects the Nórdico home/card components — but kept in the same shape so
+ * `Dictionary` stays satisfiable and a future call site needs no new key.
+ */
+export const enNordico = {
+  headerVender: "Sell",
+  headerVenderCtaFull: "List your property",
+  headerVenderCtaShort: "Sell",
+  heroKicker: "Buying and renting in Paraguay",
+  heroTitle: "The modern way to sell your property in Paraguay",
+  heroSubtitle:
+    "Professional photography, digital marketing and buyers from abroad. You bring the property, we bring the process.",
+  heroSell: "List your property",
+  heroSearch: "Search properties",
+  proofSoldRecent: (days: number, price: string) =>
+    `Sold in ${days} days · ${price}`,
+  proofRow: [
+    { numeral: "48 h", label: "Average response time" },
+    {
+      numeral: "Professional photography",
+      label: "Included with every listing",
+    },
+    { numeral: "2 languages", label: "Spanish and English, one listing" },
+    { numeral: "3 sites", label: "Your property, across the network" },
+  ],
+  searchOperation: "Operation",
+  searchCity: "City or neighborhood",
+  searchType: "Type",
+  searchMaxPrice: "Up to US$",
+  searchSubmit: "Search",
+  recentTitle: "Recently listed",
+  recentMore: "See all",
+  processTitle: "A selling process, not a listing.",
+  processSteps: [
+    {
+      title: "Data-based valuation",
+      text: "A price range based on real comparable sales, not a hunch.",
+    },
+    {
+      title: "Photography and styling",
+      text: "Professional photography and staging built to sell, not just to show.",
+    },
+    {
+      title: "Published in Spanish and English",
+      text: "The same listing reaches local buyers and buyers from abroad.",
+    },
+    {
+      title: "Negotiation and closing",
+      text: "We stay with you through signing, with the process documented at every step.",
+    },
+  ],
+  processCta: "Start selling",
+  citiesTitle: "Search by city",
+  whySellTitle: "Why sell here",
+  whySellCards: [
+    {
+      title: "Photography and styling",
+      text: "Every property gets professional photography and staging that helps it sell faster.",
+    },
+    {
+      title: "Digital marketing",
+      text: "Your listing is promoted on social media and search, not just published and forgotten.",
+    },
+    {
+      title: "Buyers from abroad",
+      text: "The same listing is translated and published on realestateinparaguay.com, the door to foreign buyers.",
+    },
+  ],
+  whySellCta: "I want to sell this way",
+  partnersTitle: "For real estate agencies",
+  partnersText:
+    "Publish your whole portfolio, gain international exposure and get your own leads with no middleman.",
+  partnersCta: "Learn more",
+  detailSendMessage: "Send message",
+  detailWhatsapp: "WhatsApp",
+  detailCall: "Call",
+  cuotaCardTitle: "Estimated payment with AFD, subject to approval",
 } as const;
 
 /** Home page. */
