@@ -34,7 +34,15 @@ export type HomeSectionId =
   | "newsletter"
   | "faq";
 
-/** Home page section order. Every key gets today's order. */
+/**
+ * Home page sections. Every key gets every section today — `app/page.tsx`
+ * only reads membership (`sections.includes(id)`) to gate each section's
+ * existing hard-coded position, it does not yet render from the array's
+ * order. A PR that needs to actually reorder sections per vertical must
+ * also change `app/page.tsx` to render from this list (map over it into a
+ * `Record<HomeSectionId, ReactNode>`) rather than assume reordering this
+ * array alone does anything.
+ */
 export function homeSections(_key: VerticalKey): HomeSectionId[] {
   return [
     "hero",
