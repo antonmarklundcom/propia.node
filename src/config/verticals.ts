@@ -2,11 +2,14 @@
  * Domain routing layer — how one engine serves every door (ARCHITECTURE.md §2.8).
  *
  * Lives in code, not the database: it changes at deploy cadence and wants
- * type safety. Two hosts are enabled today — realestateinparaguay.com (the
- * interim primary) and inmobiliaria.com.py (the Spanish primary in waiting,
- * PLAN.md D6); the remaining feeder domains are pre-declared so routing,
- * canonical URLs, and lead attribution never need a schema change when they
- * switch on.
+ * type safety. Three hosts are enabled today — inmobiliaria.com.py (the
+ * Spanish marketplace primary, PLAN.md D6, flipped 2026-09-04),
+ * realestateinparaguay.com (its English translation, same flip), and
+ * terreno.com.py (consolidated onto this app from its own former standalone
+ * Node deployment, 2026-09-04: a terrenos-only feeder, same database,
+ * canonicalizing /propiedad back to the Spanish primary); the remaining
+ * feeder domains are pre-declared so routing, canonical URLs, and lead
+ * attribution never need a schema change when they switch on.
  */
 
 export type VerticalKey =
@@ -55,7 +58,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     locale: "es",
     filters: { property_type: ["terreno"] },
     copy: "land",
-    enabled: false,
+    enabled: true,
     ownsListingDetail: false,
   },
   "alquiler.com.py": {
@@ -86,51 +89,37 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     ownsListingDetail: false,
   },
   /**
-   * INTERIM: this is the live production host (see CLAUDE.md), and the
-   * Spanish site is primary here. When `inmobiliaria.com.py` takes over as
-   * the Spanish primary (PLAN.md D6), this entry becomes the English feeder
-   * vertical it was originally planned as: `key: "en"`, `locale: "en"`,
-   * `filters: { foreign_exposure: true }`, `copy: "foreign"`,
-   * `enabled: false`, `ownsListingDetail: true` (its own translated detail
-   * pages, hreflang'd against the primary — translation ≠ duplicate).
+   * FLIPPED 2026-09-04 (PLAN.md D6): the English feeder, auto-translated from
+   * the Spanish rows now published primarily on inmobiliaria.com.py. Narrowed
+   * to listings that opted into foreign exposure (`listings.foreign_exposure`,
+   * default true, so this is an opt-out in practice, not an empty grid).
+   * `ownsListingDetail: true` because a translation is its own content, not a
+   * duplicate — hreflang pairs it against inmobiliaria.com.py automatically
+   * (src/lib/alternates.ts reads this table). Detail page, ListingCard and
+   * generateMetadata now read `title_en`/`description_en` with a Spanish
+   * fallback (app/propiedad/[slug]/page.tsx, src/components/ListingCard.tsx)
+   * for listings `npm run cron:translate` hasn't reached yet.
    */
   "realestateinparaguay.com": {
     key: "en",
     brand: "Real Estate in Paraguay",
-    locale: "es",
-    copy: "ownership",
+    locale: "en",
+    filters: { foreign_exposure: true },
+    copy: "foreign",
     enabled: true,
     ownsListingDetail: true,
   },
   /**
-   * SECOND production host (see CLAUDE.md, PLAN.md D6) — same app, same
-   * database as realestateinparaguay.com. Owned by the founder, and as of
-   * 2026-08-16 this is the **Spanish marketplace primary in waiting**. It
-   * was previously earmarked for his own individual agency brand and
-   * ruled out of this app entirely — that call was reversed, and the domain
-   * now carries both his own inventory and other realtors'/agencies' listings
-   * he takes on case-by-case until his EAS/SERPLAID license issues
-   * (~Oct 2026).
+   * FLIPPED 2026-09-04 (PLAN.md D6): the Spanish marketplace primary. Same
+   * app, same database as realestateinparaguay.com. Owned by the founder;
+   * nearly all publishing happens here — his own agency inventory plus other
+   * realtors'/agencies' listings he takes on case-by-case until his
+   * EAS/SERPLAID license issues (~Oct 2026).
    *
-   * `ownsListingDetail: false` is INTENTIONAL and TEMPORARY, not the final
-   * state: this host and realestateinparaguay.com currently serve the exact
-   * same Spanish listing rows. If both self-canonicalised /propiedad pages,
-   * Google would see two domains publishing identical content — duplicate
-   * content, ranking cannibalisation. So for now this host's listing detail
-   * pages canonicalise back to the primary (realestateinparaguay.com) same
-   * as any other feeder; every other page type here (home, search, guías)
-   * is genuinely unique and indexes normally. Flip this to `true` — and
-   * simultaneously flip realestateinparaguay.com to
-   * `locale: "en", filters: { foreign_exposure: true }, copy: "foreign"` —
-   * only once inmobiliaria.com.py becomes the real publishing primary and
-   * realestateinparaguay.com's content is genuinely translated, not just a
-   * mirrored copy. That flip touches this file, the env var and CLAUDE.md
-   * together — do not do it piecemeal; PLAN.md D6 carries the checklist.
-   *
-   * While it stays `false`, this host's sitemap omits /propiedad URLs
-   * (`app/sitemap.ts` via `hostOwnsListingDetail()`), because submitting URLs
-   * it canonicalises elsewhere is what earns "submitted URL not selected as
-   * canonical" in Search Console.
+   * `ownsListingDetail: true` (flipped from `false`): now that
+   * realestateinparaguay.com is genuinely English, the two hosts no longer
+   * serve identical content in the same language, so this host's /propiedad
+   * pages self-canonicalise and rejoin its sitemap — one flag, both effects.
    */
   "inmobiliaria.com.py": {
     key: "inmobiliaria",
@@ -138,7 +127,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     locale: "es",
     copy: "ownership",
     enabled: true,
-    ownsListingDetail: false,
+    ownsListingDetail: true,
   },
 } as const;
 
@@ -148,20 +137,25 @@ export const VERTICALS: Record<string, VerticalConfig> = {
  * URLs here — see `src/lib/origin.ts`. Changing it is a D2 decision, not a
  * code decision.
  *
- * INTERIM default: `realestateinparaguay.com`, one of the two hosts actually
- * owned today (see CLAUDE.md). It moves to `inmobiliaria.com.py` on flip day,
- * as one item in the PLAN.md D6 checklist — never on its own, because
- * `DEFAULT` below derives the locale, filters and copy of every request from
- * whatever this names.
+ * FLIPPED 2026-09-04 (PLAN.md D6): `inmobiliaria.com.py`, the Spanish
+ * marketplace primary. `DEFAULT` below derives the locale, filters and copy
+ * of every request that doesn't match an enabled host from whatever this
+ * names, so the code fallback is kept in sync with the intended live value —
+ * but the **live value itself comes from `NEXT_PUBLIC_CANONICAL_HOST` on
+ * Hostinger**, which is a separate manual step (hPanel env var + rebuild,
+ * `NEXT_PUBLIC_*` is inlined at build time) that this commit cannot perform.
+ * Until that env var is updated, production keeps resolving from whatever
+ * it was last set to — set it to `inmobiliaria.com.py` and redeploy to
+ * complete the flip.
  */
 export const CANONICAL_HOST =
-  process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "realestateinparaguay.com";
+  process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "inmobiliaria.com.py";
 
 // Fallback must be an OWNED host: if CANONICAL_HOST ever names a host with no
 // entry, every page would be branded with a domain the founder does not own
 // while canonicals still self-reference (audit F41).
 const DEFAULT =
-  VERTICALS[CANONICAL_HOST] ?? VERTICALS["realestateinparaguay.com"];
+  VERTICALS[CANONICAL_HOST] ?? VERTICALS["inmobiliaria.com.py"];
 
 /**
  * The vertical key to stamp on a row when no `x-vertical` header reached the

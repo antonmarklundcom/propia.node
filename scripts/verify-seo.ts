@@ -2,12 +2,14 @@
  * Verify the hreflang layer and the vertical table's SEO invariants — pure,
  * no database, no network.
  *
- * `src/lib/alternates.ts` emits nothing today (both enabled doors are Spanish),
- * so a check that only exercised the live vertical table would prove the one
- * thing that needs no proving. What has to be right is the behaviour on **flip
- * day** — the release that turns `realestateinparaguay.com` English and makes
- * `inmobiliaria.com.py` primary (PLAN.md D6). That configuration does not exist
- * yet, so the check builds it and runs the real rule against it.
+ * The D6 flip (PLAN.md) landed 2026-09-04: `inmobiliaria.com.py` is the
+ * Spanish primary, `realestateinparaguay.com` is its English translation.
+ * The first block below checks the live table now produces the real
+ * hreflang pair. The synthetic `flipDoors` table further down is kept as an
+ * independent spec — it re-derives the same post-flip shape from scratch
+ * rather than from `VERTICALS`, so a future edit to the live config that
+ * silently breaks the pairing (or an accidental revert of the flip) fails
+ * here even if nobody re-reads the live-table block above.
  *
  * Run: npm run verify:seo   (also part of npm run verify:local)
  */
@@ -30,17 +32,21 @@ function check(label: string, ok: boolean, detail = "") {
   }
 }
 
-console.log("\nhreflang: the live table (pre-flip)");
+console.log("\nhreflang: the live table (flipped 2026-09-04, PLAN.md D6)");
 
 check(
-  "no language alternates while every enabled door is Spanish",
-  languageAlternates({ path: "/", scope: "site" }) === undefined,
+  "the live table pairs the two locales",
+  languageAlternates({ path: "/", scope: "site" })?.["es"] ===
+    "https://inmobiliaria.com.py/" &&
+    languageAlternates({ path: "/", scope: "site" })?.["en"] ===
+      "https://realestateinparaguay.com/",
   JSON.stringify(languageAlternates({ path: "/", scope: "site" })),
 );
 check(
-  "…and none on listing detail either",
-  languageAlternates({ path: "/propiedad/casa-abc1234567", scope: "listing" }) ===
-    undefined,
+  "…and on listing detail too, now both doors own their own",
+  languageAlternates({ path: "/propiedad/casa-abc1234567", scope: "listing" })?.[
+    "en"
+  ] === "https://realestateinparaguay.com/propiedad/casa-abc1234567",
 );
 check(
   "the primary host is a served door even if its row says enabled: false",
@@ -48,10 +54,10 @@ check(
 );
 check(
   "disabled feeders are not served doors",
-  !servedDoors(CANONICAL_HOST).some((d) => d.host === "terreno.com.py"),
+  !servedDoors(CANONICAL_HOST).some((d) => d.host === "alquiler.com.py"),
 );
 
-console.log("\nhreflang: the post-flip table (PLAN.md D6)");
+console.log("\nhreflang: the post-flip shape, re-derived independently");
 
 /** The two hosts exactly as the D6 checklist leaves them. */
 const FLIP_PRIMARY = "inmobiliaria.com.py";

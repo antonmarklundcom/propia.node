@@ -31,15 +31,21 @@ export function breadcrumbJsonLd(
   };
 }
 
-export function listingJsonLd(origin: string, detail: ListingDetail): object {
+export function listingJsonLd(
+  origin: string,
+  detail: ListingDetail,
+  // Locale-resolved text, so JSON-LD matches whatever the page actually
+  // rendered for this request rather than always the Spanish columns.
+  text?: { name: string; description: string | null },
+): object {
   const { listing, images, chain } = detail;
   const isLand = listing.propertyType === "terreno";
 
   return {
     "@context": "https://schema.org",
     "@type": "RealEstateListing",
-    name: listing.title,
-    description: listing.descriptionEs ?? undefined,
+    name: text?.name ?? listing.title,
+    description: (text ? text.description : listing.descriptionEs) ?? undefined,
     url: `${origin}${listingUrl(listing)}`,
     image: images
       .map((im) => imageUrl(im.r2Key))

@@ -215,6 +215,7 @@ export type ListingCard = Pick<
   | "publicId"
   | "slug"
   | "title"
+  | "titleEn"
   | "operation"
   | "propertyType"
   | "priceUsd"
@@ -249,6 +250,7 @@ export async function getFilteredCategoryListings(
         publicId: listings.publicId,
         slug: listings.slug,
         title: listings.title,
+        titleEn: listings.titleEn,
         operation: listings.operation,
         propertyType: listings.propertyType,
         priceUsd: listings.priceUsd,
@@ -463,6 +465,7 @@ function cardColumns() {
     publicId: listings.publicId,
     slug: listings.slug,
     title: listings.title,
+    titleEn: listings.titleEn,
     operation: listings.operation,
     propertyType: listings.propertyType,
     priceUsd: listings.priceUsd,
