@@ -5245,7 +5245,7 @@ summary.panel-btn::-webkit-details-marker {
 .mk-btn {
   display: inline-block;
   padding: 12px 22px;
-  border-radius: 0;
+  border-radius: var(--radius-control);
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
@@ -5257,8 +5257,8 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .mk-btn--accent {
-  background: var(--color-accent);
-  color: #12100a;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
 }
 
 .mk-btn--ghost {
@@ -5344,7 +5344,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 22px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0;
+  border-radius: var(--radius-control);
 }
 
 .mk-section--muted .mk-feature {
@@ -5386,7 +5386,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 20px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0;
+  border-radius: var(--radius-control);
 }
 
 .mk-section--muted .mk-step {
@@ -5439,7 +5439,7 @@ summary.panel-btn::-webkit-details-marker {
   text-align: center;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0;
+  border-radius: var(--radius-control);
 }
 
 .mk-stat__value {
@@ -5528,7 +5528,7 @@ summary.panel-btn::-webkit-details-marker {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-accent);
-  border-radius: 0;
+  border-radius: var(--radius-control);
   font-size: 13.5px;
   line-height: 1.65;
   color: var(--color-ink-secondary);
@@ -5554,7 +5554,7 @@ summary.panel-btn::-webkit-details-marker {
   padding: 14px 18px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0;
+  border-radius: var(--radius-control);
 }
 
 .mk-section--muted .mk-faq__item {
