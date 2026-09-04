@@ -3,7 +3,7 @@ import { formatPrice, formatCuota, imageThumbUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
-import { dict } from "@/i18n/server";
+import { dict, currentLocale } from "@/i18n/server";
 
 /**
  * Category-grid / homepage card, in the editorial system: **the photo is the
@@ -18,7 +18,13 @@ import { dict } from "@/i18n/server";
  * "Foto próximamente" stays on top of it.
  */
 export async function ListingCard({ card }: { card: Card }) {
-  const t = (await dict()).card;
+  const [t, locale] = await Promise.all([
+    dict().then((d) => d.card),
+    currentLocale(),
+  ]);
+  // English requests fall back to the Spanish title when cron:translate
+  // hasn't produced titleEn yet — never render blank.
+  const title = locale === "en" ? (card.titleEn ?? card.title) : card.title;
   // Thumb, not the full 1600px original: a category page renders ~20 of these
   // on Paraguayan mobile data. Falls back to the stored key for imported rows
   // that have no derivative yet (see imageThumbUrl).
@@ -45,7 +51,7 @@ export async function ListingCard({ card }: { card: Card }) {
       <img
         className="ds-photo-card__img"
         src={cover ?? "/img/listing-fallback.webp"}
-        alt={card.title}
+        alt={title}
         loading="lazy"
         decoding="async"
       />
@@ -71,7 +77,7 @@ export async function ListingCard({ card }: { card: Card }) {
         {/* No location line: ListingCard carries locationId, not a name, and
             resolving it here would add a query per grid. The title already
             names the barrio in practice. */}
-        <div className="listing-card__title">{card.title}</div>
+        <div className="listing-card__title">{title}</div>
         <div className="ds-photo-card__price">{formatPrice(card)}</div>
         {(specs.length > 0 || cuota) && (
           <div className="listing-card__specs">

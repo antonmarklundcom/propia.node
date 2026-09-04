@@ -70,10 +70,20 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const detail = await load(slug);
   if (!detail) return { title: (await dict()).listing.metaNotFound };
   const { listing } = detail;
-  const [brand, t] = await Promise.all([
+  const [brand, t, locale] = await Promise.all([
     brandName(),
     dict().then((d) => d.listing),
+    currentLocale(),
   ]);
+  // English requests fall back to the Spanish text when cron:translate
+  // hasn't produced titleEn/descriptionEn yet — never render blank or "es"
+  // copy dressed up as an English meta tag by accident.
+  const title =
+    locale === "en" ? (listing.titleEn ?? listing.title) : listing.title;
+  const description =
+    locale === "en"
+      ? (listing.descriptionEn ?? listing.descriptionEs)
+      : listing.descriptionEs;
   const canonical = `${await listingCanonicalOrigin()}${listingUrl(listing)}`;
   // Only a host that OWNS its detail pages is a language version of anything;
   // a feeder canonicalises this page away, and hreflang on a non-canonical URL
@@ -83,12 +93,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     : undefined;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: t.metaTitle(listing.title, formatPrice(listing)),
-    description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
+    title: t.metaTitle(title, formatPrice(listing)),
+    description: description?.slice(0, 160) ?? title,
     alternates: { canonical, languages },
     openGraph: {
       // og:title doesn't inherit title.template — brand goes in by hand (F47).
-      title: t.ogTitle(listing.title, brand),
+      title: t.ogTitle(title, brand),
       url: canonical,
       images: cover ? [cover] : undefined,
       type: "website",
@@ -127,6 +137,14 @@ export default async function ListingPage({ params }: Params) {
   const [d, locale] = await Promise.all([dict(), currentLocale()]);
   const t: Dictionary["listing"] = d.listing;
   const numberLocale = locale === "en" ? "en-US" : "es-PY";
+  // Same fallback as generateMetadata: an English visitor sees Spanish text
+  // rather than nothing when cron:translate hasn't caught up to this listing.
+  const title =
+    locale === "en" ? (listing.titleEn ?? listing.title) : listing.title;
+  const description =
+    locale === "en"
+      ? (listing.descriptionEn ?? listing.descriptionEs)
+      : listing.descriptionEs;
 
   /**
    * Count the view after the response is sent: the owner's stats must never
@@ -193,13 +211,13 @@ export default async function ListingPage({ params }: Params) {
         : undefined,
     });
   }
-  crumbs.push({ name: listing.title });
+  crumbs.push({ name: title });
 
   // Ancestor crumbs are this host's own category pages; only the leaf lives
   // on the listing's canonical origin, so it goes in absolute (F32).
   const jsonLdCrumbs = crumbs
     .filter((c): c is { name: string; url: string } => Boolean(c.url))
-    .concat([{ name: listing.title, url: canonical }]);
+    .concat([{ name: title, url: canonical }]);
 
   const realImages = images.filter((im) => !isPlaceholderPhoto(im.r2Key));
   const visibleThumbs = realImages.slice(1, 4);
@@ -303,14 +321,14 @@ export default async function ListingPage({ params }: Params) {
     <main className="listing-main">
       <JsonLd
         data={[
-          listingJsonLd(origin, detail),
+          listingJsonLd(origin, detail, { name: title, description }),
           breadcrumbJsonLd(servingOrigin, jsonLdCrumbs),
         ]}
       />
       <RecentlyViewedRecorder
         entry={{
           href: listingUrl(listing),
-          title: listing.title,
+          title,
           price: formatPrice(listing),
           operation: listing.operation,
           // realImages already excludes placeholder keys, so a listing with no
@@ -341,7 +359,7 @@ export default async function ListingPage({ params }: Params) {
         ))}
       </nav>
 
-      <h1 className="listing-title">{listing.title}</h1>
+      <h1 className="listing-title">{title}</h1>
 
       {/* Gallery */}
       {realImages.length === 0 ? (
@@ -363,7 +381,7 @@ export default async function ListingPage({ params }: Params) {
             <img
               className="media-cover-img"
               src={imageUrl(realImages[0].r2Key) ?? ""}
-              alt={listing.title}
+              alt={title}
               loading="eager"
               fetchPriority="high"
             />
@@ -378,7 +396,7 @@ export default async function ListingPage({ params }: Params) {
                     <img
                       className="media-cover-img"
                       src={imageUrl(im.r2Key) ?? ""}
-                      alt={t.galleryThumbAlt(listing.title, i + 2)}
+                      alt={t.galleryThumbAlt(title, i + 2)}
                       loading="lazy"
                       decoding="async"
                     />
@@ -433,7 +451,7 @@ export default async function ListingPage({ params }: Params) {
             )}
             <PriceAlert
               listingPublicId={listing.publicId}
-              listingTitle={listing.title}
+              listingTitle={title}
               leadType={leadType}
             />
           </div>
@@ -498,10 +516,10 @@ export default async function ListingPage({ params }: Params) {
             </section>
           )}
 
-          {listing.descriptionEs && (
+          {description && (
             <section className="listing-section">
               <h2 className="listing-section__title">{t.descriptionTitle}</h2>
-              <p className="listing-description">{listing.descriptionEs}</p>
+              <p className="listing-description">{description}</p>
             </section>
           )}
 

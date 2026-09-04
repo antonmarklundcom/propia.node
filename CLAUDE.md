@@ -4,17 +4,37 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-09-02.
+Last verified against the code: 2026-09-04.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
+**The D6 flip (below) landed in code 2026-09-04.** `inmobiliaria.com.py` is
+now the Spanish marketplace primary; `realestateinparaguay.com` is its
+English translation. One manual step is still outstanding and blocks it from
+being true in production — see "Outstanding manual step" right after this
+table.
+
 | Domain | Reality |
 | --- | --- |
-| `realestateinparaguay.com` | **This app, live, today**, and the current `CANONICAL_HOST` default. Serves the Spanish marketplace. Slated to become the **English** site once `inmobiliaria.com.py` takes over as Spanish primary — its `verticals.ts` entry still says `locale: "es"` and must not be flipped alone (see the flip checklist in PLAN.md D6). |
-| `inmobiliaria.com.py` (singular) | **Owned, enabled, and as of 2026-08-16 the Spanish marketplace primary in waiting** — the founder reversed the earlier "his own agency brand only, never wire it in" call (PLAN.md D6). Same app, same database, same `/admin` and `/agencia`. It ships with `ownsListingDetail: false` while both hosts serve identical Spanish rows, so its `/propiedad` pages canonicalise to `realestateinparaguay.com` and its sitemap omits them; every other page type there indexes normally. |
+| `inmobiliaria.com.py` (singular) | **The Spanish marketplace primary** (PLAN.md D6, flipped 2026-09-04). Owned, enabled, same app/database/`/admin`/`/agencia` as the other hosts. `ownsListingDetail: true` — its `/propiedad` pages self-canonicalise and are in its sitemap. Nearly all publishing happens here going forward. |
+| `realestateinparaguay.com` | **The English translation of the same listing rows**, `locale: "en"`, `filters: { foreign_exposure: true }` (opt-out in practice — the column defaults to `true`), `ownsListingDetail: true` — its `/propiedad` pages are their own content (a translation, not a duplicate) and pair with `inmobiliaria.com.py`'s via hreflang. The detail page, `ListingCard`, and `generateMetadata` read `listings.title_en`/`description_en` with a Spanish fallback for any listing `npm run cron:translate` hasn't reached yet — see the i18n section below. |
 | `propia.com.py` | **NOT owned, and as of 2026-08-17 no longer in the code.** Its `verticals.ts` entry (and the `"propia"` vertical key) is deleted, the `hola@propia.com.py` contact fallback is gone, and the founder has ruled out *propia* as a brand name anywhere a client or realtor can see it. ARCHITECTURE.md and README.md still name it — that is stale prose, not a fact. `inmobiliaria.com.py` is the `.com.py` domain it was standing in for; do **not** reintroduce it as a fallback for anything. |
 | `inmobiliarios.com.py` (plural) | Not owned. The future agent-directory vertical already declared in `verticals.ts`. Distinct from the singular above — do not conflate them. |
+| `terreno.com.py` | **Owned, enabled, consolidated onto this app 2026-09-04** from its own former standalone Node deployment — retire that deployment separately (infra, not this repo). Terrenos-only feeder (`filters: { property_type: ["terreno"] }`), Spanish, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` and its sitemap omits them. |
 | `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
+
+**Outstanding manual step:** `NEXT_PUBLIC_CANONICAL_HOST` on Hostinger must
+be moved to `inmobiliaria.com.py` (hPanel env var + rebuild — `NEXT_PUBLIC_*`
+is inlined at build time; this cannot be done from a code change). The code
+fallback in `src/config/verticals.ts` already defaults to
+`inmobiliaria.com.py`, so an unset env var now resolves correctly, but the
+live env var itself needs updating for the two live domains to actually
+render with their new roles — until then, whatever hPanel currently has
+still wins. Also outstanding: `npm run cron:translate` (needs
+`ANTHROPIC_API_KEY` + `DATABASE_URL` against the live database) has not been
+run yet, so `title_en`/`description_en` are still empty for every listing —
+the English site is live and correctly wired, but currently shows the
+Spanish-fallback text everywhere until that job runs.
 
 Consequences that bite:
 
@@ -27,30 +47,25 @@ Consequences that bite:
   canonicalise elsewhere is a Search Console error, not a neutral extra.
 - **The vertical table's SEO invariants are a check, not a convention.**
   `npm run verify:seo` refuses a push where two served doors would own their
-  `/propiedad` pages in the same language (that is the duplicate-content trap
-  `inmobiliaria.com.py`'s `ownsListingDetail: false` exists to avoid — and
-  flipping that one flag alone is how it happens), where two doors share a
-  vertical key (`currentVertical()` resolves the header by first match), or
-  where a host key is spelled in a form `resolveVertical()` never looks up.
+  `/propiedad` pages in the same language, where two doors share a vertical
+  key (`currentVertical()` resolves the header by first match), or where a
+  host key is spelled in a form `resolveVertical()` never looks up.
 - **hreflang is derived, not hand-maintained.** `languageAlternates()`
   (`src/lib/alternates.ts`) builds a page's language map from the same
-  `verticals.ts` entries, so the D6 flip turns the tags on with no separate
+  `verticals.ts` entries — the D6 flip turned the tags on with no separate
   commit. Two rules it encodes and a new call site must not break: a set is
   emitted only when two doors serve **different locales** (two Spanish doors
   are a duplicate, which is the canonical tag's job, not hreflang's), and only
   a host that owns the page type appears in it — `/propiedad` alternates are
   gated on `hostOwnsListingDetail()`, and a noindex category page gets none.
-  Checked by `npm run verify:seo`, which runs the rule against a synthetic
-  post-flip vertical table.
+  Checked by `npm run verify:seo` against both the live table and an
+  independently re-derived post-flip spec.
 - `CANONICAL_HOST` is not just an origin string: `verticals.ts` derives
   `DEFAULT` from it (`VERTICALS[CANONICAL_HOST]`), so it decides the locale,
-  filters and copy of every request that arrives without a known host. Moving
-  it to `inmobiliaria.com.py` and leaving `realestateinparaguay.com` at
-  `locale: "es"` leaves two Spanish primaries; flipping that entry to
-  `locale: "en"` + `filters.foreign_exposure` without moving the env var
-  silently switches the whole live site to English and filters the listing
-  set. **Change the env var and the vertical entries together, never one
-  alone** — PLAN.md D6 has the full flip checklist.
+  filters and copy of every request that arrives without a known host.
+  **Never edit the env var and the vertical entries separately** — they must
+  agree, or an unknown-host request gets one host's locale/filters while the
+  known hosts get another's.
 
 ## Brand name — DECIDED: the domain is the brand
 
@@ -60,8 +75,8 @@ domain**, declared as `brand` on the vertical:
 
 | Host | Brand |
 | --- | --- |
-| `realestateinparaguay.com` | Real Estate in Paraguay |
 | `inmobiliaria.com.py` | Inmobiliaria Paraguay |
+| `realestateinparaguay.com` | Real Estate in Paraguay |
 
 How to read it, and the one mistake to avoid:
 
@@ -103,8 +118,10 @@ How to read it, and the one mistake to avoid:
   name/user, and `package.json`'s name. `src/lib/safe-fetch.ts`'s import
   User-Agent is no longer propia-flavoured — it already reads
   `realestateinparaguay.com`.
-- The site is **Spanish-only** for now. Both hosts serve `locale: "es"`; the
-  English vertical waits until the Spanish site is finished.
+- **The site is bilingual as of the 2026-09-04 D6 flip**: `inmobiliaria.com.py`
+  serves `locale: "es"`, `realestateinparaguay.com` serves `locale: "en"`. See
+  the i18n section below for what that does and does not mean yet (the
+  translation *data* still needs `npm run cron:translate` to run).
 
 ## Import pipeline — read before touching intake or dedup
 
@@ -152,9 +169,13 @@ default, `--dry` first). It records itself as a revertible import job.
    `src/lib/listing-images.ts`, both photo panels gate on `isR2Configured()`).
    Blocked purely on the founder creating the Cloudflare account/bucket and
    setting `R2_*` env vars. **Do not build around it or re-implement it.**
-2. **`NEXT_PUBLIC_CANONICAL_HOST`** — see the domain trap above. It moves to
-   `inmobiliaria.com.py` on flip day, as one item in the PLAN.md D6 checklist,
-   never on its own.
+2. **`NEXT_PUBLIC_CANONICAL_HOST`** — the code side of the D6 flip landed
+   2026-09-04 (see the domain table above), but this one item is a manual
+   hPanel env var change + rebuild that cannot ship in a commit. **Still
+   pending**: move it to `inmobiliaria.com.py` on Hostinger. Until it is,
+   production keeps resolving unknown-host requests from whatever hPanel
+   currently has, even though the code default and both live hosts' own
+   entries already reflect the new roles.
 3. **Individual agent profile pages** — done (`/agente/[slug]`, PR #32,
    2026-07-31). Mirrors `/inmobiliaria/[slug]` (PR #28): same indexability
    rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
@@ -263,8 +284,11 @@ Two rules that bite:
   for — the conditions are ANDed, never merged over the visitor's choice.
 - **A cached query that filters by vertical must put the vertical key in its
   cache key.** The home payload and the sitemap entries do; a new one that
-  forgets will serve one door's listing set to another. No enabled vertical
-  declares filters today, so a mistake here is silent until flip day.
+  forgets will serve one door's listing set to another. This is no longer
+  hypothetical: `terreno.com.py` (`property_type: terreno`) and
+  `realestateinparaguay.com` (`foreign_exposure: true`, since the 2026-09-04
+  D6 flip) are both enabled and both declare filters today — a forgotten
+  cache key is a live cross-door leak, not a future one.
 
 `npm run verify:facets` covers the pure half (parse ∘ build is the identity,
 every facet maps to its own column, every filter value declared in
@@ -304,11 +328,15 @@ barrio/city centroid when it does not. That answer lives in
 
 ## i18n — read this before touching any visitor-facing string
 
-The site is **Spanish-only** and stays that way until the Spanish site is
-finished (both live hosts are `locale: "es"`). `src/i18n/en.ts` exists as of
-2026-08-21 (Batch 3 layer 2) but **no host serves it** — a door renders
-English only once its `verticals.ts` entry says `locale: "en"`, and that is
-the whole D6 flip checklist, never a one-line change.
+**The site is bilingual as of the 2026-09-04 D6 flip.** `inmobiliaria.com.py`
+serves `locale: "es"`, `realestateinparaguay.com` serves `locale: "en"` and
+reads `src/i18n/en.ts` (added 2026-08-21, Batch 3 layer 2) through the same
+`dict()`/`getDictionary()` path as Spanish. That covers UI chrome — nav
+labels, section titles, form copy. The listing *content* layer
+(`title_en`/`description_en`) is wired to be read (see below) but is
+currently empty for every row: `npm run cron:translate` has not been run
+against the live database yet, so English visitors see the Spanish text via
+the fallback until it does.
 
 - **Strings live in `src/i18n/es.ts`.** Buyer-facing copy — home, the operation
   hubs, the category grid, `SearchBar`, `CategoryFilterBar`, `ListingCard` and
@@ -353,12 +381,23 @@ the whole D6 flip checklist, never a one-line change.
   without any publish-path hook. **Do not add one:** a publish must not depend
   on a third party being up, and a multi-second outbound call inside a server
   action is the exact shape of the 503 post-mortem in PLAN.md. Without
-  `ANTHROPIC_API_KEY` the job refuses to run and writes nothing; the site is
-  unaffected either way, because no host serves `locale: "en"` yet.
-- **Nothing reads `title_en`/`description_en` yet** — wiring the detail page,
-  the card and the metadata to prefer them on an English door is flip-day work
-  (PLAN.md D6), listed in the checklist there. The columns being populated is
-  the *precondition* for the flip, not the flip.
+  `ANTHROPIC_API_KEY` the job refuses to run and writes nothing.
+  **Run it against the live database now that `realestateinparaguay.com`
+  serves `locale: "en"`** — `DATABASE_URL="…" ANTHROPIC_API_KEY="…" npm run
+  cron:translate` (`--dry` first) — every listing is currently showing its
+  Spanish fallback on the English door until this has run at least once, and
+  again on a schedule after that as `translation_hash` picks up edits.
+- **The detail page, `ListingCard`, and `generateMetadata` read
+  `title_en`/`description_en`** as of the 2026-09-04 flip
+  (`app/propiedad/[slug]/page.tsx`, `src/components/ListingCard.tsx`,
+  `src/lib/jsonld.ts`'s `listingJsonLd`), each with `?? ` the Spanish column
+  as fallback so a listing `cron:translate` hasn't reached yet renders
+  Spanish text rather than blank. `ListingCard`'s query type
+  (`src/lib/queries.ts`) now selects `titleEn` everywhere it feeds the
+  component; `getListingByPublicId` already selected the full row so needed
+  no query change. When adding a new place that renders listing title or
+  description, branch the same way: `locale === "en" ? (listing.titleEn ??
+  listing.title) : listing.title`, never `listing.title` unconditionally.
 - **Numbers are not copy.** `toLocaleString` takes a number locale derived from
   the request (`es-PY` / `en-US`), not the dictionary — the thousands separator
   differs even where the words don't.

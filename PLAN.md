@@ -115,7 +115,11 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       toggle? The toggle is a small build on the existing `featured_until`
       column; the integration is not. Blocks the rest of M7.
 - [ ] **D6 — Second production domain: `inmobiliaria.com.py`, and
-      `realestateinparaguay.com`'s role flips.** (session: 2026-08-16).
+      `realestateinparaguay.com`'s role flips.** (session: 2026-08-16;
+      code-side flip landed 2026-09-04, session: consolidate-terreno-hosting
+      — three manual steps still open, see the checklist below: the
+      `NEXT_PUBLIC_CANONICAL_HOST` env var, `npm run cron:translate` against
+      the live DB, and the Search Console sitemap submission).
       This is a bigger architecture decision than it first looked —
       capturing it in full so it isn't re-litigated:
       - **One repo, one deployment, one database. Never fork the codebase.**
@@ -280,55 +284,53 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
           filters today, so nothing a visitor sees changed. Note for whoever
           adds the next cached query: the vertical key must join its cache key
           (the home payload and the sitemap entries already do).
-        Consequence for sequencing: flipping `realestateinparaguay.com` to
-        `locale: "en"` today would produce a Spanish site that merely
-        *claims* to be English — worse than the status quo, since hreflang
-        and Search Console would both be lied to. The consumption layer
-        (locale-aware copy + `en.ts`, per-vertical theme/shell, filter
-        application in the query builders) is a **build task that must land
-        before the flip is even possible**, and it is separate from the
-        translation batch job (that fills `*_en` data; this reads it).
-      - **Flip-day checklist — every item changes together, in one commit +
-        one env change.** Nothing here is safe to do alone; CLAUDE.md's
-        domain section says the same and points back at this list. When
-        `realestateinparaguay.com` goes English:
+        **Resolved 2026-09-04**: the consumption layer landed as part of the
+        flip itself (checklist item 2 below) rather than as a separate
+        precondition — `en.ts`/`dict()` were already wired for UI chrome, so
+        the remaining gap was narrowly the listing-content fields, and those
+        now fall back to Spanish rather than rendering blank. Per-vertical
+        theme/shell divergence (the "fully separate visual identity" ask
+        further down) is still not started and is a distinct piece of work
+        from making the site correctly bilingual.
+      - **Flip-day checklist — status as of 2026-09-04 (session:
+        consolidate-terreno-hosting).** Founder asked to bring the flip
+        forward; ran it with a graceful-degradation reader (title/description
+        fall back to the Spanish column when `title_en`/`description_en` is
+        still empty) rather than waiting on the translation job, since the
+        consumption layer (item 2 below) makes an empty column render Spanish
+        text, not blank/broken. Status per item:
         1. **`NEXT_PUBLIC_CANONICAL_HOST` on Hostinger** →
-           `inmobiliaria.com.py`. This is an env change in hPanel, not a
-           code change, so it is the one item a `git revert` cannot undo —
-           note the old value before touching it. It also needs a rebuild:
-           `NEXT_PUBLIC_*` is inlined at build time.
-        2. **`src/config/verticals.ts` → `realestateinparaguay.com`**:
-           `locale: "es"` → `"en"`, add
-           `filters: { foreign_exposure: true }`, `copy: "ownership"` →
-           `"foreign"`, and keep `ownsListingDetail: true` (translated
-           pages are its own content, not duplicates). Replace the INTERIM
-           comment on the entry with its real role.
-        3. **`src/config/verticals.ts` → `inmobiliaria.com.py`**:
-           `ownsListingDetail: false` → `true`, and drop the "INTENTIONAL
-           and TEMPORARY" paragraph. This is what makes its `/propiedad`
-           pages self-canonicalise *and* what puts them back into its
-           sitemap — one flag, both effects, no separate sitemap change.
-        4. **hreflang** between the two hosts' listing pages must ship in
-           the same release, or the two now-distinct language versions
-           compete instead of pairing. **The mechanism landed 2026-08-21**
-           (`src/lib/alternates.ts`, wired into home, the operation hubs,
-           indexable category pages and `/propiedad`): it reads the same
-           `verticals.ts` entries this checklist edits, so items 2–3 turn the
-           tags on by themselves — there is no separate hreflang commit to
-           forget. It emits nothing today by design (two Spanish doors are a
-           canonical problem, not a translation pair). `npm run verify:seo`
-           drives it against a synthetic post-flip table, so flip-day output
-           is proven before flip day.
-        5. **CLAUDE.md**: update the domain table (both hosts change role)
-           and its `CANONICAL_HOST` warning — the trap it describes is
-           precisely items 1–3 being done separately. CLAUDE.md is the file
-           the next session reads first; a stale table there is how this
-           work gets reverted.
-        6. **Search Console**: submit `inmobiliaria.com.py`'s sitemap as
-           primary; expect a re-index period on both properties.
-        Precondition for the whole list: the consumption layer above exists
-        and the translation job has filled the `*_en` columns. Do not run
-        the checklist before then.
+           `inmobiliaria.com.py`. **STILL MANUAL / NOT DONE** — no session has
+           hPanel access. The code fallback in `verticals.ts` now defaults to
+           `inmobiliaria.com.py` so an unset env var resolves correctly, but
+           the live env var itself must still be changed + rebuilt
+           (`NEXT_PUBLIC_*` is inlined at build time). Note the old value
+           before touching it.
+        2. **`src/config/verticals.ts` → `realestateinparaguay.com`**: DONE.
+           `locale: "en"`, `filters: { foreign_exposure: true }`,
+           `copy: "foreign"`, `ownsListingDetail: true`. **Consumption layer
+           also landed in the same commit** (previously listed above as a
+           precondition, not part of this checklist — now folded in):
+           `app/propiedad/[slug]/page.tsx`, `src/components/ListingCard.tsx`
+           and `src/lib/jsonld.ts` all read `title_en`/`description_en` with
+           a `??` Spanish fallback; `src/lib/queries.ts`'s `ListingCard` type
+           and every query feeding it now select `titleEn`.
+        3. **`src/config/verticals.ts` → `inmobiliaria.com.py`**: DONE.
+           `ownsListingDetail: true`.
+        4. **hreflang**: DONE, automatically — `src/lib/alternates.ts` reads
+           the same `verticals.ts` entries items 2–3 edited, no separate
+           commit needed. `npm run verify:seo` now checks the *live* table
+           (previously only a synthetic one) and passes.
+        5. **CLAUDE.md**: DONE — domain table, brand table, and the
+           `CANONICAL_HOST`/i18n sections updated same commit.
+        6. **Search Console**: **STILL MANUAL / NOT DONE** — submit
+           `inmobiliaria.com.py`'s sitemap as primary once item 1 lands;
+           expect a re-index period on both properties.
+        **Also still needed**: `npm run cron:translate` against the live
+        database (needs `DATABASE_URL` + `ANTHROPIC_API_KEY`, neither
+        available to this session) to actually fill `title_en`/
+        `description_en` — until it runs, the English site is live and
+        correctly wired but shows Spanish-fallback text everywhere.
       - **Blog:** there is no blog in this codebase. The closest thing is
         `/guias` (barrio guides, admin at `/admin/guias`), already
         canonical-aware. Not addressed yet whether guides content should
