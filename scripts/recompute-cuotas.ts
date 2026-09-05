@@ -15,13 +15,15 @@ import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { listings, financingPrograms } from "../src/db/schema";
 import { bestCuota, type FinancingProgram } from "../src/lib/cuota";
-
-// USD→PYG for converting normalized priceUsd into the Gs the programs use.
-// Overridable so a treasury feed can drive it later; default is a stable
-// mid-market figure — cuota is indicative, not a quote.
-const USD_TO_PYG = Number(process.env.USD_TO_PYG ?? 7300);
+import { getLatestFxRateRaw } from "../src/lib/fx";
 
 async function main() {
+  // cron:fx's latest rate (raw, uncached — this script runs outside the
+  // Next.js runtime, so unstable_cache has no cache handler to read from),
+  // falling back to the USD_TO_PYG env var only when cron:fx has never run.
+  const USD_TO_PYG =
+    (await getLatestFxRateRaw("PYG")) ?? Number(process.env.USD_TO_PYG ?? 7300);
+
   const programRows = await db.select().from(financingPrograms);
   const programs: FinancingProgram[] = programRows.map((p) => ({
     code: p.code,

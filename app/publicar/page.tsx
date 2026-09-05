@@ -5,7 +5,7 @@ import {
   listActiveFinancingPrograms,
   listNearbyProjects,
   listPublishLocations,
-  USD_TO_PYG,
+  getUsdToPygRate,
 } from "@/lib/publish-queries";
 import { esPublish } from "@/i18n/es";
 import { brandName } from "@/lib/brand-server";
@@ -86,10 +86,11 @@ export default async function PublishPage({
   ).toString();
   const user = await requireUser(query ? `/publicar?${query}` : "/publicar");
 
-  const [locations, projects, programs] = await Promise.all([
+  const [locations, projects, programs, usdToPyg] = await Promise.all([
     listPublishLocations(),
     listNearbyProjects(),
     listActiveFinancingPrograms(),
+    getUsdToPygRate(),
   ]);
 
   // A prefill only ever matters when there is no draft to resume; resolving it
@@ -140,7 +141,7 @@ export default async function PublishPage({
         locations={locations}
         projects={projects}
         programs={programs}
-        usdToPyg={USD_TO_PYG}
+        usdToPyg={usdToPyg}
         initialDraft={initialDraft}
         initialPhotos={initialPhotos}
         prefill={prefill}
