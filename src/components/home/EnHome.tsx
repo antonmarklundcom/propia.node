@@ -9,6 +9,33 @@ import { faqJsonLd } from "@/lib/jsonld";
 import { homeSections } from "@/design/sections";
 
 /**
+ * One line-icon per facts-strip cell, in `t.factsStrip` order (Freehold ·
+ * USD · closing costs · Public deed). Decorative only (`aria-hidden` at the
+ * call site) — the label text already carries the meaning — so these are
+ * plain inline SVG rather than a dictionary entry: an icon glyph isn't
+ * copy, and this array's length is meant to track `factsStrip`, not widen
+ * independently per locale like the i18n rule for actual visitor-facing
+ * strings.
+ */
+const FACTS_ICONS = [
+  <svg key="key" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+    <path d="M4 12 12 5l8 7" />
+    <path d="M6 10.5V19a1 1 0 0 0 1 1H9.5v-6h5v6h3a1 1 0 0 0 1-1v-8.5" />
+  </svg>,
+  <svg key="usd" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v10M9.5 9.5c0-1.4 1.1-2 2.5-2s2.5.7 2.5 2c0 2.5-5 1.5-5 4 0 1.3 1.1 2 2.5 2s2.5-.6 2.5-2" />
+  </svg>,
+  <svg key="costs" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+    <path d="M4 19h16M7 19V9l5-5 5 5v10" />
+  </svg>,
+  <svg key="deed" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+    <rect x="4" y="5" width="16" height="14" rx="1" />
+    <path d="M8 3v4M16 3v4M4 10h16" />
+  </svg>,
+];
+
+/**
  * Home page for the "guide-first" layout (docs/style/realestateinparaguay.com.md
  * §6). Selected by `homeLayout(vertical.key) === "guide-en"` in
  * `app/page.tsx` — the one place allowed to fork on a registry return value.
@@ -53,8 +80,15 @@ export async function EnHome({
         <section className="eh-hero">
           <div className="ds-container eh-hero__grid">
             <div className="eh-hero__copy">
-              <p className="eh-hero__kicker">{t.heroKicker}</p>
-              <h1 className="eh-hero__title">{t.heroTitle}</h1>
+              <p className="eh-hero__kicker">
+                <span className="eh-hero__kicker-rule" aria-hidden />
+                {t.heroKicker}
+              </p>
+              <h1 className="eh-hero__title">
+                {t.heroTitleLead}
+                <em className="eh-hero__title-accent">{t.heroTitleAccent}</em>
+                {t.heroTitleTail}
+              </h1>
               <p className="eh-hero__strap">{t.heroStrap}</p>
               <div className="eh-hero__search">
                 <SearchBar cities={cities} locale={vertical.locale} />
@@ -78,9 +112,13 @@ export async function EnHome({
       {sections.includes("facts-strip") && (
         <section className="eh-facts">
           <div className="ds-container eh-facts__row">
-            {t.factsStrip.map((f) => (
+            {t.factsStrip.map((f, i) => (
               <div key={f.label} className="eh-facts__cell">
+                <span className="eh-facts__icon" aria-hidden>
+                  {FACTS_ICONS[i % FACTS_ICONS.length]}
+                </span>
                 <div className="eh-facts__numeral">{f.numeral}</div>
+                <span className="eh-facts__rule" aria-hidden />
                 <div className="eh-facts__label">{f.label}</div>
               </div>
             ))}
