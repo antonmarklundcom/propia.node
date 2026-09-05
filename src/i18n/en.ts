@@ -377,7 +377,9 @@ export const enGuideEn = {
   footerLegalLine: (brand: string) =>
     `${brand} is a service of EAS. Published reference prices and cost estimates are indicative only and do not constitute legal, tax or financial advice.`,
   heroKicker: "Property in Paraguay · For international buyers",
-  heroTitle: "Buy property in Paraguay. Freehold, in US dollars, from abroad.",
+  heroTitleLead: "Buy property in Paraguay. ",
+  heroTitleAccent: "Freehold",
+  heroTitleTail: ", in US dollars, from abroad.",
   heroStrap:
     "Foreigners can own land and homes outright; purchases are priced and paid in USD; title passes by public deed before a notary and is registered nationally.",
   heroGuideLink: "Or start with the guide: How buying works →",

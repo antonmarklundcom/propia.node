@@ -1108,8 +1108,9 @@ export const esGuideEn = {
   footerLegalLine: (brand: string) =>
     `${brand} es un servicio de EAS. Los precios de referencia y los cálculos de costos publicados son orientativos y no constituyen asesoramiento legal, fiscal ni financiero.`,
   heroKicker: "Propiedades en Paraguay · Para compradores internacionales",
-  heroTitle:
-    "Comprá una propiedad en Paraguay. Título pleno, en dólares, desde el exterior.",
+  heroTitleLead: "Comprá una propiedad en Paraguay. ",
+  heroTitleAccent: "Título pleno",
+  heroTitleTail: ", en dólares, desde el exterior.",
   heroStrap:
     "Los extranjeros pueden ser dueños plenos de tierras y viviendas; las compras se cotizan y se pagan en dólares; el título se transfiere por escritura pública ante escribano y se inscribe a nivel nacional.",
   heroGuideLink: "O empezá por la guía: Cómo funciona la compra →",
