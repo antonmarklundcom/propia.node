@@ -44,6 +44,14 @@ export const CACHE_TAGS = {
    * recomputes medians.
    */
   marketMedians: "market-medians",
+  /**
+   * The latest USD→PYG rate (backlog #2). Same "no writer" shape as
+   * marketMedians: its only writer is `scripts/fetch-fx.ts` (`cron:fx`), a
+   * plain tsx job with no Next.js runtime around it, so CACHE_TTL.fx is the
+   * whole invalidation story — do not add a revalidateTag() call for it in a
+   * request path, since nothing in the app ever writes a new rate.
+   */
+  fx: "fx",
 };
 
 /** Seconds. Short enough that a missed writer is a blip, not a bug report. */
@@ -54,6 +62,8 @@ export const CACHE_TTL = {
   /** Cities change when someone seeds them, i.e. never in normal operation. */
   locations: 3600,
   marketMedians: 21_600,
+  /** open.er-api.com's free tier refreshes daily; this is a safety margin, not the cadence. */
+  fx: 3600,
 } as const;
 
 /**

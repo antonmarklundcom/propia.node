@@ -37,6 +37,7 @@ import {
 } from "../../db/schema";
 import { syncDisplayCoords } from "../geo";
 import { slugify } from "../slug";
+import { getUsdToPygRate } from "../fx";
 import {
   contentHash as computeContentHash,
   dedupKey as computeDedupKey,
@@ -172,7 +173,7 @@ export async function planImport(
   rows: RawListing[],
   opts: ImportOptions = {},
 ): Promise<ImportPlan> {
-  const usdToPyg = opts.usdToPyg ?? Number(process.env.USD_TO_PYG ?? 7300);
+  const usdToPyg = opts.usdToPyg ?? (await getUsdToPygRate());
   const scopeAgencyId = opts.agencyId ?? 0;
   const resolveLocation = await buildLocationResolver(db);
   const report = emptyReport();

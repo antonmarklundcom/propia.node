@@ -18,7 +18,7 @@ import { listings, listingSources, locations } from "@/db/schema";
 import { makePublicId, contentHash, dedupKey, toPriceUsd } from "./normalize";
 import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
-import { USD_TO_PYG } from "@/lib/publish-queries";
+import { getUsdToPygRate } from "@/lib/fx";
 import type { ParsedListing } from "./from-url";
 import type { Operation, PropertyType, RawListing } from "./types";
 
@@ -101,7 +101,11 @@ export interface ClaimInput {
  * function has no parameter that could make it anything else.
  */
 export async function createClaimedDraft(input: ClaimInput): Promise<number> {
-  const priceUsd = toPriceUsd(input.priceAmount, input.priceCurrency, USD_TO_PYG);
+  const priceUsd = toPriceUsd(
+    input.priceAmount,
+    input.priceCurrency,
+    await getUsdToPygRate(),
+  );
   const publicId = makePublicId();
 
   /**

@@ -16,7 +16,7 @@ import { db } from "@/db";
 import { agencies, listings, locations } from "@/db/schema";
 import { syncDisplayCoords } from "@/lib/geo";
 import { toPriceUsd } from "@/lib/import/normalize";
-import { USD_TO_PYG } from "@/lib/publish-queries";
+import { getUsdToPygRate } from "@/lib/fx";
 import type { Operation, PropertyType } from "@/lib/import/types";
 import { containsPattern } from "@/lib/sql-like";
 
@@ -358,7 +358,7 @@ export async function updateListing(params: {
     priceUsd: toPriceUsd(
       input.priceAmount,
       input.priceCurrency,
-      USD_TO_PYG,
+      await getUsdToPygRate(),
     ).toFixed(2),
     bedrooms: input.bedrooms,
     bathrooms: input.bathrooms,

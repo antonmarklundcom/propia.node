@@ -611,6 +611,33 @@ export const financingPrograms = mysqlTable("financing_programs", {
   updatedAt: datetime("updated_at"),
 });
 
+/**
+ * USD→PYG exchange rate history (backlog #2, 2026-09-05). `cron:fx`
+ * (scripts/fetch-fx.ts) inserts one row per run from a free rate API
+ * (open.er-api.com); it is append-only rather than a single updated row so a
+ * bad fetch is a new row to discard, never a value overwritten in place with
+ * no prior version to fall back to. `src/lib/fx.ts` reads the most recent row
+ * by `fetchedAt`. The `USD_TO_PYG` env var stays wired as a last-resort
+ * fallback for a database this cron hasn't reached yet — never the primary
+ * source once it has run at least once.
+ */
+export const fxRates = mysqlTable(
+  "fx_rates",
+  {
+    id: id(),
+    // Always "PYG" today; kept as a column rather than assumed so a second
+    // quote currency later is a new row shape, not a new table.
+    quoteCurrency: varchar("quote_currency", { length: 3 }).notNull(),
+    rate: decimal("rate", { precision: 14, scale: 4 }).notNull(),
+    source: varchar("source", { length: 60 }).notNull(),
+    fetchedAt: datetime("fetched_at").notNull(),
+  },
+  (t) => [
+    // "the latest PYG rate" is the only read this table serves.
+    index("idx_currency_fetched").on(t.quoteCurrency, t.fetchedAt),
+  ],
+);
+
 /* ------------------------------------------------------------------ */
 /* 2.7 Users & OTP (WhatsApp OTP delivered via GHL)                    */
 /* ------------------------------------------------------------------ */

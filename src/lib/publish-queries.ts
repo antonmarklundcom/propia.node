@@ -14,9 +14,10 @@ import type { FinancingProgram } from "@/lib/cuota";
 import { makePublicId, toPriceUsd } from "@/lib/import/normalize";
 import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
+import { getUsdToPygRate } from "@/lib/fx";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
-export const USD_TO_PYG = Number(process.env.USD_TO_PYG ?? 7300);
+export { getUsdToPygRate };
 
 /* ------------------------------------------------------------------ */
 /* Reference data for the wizard selects                               */
@@ -155,7 +156,7 @@ export async function getUserDraft(
 }
 
 /** Fields the wizard controls, shared by insert and update. */
-function draftFields(input: DraftInput, agencyId: number | null) {
+async function draftFields(input: DraftInput, agencyId: number | null) {
   return {
     operation: input.operation,
     propertyType: input.propertyType,
@@ -166,7 +167,7 @@ function draftFields(input: DraftInput, agencyId: number | null) {
     priceUsd: toPriceUsd(
       input.priceAmount,
       input.priceCurrency,
-      USD_TO_PYG,
+      await getUsdToPygRate(),
     ).toFixed(2),
     bedrooms: input.bedrooms ?? null,
     bathrooms: input.bathrooms ?? null,
@@ -196,7 +197,7 @@ export async function saveDraft(params: {
   input: DraftInput;
 }): Promise<number> {
   const { userId, agencyId, draftId, input } = params;
-  const fields = draftFields(input, agencyId);
+  const fields = await draftFields(input, agencyId);
 
   if (draftId) {
     const [res] = await db
