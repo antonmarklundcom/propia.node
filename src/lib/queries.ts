@@ -229,7 +229,26 @@ export type ListingCard = Pick<
   | "locationId"
   | "featuredUntil"
   | "foreignExposure"
-> & { coverKey: string | null };
+> & {
+  coverKey: string | null;
+  /**
+   * The listing's agent or agency has the admin-granted `isVerified` flag
+   * (the one shown on /agente and /inmobiliaria profiles) — never
+   * `listings.isVerified` itself, which means "WhatsApp OTP passed" (OTP is
+   * currently disabled) and would be a different, misleading claim here
+   * (audit F57 — see ListingCard.tsx).
+   */
+  isVerified: boolean;
+};
+
+/**
+ * What a card query selects before the two attach* passes: cardColumns()
+ * plus the agent/agency foreign keys attachVerified() consumes and drops.
+ */
+type SelectedCardRow = Omit<ListingCard, "coverKey" | "isVerified"> & {
+  agentId: number | null;
+  agencyId: number | null;
+};
 
 /**
  * Listings for a category page's grid, narrowed by user-chosen filters.
@@ -246,26 +265,7 @@ export async function getFilteredCategoryListings(
   // so they go out together rather than one after the other.
   const [rows, filteredCount] = await Promise.all([
     db
-      .select({
-        id: listings.id,
-        publicId: listings.publicId,
-        slug: listings.slug,
-        title: listings.title,
-        titleEn: listings.titleEn,
-        operation: listings.operation,
-        propertyType: listings.propertyType,
-        priceUsd: listings.priceUsd,
-        priceAmount: listings.priceAmount,
-        priceCurrency: listings.priceCurrency,
-        cuotaGs: listings.cuotaGs,
-        foreignExposure: listings.foreignExposure,
-        bedrooms: listings.bedrooms,
-        bathrooms: listings.bathrooms,
-        areaM2: listings.areaM2,
-        landM2: listings.landM2,
-        locationId: listings.locationId,
-        featuredUntil: listings.featuredUntil,
-      })
+      .select(cardColumns())
       .from(listings)
       .where(where)
       .orderBy(sortOrder(filters.sort))
@@ -274,7 +274,7 @@ export async function getFilteredCategoryListings(
     countRows(where),
   ]);
 
-  const cards = await attachCovers(rows);
+  const cards = await attachVerified(await attachCovers(rows));
   return { listings: cards, filteredCount };
 }
 
@@ -300,8 +300,8 @@ export async function countCategory(q: CategoryQuery): Promise<number> {
 
 /** Attach cover image (position 0) to a set of listing cards in one query. */
 async function attachCovers(
-  rows: Omit<ListingCard, "coverKey">[],
-): Promise<ListingCard[]> {
+  rows: SelectedCardRow[],
+): Promise<(SelectedCardRow & { coverKey: string | null })[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
   const imgs = await db
@@ -319,6 +319,46 @@ async function attachCovers(
       coverByListing.set(img.listingId, img.r2Key);
   }
   return rows.map((r) => ({ ...r, coverKey: coverByListing.get(r.id) ?? null }));
+}
+
+/**
+ * Resolve the admin-granted verification badge (agent or agency, whichever
+ * the listing has) for a set of already-covered cards, and drop the two
+ * foreign keys that only existed to make this lookup possible — the public
+ * ListingCard type carries `isVerified`, never `agentId`/`agencyId`.
+ */
+async function attachVerified(
+  rows: (SelectedCardRow & { coverKey: string | null })[],
+): Promise<ListingCard[]> {
+  if (rows.length === 0) return [];
+  const agentIds = [
+    ...new Set(rows.map((r) => r.agentId).filter((id): id is number => id != null)),
+  ];
+  const agencyIds = [
+    ...new Set(rows.map((r) => r.agencyId).filter((id): id is number => id != null)),
+  ];
+  const [verifiedAgents, verifiedAgencies] = await Promise.all([
+    agentIds.length
+      ? db
+          .select({ id: agents.id })
+          .from(agents)
+          .where(and(inArray(agents.id, agentIds), eq(agents.isVerified, true)))
+      : Promise.resolve([]),
+    agencyIds.length
+      ? db
+          .select({ id: agencies.id })
+          .from(agencies)
+          .where(and(inArray(agencies.id, agencyIds), eq(agencies.isVerified, true)))
+      : Promise.resolve([]),
+  ]);
+  const verifiedAgentIds = new Set(verifiedAgents.map((a) => a.id));
+  const verifiedAgencyIds = new Set(verifiedAgencies.map((a) => a.id));
+  return rows.map(({ agentId, agencyId, ...card }) => ({
+    ...card,
+    isVerified:
+      (agentId != null && verifiedAgentIds.has(agentId)) ||
+      (agencyId != null && verifiedAgencyIds.has(agencyId)),
+  }));
 }
 
 /** Total published listings — the homepage "propiedades activas" stat. */
@@ -357,7 +397,7 @@ export async function getRecentListingsBy(
     )
     .orderBy(desc(listings.publishedAt))
     .limit(limit);
-  return attachCovers(rows);
+  return attachVerified(await attachCovers(rows));
 }
 
 /**
@@ -381,7 +421,7 @@ export async function getAgencyListings(params: {
     .where(and(...conds))
     .orderBy(desc(listings.publishedAt))
     .limit(params.limit ?? 4);
-  return attachCovers(rows);
+  return attachVerified(await attachCovers(rows));
 }
 
 export type AgencyRow = typeof agencies.$inferSelect;
@@ -447,7 +487,7 @@ export async function getAgentListings(params: {
     .where(and(...conds))
     .orderBy(desc(listings.publishedAt))
     .limit(params.limit ?? 4);
-  return attachCovers(rows);
+  return attachVerified(await attachCovers(rows));
 }
 
 /** The agency an agent belongs to (for linking back), or null if independent. */
@@ -481,6 +521,8 @@ function cardColumns() {
     landM2: listings.landM2,
     locationId: listings.locationId,
     featuredUntil: listings.featuredUntil,
+    agentId: listings.agentId,
+    agencyId: listings.agencyId,
   };
 }
 
@@ -500,7 +542,7 @@ export async function getRecentListings(
     )
     .orderBy(desc(listings.publishedAt))
     .limit(limit);
-  return attachCovers(rows);
+  return attachVerified(await attachCovers(rows));
 }
 
 /**
@@ -611,7 +653,7 @@ export async function getSimilarListings(params: {
     )
     .orderBy(desc(listings.publishedAt))
     .limit(params.limit ?? 4);
-  return attachCovers(rows);
+  return attachVerified(await attachCovers(rows));
 }
 
 /* ------------------------------------------------------------------ */
