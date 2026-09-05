@@ -90,13 +90,18 @@ export async function ListingCard({ card }: { card: Card }) {
       <span className="ds-photo-card__chip">
         {t.operationBadge[card.operation]}
       </span>
-      {/* No "Verificado" here: listings.is_verified means "publisher's
-          WhatsApp passed the (currently disabled) OTP", which is not the
-          admin-granted verified badge the profile pages show (audit F57).
-          The card stays silent rather than showing a flag with two meanings. */}
-      {isFeatured && (
+      {/* card.isVerified is the agent/agency's admin-granted flag (attachVerified()
+          in queries.ts) — never listings.is_verified, which means "publisher's
+          WhatsApp passed the (currently disabled) OTP" and would be a different,
+          misleading claim here (audit F57). */}
+      {(card.isVerified || isFeatured) && (
         <span className="listing-card__flags">
-          <span className="listing-card__flag">{t.featured}</span>
+          {card.isVerified && (
+            <span className="listing-card__flag listing-card__flag--verified">
+              {t.verified}
+            </span>
+          )}
+          {isFeatured && <span className="listing-card__flag">{t.featured}</span>}
         </span>
       )}
       {!cover && (
@@ -194,8 +199,13 @@ function FramedPillCard({
         {cuota && (
           <div className="listing-card__cuota-line">{t.cuotaLine(cuota)}</div>
         )}
-        {(card.foreignExposure || isFeatured) && (
+        {(card.isVerified || card.foreignExposure || isFeatured) && (
           <div className="listing-card__pill-row">
+            {card.isVerified && (
+              <span className="listing-card__pill listing-card__pill--verified">
+                {t.verified}
+              </span>
+            )}
             {card.foreignExposure && (
               <span className="listing-card__pill listing-card__pill--foreign">
                 {t.foreignPill}
@@ -264,6 +274,11 @@ function FramedFactCard({
         <span className="listing-card__badge listing-card__badge--fact">
           {t.operationBadge[card.operation]}
         </span>
+        {card.isVerified && (
+          <span className="listing-card__badge listing-card__badge--fact listing-card__badge--verified">
+            {t.verified}
+          </span>
+        )}
         {!cover && (
           <span className="listing-card__nophoto listing-card__nophoto--framed">
             {t.noPhoto}

@@ -1949,6 +1949,12 @@ body {
   padding: 5px 9px;
 }
 
+.listing-card__flag--verified {
+  background: rgba(221, 188, 124, 0.9);
+  border-color: rgba(221, 188, 124, 0.9);
+  color: var(--color-ink, #14201a);
+}
+
 /* Sits on the fallback image, which is abstract on purpose — this label is
    what stops it reading as a photo of the property. */
 .listing-card__nophoto {
@@ -2085,6 +2091,11 @@ body {
   background: var(--color-accent-soft);
 }
 
+.listing-card__pill--verified {
+  color: #fff;
+  background: var(--color-accent-hover, var(--color-accent));
+}
+
 .listing-card__pill--featured {
   color: var(--color-ink);
   background: var(--color-background);
@@ -2125,6 +2136,12 @@ body {
   top: 0;
   background: var(--color-primary);
   color: #fff;
+}
+
+.listing-card__badge--verified {
+  left: auto;
+  right: 0;
+  background: var(--color-accent-hover, var(--color-accent));
 }
 
 .listing-card__fact-price-row {

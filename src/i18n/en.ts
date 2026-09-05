@@ -117,6 +117,7 @@ export const enCard = {
     alquiler_temporal: "Short-term rental",
   } as Record<string, string>,
   featured: "Featured",
+  verified: "Verified",
   noPhoto: "Photo coming soon",
   bedroomsShort: (n: number) => `${n} bed`,
   bathrooms: (n: number) => `${n} ${n === 1 ? "bath" : "baths"}`,

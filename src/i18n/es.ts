@@ -798,6 +798,9 @@ export const esCard = {
     alquiler_temporal: "Alquiler temporal",
   } as Record<string, string>,
   featured: "Destacado",
+  // Agent/agency admin-granted verification (agents.isVerified /
+  // agencies.isVerified) — never listings.isVerified, see ListingCard.tsx.
+  verified: "Verificado",
   noPhoto: "Foto próximamente",
   bedroomsShort: (n: number) => `${n} dorm.`,
   bathrooms: (n: number) => `${n} ${n === 1 ? "baño" : "baños"}`,
