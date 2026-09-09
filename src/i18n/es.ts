@@ -1573,12 +1573,11 @@ export const esProject = {
  * English: the old rentparaguay.com wrote it, and this Spanish is a
  * translation of its intent for a Paraguayan reader, never a new claim.
  *
- * Skeleton as of O2: chrome, hero, section titles, the seven service cards,
- * the four "why us" cards, the four process steps and the closing CTA — all
- * real copy from `docs/rentparaguay-extraction/content/home.md`. `faq` is
- * deliberately empty until S2 writes it from the five real Q&As on the old
- * services page; `RentalHome` renders no FAQ section while it is, the same way
- * it renders no rail while the door has no rental inventory.
+ * Chrome, hero, section titles, the seven service cards, the four "why us"
+ * cards, the four process steps and the closing CTA are real copy from
+ * `docs/rentparaguay-extraction/content/home.md` (O2). `faq` (S2) is the five
+ * real Q&As from the old services page — shown on both the home page and the
+ * services hub, the one FAQ this family has.
  *
  * Nothing fabricated by the old WordPress theme survives (plan §1 item 13):
  * no "400+ agents", no demo listings, no testimonials, no team photos.
@@ -1683,10 +1682,31 @@ export const esRental = {
   recentTitle: "Alquileres disponibles",
   recentMore: "Ver todos →",
 
-  // ---- home: faq (S2 fills this from the old services page's five Q&As)
+  // ---- home: faq — the same five Q&As shown on the services hub
   faqTitle: "Preguntas frecuentes",
   faqLead: "Respuestas breves a lo que más nos consultan.",
-  faq: [] as readonly { q: string; a: string }[],
+  faq: [
+    {
+      q: "¿Necesito hablar español para alquilar, comprar o poner mi propiedad en manos de alguien?",
+      a: "No. Todo nuestro equipo es bilingüe y se ocupa de cada negociación, visita y traducción legal por vos: desde la primera consulta hasta la firma en la escribanía, entendés cada detalle en tu idioma.",
+    },
+    {
+      q: "No tengo un codeudor paraguayo, ¿puedo alquilar igual?",
+      a: "Sí. El codeudor local es uno de los obstáculos más grandes para quien llega de afuera. Como tenemos relaciones con propietarios y desarrolladoras en Asunción, negociamos alternativas por vos —un depósito distinto o un pago por adelantado— para que puedas firmar sin necesitar un conocido con propiedad.",
+    },
+    {
+      q: "¿Puedo invertir en una propiedad acá sin vivir en Paraguay?",
+      a: "Sí, para eso están nuestros servicios de inversión y administración de propiedades. Vos ponés el capital; nosotros buscamos la propiedad, gestionamos la compra, la ambientamos si es para Airbnb, colocamos inquilinos verificados y te enviamos reportes y pagos mensuales.",
+    },
+    {
+      q: "¿Cuánto tarda la residencia en Paraguay?",
+      a: "El plazo depende de los tiempos del organismo público, pero nuestro servicio de Residencia en Paraguay reduce la fricción: preparamos tu carpeta con anticipación, así que solo necesitás estar en Asunción unos días para presentar la documentación y la biometría, y seguimos el trámite hasta que tenés tu cédula.",
+    },
+    {
+      q: "¿Cómo funciona la administración de Airbnb en el día a día?",
+      a: "Tratamos tu propiedad como si fuera nuestra: precios dinámicos según la demanda local, ambientación y fotos profesionales, y nos ocupamos de la comunicación con huéspedes, la limpieza y el mantenimiento para mantener buena ocupación y buenas reseñas.",
+    },
+  ],
 
   // ---- home: closing CTA
   ctaTitle: "Tu próximo capítulo en Paraguay empieza acá",

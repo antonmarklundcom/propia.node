@@ -855,8 +855,8 @@ export const enProject = {
  * headline grammar straightened out, and every claim left as the service it
  * describes rather than a number nobody can check (plan §1 item 13).
  *
- * `faq` is empty until S2 writes it from the five real Q&As on the old
- * services page; `RentalHome` renders no FAQ section while it is.
+ * `faq` (S2) is the five real Q&As from the old services page — shown on
+ * both the home page and the services hub, the one FAQ this family has.
  */
 export const enRental = {
   chromeNav: [
@@ -953,7 +953,28 @@ export const enRental = {
 
   faqTitle: "Frequently asked questions",
   faqLead: "Short answers to what people ask us most.",
-  faq: [] as readonly { q: string; a: string }[],
+  faq: [
+    {
+      q: "Do I need to speak Spanish to rent, buy or manage a property here?",
+      a: "No. Our team is fully bilingual and handles every negotiation, viewing and legal translation for you — from the first inquiry to signing at the notary (escribanía), you understand every detail in English.",
+    },
+    {
+      q: "I don't have a Paraguayan guarantor — can I still rent?",
+      a: "Yes. A local guarantor is one of the biggest hurdles for expats. Because we have relationships with landlords and developers in Asunción, we negotiate alternatives on your behalf — an adjusted deposit or an upfront payment — so you can sign a lease without local ties.",
+    },
+    {
+      q: "Can I invest in property here without living in Paraguay?",
+      a: "Yes — that is what our Invest in Paraguay and property management services are for. You provide the capital; we source the property, handle the purchase, style it if it's for Airbnb, place vetted tenants and send you monthly reports and payouts.",
+    },
+    {
+      q: "How long does Paraguayan residency take?",
+      a: "Timelines depend on government processing, but our Residency Paraguay service cuts down the friction: we prepare your file in advance, so you only need to be in Asunción for a few days to submit paperwork and biometrics, and we follow the process until your cédula is issued.",
+    },
+    {
+      q: "How does Airbnb management work day to day?",
+      a: "We treat your listing like our own: dynamic pricing based on local demand, professional styling and photography, and we handle guest communication, cleaning and maintenance so the reviews and the occupancy stay high.",
+    },
+  ],
 
   ctaTitle: "Your next chapter in Paraguay starts here",
   ctaText:
