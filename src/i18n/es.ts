@@ -2199,11 +2199,11 @@ export const esRentalServices = {
       },
       {
         q: "¿Cuáles son los costos de cierre al comprar en Asunción?",
-        a: "Por lo general, los costos de cierre (incluyendo honorarios de escribanía e impuestos) rondan entre el 2% y el 3% del valor de la transacción. Te damos una estimación detallada antes de cerrar cualquier operación.",
+        a: "Por lo general, los costos de cierre (honorarios de escribanía, inscripción registral e impuestos) rondan entre el 2% y el 3,5% del valor de la transacción. Te damos una estimación detallada antes de cerrar cualquier operación.",
       },
       {
         q: "¿Qué impuesto pago si vendo más adelante?",
-        a: "Paraguay tiene un régimen impositivo muy competitivo. Si vendés como persona física, el impuesto sobre la ganancia suele ser bajo, en muchos casos efectivamente entre el 2,4% y el 3%.",
+        a: "Paraguay tiene un régimen impositivo muy competitivo. Si vendés como persona física, el escribano retiene el impuesto al firmar la escritura, y en la práctica suele ser un 2,4% efectivo sobre el valor de venta (hay un método alternativo sobre la ganancia real, pero ese 2,4% presuntivo es el que se aplica por defecto).",
       },
     ],
     ctaTitle: "Comprá con alguien de tu lado",
@@ -2221,7 +2221,7 @@ export const esRentalServices = {
       "La residencia paraguaya es de las más accesibles del mundo, pero el trámite tiene pasos, sellos y turnos que conviene no descubrir sobre la marcha. Preparamos la carpeta antes de que viajes y te acompañamos mientras estás acá.",
     challengeTitle: "Por qué la gente la elige",
     challengeText:
-      "Paraguay se volvió un destino top para quien busca escapar de impuestos altos y regulación excesiva en otros países. Funciona con un sistema tributario territorial: el ingreso local paga un 10% fijo, y el ingreso de fuente extranjera en general no paga impuesto. La residencia permanente es además el primer paso formal hacia la ciudadanía y el pasaporte paraguayo, y el país tiene una ubicación estable y cómoda para moverte por la región.",
+      "Paraguay se volvió un destino top para quien busca escapar de impuestos altos y regulación excesiva en otros países. Funciona con un sistema tributario territorial: el ingreso de fuente extranjera en general no paga impuesto, y el ingreso local paga tasas bajas de renta personal. La residencia —primero temporaria y, después de dos años, permanente— es además el camino formal hacia la ciudadanía y el pasaporte paraguayo, y el país tiene una ubicación estable y cómoda para moverte por la región.",
     frameworkTitle: "El trámite, paso a paso",
     framework: [
       {
@@ -2294,7 +2294,11 @@ export const esRentalServices = {
       },
       {
         q: "¿Pago impuestos por ingresos de afuera de Paraguay?",
-        a: "Paraguay funciona con un sistema tributario territorial, así que el ingreso generado fuera del país en general no paga impuesto. El ingreso local paga un 10% fijo.",
+        a: "Paraguay funciona con un sistema tributario territorial, así que el ingreso generado fuera del país en general no paga impuesto. El ingreso local paga tasas bajas de renta personal, según el tipo de ingreso.",
+      },
+      {
+        q: "¿Puedo pedir la residencia permanente directamente?",
+        a: "Para la mayoría de las personas, no: primero se obtiene la residencia temporaria, y recién después de dos años con ese estatus se puede pedir la permanente. Quienes califican bajo alguna de las categorías de inversión pueden acceder a una vía más directa. Te decimos qué camino te conviene según tu situación.",
       },
     ],
     ctaTitle: "Empezá tu residencia",
@@ -2312,7 +2316,7 @@ export const esRentalServices = {
       "Invertir a distancia funciona cuando hay alguien de este lado que mira la obra, controla al inquilino y manda los números a tiempo. Buscamos el activo, ordenamos la estructura y después lo administramos.",
     challengeTitle: "Por qué Paraguay",
     challengeText:
-      "La economía paraguaya se apoya en disciplina fiscal: un sistema plano \"10-10-10\" (10% de impuesto corporativo, 10% de impuesto a la renta personal, 10% de IVA) y un régimen tributario territorial que solo grava lo que se genera dentro del país, así que tu patrimonio en el resto del mundo queda intacto, sin impuesto a la herencia, al patrimonio ni a las donaciones. La Ley N.º 7548/2025 suma incentivos para proyectos más grandes, incluidas exenciones sobre dividendos y remesas de utilidades. Las cifras concretas para tu caso —tasas, incentivos y rendimientos esperados— las repasamos caso por caso, porque dependen del activo y del año.",
+      "La economía paraguaya se apoya en disciplina fiscal: un Impuesto a la Renta Empresarial plano del 10% sobre las utilidades, un IVA general del 10% y un régimen tributario territorial que solo grava lo que se genera dentro del país, así que tu patrimonio en el resto del mundo queda intacto, sin impuesto a la herencia, al patrimonio ni a las donaciones. La distribución de dividendos tiene además su propia retención (más baja para residentes que para no residentes), así que la carga efectiva sobre lo que remitís al exterior no es igual a la que reinvertís acá. La Ley N.º 7548/2025 suma incentivos para proyectos más grandes, incluidas exenciones sobre dividendos y remesas de utilidades a partir de cierto monto de inversión. Las cifras concretas para tu caso —tasas, incentivos y rendimientos esperados— las repasamos caso por caso, porque dependen del activo, la estructura y el año.",
     frameworkTitle: "Cómo trabajamos una inversión",
     framework: [
       {
@@ -2365,15 +2369,15 @@ export const esRentalServices = {
     faq: [
       {
         q: "¿Los extranjeros pueden comprar propiedades o campo en Paraguay?",
-        a: "Sí. Los extranjeros tienen los mismos derechos de propiedad que los paraguayos y pueden ser dueños de inmuebles o campo a título propio, en su nombre o a través de una empresa local.",
+        a: "Sí. Los extranjeros tienen los mismos derechos de propiedad que los paraguayos y pueden ser dueños de inmuebles o campo a título propio, en su nombre o a través de una empresa local — con una excepción puntual: la compra de campo dentro de la franja de seguridad fronteriza está restringida para ciudadanos de países limítrofes. Fuera de esa franja, y en zonas urbanas como Asunción, no aplica ninguna restricción.",
       },
       {
         q: "¿Qué régimen tributario aplica a mi inversión?",
-        a: "Paraguay grava solo lo que se genera dentro del país, aplica una tasa plana del 10% a las ganancias corporativas, a la renta personal y al IVA, y no cobra impuesto a la herencia, al patrimonio ni a las donaciones. Los proyectos más grandes también pueden acceder a los incentivos de la Ley N.º 7548/2025.",
+        a: "Paraguay grava solo lo que se genera dentro del país. Las utilidades corporativas pagan un 10% de Impuesto a la Renta Empresarial y el IVA general es del 10%; la distribución de dividendos tiene además su propia retención, más baja para residentes que para no residentes. No hay impuesto a la herencia, al patrimonio ni a las donaciones. Los proyectos más grandes también pueden acceder a los incentivos de la Ley N.º 7548/2025.",
       },
       {
         q: "¿Hay un monto mínimo para acceder a los beneficios de la Ley 7548/2025?",
-        a: "Podés invertir cualquier monto, pero las exenciones impositivas más importantes de la ley aplican a proyectos desde USD 5 millones, con beneficios adicionales por encima de USD 13 millones.",
+        a: "Podés invertir cualquier monto. Proyectos desde unos USD 500.000 ya acceden a beneficios de base (importación de bienes de capital sin arancel, créditos fiscales), y las exenciones más importantes —la exención total sobre dividendos y sobre intereses de financiamiento externo, por 10 años— están reservadas a proyectos desde USD 13 millones.",
       },
       {
         q: "¿Puedo mover mi capital y mis utilidades libremente?",
