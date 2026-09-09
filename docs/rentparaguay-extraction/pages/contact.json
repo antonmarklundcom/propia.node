@@ -1,0 +1,143 @@
+{
+  "url": "https://rentparaguay.com/contact/",
+  "title": "Contact – rentparaguay.com",
+  "description": null,
+  "ogTitle": null,
+  "ogDescription": null,
+  "headings": [
+    {
+      "tag": "H2",
+      "text": "Contact"
+    },
+    {
+      "tag": "H2",
+      "text": "Contact Us"
+    },
+    {
+      "tag": "H2",
+      "text": "Let’s Build Your Future In Paraguay"
+    },
+    {
+      "tag": "H2",
+      "text": "Edificio Skytower, Asunción"
+    },
+    {
+      "tag": "H2",
+      "text": "+595 995 628 862"
+    },
+    {
+      "tag": "H2",
+      "text": "Hello@Rentparaguay.Com"
+    },
+    {
+      "tag": "H2",
+      "text": "Your New Property Is Just A Click Away!"
+    }
+  ],
+  "paragraphs": [
+    "Whether you’re moving to Asunción, seeking residency, or looking for high-yield investments, our bilingual team is here to ensure a seamless transition.",
+    "Visit us in the heart of Asunción’s financial district.",
+    "Connect with us instantly for urgent inquiries or to schedule a call.",
+    "For detailed proposals or investment documentation, reach out via email.",
+    "All rights reserved"
+  ],
+  "lists": [
+    [
+      "Home",
+      "Services",
+      "For Rent",
+      "Blog",
+      "About Us",
+      "Contact"
+    ],
+    [
+      "Home",
+      "Contact"
+    ]
+  ],
+  "images": [
+    {
+      "src": "https://rentparaguay.com/wp-content/uploads/2026/02/Logo-Light-1.png",
+      "alt": "",
+      "w": 731,
+      "h": 270
+    },
+    {
+      "src": "https://rentparaguay.com/wp-content/uploads/2026/02/Logo-dark-1.png",
+      "alt": "",
+      "w": 731,
+      "h": 270
+    }
+  ],
+  "bgImages": [
+    "https://rentparaguay.com/wp-content/uploads/2026/02/residency-paraguay-2-scaled.jpg"
+  ],
+  "forms": [],
+  "navLinks": [
+    {
+      "text": "",
+      "href": "https://www.wordpress-dev.codeinsolution.com/brickon/"
+    },
+    {
+      "text": "Home",
+      "href": "https://rentparaguay.com/"
+    },
+    {
+      "text": "Services",
+      "href": "https://rentparaguay.com/services/"
+    },
+    {
+      "text": "",
+      "href": "https://rentparaguay.com/rent-apartment-house/"
+    },
+    {
+      "text": "",
+      "href": "https://rentparaguay.com/airbnb-management/"
+    },
+    {
+      "text": "",
+      "href": "https://rentparaguay.com/apartment-management/"
+    },
+    {
+      "text": "",
+      "href": "https://rentparaguay.com/residency-paraguay/"
+    },
+    {
+      "text": "",
+      "href": "https://rentparaguay.com/invest-in-paraguay/"
+    },
+    {
+      "text": "",
+      "href": "https://rentparaguay.com/virtual-adress/"
+    },
+    {
+      "text": "",
+      "href": "https://rentparaguay.com/realtor-asuncion/"
+    },
+    {
+      "text": "For Rent",
+      "href": "https://rentparaguay.com/asuncion/"
+    },
+    {
+      "text": "Blog",
+      "href": "https://rentparaguay.com/blog/"
+    },
+    {
+      "text": "About Us",
+      "href": "https://rentparaguay.com/about-us/"
+    },
+    {
+      "text": "Contact",
+      "href": "https://rentparaguay.com/contact/"
+    },
+    {
+      "text": "",
+      "href": "https://rentparaguay.com/"
+    },
+    {
+      "text": "Contact Us",
+      "href": "https://rentparaguay.com/contact/"
+    }
+  ],
+  "footerLinks": []
+}
