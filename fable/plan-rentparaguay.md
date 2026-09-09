@@ -620,6 +620,45 @@ key, then passing.
 Where S1 looks first: plan §6.1 and Appendix B, `docs/style/rentparaguay.com.md`
 §4 for the slots, and `RENTAL_SERVICES[].oldPath` for the redirect map.
 
+**2026-09-09 — S1 images and redirects.** PR #107: merged green.
+
+What now exists: the nine image slots `RentalHome`, `RentalAbout`,
+`RentalServicesHub` and `RentalServicePage` actually reference —
+`hero-home.webp`, `about.webp`, `alquiler.webp`, `administracion-airbnb.webp`,
+`administracion-de-departamentos.webp`, `inmobiliaria-asuncion.webp`,
+`residencia-paraguay.webp`, `invertir-en-paraguay.webp`,
+`domicilio-virtual.webp` — converted from the plan Appendix B sources with a
+throwaway `sharp` script (not committed): WebP, longest edge 1600px, q≈80,
+all under 250 KB (largest 186 KB); the twelve Appendix A redirects in
+`next.config.ts`, `permanent: true`, host-scoped to `rentparaguay.com` and
+`www.rentparaguay.com`, both trailing-slash and bare forms; the provenance
+table in `docs/style/rentparaguay.com.md` §4.
+
+Deviations from §6.1: Appendix B (and the style guide's original §4) list
+nine more slots — `hero-home-2`, `services`, `contact`, and a `-2` variant for
+six services — than the components render a second `<Image>` for. The plan's
+own exit rule (grep over the code must equal `ls public/img/rental`) is
+authoritative over the table, so those nine were **not** converted;
+`fable/KNOWN-ISSUES.md` names them rather than inventing unused files. Three
+of the "(check)" provenance calls in Appendix B came back `generic-stock`
+rather than the guessed `paraguay-stock`: `administracion-de-departamentos`'s
+source photo carries a competing US brand's tablet overlay, `domicilio-
+virtual`'s shows a tram (Asunción has none), and `inmobiliaria-asuncion` and
+`about` are generic staged scenes with no Paraguay marker — all recorded in
+the PR body as the founder's regenerate-or-keep call.
+
+Proof: `verify:local` green; the grep/ls equality holds exactly; `npm run
+build && npm run start` plus `curl -I -H "Host: rentparaguay.com"` (and
+`www.rentparaguay.com`) on all twelve old paths resolved via 308 to their new
+destination — the two whose destination needs MySQL (`/alquiler`, `/`) 500
+past the redirect only because this container has no database daemon, the
+same limitation O2/O3 already hit; the same twelve paths on `Host:
+inmobiliaria.com.py` 404 (checked for two representative rows).
+
+Where S2 looks first: `src/config/rental-services.ts` for the seven slugs,
+`docs/rentparaguay-extraction/content/` for the source copy, and this
+entry's image-slot list for what S2's markup may assume already exists.
+
 ## §10 Backlog
 
 - `pathByLocale` for English service slugs on `rentparaguay.com`.
