@@ -6,6 +6,20 @@ it; none of them blocks a phase.
 
 ## Open
 
+- **Plan Appendix B lists nine image slots S1 did not build.** `hero-home-2.webp`,
+  `services.webp`, `contact.webp`, and a `-2` variant for `alquiler`,
+  `administracion-airbnb`, `inmobiliaria-asuncion`, `residencia-paraguay`,
+  `invertir-en-paraguay` and `domicilio-virtual` are in the plan's slot table
+  and `docs/style/rentparaguay.com.md`'s original §4, but no component wires a
+  second image for any service card, and `RentalContact`/the services hub
+  section only ever render one photo. Plan §6.1's own exit rule is the grep-
+  over-code equality, which is authoritative over the table, so S1 shipped
+  only the nine slots the code references and left these nine unbuilt rather
+  than inventing unused files. Fix: whichever phase adds a second photo to a
+  service card or wires `RentalContact`'s hero image, convert the matching
+  source file from plan Appendix B first, then add the `<Image>` — in that
+  order, so the grep/ls equality never goes stale.
+
 - **`app/tasacion/actions.ts:69` awaits `pushLead()` inside the server action.**
   Found in O1 while grepping the `crm.ts` consumers. Same shape as the lead
   route before this phase — the valuation lead is already in MySQL when the

@@ -76,15 +76,41 @@ at hover, hairlines everywhere else. Container 1280, section rhythm
 hero, as `NordicoHome` and `EnHome` do, so a registry entry would have no
 reader.
 
-## §4 Image slots — `public/img/rental/` (S1 writes these)
+## §4 Image slots — `public/img/rental/` (S1 wrote these)
 
-`hero-home.webp`, `hero-home-2.webp`, `services.webp`, `about.webp`,
-`contact.webp`, then one `<slug>.webp` per service and a `-2` variant for
-`alquiler`, `administracion-airbnb`, `inmobiliaria-asuncion`,
-`residencia-paraguay`, `invertir-en-paraguay`, `domicilio-virtual`. Sources and
-provenance are plan Appendix B. Longest edge 1600px, WebP q≈80, ≤250 KB (`-2`
-variants ≤180 KB). The two logo PNGs are palette reference only and are **not**
-shipped.
+Built 2026-09-09 (phase S1) to the rule in plan §6.1: the shipped set is
+exactly what `RentalHome`, `RentalAbout`, `RentalServicesHub` and
+`RentalServicePage` reference — `grep -rho "/img/rental/[a-z0-9-]*\.webp" src
+app | sort -u` equals `ls public/img/rental`. Plan Appendix B lists more
+slots (`hero-home-2`, `services`, `contact`, and a `-2` variant for six
+services) than the components ended up wiring a second `<Image>` for; those
+are not built — see `fable/KNOWN-ISSUES.md`. Longest edge 1600px, WebP q≈80,
+all ≤250 KB (largest is `hero-home.webp` at 186 KB). The two logo PNGs are
+palette reference only and are **not** shipped.
+
+| File | Source (`docs/rentparaguay-extraction/images/`) | Provenance |
+| --- | --- | --- |
+| `hero-home.webp` | `rent-paraguay.jpeg` | paraguay-stock |
+| `about.webp` | `about-us-rent-paraguay.png` | generic-stock |
+| `alquiler.webp` | `rent-asuncion.jpeg` | paraguay-stock |
+| `administracion-airbnb.webp` | `hf_20260223_220129_372eed74-….png` | higgsfield |
+| `administracion-de-departamentos.webp` | `apartment-management-manteinance-paraguay-asuncion.jpeg` | generic-stock |
+| `inmobiliaria-asuncion.webp` | `realtor-asuncion-paraguay.jpeg` | generic-stock |
+| `residencia-paraguay.webp` | `residency-paraguay.jpeg` | paraguay-stock |
+| `invertir-en-paraguay.webp` | `rent-paraguay-invest.jpeg` | paraguay-stock |
+| `domicilio-virtual.webp` | `virtual-adress-asuncion.jpeg` | generic-stock |
+
+Provenance was decided by looking at each file, not trusting the filename:
+`administracion-de-departamentos`'s source photo carries a US brand's
+"Verified Contractors Network" tablet overlay (a competitor's stock asset,
+not Paraguay-specific); `domicilio-virtual`'s source shows a tram reflected
+in the glass, and Asunción has no light rail, so despite its filename it
+reads as generic urban stock, likely shot elsewhere; `inmobiliaria-asuncion`
+and `about` are staged office/architecture scenes with nothing tying them to
+Paraguay. `residencia-paraguay` and `invertir-en-paraguay` carry explicit
+"PARAGUAY" text baked into the image and stay `paraguay-stock` despite also
+looking AI-generated. The PR body repeats the `generic-stock` rows as the
+founder's regenerate-or-keep call.
 
 ## §5 Copy rules
 
