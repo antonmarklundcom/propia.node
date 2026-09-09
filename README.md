@@ -79,11 +79,16 @@ Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
    missing `listings.review_notes` broke every listing detail page after M5).
    PLAN.md's "Pending migration" section is the current runbook of what has
    and has not been applied to prod.
-3. **Domains:** the live doors are `realestateinparaguay.com` (primary,
-   canonical) and `inmobiliaria.com.py`, both pointed at the same app. See
-   CLAUDE.md's domain table for which domains are owned before pointing a
-   new one here. `middleware.ts` routes by Host header; an unrecognized host
-   resolves to the canonical primary.
+3. **Domains:** the live marketplace doors are `realestateinparaguay.com`
+   (primary, canonical) and `inmobiliaria.com.py`, both pointed at the same
+   app. A separate rental-services business, `alquiler.com.py` (Spanish) /
+   `rentparaguay.com` (English) — same app, own `family: "rental"`, own
+   `VerticalKey`s — has its code merged but is not yet live: DNS for both
+   domains is still pending, so `enabled: true` only means the doors can be
+   previewed with a `Host` header today. See CLAUDE.md's domain table for
+   which domains are owned before pointing a new one here. `middleware.ts`
+   routes by Host header; an unrecognized host resolves to the canonical
+   primary.
 4. **Cron jobs:** hPanel → Cron Jobs → schedule
    `npx tsx scripts/<job>.ts` for each `cron:*` script in `package.json`
    (`cron:cuotas`, `cron:medians`, `cron:geo`, `cron:translate`,

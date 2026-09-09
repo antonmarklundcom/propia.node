@@ -1574,10 +1574,11 @@ export const esProject = {
  * translation of its intent for a Paraguayan reader, never a new claim.
  *
  * Chrome, hero, section titles, the seven service cards, the four "why us"
- * cards, the four process steps and the closing CTA are real copy from
- * `docs/rentparaguay-extraction/content/home.md` (O2). `faq` (S2) is the five
- * real Q&As from the old services page — shown on both the home page and the
- * services hub, the one FAQ this family has.
+ * cards, the four process steps and the closing CTA are real copy from the
+ * old site's home page (O2, sourced from the scratch extraction deleted as
+ * of S3). `faq` (S2) is the five real Q&As from the old services page —
+ * shown on both the home page and the services hub, the one FAQ this family
+ * has.
  *
  * Nothing fabricated by the old WordPress theme survives (plan §1 item 13):
  * no "400+ agents", no demo listings, no testimonials, no team photos.
@@ -1861,13 +1862,14 @@ export const esLeadForm = {
  * `src/config/rental-services.ts`. Shape is fixed — plan Appendix C — so
  * `RentalServicePage` renders every one of them without knowing which.
  *
- * O3 ships `alquiler` filled from its own content file as the exemplar S3
- * copies, and the other six with real meta, h1, tagline, intro and one real
- * entry per section, so **no route renders empty**. S3 fills the rest from
- * `docs/rentparaguay-extraction/content/<slug>.md`.
+ * O3 shipped `alquiler` filled from its own content file as the exemplar; S3
+ * (2026-09-09) filled the other six from the old site's own service pages
+ * (a scratch extraction, deleted once its copy landed here) to the same
+ * shape — every section on every one of the seven is real copy.
  *
- * Empty arrays are honest: a section with nothing in it does not render. That
- * is why `faq: []` is fine here and a placeholder sentence would not be.
+ * Empty arrays are still honest where they occur: a section with nothing in
+ * it does not render, so a future edit that empties one out is safe rather
+ * than a placeholder sentence would be.
  */
 export const esRentalServices = {
   alquiler: {
@@ -1962,35 +1964,85 @@ export const esRentalServices = {
     tagline:
       "Administración integral de alquiler temporal en Asunción: ambientación, precios y hospitalidad, sin que tengas que estar encima.",
     intro:
-      "Sostener un alquiler temporal que funcione es un trabajo de tiempo completo: fotos que compitan, un precio que se mueva con la demanda y alguien que conteste a cualquier hora. De eso nos ocupamos nosotros.",
+      "Sostener un alquiler temporal que realmente rinda es un trabajo de tiempo completo: fotos que compitan, un precio que se mueva con la demanda y alguien que conteste a cualquier hora para que ninguna reserva quede sin respuesta. Nosotros nos ocupamos de todo, de punta a punta, para que la propiedad trabaje para vos y no al revés.",
     challengeTitle: "El mito del ingreso pasivo",
     challengeText:
-      "Un aviso con fotos promedio queda enterrado en los resultados. Un precio fijo pierde plata en semanas de alta demanda y espanta en las bajas. Y la comunicación con huéspedes y la entrega de llaves, a toda hora, es justo lo que termina cansando al propietario.",
+      "Un aviso con fotos promedio queda enterrado en los resultados. Un precio fijo pierde plata en las semanas de alta demanda y espanta en las bajas. La comunicación con huéspedes y la entrega de llaves a toda hora terminan cansando a cualquier propietario. Y mantener una unidad con estándar hotelero exige un equipo dedicado, no una limpieza ocasional.",
     frameworkTitle: "Nuestra administración, en tres etapas",
     framework: [
       {
         title: "Lanzamiento y estética",
-        text: "Ambientación, fotografía de calidad editorial y un aviso escrito para que aparezca y convenza.",
+        text: "Ambientación profesional y fotografía de calidad editorial que capturan el ambiente del espacio, más un aviso redactado y traducido al inglés, portugués y español para llegar a huéspedes de cualquier lugar.",
       },
       {
         title: "Operación diaria",
-        text: "Precios ajustados según demanda, atención bilingüe al huésped y check-in resuelto.",
+        text: "Precios ajustados según la demanda y la temporada, atención bilingüe al huésped para reservas y recomendaciones, y cerraduras inteligentes para un check-in seguro sin que nadie tenga que estar presente.",
       },
       {
         title: "Mantenimiento y limpieza",
-        text: "Limpieza con estándar hotelero, mantenimiento preventivo y reposición de lo que se consume.",
+        text: "Limpieza con estándar hotelero entre estadía y estadía, revisiones preventivas del aire acondicionado, el wifi y los electrodomésticos, y reposición de amenities, café y blanquería.",
       },
     ],
-    specialTitle: "Servicios especializados",
-    special: [],
+    specialTitle: "Servicios especializados para propietarios en el exterior",
+    special: [
+      {
+        title: "Totalmente hands-off",
+        text: "Pensado para inversores que viven en el exterior y necesitan un equipo confiable en Asunción, para que nunca tengas que gestionar vos mismo una reserva.",
+      },
+      {
+        title: "Reportes financieros transparentes",
+        text: "Un resumen mensual muestra lo que entró y lo que se gastó, con tu ganancia neta transferida directamente a tu cuenta bancaria.",
+      },
+      {
+        title: "Enlace impositivo y legal local",
+        text: "Te ayudamos a mantener tu alquiler temporal en regla con la normativa paraguaya que aplica a tu propiedad.",
+      },
+      {
+        title: "Amoblamiento llave en mano",
+        text: "Para una unidad nueva, nos encargamos del amoblamiento y equipamiento completo desde cero.",
+      },
+    ],
     benefitsTitle: "Qué cambia para vos",
     benefits: [
       {
         title: "Una sola cara visible",
         text: "Nosotros hablamos con los huéspedes, con la limpieza y con el mantenimiento; vos ves el resultado.",
       },
+      {
+        title: "Más visibilidad",
+        text: "Tu propiedad se sincroniza en Airbnb, Booking.com y VRBO, para que esté a la vista donde sea que un huésped esté buscando.",
+      },
+      {
+        title: "Atención bilingüe al huésped",
+        text: "Los huéspedes reciben atención en inglés, español y portugués, a cualquier hora, para que una barrera de idioma nunca te cueste una reserva.",
+      },
+      {
+        title: "Una propiedad que se mantiene protegida",
+        text: "Inspecciones periódicas y mantenimiento preventivo mantienen la unidad en el estado en que nos la entregaste.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Cómo fijan el precio por noche?",
+        a: "Miramos precios en tiempo real de la competencia local y la demanda de temporada en Asunción, y ajustamos tu tarifa con regularidad para conseguir el mejor rendimiento sin dejarte afuera de las reservas.",
+      },
+      {
+        q: "¿Qué pasa si un huésped daña la propiedad?",
+        a: "Hacemos una inspección después de cada estadía y te ayudamos a gestionar el reclamo, ya sea por el programa de protección de Airbnb o por un seguro privado.",
+      },
+      {
+        q: "¿Cómo y cuándo cobro?",
+        a: "Te enviamos un resumen mensual transparente y transferimos tu ganancia neta directamente a tu cuenta bancaria.",
+      },
+      {
+        q: "¿Puedo bloquear fechas para uso personal?",
+        a: "Sí. Podés bloquear fechas por sistema para tus propias estadías, y nos aseguramos de que la unidad esté lista cuando llegues.",
+      },
+      {
+        q: "¿Se ocupan de la parte legal e impositiva?",
+        a: "Te ayudamos a mantener tu aviso en regla con la normativa paraguaya sobre alquiler temporal, para que ese lado no quede en tus manos.",
+      },
+    ],
     ctaTitle: "Poné tu propiedad a rendir",
     ctaText: "Contanos dónde está y cómo está, y te decimos qué esperar.",
     ctaButton: "Hablemos",
@@ -2003,41 +2055,84 @@ export const esRentalServices = {
     tagline:
       "Tu propiedad en Asunción, administrada como si vivieras a la vuelta: inquilinos verificados, mantenimiento al día y cuentas claras.",
     intro:
-      "Alquilar a largo plazo en Asunción es una buena estrategia, hasta que la administración empieza a comerse el rendimiento. Si vivís afuera, la distancia convierte cada trámite en un problema. Nuestro trabajo es que vuelva a ser un ingreso que no te ocupa la cabeza.",
+      "Alquilar a largo plazo en Asunción es una buena estrategia, hasta que la administración empieza a comerse el rendimiento. Para muchos propietarios que viven afuera, la autogestión termina en agotamiento: perseguir pagos, entender el sistema legal local, resolver un problema a la distancia. Nuestro trabajo es convertir tu propiedad en un ingreso realmente pasivo, cuidando el estado físico del inmueble y la relación con el inquilino, para que vos te ocupes de tu próxima inversión y nosotros de la operación diaria.",
     challengeTitle: "La realidad de tener una propiedad alquilada",
     challengeText:
-      "Perseguir pagos atrasados, entender la ley local, resolver una filtración a distancia: son costos que no figuran en ninguna planilla y que terminan agotando al propietario que administra solo.",
+      "Perseguir pagos atrasados, entender la ley local, resolver una filtración desde otro continente: son costos que no figuran en ninguna planilla y que terminan agotando al propietario que administra solo, sobre todo si vive en el exterior.",
     frameworkTitle: "Cómo administramos",
     framework: [
       {
         title: "Búsqueda y selección de inquilinos",
-        text: "Avisos con fotos profesionales, visitas acompañadas y verificación de antecedentes, ingresos y referencias antes de firmar.",
+        text: "Avisos con fotos profesionales y descripciones pensadas para atraer buenos candidatos, visitas acompañadas y verificación de antecedentes, ingresos y referencias antes de firmar.",
       },
       {
         title: "Seguridad legal y administración",
-        text: "Contratos firmados ante escribanía, depósitos resguardados e inventario documentado con fotos.",
+        text: "Coordinamos la firma del contrato ante escribanía para que tenga plena validez legal, resguardamos el depósito en cuenta segura y documentamos el inventario con fotos para evitar disputas futuras.",
       },
       {
         title: "Operación y mantenimiento",
-        text: "Somos el único contacto del inquilino y resolvemos con proveedores de confianza a precios de mercado.",
+        text: "Somos el único contacto del inquilino una vez que se muda y resolvemos cualquier problema con proveedores de confianza a precios de mercado, con inspecciones periódicas para asegurar que la propiedad se cuide según nuestros estándares.",
       },
       {
         title: "Reportes",
-        text: "Todos los meses recibís un estado con ingresos, gastos y resultado neto.",
+        text: "Todos los meses recibís un estado detallado con ingresos, gastos y resultado neto, en tu idioma.",
       },
     ],
     specialTitle: "Servicios especializados",
-    special: [],
+    special: [
+      {
+        title: "Renovaciones y trámites legales",
+        text: "Redactamos el contrato y gestionamos las notificaciones legales según la normativa vigente, para que siga teniendo validez en cada renovación.",
+      },
+      {
+        title: "Impuestos y expensas",
+        text: "Te ayudamos a gestionar los impuestos locales sobre la propiedad y el pago de las expensas del edificio, para que tu inversión se mantenga en regla.",
+      },
+      {
+        title: "Inspecciones periódicas",
+        text: "Visitamos la propiedad con regularidad para confirmar que el inquilino la está cuidando de acuerdo a lo acordado.",
+      },
+    ],
     benefitsTitle: "Por qué conviene delegarlo",
     benefits: [
       {
         title: "Menos días vacío",
         text: "Un buen inquilino encontrado rápido vale más que un mes de alquiler ahorrado en comisiones.",
       },
+      {
+        title: "Selección de inquilinos rigurosa",
+        text: "Verificamos ingresos, historial laboral y referencias de alquileres anteriores, no solo un documento de identidad, para asegurar un buen ajuste.",
+      },
+      {
+        title: "Se cuida el valor de tu propiedad",
+        text: "Detectar a tiempo un problema chico, como una filtración o una falla eléctrica, evita que se convierta en una reparación estructural cara y protege el valor de reventa.",
+      },
+      {
+        title: "Transparencia total",
+        text: "Un estado mensual claro, en tu idioma, y gestión de impuestos y expensas para que tu inversión se mantenga en regla todo el año.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Cómo seleccionan a los inquilinos?",
+        a: "Verificamos ingresos, historial laboral y referencias de alquileres anteriores, además del documento de identidad, para asegurar que sea un buen ajuste a largo plazo.",
+      },
+      {
+        q: "¿Qué pasa si un inquilino se atrasa con el pago?",
+        a: "Tenemos un protocolo estricto para pagos atrasados, con seguimiento inmediato y, si hace falta, notificaciones legales.",
+      },
+      {
+        q: "¿El mantenimiento corre por mi cuenta?",
+        a: "Sí, como propietario sos responsable de los costos de mantenimiento, pero nosotros coordinamos el trabajo y nos aseguramos de que pagues precios justos de mercado.",
+      },
+      {
+        q: "¿En qué idioma recibo los reportes?",
+        a: "Te enviamos el estado mensual de ingresos, gastos y resultado neto en tu idioma, para que puedas seguir la rentabilidad de tu propiedad sin depender de nadie más.",
+      },
+    ],
     ctaTitle: "Delegá la administración",
-    ctaText: "Contanos de tu propiedad y te explicamos cómo la administraríamos.",
+    ctaText:
+      "Contanos de tu propiedad y te explicamos cómo la administraríamos, para que dejes de preocuparte por los detalles y empieces a disfrutar el rendimiento.",
     ctaButton: "Hablemos",
   },
   inmobiliariaAsuncion: {
@@ -2051,36 +2146,66 @@ export const esRentalServices = {
       "Comprar en una ciudad que no es la tuya pide algo más que acceso a los avisos: pide entender los barrios, saber qué se está construyendo y tener con quién negociar. Trabajamos representándote a vos, no al vendedor.",
     challengeTitle: "Un mercado en plena transformación",
     challengeText:
-      "Asunción cambió mucho en pocos años, y con eso llegaron zonas nuevas, desarrolladoras nuevas y precios que se mueven distinto según la cuadra. Sin esa lectura local, es fácil pagar de más por una propiedad difícil de revender.",
+      "Asunción cambió mucho en pocos años, con el crecimiento del Nuevo Centro Financiero y de corredores como Santa Teresa y Villa Morra, que atraen cada vez más capital internacional. Con eso llegaron zonas nuevas, desarrolladoras nuevas y precios que se mueven distinto según la cuadra. Sin esa lectura local, es fácil pagar de más por una propiedad difícil de revender.",
     frameworkTitle: "Cómo te acompañamos",
     framework: [
       {
-        title: "Búsqueda y sourcing",
-        text: "Vamos más allá de los portales: red de desarrolladoras y propietarios, filtrando por calidad de construcción y reventa.",
+        title: "Búsqueda y sourcing exclusivo",
+        text: "Vamos más allá de los portales públicos: usamos una red privada de desarrolladoras y propietarios para encontrar oportunidades fuera de mercado y en pozo, filtradas por calidad de construcción, reputación de la desarrolladora y potencial de reventa.",
       },
       {
-        title: "Debida diligencia",
-        text: "Coordinamos con escribanía la verificación de título y gravámenes, y te traducimos todos los documentos.",
+        title: "Debida diligencia y control legal",
+        text: "Coordinamos con escribanías y asesores legales de primer nivel una verificación completa del título en busca de gravámenes, y traducimos cada documento legal para que avances con total claridad.",
       },
       {
-        title: "Negociación",
-        text: "Negociamos con datos del mercado local, para que no pagues el sobreprecio que se le suele cobrar al de afuera.",
+        title: "Negociación y representación",
+        text: "Negociamos con datos del mercado local para conseguir el mejor precio y las mejores condiciones, trabajando para que no pagues el sobreprecio que se le suele cobrar al de afuera.",
       },
       {
         title: "Después de la escritura",
-        text: "Transferencia de servicios, puesta a punto y, si querés, administración desde el primer mes.",
+        text: "Nos encargamos de la transferencia de títulos y servicios y, si querés, de la integración inmediata a nuestro servicio de administración de departamentos o de Airbnb.",
       },
     ],
     specialTitle: "Servicios especializados para compradores y vendedores",
-    special: [],
+    special: [
+      {
+        title: "Estrategia en pozo",
+        text: "Accedé a precios de preventa en desarrollos nuevos a través de nuestra lista de desarrolladoras de trayectoria comprobada.",
+      },
+      {
+        title: "Reubicación residencial de alta gama",
+        text: "Búsquedas a medida de villas y penthouses con alta seguridad en los countries y barrios cerrados más buscados de la ciudad.",
+      },
+      {
+        title: "Adquisición comercial y de terrenos",
+        text: "Identificamos terrenos estratégicos para futuros desarrollos o uso comercial en las zonas industriales emergentes de Asunción.",
+      },
+    ],
     benefitsTitle: "Qué aporta tener representación",
     benefits: [
       {
         title: "Menos riesgo",
-        text: "Revisamos quién construye, con qué materiales y qué hay proyectado alrededor antes de que pongas el dinero.",
+        text: "Revisamos quién construye, con qué materiales y qué hay proyectado alrededor, para que tu capital vaya a algo pensado para sostener su valor.",
+      },
+      {
+        title: "Tiempo que te ahorrás",
+        text: "Somos tu único punto de contacto durante toda la compra: coordinamos agentes, abogados y trámites ante organismos públicos en tu lugar.",
       },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Puede un extranjero comprar propiedad en Paraguay?",
+        a: "Sí. Paraguay está muy abierto a la inversión extranjera: podés comprar y titular una propiedad a tu nombre o a nombre de una sociedad usando solo tu pasaporte vigente.",
+      },
+      {
+        q: "¿Cuáles son los costos de cierre al comprar en Asunción?",
+        a: "Por lo general, los costos de cierre (incluyendo honorarios de escribanía e impuestos) rondan entre el 2% y el 3% del valor de la transacción. Te damos una estimación detallada antes de cerrar cualquier operación.",
+      },
+      {
+        q: "¿Qué impuesto pago si vendo más adelante?",
+        a: "Paraguay tiene un régimen impositivo muy competitivo. Si vendés como persona física, el impuesto sobre la ganancia suele ser bajo, en muchos casos efectivamente entre el 2,4% y el 3%.",
+      },
+    ],
     ctaTitle: "Comprá con alguien de tu lado",
     ctaText: "Contanos qué estás buscando y con qué presupuesto.",
     ctaButton: "Hablemos",
@@ -2091,41 +2216,87 @@ export const esRentalServices = {
       `${brand} prepara tu carpeta y te acompaña en todo el trámite de residencia paraguaya, hasta que tenés tu cédula.`,
     h1: "Residencia en Paraguay",
     tagline:
-      "Un trámite de residencia acompañado de punta a punta, para inversores, nómadas digitales y familias.",
+      "Uno de los caminos a la residencia más accesibles del mundo, con acompañamiento de punta a punta, para inversores, nómadas digitales y familias.",
     intro:
       "La residencia paraguaya es de las más accesibles del mundo, pero el trámite tiene pasos, sellos y turnos que conviene no descubrir sobre la marcha. Preparamos la carpeta antes de que viajes y te acompañamos mientras estás acá.",
     challengeTitle: "Por qué la gente la elige",
     challengeText:
-      "Paraguay atrae a quien busca un plan B ordenado: costo de vida razonable, un camino claro hacia la ciudadanía y una ubicación cómoda para moverse por la región. Las condiciones fiscales y los plazos concretos los repasamos con vos según tu caso, porque cambian y dependen de tu situación.",
+      "Paraguay se volvió un destino top para quien busca escapar de impuestos altos y regulación excesiva en otros países. Funciona con un sistema tributario territorial: el ingreso local paga un 10% fijo, y el ingreso de fuente extranjera en general no paga impuesto. La residencia permanente es además el primer paso formal hacia la ciudadanía y el pasaporte paraguayo, y el país tiene una ubicación estable y cómoda para moverte por la región.",
     frameworkTitle: "El trámite, paso a paso",
     framework: [
       {
         title: "Consulta y documentos",
-        text: "Revisamos tu caso, te damos la lista de documentos de tu país y verificamos apostillas y traducciones antes de viajar.",
+        text: "Revisamos tu caso, te damos la lista de documentos de tu país y verificamos apostillas y traducciones antes de que viajes.",
       },
       {
         title: "Los días en Asunción",
-        text: "Te acompañamos a cada turno: biometría, chequeo médico y entrevistas, con traslado y acompañamiento bilingüe.",
+        text: "Tu visita presencial dura de 3 a 5 días. Te acompañamos a cada turno: biometría, chequeo médico y entrevistas, con traslado privado, acompañamiento bilingüe y un recorrido de orientación por los barrios mientras estás acá.",
       },
       {
         title: "Seguimiento",
-        text: "Monitoreamos el expediente mientras avanza y te avisamos en cada etapa.",
+        text: "Monitoreamos el expediente ante Migraciones cada semana y resolvemos cualquier requisito o consulta administrativa adicional que surja mientras avanza.",
       },
       {
         title: "Entrega",
-        text: "Retiramos y te entregamos la documentación cuando sale.",
+        text: "Retiramos tu carné de residencia temporaria y te lo enviamos por envío internacional si preferís no esperar acá, y te ayudamos a sacar tu cédula y tu RUC para operar localmente.",
       },
     ],
     specialTitle: "Servicios especializados para ciudadanos globales",
-    special: [],
+    special: [
+      {
+        title: "Alquiler temporal de aterrizaje",
+        text: "¿Necesitás dónde quedarte mientras avanza tu trámite? Tenemos departamentos equipados listos, para que la vivienda no sea una cosa más por resolver.",
+      },
+      {
+        title: "Asistencia para visa de inversor",
+        text: "Acompañamiento especializado si aplicás bajo alguna de las categorías de inversión.",
+      },
+      {
+        title: "Apoyo para nómadas digitales",
+        text: "Asesoramiento a medida para quien trabaja en forma remota y quiere ordenar su situación fiscal global.",
+      },
+      {
+        title: "Paquetes familiares",
+        text: "Acompañamiento completo para cónyuges e hijos, para que toda la familia avance junta en el trámite.",
+      },
+    ],
     benefitsTitle: "Qué resolvemos",
     benefits: [
       {
         title: "Pocos días acá",
         text: "Preparamos todo por adelantado para que tu presencia en Asunción sea la mínima posible.",
       },
+      {
+        title: "Documentos revisados antes de viajar",
+        text: "Revisamos tus apostillas y traducciones contra lo que realmente pide Migraciones, para que nada te rebote en la ventanilla.",
+      },
+      {
+        title: "Una red legal de confianza",
+        text: "Trabajamos directamente con abogados y escribanos que ya conocemos, para que tu situación quede firme ante cualquier control.",
+      },
+      {
+        title: "Trámite bancario resuelto después",
+        text: "Una vez que tenés tu cédula, te ayudamos a abrir una cuenta en un banco local.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Necesito vivir en Paraguay para mantener mi residencia?",
+        a: "No. Paraguay tiene requisitos de permanencia física muy flexibles, lo que la hace un plan B viable.",
+      },
+      {
+        q: "¿Cuánto dura el trámite?",
+        a: "La parte que se hace en el país toma menos de una semana. El carné definitivo (cédula) suele tardar unos meses en emitirse después de eso.",
+      },
+      {
+        q: "¿Puedo abrir una cuenta bancaria?",
+        a: "Sí. Una vez que tenés tu cédula, te ayudamos a moverte en el sistema bancario para abrir tus cuentas.",
+      },
+      {
+        q: "¿Pago impuestos por ingresos de afuera de Paraguay?",
+        a: "Paraguay funciona con un sistema tributario territorial, así que el ingreso generado fuera del país en general no paga impuesto. El ingreso local paga un 10% fijo.",
+      },
+    ],
     ctaTitle: "Empezá tu residencia",
     ctaText: "Contanos tu nacionalidad y tu situación, y te decimos qué necesitás.",
     ctaButton: "Hablemos",
@@ -2136,41 +2307,79 @@ export const esRentalServices = {
       `${brand} acompaña tu inversión en Paraguay: búsqueda de activos, estructura legal y administración posterior, con reportes claros.`,
     h1: "Invertir en Paraguay",
     tagline:
-      "Oportunidades inmobiliarias y productivas en Paraguay, con quien las administre después.",
+      "Oportunidades inmobiliarias, de campo y de negocios en Paraguay, con quien las administre después.",
     intro:
       "Invertir a distancia funciona cuando hay alguien de este lado que mira la obra, controla al inquilino y manda los números a tiempo. Buscamos el activo, ordenamos la estructura y después lo administramos.",
     challengeTitle: "Por qué Paraguay",
     challengeText:
-      "Paraguay combina un régimen tributario simple, costos operativos bajos y una economía que viene creciendo de forma sostenida. Las cifras concretas —tasas, incentivos y rendimientos esperados— las repasamos caso por caso, porque dependen del activo y del año.",
+      "La economía paraguaya se apoya en disciplina fiscal: un sistema plano \"10-10-10\" (10% de impuesto corporativo, 10% de impuesto a la renta personal, 10% de IVA) y un régimen tributario territorial que solo grava lo que se genera dentro del país, así que tu patrimonio en el resto del mundo queda intacto, sin impuesto a la herencia, al patrimonio ni a las donaciones. La Ley N.º 7548/2025 suma incentivos para proyectos más grandes, incluidas exenciones sobre dividendos y remesas de utilidades. Las cifras concretas para tu caso —tasas, incentivos y rendimientos esperados— las repasamos caso por caso, porque dependen del activo y del año.",
     frameworkTitle: "Cómo trabajamos una inversión",
     framework: [
       {
         title: "Inmuebles",
-        text: "Buscamos activos con demanda real de alquiler y reventa en los corredores premium de Asunción.",
+        text: "Buscamos propiedades con demanda real de alquiler y reventa en los corredores premium de Asunción, como Santa Teresa y Villa Morra.",
       },
       {
         title: "Campo y agronegocio",
-        text: "Facilitamos la compra de tierra productiva, con la asesoría local para evaluarla y administrarla.",
+        text: "Facilitamos la compra de tierra de alta fertilidad para soja, maíz, ganadería y otros agronegocios, con la asesoría local para evaluarla y administrarla.",
       },
       {
         title: "Estructura legal e impositiva",
-        text: "Trabajamos con estudios locales para que la inversión quede estructurada como corresponde.",
+        text: "Trabajamos con estudios jurídicos locales para que tu inversión quede bien estructurada desde el inicio, incluida la gestión de los beneficios de la Ley 7548/2025 y del Régimen de Maquila cuando el proyecto califica.",
       },
       {
         title: "Administración",
-        text: "Debida diligencia, compra, puesta en marcha y reportes periódicos en tu idioma.",
+        text: "Debida diligencia, compra, puesta en marcha y reportes periódicos bilingües, para que puedas seguir tu inversión desde donde estés.",
       },
     ],
     specialTitle: "Vehículos de inversión especializados",
-    special: [],
+    special: [
+      {
+        title: "Inversión residencial en pozo",
+        text: "Sumate a un grupo de inversores para financiar desarrollos residenciales en Asunción desde la etapa de pozo (preventa).",
+      },
+      {
+        title: "Sociedades de engorde de ganado",
+        text: "Invertí en ciclos de engorde junto a ganaderos profesionales: una inversión tangible, respaldada por el activo, con ciclos definidos.",
+      },
+      {
+        title: "Desarrollo de parques industriales",
+        text: "Participá en espacios de logística y depósito cerca del Corredor Bioceánico, a medida que crece la demanda de distribución regional.",
+      },
+    ],
     benefitsTitle: "Qué te damos",
     benefits: [
       {
         title: "Presencia local",
         text: "Alguien acá que mira, decide y responde, mientras vos seguís donde estás.",
       },
+      {
+        title: "Eficiencia fiscal",
+        text: "El régimen tributario territorial de Paraguay grava solo lo que se genera dentro del país, y no hay impuesto a la herencia, al patrimonio ni a las donaciones, algo útil para planificar tu patrimonio a largo plazo.",
+      },
+      {
+        title: "Un hub del Mercosur",
+        text: "Paraguay está en el centro del continente, y la Ley de Maquila permite a las empresas que califican importar insumos sin arancel y exportar el producto terminado con un impuesto simbólico del 1%: una base para llegar a los mercados vecinos, no solo al paraguayo.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Los extranjeros pueden comprar propiedades o campo en Paraguay?",
+        a: "Sí. Los extranjeros tienen los mismos derechos de propiedad que los paraguayos y pueden ser dueños de inmuebles o campo a título propio, en su nombre o a través de una empresa local.",
+      },
+      {
+        q: "¿Qué régimen tributario aplica a mi inversión?",
+        a: "Paraguay grava solo lo que se genera dentro del país, aplica una tasa plana del 10% a las ganancias corporativas, a la renta personal y al IVA, y no cobra impuesto a la herencia, al patrimonio ni a las donaciones. Los proyectos más grandes también pueden acceder a los incentivos de la Ley N.º 7548/2025.",
+      },
+      {
+        q: "¿Hay un monto mínimo para acceder a los beneficios de la Ley 7548/2025?",
+        a: "Podés invertir cualquier monto, pero las exenciones impositivas más importantes de la ley aplican a proyectos desde USD 5 millones, con beneficios adicionales por encima de USD 13 millones.",
+      },
+      {
+        q: "¿Puedo mover mi capital y mis utilidades libremente?",
+        a: "Sí. Paraguay no tiene control de cambios, así que podés mover capital y utilidades dentro y fuera del país en dólares o euros por el sistema bancario habitual.",
+      },
+    ],
     ctaTitle: "Hablemos de tu inversión",
     ctaText: "Contanos qué monto y qué horizonte tenés en mente.",
     ctaButton: "Hablemos",
@@ -2183,39 +2392,73 @@ export const esRentalServices = {
     tagline:
       "Una dirección comercial y legal en Asunción, sin la carga de alquilar una oficina.",
     intro:
-      "Para registrar una empresa, tramitar el RUC o simplemente recibir correspondencia oficial hace falta una dirección estable en Paraguay. Te damos esa base, y alguien que abra el sobre cuando llegue.",
-    challengeTitle: "Para qué sirve",
+      "Conseguí un domicilio comercial y legal en el distrito de negocios de Asunción, pensado para nómades digitales, empresas remotas e inversores internacionales que buscan pisar Paraguay sin alquilar una oficina física. Tu dirección funciona como base para inscribir la empresa, tramitar impuestos y recibir correspondencia del día a día, y viene con alguien que realmente abre el sobre cuando llega.",
+    challengeTitle: "Para qué sirve un domicilio virtual",
     challengeText:
-      "Si estás probando el mercado paraguayo, o si tu operación es remota, una dirección profesional en el distrito financiero te da credibilidad frente a bancos, organismos públicos y clientes, sin el costo de un alquiler.",
+      "Si estás probando el mercado paraguayo, o tu operación es remota, una dirección profesional en el distrito financiero de Asunción te da credibilidad frente a bancos, organismos públicos y clientes, sin el costo, los depósitos ni el compromiso de largo plazo de un alquiler físico.",
     frameworkTitle: "Qué incluye",
     framework: [
       {
-        title: "Domicilio comercial",
-        text: "Una dirección reconocible en Asunción para tu web, tu papelería y tus trámites.",
+        title: "Domicilio comercial premium",
+        text: "Una dirección comercial reconocida en corredores como Santa Teresa o Villa Morra, para tu web, tu papelería y tus trámites oficiales.",
       },
       {
-        title: "Correspondencia",
-        text: "Recibimos, escaneamos y te reenviamos cartas, paquetes y notificaciones oficiales.",
+        title: "Casilla de correspondencia digital",
+        text: "Recibimos tu correspondencia oficial, paquetes y notificaciones del gobierno, los escaneamos y te los reenviamos para que gestiones todo desde donde estés.",
       },
       {
         title: "Domicilio legal y fiscal",
-        text: "Cumple los requisitos locales para inscribir una empresa y tramitar el RUC.",
+        text: "Una sede estable y conforme a la ley en Paraguay para inscribir tu empresa y tramitar el RUC.",
       },
       {
-        title: "Salas de reunión",
-        text: "Cuando venís, tenés dónde reunirte en la misma dirección.",
+        title: "Salas de reunión a demanda",
+        text: "Cuando venís, tenés acceso a una sala de reunión o espacio de coworking en la misma dirección registrada.",
       },
     ],
     specialTitle: "Soluciones para fundadores globales",
-    special: [],
+    special: [
+      {
+        title: "Paquete de constitución de empresa",
+        text: "Combinamos el domicilio virtual con soporte legal para constituir tu S.A. o S.A.S. paraguaya.",
+      },
+      {
+        title: "Recepcionista bilingüe",
+        text: "Un número de teléfono local atendido a nombre de tu empresa por una recepcionista bilingüe.",
+      },
+      {
+        title: "Reenvío de paquetes",
+        text: "Envío internacional de bienes físicos o documentos que lleguen a tu dirección en Asunción.",
+      },
+    ],
     benefitsTitle: "Por qué conviene",
     benefits: [
       {
         title: "Entrar sin comprometerte",
-        text: "Probás el mercado con una presencia formal antes de firmar un alquiler.",
+        text: "Probás el mercado paraguayo con una presencia formal antes de firmar un alquiler, sin los depósitos ni las cuentas de servicios de una oficina física.",
+      },
+      {
+        title: "Soporte para banco y residencia",
+        text: "Los bancos piden una dirección física para sus controles KYC, y los trámites migratorios también necesitan una dirección estable: esto cubre las dos cosas.",
+      },
+      {
+        title: "Credibilidad inmediata",
+        text: "Una dirección reconocida en el distrito de negocios te da legitimidad frente a bancos, organismos públicos y clientes desde el primer día.",
       },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Necesito una dirección física para abrir una cuenta bancaria en Paraguay?",
+        a: "Sí. Los bancos en Paraguay piden una dirección física o comercial para sus controles KYC (conocé a tu cliente), y nuestras direcciones cumplen ese estándar.",
+      },
+      {
+        q: "¿Cada cuánto me avisan si llega correspondencia?",
+        a: "Tantas veces como haga falta: te avisamos apenas llega algo y seguimos tus instrucciones para escanearlo, destruirlo o reenviarlo.",
+      },
+      {
+        q: "¿Puedo usar esta dirección durante mi trámite de residencia?",
+        a: "Sí. Funciona como punto de contacto confiable para Migraciones y la Policía Nacional mientras se tramita tu residencia.",
+      },
+    ],
     ctaTitle: "Conseguí tu domicilio en Asunción",
     ctaText: "Contanos para qué lo necesitás y te decimos qué requiere.",
     ctaButton: "Hablemos",

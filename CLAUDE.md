@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-09-04.
+Last verified against the code: 2026-09-09.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -222,6 +222,20 @@ default, `--dry` first). It records itself as a revertible import job.
    webhook there is no alert and no fake one — the zero-config signal is the
    `/admin` badges (review queue, and leads from the last 24 h). Same rule as
    `sendOtp`: never log a line that pretends a message was delivered.
+10. **The rental doors' code is done; going live is manual.** All of
+    `fable/plan-rentparaguay.md` landed 2026-09-09 (O1–O3, S1–S3):
+    `alquiler.com.py` / `rentparaguay.com` are `enabled: true`, previewable
+    with a `Host` header, and pass `verify:seo`. **Still pending, founder-only**:
+    (a) DNS for both domains must actually point at Hostinger before either
+    door reaches a real visitor — confirm both are registered first; (b) the
+    old `rentparaguay.com`'s WordPress redirects need checking before that
+    deployment is decommissioned, so the S1 301 map (plan §6.1) isn't
+    replacing live traffic with 404s; (c) `NEXT_PUBLIC_CONTACT_WHATSAPP`
+    (`.env.example`) is unset today, so the rental footer's WhatsApp CTA is
+    hidden on both doors until it is set and the app rebuilt — the old site's
+    `+595 995 628 862` is the candidate value (plan §7), never hard-code it
+    into a file. **Do not build a rental-specific WhatsApp env var** — the
+    doors share `NEXT_PUBLIC_CONTACT_WHATSAPP` with the marketplace doors.
 
 ## Caching — the data cache is the only cache this portal has
 
@@ -345,7 +359,14 @@ the fallback until it does.
   the `/propiedad` detail page — was inline JSX until 2026-08-20 and is now in
   the `esHome` / `esHub` / `esCategory` / `esSearchBar` / `esFilters` /
   `esCard` / `esListing` namespaces. **Do not add a new visitor-facing literal
-  to a page or component**; add it to the namespace and read it back.
+  to a page or component**; add it to the namespace and read it back. The
+  rental family's copy (`alquiler.com.py` / `rentparaguay.com`,
+  `fable/plan-rentparaguay.md`) lives in its own two namespaces: `esRental` /
+  `enRental` for the chrome, home and shared furniture (`rental` in the
+  dictionary), and `esRentalServices` / `enRentalServices` for the seven
+  `/servicios/<slug>` pages (`rentalServices`, keyed by `dictKey` in
+  `src/config/rental-services.ts`, shape fixed by plan Appendix C) — filled
+  2026-09-09 (S3).
 - **Reach them through the dictionary, not by importing the namespace.**
   Two ways in, and picking the wrong one is the mistake to avoid — the same
   split as `brand.ts` / `brand-server.ts`, for the same reason:

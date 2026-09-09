@@ -1201,35 +1201,85 @@ export const enRentalServices = {
     tagline:
       "Full-service short-term rental management in Asunción: styling, pricing and hospitality, without you having to watch it.",
     intro:
-      "Running a short-term rental that actually performs is a full-time job: photography that competes, a price that moves with demand, and someone answering at any hour. That is our side of it.",
+      "Running a short-term rental that actually performs is a full-time job: photography that competes, pricing that moves with demand, and someone answering at any hour so a booking never goes unanswered. We handle all of it, end to end, so the property works for you rather than the other way around.",
     challengeTitle: "The passive income myth",
     challengeText:
-      "A listing with average photos gets buried in the results. A static price loses money in high-demand weeks and scares people off in slow ones. And guest communication and key handovers, around the clock, are exactly what wears an owner down.",
+      "A listing with average photos gets buried in the results. A static price loses money in high-demand weeks and scares people off in slow ones. Guest communication and key handovers around the clock wear an owner down fast. And keeping a unit at hotel standard takes a dedicated team, not an occasional cleaner.",
     frameworkTitle: "Our management, in three phases",
     framework: [
       {
         title: "Launch and aesthetics",
-        text: "Interior styling, magazine-quality photography and a listing written to be found and to convince.",
+        text: "Professional interior styling and magazine-quality photography that capture the feel of the space, plus a listing written and translated into English, Portuguese and Spanish to reach a global audience.",
       },
       {
         title: "Daily operations",
-        text: "Pricing adjusted to demand, bilingual guest support and check-in handled.",
+        text: "Pricing adjusted to local demand and seasonality, bilingual guest support for bookings and recommendations, and smart locks for a secure, unattended check-in.",
       },
       {
         title: "Maintenance and housekeeping",
-        text: "Hotel-standard cleaning, preventative maintenance and restocking of the essentials.",
+        text: "Hotel-standard cleaning between every stay, preventative inspections of the AC, Wi-Fi and appliances, and restocking of toiletries, coffee and linens.",
       },
     ],
-    specialTitle: "Specialised services",
-    special: [],
+    specialTitle: "Specialised services for owners abroad",
+    special: [
+      {
+        title: "Fully hands-off",
+        text: "Built for investors who live abroad and need a reliable team on the ground in Asunción, so you never have to manage a booking yourself.",
+      },
+      {
+        title: "Transparent financial reporting",
+        text: "A monthly statement shows what came in and what went out, with your net profit transferred straight to your bank account.",
+      },
+      {
+        title: "Local tax and legal liaison",
+        text: "We help keep your short-term rental compliant with Paraguayan regulations as they apply to your property.",
+      },
+      {
+        title: "Turn-key furnishing",
+        text: "For a brand-new unit, we can handle the complete furnishing and outfitting from scratch.",
+      },
+    ],
     benefitsTitle: "What changes for you",
     benefits: [
       {
         title: "One point of contact",
         text: "We talk to the guests, the cleaners and the contractors; you see the result.",
       },
+      {
+        title: "Wider exposure",
+        text: "Your property is synced across Airbnb, Booking.com and VRBO, so it is visible everywhere a guest might be looking.",
+      },
+      {
+        title: "Bilingual guest support",
+        text: "Guests get support in English, Spanish and Portuguese, at any hour, so a language gap never costs you a booking.",
+      },
+      {
+        title: "A property that stays protected",
+        text: "Regular inspections and preventative maintenance keep the unit in the condition it was handed to us in.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "How do you set the nightly rate?",
+        a: "We look at real-time pricing from local competitors and at seasonal demand in Asunción, and adjust your rate regularly to get the best return without pricing you out of bookings.",
+      },
+      {
+        q: "What happens if a guest damages the property?",
+        a: "We carry out a post-stay inspection and help manage any claim, whether through Airbnb's own protection programme or private insurance.",
+      },
+      {
+        q: "How and when do I get paid?",
+        a: "We send a transparent monthly statement and transfer your net profit directly to your bank account.",
+      },
+      {
+        q: "Can I block dates for my own use?",
+        a: "Yes. You can block dates through our system for personal stays, and we make sure the unit is ready when you arrive.",
+      },
+      {
+        q: "Do you handle the legal and tax side?",
+        a: "We help keep your listing compliant with Paraguayan short-term rental regulations, so that side does not fall on you.",
+      },
+    ],
     ctaTitle: "Put your property to work",
     ctaText: "Tell us where it is and what condition it is in, and we will tell you what to expect.",
     ctaButton: "Talk to us",
@@ -1242,41 +1292,84 @@ export const enRentalServices = {
     tagline:
       "Your Asunción property managed as if you lived around the corner: vetted tenants, maintenance handled, numbers you can read.",
     intro:
-      "A long-term rental in Asunción is a sound strategy, right up until the admin starts eating the return. If you live abroad, distance turns every small task into a problem. Our job is to make it an income that does not occupy your head.",
+      "A long-term rental in Asunción is a sound strategy, right up until the admin starts eating the return. For many owners living abroad, self-management ends in landlord burnout: chasing payments, learning the local legal system, fixing a problem from another continent. Our job is to turn your property into a genuinely passive income stream, preserving both the physical condition of the asset and the relationship with the tenant, so you can focus on your next investment while we handle the day-to-day.",
     challengeTitle: "What owning a rental actually involves",
     challengeText:
-      "Chasing late payments, learning the local law, fixing a leak from another continent — these are costs that appear on no spreadsheet and that eventually exhaust the owner who self-manages.",
+      "Chasing late payments, learning the local law, fixing a leak from another continent — these are costs that appear on no spreadsheet and that eventually exhaust the owner who self-manages, especially from overseas.",
     frameworkTitle: "How we manage",
     framework: [
       {
         title: "Marketing and tenant placement",
-        text: "Professional photography, escorted viewings, and background, income and reference checks before anyone signs.",
+        text: "Professional photography and listings written to attract a strong pool of candidates, escorted viewings, and background, income and reference checks before anyone signs.",
       },
       {
         title: "Legal security and admin",
-        text: "Leases signed at a notary, deposits held securely, and a photo-documented inventory report.",
+        text: "We coordinate the lease signing at a Notary Public for maximum legal weight, hold the deposit in a secure account, and produce a photo-documented inventory report to prevent future disputes.",
       },
       {
         title: "Operations and maintenance",
-        text: "We are the tenant's only point of contact and we fix things through trusted local contractors at fair prices.",
+        text: "We are the tenant's only point of contact once they move in, and we resolve issues through trusted local contractors at fair market prices, with regular inspections to make sure the property is cared for to our standards.",
       },
       {
         title: "Reporting",
-        text: "Every month you get a statement with income, expenses and net result.",
+        text: "Every month you get a detailed statement with income, expenses and net result, in your language.",
       },
     ],
     specialTitle: "Specialised services",
-    special: [],
+    special: [
+      {
+        title: "Renewals and legal notifications",
+        text: "We draft the lease and handle legal notifications in line with current regulations, so the contract stays enforceable through every renewal.",
+      },
+      {
+        title: "Taxes and building expensas",
+        text: "We help manage local property taxes and the building's expensas payments, so your investment stays compliant.",
+      },
+      {
+        title: "Regular inspections",
+        text: "We visit the property periodically to confirm the tenant is caring for it as agreed.",
+      },
+    ],
     benefitsTitle: "Why delegating pays",
     benefits: [
       {
         title: "Fewer vacant days",
         text: "A good tenant found quickly is worth more than a month of saved commission.",
       },
+      {
+        title: "Rigorous tenant vetting",
+        text: "We verify income, employment history and past rental references, not just an ID check, to make sure it is the right fit.",
+      },
+      {
+        title: "Your property's value protected",
+        text: "Catching a small issue early, like a leak or an electrical fault, stops it becoming an expensive structural repair and preserves resale value.",
+      },
+      {
+        title: "Total transparency",
+        text: "A clear monthly statement in your language, plus tax and expensas management, so your investment stays compliant and profitable year-round.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "How do you screen tenants?",
+        a: "We verify income, employment history and past rental references, beyond just an ID check, to ensure a good long-term fit.",
+      },
+      {
+        q: "What happens if a tenant pays late?",
+        a: "We have a strict protocol for late payments, with immediate follow-up and legal notifications if necessary.",
+      },
+      {
+        q: "Am I responsible for maintenance costs?",
+        a: "Yes, as the owner you are responsible for upkeep, but we coordinate the work and make sure you pay fair local prices.",
+      },
+      {
+        q: "What language are the reports in?",
+        a: "We send your monthly statement of income, expenses and net result in your language, so you can follow your property's performance without relying on anyone else.",
+      },
+    ],
     ctaTitle: "Hand over the management",
-    ctaText: "Tell us about your property and we will explain how we would run it.",
+    ctaText:
+      "Tell us about your property and we will explain how we would run it, so you can stop worrying about the details and start enjoying the returns.",
     ctaButton: "Talk to us",
   },
   inmobiliariaAsuncion: {
@@ -1290,36 +1383,66 @@ export const enRentalServices = {
       "Buying in a city that is not yours takes more than access to listings: it takes knowing the neighbourhoods, knowing what is being built, and having someone to negotiate with. We represent you, not the seller.",
     challengeTitle: "A market in the middle of a transformation",
     challengeText:
-      "Asunción has changed a great deal in a few years, and with it came new districts, new developers and prices that move differently block by block. Without that local reading it is easy to overpay for something hard to resell.",
+      "Asunción has changed a great deal in a few years, with the rise of the New Financial Center and corridors like Santa Teresa and Villa Morra drawing more international capital each year. With that came new districts, new developers and prices that move differently block by block. Without that local reading it is easy to overpay for something hard to resell.",
     frameworkTitle: "How we work with you",
     framework: [
       {
-        title: "Sourcing",
-        text: "We go beyond the portals: a network of developers and owners, filtered by build quality and resale potential.",
+        title: "Exclusive property sourcing",
+        text: "We go beyond the public portals, drawing on a private network of developers and local owners to find off-market and pre-construction opportunities, filtered by build quality, developer reputation and resale potential.",
       },
       {
-        title: "Due diligence",
-        text: "We coordinate title and lien checks with a notary, and translate every document for you.",
+        title: "Due diligence and legal oversight",
+        text: "We coordinate with top-tier notaries and legal experts to run a full title search for liens or legal encumbrances, and translate every legal document into English so you move forward with clarity.",
       },
       {
-        title: "Negotiation",
-        text: "We negotiate on local market data, so you do not pay the premium usually charged to an outsider.",
+        title: "Negotiation and representation",
+        text: "We negotiate using local market data to secure the best price and terms, working to keep the outsider's premium off your purchase.",
       },
       {
         title: "After the deed",
-        text: "Utility transfers, getting the place ready and, if you want it, management from the first month.",
+        text: "We handle the transfer of titles and utilities and, if you want it, immediate integration into our Apartment Management or Airbnb Management service.",
       },
     ],
     specialTitle: "Specialised services for buyers and sellers",
-    special: [],
+    special: [
+      {
+        title: "Pre-construction (en pozo) strategy",
+        text: "Access floor-one pricing on new developments through our vetted list of established developers.",
+      },
+      {
+        title: "Luxury residential relocation",
+        text: "Tailored searches for high-security villas and penthouses in the city's most sought-after gated communities.",
+      },
+      {
+        title: "Commercial and land acquisition",
+        text: "We identify strategic plots for future development or commercial use in Asunción's emerging industrial zones.",
+      },
+    ],
     benefitsTitle: "What representation adds",
     benefits: [
       {
         title: "Less risk",
-        text: "We look at who is building, with what materials, and what is planned around it before your money moves.",
+        text: "We look at who is building, with what materials, and what is planned around it, so your capital goes into something built to hold its value.",
+      },
+      {
+        title: "Time you get back",
+        text: "We act as your single point of contact through the whole purchase, coordinating agents, lawyers and government paperwork on your behalf.",
       },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "Can a foreigner buy property in Paraguay?",
+        a: "Yes. Paraguay is very open to foreign investment: you can purchase and title property under your own name or a corporation using only your valid passport.",
+      },
+      {
+        q: "What are the closing costs when buying in Asunción?",
+        a: "Closing costs (including notary fees and taxes) typically range between 2% and 3% of the transaction value. We provide a detailed estimate before any deal is finalised.",
+      },
+      {
+        q: "What tax do I pay if I sell later on?",
+        a: "Paraguay has a very competitive tax environment. If you sell as an individual, the tax on the gain is usually low, effectively around 2.4% to 3% in many cases.",
+      },
+    ],
     ctaTitle: "Buy with someone on your side",
     ctaText: "Tell us what you are looking for and what budget you have.",
     ctaButton: "Talk to us",
@@ -1330,41 +1453,87 @@ export const enRentalServices = {
       `${brand} prepares your file and walks you through the Paraguayan residency process, up to your cédula.`,
     h1: "Residency in Paraguay",
     tagline:
-      "A residency process handled end to end, for investors, digital nomads and families.",
+      "One of the world's most accessible paths to residency, handled end to end, for investors, digital nomads and families.",
     intro:
       "Paraguayan residency is among the most accessible in the world, but the process has steps, stamps and appointments you would rather not discover as you go. We prepare the file before you fly and we are with you while you are here.",
     challengeTitle: "Why people choose it",
     challengeText:
-      "Paraguay attracts people who want an orderly plan B: a reasonable cost of living, a clear path towards citizenship, and a convenient base for moving around the region. The tax conditions and the timelines we go through with you case by case, because they change and they depend on your situation.",
+      "Paraguay has become a top destination for people looking to escape high taxes and heavy regulation elsewhere. It runs on a territorial tax system: local income is taxed at a flat 10%, and income earned outside Paraguay is generally not taxed at all. Permanent residency is also the first formal step toward Paraguayan citizenship and a passport, and the country sits in a stable, convenient location for moving around the region.",
     frameworkTitle: "The process, step by step",
     framework: [
       {
         title: "Consultation and documents",
-        text: "We review your case, give you the checklist for your own country and verify apostilles and translations before you travel.",
+        text: "We review your case, give you a checklist of documents from your home country, and verify your apostilles and translations before you travel.",
       },
       {
         title: "Your days in Asunción",
-        text: "We take you to every appointment — biometrics, medical check and interviews — with transport and someone bilingual alongside.",
+        text: "Your in-person visit runs 3 to 5 days. We take you to every appointment — biometrics, medical check and interviews — with private transport, someone bilingual alongside, and a neighbourhood orientation tour while you're here.",
       },
       {
         title: "Monitoring",
-        text: "We follow the file as it moves and tell you at each stage.",
+        text: "We track your file with Immigration on a weekly basis and handle any extra requirements or questions that come up while it moves.",
       },
       {
         title: "Collection",
-        text: "We collect the documentation and hand it to you when it is issued.",
+        text: "We collect your Temporary Residency card and can ship it to you internationally if you'd rather not wait here, and help you get your Cédula and RUC (tax ID) for local business.",
       },
     ],
     specialTitle: "Specialised services for global citizens",
-    special: [],
+    special: [
+      {
+        title: "Short-term landing rentals",
+        text: "Need somewhere to stay while your process is underway? We keep serviced apartments ready so housing isn't one more thing to sort out.",
+      },
+      {
+        title: "Investor visa assistance",
+        text: "Specialised support if you're applying under one of the investment categories.",
+      },
+      {
+        title: "Digital nomad support",
+        text: "Tailored advice for remote workers looking to organise their global tax position.",
+      },
+      {
+        title: "Family packages",
+        text: "Full support for spouses and children, so the whole family moves through the process together.",
+      },
+    ],
     benefitsTitle: "What we take off your hands",
     benefits: [
       {
         title: "Few days here",
         text: "We prepare everything in advance so your time in Asunción is as short as possible.",
       },
+      {
+        title: "Documents checked before you travel",
+        text: "We review your apostilles and translations against what Immigration actually asks for, so nothing comes back rejected at the counter.",
+      },
+      {
+        title: "A legal network we already trust",
+        text: "We work directly with lawyers and notaries we know, so your status holds up to scrutiny.",
+      },
+      {
+        title: "Banking, sorted after",
+        text: "Once your Cédula is issued, we help you open a local bank account too.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "Do I need to live in Paraguay to keep my residency?",
+        a: "No. Paraguay has very flexible physical presence requirements, which is what makes it such a workable plan B.",
+      },
+      {
+        q: "How long does the process take?",
+        a: "The in-country portion takes less than a week. The final ID card (Cédula) usually takes a few months to be issued after that.",
+      },
+      {
+        q: "Can I open a bank account?",
+        a: "Yes. Once your Cédula is issued, we help you navigate the banking system to open your accounts.",
+      },
+      {
+        q: "Will I pay tax on income from outside Paraguay?",
+        a: "Paraguay runs a territorial tax system, so income earned outside the country is generally not taxed. Local income is taxed at a flat 10%.",
+      },
+    ],
     ctaTitle: "Start your residency",
     ctaText: "Tell us your nationality and your situation, and we will tell you what you need.",
     ctaButton: "Talk to us",
@@ -1375,41 +1544,79 @@ export const enRentalServices = {
       `${brand} supports your investment in Paraguay: sourcing the asset, the legal structure and the management afterwards, with clear reporting.`,
     h1: "Invest in Paraguay",
     tagline:
-      "Property and productive opportunities in Paraguay, with someone here to run them afterwards.",
+      "Property, farmland and business opportunities in Paraguay, with someone here to run them afterwards.",
     intro:
       "Investing at a distance works when someone on this side looks at the building, checks on the tenant and sends the numbers on time. We find the asset, get the structure right, and then manage it.",
     challengeTitle: "Why Paraguay",
     challengeText:
-      "Paraguay combines a simple tax regime, low operating costs and an economy that has been growing steadily. The specific figures — rates, incentives and expected returns — we go through case by case, because they depend on the asset and on the year.",
+      "Paraguay's economy runs on fiscal discipline: a flat \"10-10-10\" system (10% corporate tax, 10% personal income tax, 10% VAT) and a territorial tax regime that only taxes income earned inside the country, so your wealth elsewhere stays untouched, with no inheritance, wealth or gift tax on top. Law No. 7548/2025 adds further incentives for larger projects, including exemptions on dividends and profit remittances. The specific figures for your case — rates, incentives and expected returns — we go through case by case, because they depend on the asset and on the year.",
     frameworkTitle: "How we work an investment",
     framework: [
       {
         title: "Property",
-        text: "We look for assets with real rental demand and a resale market in Asunción's premium corridors.",
+        text: "We look for property with real rental demand and a resale market in Asunción's premium corridors, such as Santa Teresa and Villa Morra.",
       },
       {
         title: "Farmland and agribusiness",
-        text: "We support the purchase of productive land, with the local advice to evaluate and run it.",
+        text: "We facilitate the purchase of high-fertility land for soybean, corn, livestock and other agribusiness, with the local expertise to evaluate and run it.",
       },
       {
         title: "Legal and tax structure",
-        text: "We work with local firms so the investment is structured properly from the start.",
+        text: "We work with local law firms so your investment is structured properly from the start, including applying for the benefits of Law 7548/2025 and the Maquila Regime where the project qualifies.",
       },
       {
         title: "Management",
-        text: "Due diligence, purchase, getting it running, and regular reporting in your language.",
+        text: "Due diligence, purchase, getting it running, and regular bilingual reporting, so you can follow your investment from anywhere.",
       },
     ],
     specialTitle: "Specialised investment vehicles",
-    special: [],
+    special: [
+      {
+        title: "Pre-construction residential pooling",
+        text: "Join a syndicate of investors to fund residential developments in Asunción from the pre-construction (\"pozo\") stage.",
+      },
+      {
+        title: "Livestock fattening partnerships",
+        text: "Invest in cattle-fattening (\"engorde\") cycles alongside professional ranchers: a tangible, asset-backed investment with defined cycles.",
+      },
+      {
+        title: "Industrial park development",
+        text: "Back logistics and warehouse space near the Bioceanic Corridor as demand for regional distribution grows.",
+      },
+    ],
     benefitsTitle: "What you get",
     benefits: [
       {
         title: "Boots on the ground",
         text: "Someone here who looks, decides and answers, while you stay where you are.",
       },
+      {
+        title: "Fiscal efficiency",
+        text: "Paraguay's territorial tax system taxes only income earned inside the country, and there is no inheritance, wealth or gift tax, which matters for long-term estate planning.",
+      },
+      {
+        title: "A Mercosur hub",
+        text: "Paraguay sits at the centre of the continent, and the Maquila Law lets qualifying companies import raw materials duty-free and export finished goods at a symbolic 1% tax: a base for reaching neighbouring markets, not just Paraguay's own.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "Can foreigners buy property or farmland in Paraguay?",
+        a: "Yes. Foreigners have the same property rights as Paraguayan citizens and can own real estate or farmland outright, in their own name or through a local company.",
+      },
+      {
+        q: "What tax regime applies to my investment?",
+        a: "Paraguay taxes only income earned within the country, applies a flat 10% rate to corporate profits, personal income and VAT, and charges no inheritance, wealth or gift tax. Larger projects can also apply for the incentives under Law No. 7548/2025.",
+      },
+      {
+        q: "Is there a minimum investment to access the Law 7548/2025 benefits?",
+        a: "You can invest any amount, but the law's most significant tax exemptions apply to projects starting at USD 5 million, with further benefits above USD 13 million.",
+      },
+      {
+        q: "Can I move my capital and profits freely?",
+        a: "Yes. Paraguay has no exchange controls, so you can move capital and profits in and out of the country in US dollars or euros through the regular banking system.",
+      },
+    ],
     ctaTitle: "Let's talk about your investment",
     ctaText: "Tell us the amount and the horizon you have in mind.",
     ctaButton: "Talk to us",
@@ -1422,39 +1629,73 @@ export const enRentalServices = {
     tagline:
       "A commercial and legal address in Asunción, without the overhead of renting an office.",
     intro:
-      "Registering a company, applying for a tax ID or simply receiving official correspondence all need a stable address in Paraguay. We give you that base — and someone who opens the envelope when it arrives.",
-    challengeTitle: "What it is for",
+      "Get a legal and commercial domicile in Asunción's premier business district, built for digital nomads, remote companies and international investors who want a foothold in Paraguay without renting a physical office. Your address doubles as the base for company registration, tax filings and everyday correspondence, and it comes with someone who actually opens the envelope when it arrives.",
+    challengeTitle: "What a virtual address is for",
     challengeText:
-      "If you are testing the Paraguayan market, or your operation is remote, a professional address in the financial district gives you credibility with banks, government offices and clients, without the cost of a lease.",
+      "If you are testing the Paraguayan market, or your operation runs remotely, a professional address in Asunción's financial district gives you credibility with local banks, government agencies and clients, without the cost, deposits or long-term commitment of a physical lease.",
     frameworkTitle: "What it includes",
     framework: [
       {
-        title: "Business domicile",
-        text: "A recognised Asunción address for your website, your stationery and your paperwork.",
+        title: "Premium business domicile",
+        text: "A recognised commercial address in corridors like Santa Teresa or Villa Morra, for your website, stationery and official paperwork.",
       },
       {
-        title: "Mail handling",
-        text: "We receive, scan and forward letters, packages and official notifications.",
+        title: "Digital mailroom & management",
+        text: "We receive your official mail, packages and government notifications, then scan and forward them so you can manage everything from wherever you are.",
       },
       {
-        title: "Legal and tax domicile",
-        text: "It meets the local requirements for registering a company and applying for a RUC.",
+        title: "Legal & tax domicile",
+        text: "A stable, compliant seat in Paraguay for company registration and RUC (tax ID) applications.",
       },
       {
-        title: "Meeting rooms",
-        text: "When you are in town, you have somewhere to meet at the same address.",
+        title: "On-demand meeting spaces",
+        text: "When you are in town, you get access to a boardroom or coworking space at the same registered address.",
       },
     ],
-    specialTitle: "Solutions for global founders",
-    special: [],
+    specialTitle: "Specialized solutions for global founders",
+    special: [
+      {
+        title: "Corporate formation package",
+        text: "We pair the virtual address with legal support to incorporate your Paraguayan S.A. or S.A.S.",
+      },
+      {
+        title: "Bilingual receptionist",
+        text: "A local phone number answered in your company's name by a bilingual receptionist.",
+      },
+      {
+        title: "Package forwarding",
+        text: "International shipping for physical goods or documents that arrive at your Asunción address.",
+      },
+    ],
     benefitsTitle: "Why it works",
     benefits: [
       {
         title: "Enter without committing",
-        text: "You test the market with a formal presence before signing a lease.",
+        text: "You test the Paraguayan market with a formal presence before signing a lease, skipping the deposits and utility bills of a physical office.",
+      },
+      {
+        title: "Banking and residency support",
+        text: "Banks require a physical address for KYC checks, and immigration filings need a stable one too — this covers both.",
+      },
+      {
+        title: "Instant credibility",
+        text: "A recognised business-district address signals legitimacy to banks, government offices and clients from day one.",
       },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "Do I need a physical address to open a bank account in Paraguay?",
+        a: "Yes. Banks in Paraguay require a physical or commercial address for KYC (Know Your Customer) checks, and our business addresses meet that standard.",
+      },
+      {
+        q: "How often will I hear about mail that arrives for me?",
+        a: "As often as needed — we notify you as soon as something arrives and follow your instructions to scan, shred or forward it.",
+      },
+      {
+        q: "Can I use this address during my residency process?",
+        a: "Yes. It works as a reliable point of contact for the migration office and the national police while your residency is being processed.",
+      },
+    ],
     ctaTitle: "Get your address in Asunción",
     ctaText: "Tell us what you need it for and we will tell you what it takes.",
     ctaButton: "Talk to us",
