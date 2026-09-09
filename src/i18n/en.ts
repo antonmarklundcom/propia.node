@@ -1436,11 +1436,11 @@ export const enRentalServices = {
       },
       {
         q: "What are the closing costs when buying in Asunción?",
-        a: "Closing costs (including notary fees and taxes) typically range between 2% and 3% of the transaction value. We provide a detailed estimate before any deal is finalised.",
+        a: "Closing costs (notary fees, registry filing and taxes) typically range between 2% and 3.5% of the transaction value. We provide a detailed estimate before any deal is finalised.",
       },
       {
         q: "What tax do I pay if I sell later on?",
-        a: "Paraguay has a very competitive tax environment. If you sell as an individual, the tax on the gain is usually low, effectively around 2.4% to 3% in many cases.",
+        a: "Paraguay has a very competitive tax environment. If you sell as an individual, the notary withholds the tax when the deed is signed, and in practice it works out to an effective 2.4% of the sale value (there is an alternative method based on the actual gain, but that 2.4% presumptive method is what applies by default).",
       },
     ],
     ctaTitle: "Buy with someone on your side",
@@ -1458,7 +1458,7 @@ export const enRentalServices = {
       "Paraguayan residency is among the most accessible in the world, but the process has steps, stamps and appointments you would rather not discover as you go. We prepare the file before you fly and we are with you while you are here.",
     challengeTitle: "Why people choose it",
     challengeText:
-      "Paraguay has become a top destination for people looking to escape high taxes and heavy regulation elsewhere. It runs on a territorial tax system: local income is taxed at a flat 10%, and income earned outside Paraguay is generally not taxed at all. Permanent residency is also the first formal step toward Paraguayan citizenship and a passport, and the country sits in a stable, convenient location for moving around the region.",
+      "Paraguay has become a top destination for people looking to escape high taxes and heavy regulation elsewhere. It runs on a territorial tax system: income earned outside Paraguay is generally not taxed at all, and local income is taxed at low personal-income rates. Residency — first temporary and, after two years, permanent — is also the formal path toward Paraguayan citizenship and a passport, and the country sits in a stable, convenient location for moving around the region.",
     frameworkTitle: "The process, step by step",
     framework: [
       {
@@ -1531,7 +1531,11 @@ export const enRentalServices = {
       },
       {
         q: "Will I pay tax on income from outside Paraguay?",
-        a: "Paraguay runs a territorial tax system, so income earned outside the country is generally not taxed. Local income is taxed at a flat 10%.",
+        a: "Paraguay runs a territorial tax system, so income earned outside the country is generally not taxed. Local income is taxed at low personal-income rates, depending on the type of income.",
+      },
+      {
+        q: "Can I apply for permanent residency directly?",
+        a: "For most people, no: you first get temporary residency, and only after two years with that status can you apply for permanent. People who qualify under one of the investment categories can access a more direct route. We tell you which path fits your situation.",
       },
     ],
     ctaTitle: "Start your residency",
@@ -1549,7 +1553,7 @@ export const enRentalServices = {
       "Investing at a distance works when someone on this side looks at the building, checks on the tenant and sends the numbers on time. We find the asset, get the structure right, and then manage it.",
     challengeTitle: "Why Paraguay",
     challengeText:
-      "Paraguay's economy runs on fiscal discipline: a flat \"10-10-10\" system (10% corporate tax, 10% personal income tax, 10% VAT) and a territorial tax regime that only taxes income earned inside the country, so your wealth elsewhere stays untouched, with no inheritance, wealth or gift tax on top. Law No. 7548/2025 adds further incentives for larger projects, including exemptions on dividends and profit remittances. The specific figures for your case — rates, incentives and expected returns — we go through case by case, because they depend on the asset and on the year.",
+      "Paraguay's economy runs on fiscal discipline: a flat 10% corporate income tax on profits, a general 10% VAT, and a territorial tax regime that only taxes income earned inside the country, so your wealth elsewhere stays untouched, with no inheritance, wealth or gift tax on top. Dividend distributions carry their own withholding on top of that (lower for residents than for non-residents), so the effective burden on profits you remit abroad is not the same as on profits you reinvest here. Law No. 7548/2025 adds further incentives for larger projects, including exemptions on dividends and profit remittances above a certain investment size. The specific figures for your case — rates, incentives and expected returns — we go through case by case, because they depend on the asset, the structure and the year.",
     frameworkTitle: "How we work an investment",
     framework: [
       {
@@ -1602,15 +1606,15 @@ export const enRentalServices = {
     faq: [
       {
         q: "Can foreigners buy property or farmland in Paraguay?",
-        a: "Yes. Foreigners have the same property rights as Paraguayan citizens and can own real estate or farmland outright, in their own name or through a local company.",
+        a: "Yes. Foreigners have the same property rights as Paraguayan citizens and can own real estate or farmland outright, in their own name or through a local company — with one specific exception: buying farmland inside the border security zone is restricted to citizens of neighbouring countries. Outside that zone, and in urban areas like Asunción, no such restriction applies.",
       },
       {
         q: "What tax regime applies to my investment?",
-        a: "Paraguay taxes only income earned within the country, applies a flat 10% rate to corporate profits, personal income and VAT, and charges no inheritance, wealth or gift tax. Larger projects can also apply for the incentives under Law No. 7548/2025.",
+        a: "Paraguay taxes only income earned within the country. Corporate profits pay a flat 10% corporate income tax and the general VAT rate is 10%; dividend distributions carry their own withholding on top, lower for residents than for non-residents. There is no inheritance, wealth or gift tax. Larger projects can also apply for the incentives under Law No. 7548/2025.",
       },
       {
         q: "Is there a minimum investment to access the Law 7548/2025 benefits?",
-        a: "You can invest any amount, but the law's most significant tax exemptions apply to projects starting at USD 5 million, with further benefits above USD 13 million.",
+        a: "You can invest any amount. Projects starting around USD 500,000 already qualify for base-tier benefits (duty-free capital equipment imports, fiscal credits), while the most significant exemptions — a full 10-year exemption on dividends and on interest from foreign project financing — are reserved for projects starting at USD 13 million.",
       },
       {
         q: "Can I move my capital and profits freely?",
