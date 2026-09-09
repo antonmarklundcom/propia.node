@@ -102,8 +102,9 @@ const EDITORIAL: ThemeVars = {
  * the rental pair is one business in two languages, so giving them separate
  * palettes would only make one company look like two.
  *
- * The anchor is the slate the old site's own logo files are drawn in
- * (#182830, sampled from `docs/rentparaguay-extraction/images/Logo-dark-1.png`)
+ * The anchor is the slate the old site's own logo files were drawn in
+ * (#182830, sampled from the old site's `Logo-dark-1.png` during O2 —
+ * the scratch extraction that sourced it is deleted as of S3)
  * — the one piece of that WordPress theme worth keeping, since its wordmark
  * was the theme vendor's demo brand rather than the founder's. The accent is
  * clay: warm for a letting-and-management firm, and unmistakably neither the

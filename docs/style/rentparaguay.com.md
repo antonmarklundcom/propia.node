@@ -88,7 +88,7 @@ are not built — see `fable/KNOWN-ISSUES.md`. Longest edge 1600px, WebP q≈80,
 all ≤250 KB (largest is `hero-home.webp` at 186 KB). The two logo PNGs are
 palette reference only and are **not** shipped.
 
-| File | Source (`docs/rentparaguay-extraction/images/`) | Provenance |
+| File | Source (old site's scratch extraction, deleted as of S3) | Provenance |
 | --- | --- | --- |
 | `hero-home.webp` | `rent-paraguay.jpeg` | paraguay-stock |
 | `about.webp` | `about-us-rent-paraguay.png` | generic-stock |

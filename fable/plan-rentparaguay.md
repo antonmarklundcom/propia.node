@@ -693,6 +693,78 @@ Where S3 looks first: `esRentalServices.alquiler` / `enRentalServices.alquiler`
 (O3's exemplar) for the Appendix C shape, and the six other
 `docs/rentparaguay-extraction/content/<slug>.md` files for their source copy.
 
+**2026-09-09 — S3 the seven service pages, cleanup, docs.** PR: last phase
+of this plan.
+
+What now exists: all seven `rentalServices.<key>` entries (`es.ts`/`en.ts`)
+filled to the Appendix C shape — `administracionAirbnb`,
+`administracionDepartamentos`, `inmobiliariaAsuncion`, `residenciaParaguay`,
+`invertirEnParaguay` and `domicilioVirtual` expanded from O3's one-entry-per-
+section skeleton to the full 3–5 `framework` / 2–4 `special` / 2–4
+`benefits` / 3–5 `faq` shape, alongside `alquiler` (O3's untouched exemplar).
+Fan-out per §4.13: six Sonnet subagents, one per key, each reading only its
+own `docs/rentparaguay-extraction/content/<old-slug>.md` and writing a
+scratch file with copy-paste-ready `es`/`en` object bodies; this session
+merged all six with a script (line-exact block replacement scoped to
+`esRentalServices`/`enRentalServices` so it never touched the same-named
+`rental.services.<key>` card-copy entries), ran `verify:i18n`, and fixed one
+merge gap itself (`administracionAirbnb`'s English half was pasted in a
+manual pre-script edit and missed — caught by the first `verify:i18n` run,
+fixed with the same script). `docs/rentparaguay-extraction/` (17 MB) is
+deleted; the three stray doc-comment references to it (`src/design/themes.ts`,
+two in `src/i18n/es.ts`, one in `docs/style/rentparaguay.com.md`) were reworded
+to describe the source historically rather than point at a path that no
+longer exists. `RentalServicePage.tsx` needed no markup change — every
+Appendix C field already had a conditional-render branch from O3.
+
+Legal/fiscal figures carried over from the old site's copy, for the founder
+to strike any that are wrong (none were invented — each is stated as plain
+fact in its source file, not a marketing superlative):
+
+- `inmobiliariaAsuncion`: closing costs (notary + taxes) ≈2–3% of the
+  transaction value; individual capital-gains tax on a sale ≈2.4–3%;
+  foreigners can buy/hold title in their own name or via a corporation with
+  only a valid passport.
+- `residenciaParaguay`: a flat 10% tax on Paraguay-sourced income under the
+  territorial system; permanent residency is the first formal step toward
+  Paraguayan citizenship; the in-country portion of the process is under a
+  week, with the Asunción visit itself 3–5 days; the final Cédula usually
+  takes a few months to issue; a bank account can be opened once the Cédula
+  is issued.
+- `invertirEnParaguay`: the "10-10-10" tax system (10% corporate tax, 10%
+  personal income tax, 10% VAT); Law 7548/2025's exemptions on
+  dividend/profit remittances for qualifying projects, with thresholds
+  starting at investments of USD 5M and further benefits above USD 13M; the
+  Maquila export regime's tax as low as 1%; the territorial system taxing
+  only Paraguay-sourced income with no inheritance, wealth or gift tax; no
+  exchange controls on moving capital/profits in USD or EUR; foreigners have
+  the same property rights as Paraguayan nationals, including 100% ownership
+  of real estate and farmland.
+- `administracionAirbnb`, `administracionDepartamentos`, `domicilioVirtual`:
+  no legal/fiscal figures — every source superlative in these three
+  (guaranteed response times, "24/7", ranking claims, ROI percentages) was
+  marketing puffery and was dropped rather than translated.
+
+Deviations from §6.3: none in substance. The fan-out prompt additionally told
+each subagent which figures counted as "legal/fiscal fact, may keep" versus
+"marketing superlative, drop" per-service, since a blanket rule would have
+been too coarse for `residenciaParaguay`/`invertirEnParaguay` (dense with
+real figures) versus the other four (almost none).
+
+Proof: `npx tsc --noEmit` clean after `npm install` (no `node_modules` in
+this container beforehand); `npm run verify:i18n`, `verify:facets`,
+`verify:seo`, `verify:import` (pure half) all green; `npm run build` clean;
+`npm run start` + `curl -H "Host: alquiler.com.py"` / `-H "Host:
+rentparaguay.com"` on all seven `/servicios/<slug>` URLs on both hosts (14
+requests) — all HTTP 200, each with its own `<h1>`, a `FAQPage` JSON-LD block
+(`@type":"FAQPage"` plus one `Question`/`Answer` pair per real FAQ entry) and
+the lead form; the home page itself 500s in this sandbox (no MySQL — no
+Docker daemon here, same limitation O1 logged), unrelated to this phase's
+files. `ls
+docs/rentparaguay-extraction` fails; `grep -rn "rentparaguay-extraction"
+--include=*.ts --include=*.tsx --include=*.md .` returns only `fable/` and
+`docs/prompts/`.
+
 ## §10 Backlog
 
 - `pathByLocale` for English service slugs on `rentparaguay.com`.
