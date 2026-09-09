@@ -10,14 +10,15 @@
  * mechanism lands now, ahead of the flip, rather than being invented under
  * time pressure on the day.
  *
- * **It emits nothing today, on purpose.** Both enabled hosts are `locale:
- * "es"` and serve identical rows, so there is no translation to declare — and
- * annotating two Spanish URLs as language variants of each other would tell
- * Google the opposite of what `listingCanonicalOrigin()` tells it. Duplicates
- * are a canonical problem; hreflang is for translations. So the rule below is
- * "fewer than two distinct locales ⇒ no tags", and the day
- * `verticals.ts` says `locale: "en"` on one host, every wired page starts
- * emitting the pair with no further code change.
+ * Two rules it encodes, both load-bearing. **Only different locales pair**:
+ * two Spanish doors serving the same rows are a duplicate, which is the
+ * canonical tag's job, not hreflang's, so "fewer than two distinct locales ⇒
+ * no tags". And **only doors of the same family pair** (`VerticalFamily`,
+ * added with the rental doors): the marketplace and the rental business are
+ * different content that happens to share a deployment, so
+ * rentparaguay.com/ is not the English version of inmobiliaria.com.py/ and
+ * neither one's pages may be declared on the other's doors. Every caller
+ * therefore says which family its page belongs to.
  *
  * Pure on purpose (no `next/headers`), the same split as `facets.ts` /
  * `facet-sql.ts`: the set of language versions is a property of the *content*,
@@ -31,7 +32,12 @@
  * it against a synthetic post-flip vertical table so the behaviour on flip day
  * is proven before the flip.
  */
-import { CANONICAL_HOST, VERTICALS, type VerticalConfig } from "@/config/verticals";
+import {
+  CANONICAL_HOST,
+  VERTICALS,
+  type VerticalConfig,
+  type VerticalFamily,
+} from "@/config/verticals";
 import type { Locale } from "@/i18n";
 
 /**
@@ -50,6 +56,20 @@ export interface AlternateInput {
   /** Path as served, with its leading slash: "/", "/venta/asuncion", … */
   path: string;
   scope: AlternateScope;
+  /**
+   * Which content family this page belongs to — the marketplace's listings and
+   * categories, or the rental business's own pages. Only doors of the same
+   * family are language versions of each other: rentparaguay.com/ is not the
+   * English version of inmobiliaria.com.py/, and /servicios/… does not exist
+   * on a marketplace door at all.
+   *
+   * Required, not optional-with-a-default: a field that silently defaults to
+   * "marketplace" is how a rental page added later pairs itself with the wrong
+   * doors, and the wrongness is invisible in the page it renders. Shared pages
+   * (home, categories, detail) pass `currentVertical().family`, so they
+   * describe the door that served them.
+   */
+  family: VerticalFamily;
   /**
    * Per-locale path overrides, for content whose URL is not the same string on
    * every door. Nothing needs this today — every URL in this app is built from
@@ -133,7 +153,9 @@ export function alternatesFor(
   primaryHost: string,
   input: AlternateInput,
 ): Record<string, string> | undefined {
-  const owning = doors.filter((d) => ownsScope(d, primaryHost, input.scope));
+  const owning = doors
+    .filter((d) => d.config.family === input.family)
+    .filter((d) => ownsScope(d, primaryHost, input.scope));
   const byLocale = doorPerLocale(owning, primaryHost);
   if (byLocale.size < 2) return undefined;
 
@@ -143,8 +165,14 @@ export function alternatesFor(
   const languages: Record<string, string> = {};
   for (const [locale, door] of byLocale) languages[locale] = urlFor(door);
 
+  // x-default names the version for a visitor whose language matches none of
+  // them. Inside the primary's own family that is the primary; in another
+  // family it is that family's Spanish door (its home market), and failing
+  // both, declaration order — deterministic in every case.
   const primary =
-    owning.find((d) => d.host === primaryHost) ?? byLocale.values().next().value;
+    owning.find((d) => d.host === primaryHost) ??
+    byLocale.get("es") ??
+    byLocale.values().next().value;
   if (primary) languages["x-default"] = urlFor(primary);
 
   return languages;

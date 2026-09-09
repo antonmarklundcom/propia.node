@@ -128,15 +128,21 @@ const getHomePayload = unstable_cache(
 );
 
 export async function generateMetadata(): Promise<Metadata> {
-  const brand = await brandName();
+  const [brand, vertical] = await Promise.all([brandName(), currentVertical()]);
   return {
     title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
     description: (await dict()).home.metaDescription,
     // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
-    // `languages` is empty while every door is Spanish — see alternates.ts.
+    // `languages` pairs this home with the other door of the SAME family only
+    // — the rental home is its own site, not a translation of this one
+    // (see alternates.ts).
     alternates: {
       canonical: await siteOrigin(),
-      languages: languageAlternates({ path: "/", scope: "site" }),
+      languages: languageAlternates({
+        path: "/",
+        scope: "site",
+        family: vertical.family,
+      }),
     },
     // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
     // is the size every network crops to.

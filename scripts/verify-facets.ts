@@ -173,6 +173,7 @@ const noFilters: VerticalConfig = {
   brand: "x",
   locale: "en",
   copy: "foreign",
+  family: "marketplace",
   enabled: false,
   ownsListingDetail: false,
 };

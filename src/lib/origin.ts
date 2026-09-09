@@ -12,10 +12,15 @@
  * not simply the host that served it:
  *   siteOrigin()             — the host that owns this page.
  *   listingCanonicalOrigin() — ...except detail pages, which only some hosts
- *                              own; the rest canonicalise back to primary.
+ *                              own; the rest canonicalise to the door that
+ *                              owns them in their own language.
  */
 import { headers } from "next/headers";
-import { CANONICAL_HOST, VERTICALS } from "@/config/verticals";
+import {
+  CANONICAL_HOST,
+  VERTICALS,
+  type VerticalConfig,
+} from "@/config/verticals";
 import { rawHostFrom } from "./host";
 
 const PRIMARY_ORIGIN = `https://${CANONICAL_HOST}`;
@@ -78,16 +83,43 @@ function ownsListingDetail(p: HostParts): boolean {
 }
 
 /**
+ * Which served host owns /propiedad in a given language — pure, so
+ * `npm run verify:seo` can drive it without a request.
+ *
+ * A feeder points its detail pages at the door that owns them, and the owner
+ * has to be the one that owns them *in the feeder's own language*: a canonical
+ * from an English page to a Spanish URL declares two pages equivalent that a
+ * reader would not call equivalent, and Google drops it rather than following
+ * it. `verify:seo` already forbids two served doors owning detail in one
+ * language, so this lookup is unambiguous where it resolves at all. Falls back
+ * to the primary host, which owns detail whatever its own row says.
+ */
+export function detailOwnerForLocale(
+  locale: VerticalConfig["locale"],
+): string {
+  for (const [host, v] of Object.entries(VERTICALS)) {
+    const served = v.enabled || host === CANONICAL_HOST;
+    const owns = host === CANONICAL_HOST || v.ownsListingDetail;
+    if (served && owns && v.locale === locale) return host;
+  }
+  return CANONICAL_HOST;
+}
+
+/**
  * Origin for /propiedad/{slug} canonicals. Detail pages exist canonically on
  * the primary host and on the EN site (its own translated pages); a feeder
- * domain that renders one canonicalises it back to the primary host rather
- * than competing with it.
+ * domain that renders one canonicalises it to the door that owns detail in the
+ * feeder's own language — terreno.com.py and alquiler.com.py to the Spanish
+ * primary, rentparaguay.com to realestateinparaguay.com — rather than
+ * competing with it.
  */
 export async function listingCanonicalOrigin(): Promise<string> {
   const p = await hostParts();
   if (!p) return PRIMARY_ORIGIN;
   if (p.local) return `http://${p.raw}`;
-  return ownsListingDetail(p) ? `https://${p.bare}` : PRIMARY_ORIGIN;
+  if (ownsListingDetail(p)) return `https://${p.bare}`;
+  const v = VERTICALS[p.bare];
+  return v ? `https://${detailOwnerForLocale(v.locale)}` : PRIMARY_ORIGIN;
 }
 
 /**

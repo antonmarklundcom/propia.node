@@ -41,6 +41,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { operacion } = await params;
   const op = parseOperation(operacion);
   if (!op) return { title: brand };
+  // hreflang pairs a page only with the same content on a door of the same
+  // family — the rental doors' /alquiler is not a language version of the
+  // marketplace's (src/lib/alternates.ts).
+  const vertical = await currentVertical();
   const copy = (await dict()).hub.copy[op];
   return {
     title: `${copy.h1}`,
@@ -50,6 +54,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       languages: languageAlternates({
         path: `/${operationSlug(op)}`,
         scope: "site",
+        family: vertical.family,
       }),
     },
     // og:title doesn't inherit title.template, so the brand is explicit (F47).
