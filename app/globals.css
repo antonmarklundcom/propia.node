@@ -8236,3 +8236,117 @@ summary.panel-btn::-webkit-details-marker {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ---- Rental inner pages: /servicios, /servicios/<slug>, /nosotros, /contacto */
+.rental-page {
+  background: var(--color-background);
+}
+
+.rp-hero {
+  padding: clamp(40px, 5vw, 72px) 0 clamp(28px, 3vw, 44px);
+  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rp-hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 55fr) minmax(0, 45fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .rp-hero__grid {
+    grid-template-columns: 1fr;
+  }
+  .rp-hero__photo-wrap {
+    order: 2;
+  }
+}
+
+.rp-hero__back {
+  display: inline-block;
+  margin-bottom: 14px;
+  font-size: 14px;
+  color: var(--color-link);
+}
+
+.rp-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.8vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 6px 0 0;
+  color: var(--color-ink);
+}
+
+.rp-hero__lead {
+  margin: 16px 0 0;
+  max-width: 58ch;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary);
+}
+
+.rp-hero__photo-wrap {
+  border-radius: var(--radius-photo);
+  overflow: hidden;
+  box-shadow: var(--shadow-float);
+}
+
+.rp-hero__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.rp-intro__text,
+.rp-challenge__text {
+  max-width: 70ch;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--color-ink-secondary);
+}
+
+.rp-challenge__text {
+  margin-top: 16px;
+}
+
+/* Form section: copy on the left, the lead form on the right. */
+.rp-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .rp-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rp-form__copy > * + * {
+  margin-top: 20px;
+}
+
+.rp-form__form {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.rp-channels {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--color-ink-secondary);
+}
+
+.rp-channels a {
+  color: var(--color-link);
+}

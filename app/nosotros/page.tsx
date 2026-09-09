@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { brandName } from "@/lib/brand-server";
+import { dict } from "@/i18n/server";
+import { currentVertical } from "@/lib/vertical-context";
+import { rentalPagesEnabled } from "@/design/sections";
+import { languageAlternates } from "@/lib/alternates";
+import { RentalAbout } from "@/components/RentalAbout";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -20,11 +25,37 @@ const TITLE = "Sobre nosotros";
 const DESCRIPTION = (brand: string) => `${brand} es el portal inmobiliario de Paraguay: buscar es gratis, publicar también, y cada aviso muestra precio de referencia de la zona y cuota estimada.`;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const brand = await brandName();
+  const [brand, vertical, d, origin] = await Promise.all([
+    brandName(),
+    currentVertical(),
+    dict(),
+    siteOrigin(),
+  ]);
+  // The rental doors describe a services firm, not the portal — one fork, in
+  // the page that already resolves the vertical (same rule as app/page.tsx).
+  if (rentalPagesEnabled(vertical.key)) {
+    const a = d.rental.about;
+    return {
+      title: a.metaTitle,
+      description: a.metaDescription(brand),
+      alternates: {
+        canonical: `${origin}/nosotros`,
+        languages: languageAlternates({
+          path: "/nosotros",
+          scope: "site",
+          family: vertical.family,
+        }),
+      },
+      openGraph: {
+        title: `${a.metaTitle} — ${brand}`,
+        description: a.metaDescription(brand),
+      },
+    };
+  }
   return {
     title: `${TITLE}`,
     description: DESCRIPTION(brand),
-    alternates: { canonical: `${await siteOrigin()}/nosotros` },
+    alternates: { canonical: `${origin}/nosotros` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
@@ -53,6 +84,13 @@ const PRINCIPLES = [
 ];
 
 export default async function NosotrosPage() {
+  const vertical = await currentVertical();
+  if (rentalPagesEnabled(vertical.key)) {
+    // Before getPortalStats(): the rental doors have no use for the portal's
+    // listing counts, and a page that redirects its own content should not
+    // pay for the query first.
+    return <RentalAbout d={await dict()} />;
+  }
   const brand = await brandName();
   const [origin, stats] = await Promise.all([siteOrigin(), getPortalStats()]);
   const whatsapp = CONTACT_WHATSAPP;

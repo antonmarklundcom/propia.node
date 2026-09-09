@@ -577,6 +577,49 @@ Where O3 looks first: `RENTAL_SERVICES` in `src/config/rental-services.ts`
 (add `leadType`), `rentalPagesEnabled()` in `sections.ts` (the `/servicios`
 gate), the `rental` namespace's shape in `es.ts`, and §5.3.
 
+**2026-09-09 — O3 page scaffolding and lead capture.** PR: merged green. Last
+Opus phase.
+
+What now exists: `/servicios` and `/servicios/[slug]` (gated by
+`rentalPagesEnabled` — every other door `redirect("/")`, an unknown slug is a
+`notFound()`), `RentalServicesHub`, `RentalServicePage`, `RentalAbout` and
+`RentalContact`, one-line registry forks in `app/nosotros/page.tsx` and
+`app/contacto/page.tsx` (metadata and body both), `leadType` on
+`RENTAL_SERVICES`, the seven service URLs appended to `RENTAL_SITEMAP_PATHS`
+from that same list, and two new i18n namespaces: `leadForm` (LeadForm's
+literals, Spanish lifted out verbatim) and `rentalServices` (all seven keys in
+the Appendix C shape — `alquiler` filled from its content file as S3's
+exemplar, the other six with real meta, h1, tagline, intro and one real entry
+per section so no route renders empty). `LeadForm` gained `locale` and
+`source`; both existing call sites are unchanged.
+
+No schema change. The lead path is `LeadForm` → `/api/leads` and nothing else:
+`leadType` comes from the existing enum (renter for renting/residency/virtual
+address, seller for the two management services, buyer for realtor/invest) and
+the service travels as `utm.source = "rental:<slug>"`, the `/vender` marker.
+`crm.ts`, `/api/leads` and `src/db/**` were not touched.
+
+Deviations: `rentalServices.<key>.specialTitle` is a real string on all seven
+even where `special: []` — `verify:i18n` rejects an empty string, and a title
+whose section does not render is the honest way to leave the slot for S3. The
+lead-row proof did **not** run: no MySQL daemon in this container. The route
+and the payload are unchanged from `/contacto`'s, so this is a wiring check
+rather than a logic one, but it is still owed — post the form once on a
+rental host against a real database and confirm the row shows in
+`/admin/leads` with `vertical = rent` and `utm.source = rental:contacto`.
+
+Proof: `verify:local` green; the eleven rental URLs return 200 on **both**
+rental hosts; `/servicios` and `/servicios/alquiler` 307 to `/` on all three
+live doors; an unknown slug 404s on a rental door; the live doors' `<head>` is
+byte-identical and their `/contacto` lead form is identical once React's
+`<!-- -->` text separators are stripped (three of them moved when a literal
+became an expression — the rendered text is unchanged); `verify:i18n` was
+watched failing on a removed `leadForm` key and on a removed `rentalServices`
+key, then passing.
+
+Where S1 looks first: plan §6.1 and Appendix B, `docs/style/rentparaguay.com.md`
+§4 for the slots, and `RENTAL_SERVICES[].oldPath` for the redirect map.
+
 ## §10 Backlog
 
 - `pathByLocale` for English service slugs on `rentparaguay.com`.
