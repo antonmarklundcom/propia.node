@@ -659,6 +659,40 @@ Where S2 looks first: `src/config/rental-services.ts` for the seven slugs,
 `docs/rentparaguay-extraction/content/` for the source copy, and this
 entry's image-slot list for what S2's markup may assume already exists.
 
+**2026-09-09 — S2 copy: home, services hub, about, contact.** PR #109:
+merged green.
+
+What now exists: `rental.faq` in both `es.ts` and `en.ts`, filled with the
+five real Q&As from the old services page — bilingual support end-to-end,
+the local-guarantor workaround, investing while living abroad, residency
+timelines, and how Airbnb management runs day to day. English is the
+source, cleaned of the old site's own claims; Spanish is a translation of
+intent, vos-form; no invented figures carried over.
+
+Deviations: **home, services hub, about and contact copy was already real
+as of O2/O3** — re-reading the merged code before writing anything showed
+`esRental`/`enRental`, `RentalAbout` and `RentalContact` fully written, with
+only `faq: []` left empty on purpose (O2's own note). So the entire phase
+narrowed to that one array, plus wiring the FAQ block `RentalHome` already
+had into `RentalServicesHub` (plan §6.2: "the FAQ on the services hub
+becomes `rental.faq`; the home reuses it" — read as the hub being the
+primary surface, so it gained the same block and `FAQPage` JSON-LD, both
+gated on `t.faq.length > 0`). No new namespace keys beyond `faq` itself; no
+section added to `sections.ts`'s registry.
+
+Proof: `verify:local` green; `verify:i18n`'s removed-key proof run and
+restored (`dict.rental.faq[0].q` failed as expected, then passed);
+`grep -n -i "todo|lorem|verify before|altora|verificar"` has no real hits
+inside `rental`/`rentalServices` — every match there is the Spanish word
+"todo" ("all"), not a placeholder; `npm run build && npm run start` plus
+`curl -H "Host: rentparaguay.com"` / `-H "Host: alquiler.com.py"` on
+`/servicios`, `/nosotros`, `/contacto` show full copy in the right
+language, and all five FAQ entries render on `/servicios` in both.
+
+Where S3 looks first: `esRentalServices.alquiler` / `enRentalServices.alquiler`
+(O3's exemplar) for the Appendix C shape, and the six other
+`docs/rentparaguay-extraction/content/<slug>.md` files for their source copy.
+
 ## §10 Backlog
 
 - `pathByLocale` for English service slugs on `rentparaguay.com`.
