@@ -522,10 +522,60 @@ byte-identical before and after, and a pure probe of every alternates map,
 registry value, filter set and static sitemap list for the three live doors is
 identical too.
 
-Where O2 looks first: `familyOf()` in `verticals.ts`, `homeLayout()` /
+Where O2 looked first: `familyOf()` in `verticals.ts`, `homeLayout()` /
 `chromeVariant()` returning `"rental"` in `sections.ts` (both awaiting their
 component branch), and §5.2. §7 items this phase needs answered: the merge
 decision, and confirmation that `alquiler.com.py` is registered.
+
+**2026-09-09 — O2 rental identity: theme, chrome, home shell.** PR: merged
+green.
+
+What now exists: a `RENTAL` token set in `themes.ts` assigned to **both**
+rental keys (slate `#182830` from the old site's own logo files, clay
+`#A64B28` accent, Nórdico's Manrope/10px/one-shadow system, every contrast
+ratio computed and commented); `docs/style/rentparaguay.com.md`, the ≤80-line
+contract S1–S3 build against, plus two rows in `docs/style/README.md`;
+`src/config/rental-services.ts` (slug, dictKey, image, oldPath for the seven
+services — O3 adds `leadType`); the `rental` i18n namespace in `es.ts` and
+`en.ts` (chrome, hero, section titles, seven service cards, four why-us cards,
+four process steps, closing CTA, home metadata — all real copy from the
+extraction, nothing the WordPress theme fabricated); `RentalHome.tsx` and the
+`app/page.tsx` fork; the `"rental"` branch in `SiteHeader`, `SiteFooter` and
+`MobileMenu` (which gained an optional `companyGroup` prop, since its
+"Sobre nosotros" group was hard-coded to the Spanish marketplace's links); and
+the home CSS in `globals.css`.
+
+Deviations: `heroVariant()` was **not** extended — `RentalHome` renders its own
+hero exactly as `NordicoHome` and `EnHome` do, so a registry entry would have
+no reader. The home's metadata forks too (`rental.metaTagline` /
+`metaDescription`): shipping the portal's own "search listings, publish your
+property" meta copy on a rental door would have been wrong, and the fork sits
+in `app/page.tsx` next to the layout fork. `rental.faq` ships **empty** on
+purpose (S2 writes it); `RentalHome` renders neither the section nor the
+FAQPage JSON-LD while it is, the same rule as the empty inventory rail.
+
+Two live-door bugs found and deliberately left to `fable/KNOWN-ISSUES.md`
+rather than fixed here, because fixing either would change a live door's
+markup and this phase's exit criterion is that it does not: the home `<title>`
+tagline is hard-coded `brandTaglineFor("es")` for every door (so
+realestateinparaguay.com has had a Spanish tagline since D6), and the chrome
+still has three hard-coded Spanish literals ("Ingresar" and the drawer's aria
+labels).
+
+Proof: `verify:local` green; both rental doors' `/` render their own hero, the
+seven service cards, why-us, the four steps and the CTA in the right language
+with the clay palette (the home needs MySQL, which this container has no
+daemon for, so that render used a locally stubbed home payload — not
+committed; the chrome checks below are unstubbed); both rental doors' header
+and footer verified on `/terminos` (nav labels, one "Contactanos"/"Contact us"
+CTA to `/contacto`, no login link, three footer columns, `--color-accent:
+#A64B28`); the three live doors' `<head>` **and** full header HTML byte-
+identical before and after; `grep -rn "vertical.key ===" src/components` finds
+only a comment.
+
+Where O3 looks first: `RENTAL_SERVICES` in `src/config/rental-services.ts`
+(add `leadType`), `rentalPagesEnabled()` in `sections.ts` (the `/servicios`
+gate), the `rental` namespace's shape in `es.ts`, and §5.3.
 
 ## §10 Backlog
 

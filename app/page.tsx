@@ -7,6 +7,7 @@ import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { currentVertical } from "@/lib/vertical-context";
 import { homeSections, homeLayout } from "@/design/sections";
 import { NordicoHome } from "@/components/home/NordicoHome";
+import { RentalHome } from "@/components/home/RentalHome";
 import { EnHome } from "@/components/home/EnHome";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import {
@@ -128,10 +129,23 @@ const getHomePayload = unstable_cache(
 );
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [brand, vertical] = await Promise.all([brandName(), currentVertical()]);
+  const [brand, vertical, d] = await Promise.all([
+    brandName(),
+    currentVertical(),
+    dict(),
+  ]);
+  // The rental doors describe the rental business, not the portal: `home`'s
+  // meta copy is about searching listings and publishing a property, which is
+  // not what either rental door sells. Same fork point as the layout choice
+  // below (`homeLayout`), so a reader finds both decisions in one file.
+  const isRental = vertical.family === "rental";
   return {
-    title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
-    description: (await dict()).home.metaDescription,
+    title: {
+      absolute: isRental
+        ? `${brand} — ${d.rental.metaTagline}`
+        : `${brand} — ${brandTaglineFor("es")}`,
+    },
+    description: isRental ? d.rental.metaDescription : d.home.metaDescription,
     // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
     // `languages` pairs this home with the other door of the SAME family only
     // — the rental home is its own site, not a translation of this one
@@ -247,6 +261,14 @@ export default async function Home() {
         faq={faq}
       />
     );
+  }
+
+  if (homeLayout(vertical.key) === "rental") {
+    // The rental doors are a services firm, not a narrowed marketplace: their
+    // home is its own shell, and it deliberately does NOT receive `faq`
+    // (faqHome is the portal's own FAQ, about buying and publishing here) or
+    // the city tiles (marketplace category pages this door does not sell).
+    return <RentalHome vertical={vertical} d={d} recent={recent} />;
   }
 
   if (homeLayout(vertical.key) === "guide-en") {

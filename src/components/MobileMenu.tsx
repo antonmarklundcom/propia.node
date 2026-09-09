@@ -23,6 +23,7 @@ export function MobileMenu({
   nav,
   ctaHref,
   ctaLabel,
+  companyGroup,
 }: {
   nav: NavGroup[];
   /** null = no sell-side CTA in this drawer (realestateinparaguay.com —
@@ -32,6 +33,13 @@ export function MobileMenu({
    *  one of the three forbidden entry points. */
   ctaHref: string | null;
   ctaLabel: string;
+  /**
+   * Overrides the "Sobre nosotros" group below. The default is the Spanish
+   * marketplace's own company links, which is right for the marketplace doors
+   * and wrong for a door in another family and another language — the rental
+   * chrome passes its own, from the `rental` dictionary namespace.
+   */
+  companyGroup?: { title: string; links: readonly { label: string; href: string }[] };
 }) {
   const [open, setOpen] = useState(false);
   const [top, setTop] = useState(0);
@@ -111,10 +119,10 @@ export function MobileMenu({
 
             <div className="mobile-menu__group">
               <span className="mobile-menu__group-title">
-                {"Sobre nosotros"}
+                {companyGroup?.title ?? "Sobre nosotros"}
               </span>
               <ul className="mobile-menu__list">
-                {FOOTER_COMPANY.map((l) => (
+                {(companyGroup?.links ?? FOOTER_COMPANY).map((l) => (
                   <li key={l.href}>
                     <Link className="mobile-menu__link" href={l.href}>
                       {l.label}

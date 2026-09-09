@@ -7979,3 +7979,260 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink-secondary);
   margin-top: 10px;
 }
+
+/* ========================================================================== */
+/* Rental home layout (docs/style/rentparaguay.com.md §home)                   */
+/* ========================================================================== */
+/* Selected via homeLayout()/RentalHome — a dedicated component for the rental
+   family (alquiler.com.py, rentparaguay.com), not a branch inside the default
+   template. Everything below reads the theme's own tokens, so the two doors
+   share this file and differ only in language. */
+
+.rental-home {
+  background: var(--color-background);
+}
+
+/* ---- Hero: 55/45 split, white ground, copy left, photograph right --------- */
+.rh-hero {
+  padding: clamp(48px, 6vw, 88px) 0 clamp(32px, 4vw, 56px);
+  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rh-hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 55fr) minmax(0, 45fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+}
+
+.rh-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 4.6vw, 56px);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 10px 0 0;
+  color: var(--color-ink);
+}
+
+.rh-hero__subtitle {
+  margin: 18px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary);
+  max-width: 52ch;
+}
+
+.rh-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.rh-hero__photo-wrap {
+  border-radius: var(--radius-photo);
+  overflow: hidden;
+  box-shadow: var(--shadow-float);
+}
+
+.rh-hero__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+@media (max-width: 900px) {
+  .rh-hero__grid {
+    grid-template-columns: 1fr;
+  }
+  /* Copy first on a phone: the photograph is context, the sentence is the
+     product. */
+  .rh-hero__photo-wrap {
+    order: 2;
+  }
+}
+
+/* ---- Shared section lead paragraph --------------------------------------- */
+.rh-section__lead {
+  margin: 8px 0 0;
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary);
+}
+
+/* ---- Services: seven cards ----------------------------------------------- */
+.rh-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--grid-gap);
+  margin-top: 32px;
+}
+
+.rh-service {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 12px 12px 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rh-service:hover,
+.rh-service:focus-visible {
+  border-color: var(--color-border-accent);
+  box-shadow: var(--shadow-float);
+}
+
+.rh-service__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: var(--radius-photo);
+  background: var(--color-accent-soft);
+}
+
+.rh-service__title {
+  margin: 16px 4px 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.rh-service__text {
+  margin: 8px 4px 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-ink-secondary);
+}
+
+/* ---- Why us: four cards on hairlines -------------------------------------- */
+.rh-why {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--grid-gap);
+  margin-top: 32px;
+}
+
+.rh-why__card {
+  border-top: 2px solid var(--color-accent);
+  padding-top: 18px;
+}
+
+.rh-why__card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.3;
+  color: var(--color-ink);
+}
+
+.rh-why__card-text {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary);
+}
+
+/* ---- Process: the one dark section --------------------------------------- */
+.rh-process {
+  background: var(--color-primary);
+  color: #fff;
+  padding: var(--section-y) 0;
+  margin-top: var(--section-y);
+}
+
+.rh-process__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.15;
+  color: #fff;
+}
+
+.rh-process__lead {
+  margin: 10px 0 0;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.74); /* 8.6:1 on the slate */
+}
+
+.rh-process__steps {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--grid-gap);
+}
+
+.rh-process__num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: var(--label-tracking);
+  color: var(--color-accent-on-dark); /* 6.59:1 on the slate */
+}
+
+.rh-process__step-title {
+  margin: 10px 0 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.3;
+  color: #fff;
+}
+
+.rh-process__step-text {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+/* ---- Closing CTA ---------------------------------------------------------- */
+.rh-cta {
+  padding: var(--section-y) 0;
+}
+
+.rh-cta__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: var(--color-accent-soft);
+  border-radius: var(--radius-control);
+  padding: clamp(28px, 4vw, 48px);
+}
+
+.rh-cta__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.15;
+  color: var(--color-ink); /* 12.57:1 on the soft clay */
+}
+
+.rh-cta__text {
+  margin: 12px 0 0;
+  max-width: 60ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary);
+}
+
+/* ---- Footer: four columns rather than the marketplace's six --------------- */
+.site-footer__inner--rental {
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .site-footer__inner--rental {
+    grid-template-columns: 1fr 1fr;
+  }
+}

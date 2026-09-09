@@ -1565,3 +1565,175 @@ export const esProject = {
   delivery: (date: Date, numberLocale: string) =>
     `Entrega ${date.toLocaleDateString(numberLocale, { month: "long", year: "numeric" })}`,
 } as const;
+
+/**
+ * The rental family — alquiler.com.py (this file) and rentparaguay.com
+ * (`enRental`). One business in two languages, so unlike `guideEn` (a
+ * translation of the marketplace's own pitch) the *source* language here is
+ * English: the old rentparaguay.com wrote it, and this Spanish is a
+ * translation of its intent for a Paraguayan reader, never a new claim.
+ *
+ * Skeleton as of O2: chrome, hero, section titles, the seven service cards,
+ * the four "why us" cards, the four process steps and the closing CTA — all
+ * real copy from `docs/rentparaguay-extraction/content/home.md`. `faq` is
+ * deliberately empty until S2 writes it from the five real Q&As on the old
+ * services page; `RentalHome` renders no FAQ section while it is, the same way
+ * it renders no rail while the door has no rental inventory.
+ *
+ * Nothing fabricated by the old WordPress theme survives (plan §1 item 13):
+ * no "400+ agents", no demo listings, no testimonials, no team photos.
+ */
+export const esRental = {
+  // ---- chrome (SiteHeader / SiteFooter / MobileMenu, chromeVariant "rental")
+  chromeNav: [
+    { label: "Alquileres", href: "/alquiler" },
+    { label: "Servicios", href: "/servicios" },
+    { label: "Nosotros", href: "/nosotros" },
+    { label: "Contacto", href: "/contacto" },
+  ],
+  chromeCtaLabel: "Contactanos",
+  chromeCtaHref: "/contacto",
+  footerTagline:
+    "Inmobiliaria y administración de propiedades en Asunción, para extranjeros, nómadas digitales e inversores. Buscamos, alquilamos y administramos, en tu idioma.",
+  footerServicesTitle: "Servicios",
+  footerCompanyTitle: "Empresa",
+  footerLegalTitle: "Legal",
+  footerCompanyLinks: [
+    { label: "Nosotros", href: "/nosotros" },
+    { label: "Contacto", href: "/contacto" },
+    { label: "Alquileres", href: "/alquiler" },
+  ],
+  footerLegalLinks: [
+    { label: "Términos", href: "/terminos" },
+    { label: "Política de privacidad", href: "/privacidad" },
+  ],
+  footerContactUs: "Escribinos",
+  footerAddress: "Edificio Skytower, Asunción, Paraguay",
+  footerLegalLine: (brand: string) =>
+    `${brand} acompaña la búsqueda, el contrato y la administración. La información publicada es orientativa y no constituye asesoramiento legal, fiscal ni financiero.`,
+
+  // ---- home: metadata (the <title> tail and the meta description of "/")
+  metaTagline: "Alquiler y administración de propiedades en Asunción",
+  metaDescription:
+    "Inmobiliaria y administración de propiedades en Asunción para extranjeros, nómadas digitales e inversores: búsqueda, contrato, administración de alquileres y Airbnb, residencia y domicilio virtual.",
+
+  // ---- home: hero
+  heroKicker: "Alquiler y administración en Asunción",
+  heroTitle: "Alquilar en Paraguay, sin complicaciones",
+  heroSubtitle:
+    "Ayudamos a extranjeros, nómadas digitales e inversores a encontrar, alquilar y administrar propiedades en Asunción. Sin estrés, sin barrera idiomática y con las cuentas claras.",
+  heroPrimary: "Contactanos",
+  heroSecondary: "Ver servicios",
+
+  // ---- home: services
+  servicesTitle: "Servicios",
+  servicesLead: "Todo lo que hace falta para mudarte, quedarte o poner tu propiedad a rendir.",
+  servicesMore: "Ver todos los servicios →",
+
+  // ---- home: why us
+  whyTitle: "Por qué nosotros",
+  whyLead:
+    "Combinamos experiencia local, transparencia y una atención pensada para quien llega de afuera.",
+  whyCards: [
+    {
+      title: "Conocemos el mercado desde adentro",
+      text: "Recorrimos el mercado inmobiliario de Asunción como locales y como extranjeros, y esa doble mirada es la que ponemos en cada búsqueda.",
+    },
+    {
+      title: "De la búsqueda a la mudanza",
+      text: "Desde la primera visita hasta la traducción del contrato, los servicios y la administración posterior: nos ocupamos de los detalles.",
+    },
+    {
+      title: "Propiedades verificadas y cuentas claras",
+      text: "Visitamos cada propiedad antes de ofrecerla y explicamos qué se paga, cuándo y por qué, sin costos que aparezcan al final.",
+    },
+    {
+      title: "Atención bilingüe",
+      text: "Trabajamos en español y en inglés, para que entiendas cada cláusula que firmás y cada conversación que tenemos por vos.",
+    },
+  ],
+
+  // ---- home: process
+  processTitle: "Cómo trabajamos",
+  processLead: "Cuatro pasos, de la primera conversación a las llaves.",
+  processSteps: [
+    {
+      step: "01",
+      title: "Primera conversación",
+      text: "Nos contás qué buscás: zona, presupuesto, plazo y con quién vas a vivir o qué querés que rinda tu propiedad.",
+    },
+    {
+      step: "02",
+      title: "Selección a medida",
+      text: "Filtramos las mejores opciones en barrios como Villa Morra y Carmelitas y te mandamos una lista corta que encaja con lo que pediste.",
+    },
+    {
+      step: "03",
+      title: "Contrato y trámites",
+      text: "Negociamos, traducimos el contrato y acompañamos la firma, para que sepas exactamente a qué te estás comprometiendo.",
+    },
+    {
+      step: "04",
+      title: "Llaves y después",
+      text: "Te ayudamos con los servicios y con conocer el barrio, y seguimos disponibles cuando aparece algo para resolver.",
+    },
+  ],
+
+  // ---- home: the door's own inventory (renders nothing while empty)
+  recentTitle: "Alquileres disponibles",
+  recentMore: "Ver todos →",
+
+  // ---- home: faq (S2 fills this from the old services page's five Q&As)
+  faqTitle: "Preguntas frecuentes",
+  faqLead: "Respuestas breves a lo que más nos consultan.",
+  faq: [] as readonly { q: string; a: string }[],
+
+  // ---- home: closing CTA
+  ctaTitle: "Tu próximo capítulo en Paraguay empieza acá",
+  ctaText:
+    "Ya sea que busques dónde vivir, quieras poner tu propiedad a rendir o estés evaluando invertir, contanos qué necesitás y te respondemos con opciones concretas.",
+  ctaButton: "Hablemos",
+
+  /**
+   * Card title and one-liner per service, keyed by `dictKey` in
+   * `src/config/rental-services.ts`. The full page copy is `rentalServices`
+   * (S3); these two lines are what the home page and the footer show.
+   */
+  services: {
+    alquiler: {
+      title: "Alquiler de casas y departamentos",
+      tagline:
+        "Buscamos tu lugar en los barrios más seguros de Asunción y nos ocupamos de la negociación y del contrato.",
+    },
+    administracionAirbnb: {
+      title: "Administración de Airbnb",
+      tagline:
+        "Administración llave en mano: ambientación, fotos, precios y toda la comunicación con los huéspedes.",
+    },
+    administracionDepartamentos: {
+      title: "Administración de departamentos",
+      tagline:
+        "Vivís afuera y tu propiedad acá: inquilinos, cobro del alquiler, mantenimiento y cumplimiento legal.",
+    },
+    inmobiliariaAsuncion: {
+      title: "Inmobiliaria en Asunción",
+      tagline:
+        "Acompañamiento bilingüe para comprar tu primera propiedad o sumar otra a tu portafolio.",
+    },
+    residenciaParaguay: {
+      title: "Residencia en Paraguay",
+      tagline:
+        "Preparamos la carpeta y te acompañamos en todo el trámite, hasta que tenés tu cédula.",
+    },
+    invertirEnParaguay: {
+      title: "Invertir en Paraguay",
+      tagline:
+        "Oportunidades inmobiliarias y de negocios para el capital que querés poner a trabajar acá.",
+    },
+    domicilioVirtual: {
+      title: "Domicilio virtual",
+      tagline:
+        "Una dirección profesional en Asunción para tus necesidades legales y comerciales, sin alquilar oficina.",
+    },
+  },
+} as const;

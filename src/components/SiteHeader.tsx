@@ -51,20 +51,42 @@ export async function SiteHeader() {
   // newsletter or publicar entry point on this domain's chrome (guide §8 /
   // build-prompt.md PR3 — see chromeShowLogin/chromeShowPublishCta).
   const guideEnNav = d.guideEn.chromeNav.map((l) => ({ ...l, links: [] as never[] }));
+  // The rental doors (docs/style/rentparaguay.com.md §chrome): Alquileres ·
+  // Servicios · Nosotros · Contacto, flat, from the `rental` namespace in the
+  // door's own language — never HEADER_NAV, which is the Spanish
+  // marketplace's dropdown tree. One CTA, "Contactanos", pointing at
+  // /contacto: this door sells a conversation, not a self-service publish.
+  const isRental = chromeVariant(vertical.key) === "rental";
+  const rentalNav = d.rental.chromeNav.map((l) => ({ ...l, links: [] as never[] }));
   // §5 "Header" (Nórdico): Comprar · Alquilar · Vender · Proyectos ·
   // Inmobiliarias — the extra entry (when the registry adds one) sits right
   // after "Proyectos".
-  const nav = isGuideEn
-    ? guideEnNav
-    : extraNavHref
-      ? [
-          ...HEADER_NAV.slice(0, 3),
-          { label: d.nordico.headerVender, href: extraNavHref, links: [] },
-          ...HEADER_NAV.slice(3),
-        ]
-      : HEADER_NAV;
-  const ctaLabelFull = nordicoCta ? nordicoCta.headerVenderCtaFull : "Publicar propiedad";
-  const ctaLabelShort = nordicoCta ? nordicoCta.headerVenderCtaShort : "Publicar";
+  const nav = isRental
+    ? rentalNav
+    : isGuideEn
+      ? guideEnNav
+      : extraNavHref
+        ? [
+            ...HEADER_NAV.slice(0, 3),
+            { label: d.nordico.headerVender, href: extraNavHref, links: [] },
+            ...HEADER_NAV.slice(3),
+          ]
+        : HEADER_NAV;
+  const ctaLabelFull = isRental
+    ? d.rental.chromeCtaLabel
+    : nordicoCta
+      ? nordicoCta.headerVenderCtaFull
+      : "Publicar propiedad";
+  const ctaLabelShort = isRental
+    ? d.rental.chromeCtaLabel
+    : nordicoCta
+      ? nordicoCta.headerVenderCtaShort
+      : "Publicar";
+  // `chromeShowPublishCta` is false for this family — that flag is about the
+  // /publicar wizard, which these doors have no use for. The contact CTA is
+  // this chrome's own, so it is decided here alongside the nav.
+  const headerCtaHref = isRental ? d.rental.chromeCtaHref : ctaHref;
+  const showHeaderCta = isRental || showPublishCta;
   return (
     <header className="site-header">
       <div className="site-header__inner">
@@ -133,16 +155,24 @@ export async function SiteHeader() {
               No CTA at all on the English door — no login, newsletter or
               publicar entry point in this domain's chrome (guide §8 /
               build-prompt.md PR3). */}
-          {showPublishCta && (
-            <Link className="site-header__cta" href={ctaHref}>
+          {showHeaderCta && (
+            <Link className="site-header__cta" href={headerCtaHref}>
               <span className="site-header__cta-full">{ctaLabelFull}</span>
               <span className="site-header__cta-short">{ctaLabelShort}</span>
             </Link>
           )}
           <MobileMenu
             nav={nav}
-            ctaHref={showPublishCta ? ctaHref : null}
+            ctaHref={showHeaderCta ? headerCtaHref : null}
             ctaLabel={ctaLabelFull}
+            companyGroup={
+              isRental
+                ? {
+                    title: d.rental.footerCompanyTitle,
+                    links: d.rental.footerCompanyLinks,
+                  }
+                : undefined
+            }
           />
         </div>
       </div>
