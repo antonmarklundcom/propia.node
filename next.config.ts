@@ -31,6 +31,49 @@ const nextConfig: NextConfig = {
    * and is set in middleware.ts (see src/lib/csp.ts). Two CSP headers would be
    * intersected by the browser, so there must only ever be one source.
    */
+  /**
+   * The old rentparaguay.com (WordPress) URLs, host-scoped to
+   * rentparaguay.com so the same paths on any other door (which never
+   * published them) 404 as they should. Plan Appendix A
+   * (fable/plan-rentparaguay.md §6.1). `/` is unchanged; `/wp-sitemap*.xml`
+   * and `/wp-content/*` are deliberately not mapped.
+   */
+  async redirects() {
+    const REDIRECT_MAP: Array<[string, string]> = [
+      ["/services", "/servicios"],
+      ["/rent-apartment-house", "/servicios/alquiler"],
+      ["/airbnb-management", "/servicios/administracion-airbnb"],
+      ["/apartment-management", "/servicios/administracion-de-departamentos"],
+      ["/realtor-asuncion", "/servicios/inmobiliaria-asuncion"],
+      ["/residency-paraguay", "/servicios/residencia-paraguay"],
+      ["/invest-in-paraguay", "/servicios/invertir-en-paraguay"],
+      ["/virtual-adress", "/servicios/domicilio-virtual"],
+      ["/asuncion", "/alquiler"],
+      ["/about-us", "/nosotros"],
+      ["/contact", "/contacto"],
+      ["/blog", "/"],
+    ];
+    const rentalHosts = [
+      { type: "host" as const, value: "rentparaguay.com" },
+      { type: "host" as const, value: "www.rentparaguay.com" },
+    ];
+    return rentalHosts.flatMap(({ value: host }) =>
+      REDIRECT_MAP.flatMap(([oldPath, destination]) => [
+        {
+          source: oldPath,
+          has: [{ type: "host" as const, value: host }],
+          destination,
+          permanent: true,
+        },
+        {
+          source: `${oldPath}/`,
+          has: [{ type: "host" as const, value: host }],
+          destination,
+          permanent: true,
+        },
+      ]),
+    );
+  },
   async headers() {
     return [
       {
