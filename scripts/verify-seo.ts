@@ -13,7 +13,12 @@
  *
  * Run: npm run verify:seo   (also part of npm run verify:local)
  */
-import { VERTICALS, CANONICAL_HOST } from "../src/config/verticals";
+import {
+  VERTICALS,
+  CANONICAL_HOST,
+  type VerticalConfig,
+} from "../src/config/verticals";
+import { detailOwnerForLocale } from "../src/lib/origin";
 import {
   alternatesFor,
   languageAlternates,
@@ -36,17 +41,19 @@ console.log("\nhreflang: the live table (flipped 2026-09-04, PLAN.md D6)");
 
 check(
   "the live table pairs the two locales",
-  languageAlternates({ path: "/", scope: "site" })?.["es"] ===
+  languageAlternates({ path: "/", scope: "site", family: "marketplace" })?.["es"] ===
     "https://inmobiliaria.com.py/" &&
-    languageAlternates({ path: "/", scope: "site" })?.["en"] ===
+    languageAlternates({ path: "/", scope: "site", family: "marketplace" })?.["en"] ===
       "https://realestateinparaguay.com/",
-  JSON.stringify(languageAlternates({ path: "/", scope: "site" })),
+  JSON.stringify(languageAlternates({ path: "/", scope: "site", family: "marketplace" })),
 );
 check(
   "…and on listing detail too, now both doors own their own",
-  languageAlternates({ path: "/propiedad/casa-abc1234567", scope: "listing" })?.[
-    "en"
-  ] === "https://realestateinparaguay.com/propiedad/casa-abc1234567",
+  languageAlternates({
+    path: "/propiedad/casa-abc1234567",
+    scope: "listing",
+    family: "marketplace",
+  })?.["en"] === "https://realestateinparaguay.com/propiedad/casa-abc1234567",
 );
 check(
   "the primary host is a served door even if its row says enabled: false",
@@ -54,7 +61,7 @@ check(
 );
 check(
   "disabled feeders are not served doors",
-  !servedDoors(CANONICAL_HOST).some((d) => d.host === "alquiler.com.py"),
+  !servedDoors(CANONICAL_HOST).some((d) => d.host === "inmobiliarios.com.py"),
 );
 
 console.log("\nhreflang: the post-flip shape, re-derived independently");
@@ -82,7 +89,11 @@ const flipDoors: Door[] = [
   },
 ];
 
-const home = alternatesFor(flipDoors, FLIP_PRIMARY, { path: "/", scope: "site" });
+const home = alternatesFor(flipDoors, FLIP_PRIMARY, {
+  path: "/",
+  scope: "site",
+  family: "marketplace",
+});
 check("two locales produce a language map", home !== undefined);
 check(
   "Spanish points at the primary",
@@ -108,6 +119,7 @@ check(
 const cat = alternatesFor(flipDoors, FLIP_PRIMARY, {
   path: "/venta/asuncion/casas",
   scope: "site",
+  family: "marketplace",
 });
 check(
   "the path is carried onto every door",
@@ -118,6 +130,7 @@ check(
 const listing = alternatesFor(flipDoors, FLIP_PRIMARY, {
   path: "/propiedad/casa-abc1234567",
   scope: "listing",
+  family: "marketplace",
 });
 check(
   "detail pages pair once both doors own their own",
@@ -142,12 +155,16 @@ check(
   alternatesFor(halfFlipped, FLIP_PRIMARY, {
     path: "/propiedad/casa-abc1234567",
     scope: "listing",
+    family: "marketplace",
   }) === undefined,
 );
 check(
   "…but its site pages still pair",
-  alternatesFor(halfFlipped, FLIP_PRIMARY, { path: "/", scope: "site" }) !==
-    undefined,
+  alternatesFor(halfFlipped, FLIP_PRIMARY, {
+    path: "/",
+    scope: "site",
+    family: "marketplace",
+  }) !== undefined,
 );
 
 console.log("\nhreflang: ambiguity and overrides");
@@ -160,7 +177,11 @@ const threeDoors: Door[] = [
   },
   ...flipDoors,
 ];
-const tie = alternatesFor(threeDoors, FLIP_PRIMARY, { path: "/", scope: "site" });
+const tie = alternatesFor(threeDoors, FLIP_PRIMARY, {
+  path: "/",
+  scope: "site",
+  family: "marketplace",
+});
 check(
   "the primary wins the locale it shares with another door",
   tie?.["es"] === "https://inmobiliaria.com.py/",
@@ -171,6 +192,7 @@ check("one entry per locale, plus x-default", Object.keys(tie ?? {}).length === 
 const overridden = alternatesFor(flipDoors, FLIP_PRIMARY, {
   path: "/venta/asuncion",
   scope: "site",
+  family: "marketplace",
   pathByLocale: { en: "/for-sale/asuncion" },
 });
 check(
@@ -193,6 +215,198 @@ check("the set is self-referential (host-independent by construction)", selfList
  * which is when a half-applied edit is most likely — so the half-applied state
  * fails a push instead of a quarter of indexing.
  */
+/**
+ * Families (fable/plan-rentparaguay.md §5.1). Two businesses now share this
+ * deployment: the marketplace (inmobiliaria.com.py, realestateinparaguay.com,
+ * terreno.com.py) and the rental services firm (alquiler.com.py,
+ * rentparaguay.com). hreflang pairs *translations*, so a door may only ever
+ * be declared as a language version of a door in its own family — otherwise
+ * rentparaguay.com/ claims inmobiliaria.com.py/ as its Spanish version, and
+ * /servicios/… is declared on doors that redirect it to /. Neither shows up
+ * in a rendered page: the tags are right there in the <head>, addressed to a
+ * crawler, describing a relationship nobody in the building believes.
+ */
+console.log("\nfamilies: the marketplace and the rental doors never pair");
+
+const mkHome = languageAlternates({ path: "/", scope: "site", family: "marketplace" });
+check(
+  "(a) the marketplace home map is unchanged by the rental doors",
+  mkHome?.["es"] === "https://inmobiliaria.com.py/" &&
+    mkHome?.["en"] === "https://realestateinparaguay.com/" &&
+    mkHome?.["x-default"] === "https://inmobiliaria.com.py/",
+  JSON.stringify(mkHome),
+);
+check(
+  "(a) …and names no rental host",
+  Object.values(mkHome ?? {}).every(
+    (u) => !u.includes("rentparaguay.com") && !u.includes("alquiler.com.py"),
+  ),
+  JSON.stringify(mkHome),
+);
+
+const rentHome = languageAlternates({ path: "/", scope: "site", family: "rental" });
+check(
+  "(b) the rental home map is its own two doors",
+  rentHome?.["es"] === "https://alquiler.com.py/" &&
+    rentHome?.["en"] === "https://rentparaguay.com/" &&
+    rentHome?.["x-default"] === "https://alquiler.com.py/",
+  JSON.stringify(rentHome),
+);
+
+const svc = languageAlternates({
+  path: "/servicios/alquiler",
+  scope: "site",
+  family: "marketplace",
+});
+check(
+  "(c) a rental path asked for as marketplace content never reaches a rental door",
+  Object.values(svc ?? {}).every((u) => !u.includes("rentparaguay.com")),
+  JSON.stringify(svc),
+);
+check(
+  "(c) …and the rental family declares it on its own two doors only",
+  Object.values(
+    languageAlternates({
+      path: "/servicios/alquiler",
+      scope: "site",
+      family: "rental",
+    }) ?? {},
+  ).every((u) => u.includes("rentparaguay.com") || u.includes("alquiler.com.py")),
+);
+check(
+  "(c) a rental door owns no /propiedad, so its detail pages pair with nothing",
+  languageAlternates({
+    path: "/propiedad/casa-abc1234567",
+    scope: "listing",
+    family: "rental",
+  }) === undefined,
+);
+
+/**
+ * (d) The same three answers re-derived from a table written here rather than
+ * read from `VERTICALS` — the same trick the flip block above uses. An edit
+ * that makes the live table agree with a broken rule still fails this.
+ */
+const FAM_PRIMARY = "inmobiliaria.com.py";
+const base: VerticalConfig = {
+  key: "inmobiliaria",
+  locale: "es",
+  family: "marketplace",
+  brand: "b",
+  copy: "ownership",
+  enabled: true,
+  ownsListingDetail: true,
+};
+const famDoors: Door[] = [
+  { host: "inmobiliaria.com.py", config: { ...base } },
+  {
+    host: "realestateinparaguay.com",
+    config: { ...base, key: "en", locale: "en" },
+  },
+  {
+    host: "alquiler.com.py",
+    config: {
+      ...base,
+      key: "alquiler",
+      family: "rental",
+      copy: "rental",
+      ownsListingDetail: false,
+    },
+  },
+  {
+    host: "rentparaguay.com",
+    config: {
+      ...base,
+      key: "rent",
+      locale: "en",
+      family: "rental",
+      copy: "rental",
+      ownsListingDetail: false,
+    },
+  },
+];
+const synMk = alternatesFor(famDoors, FAM_PRIMARY, {
+  path: "/",
+  scope: "site",
+  family: "marketplace",
+});
+const synRent = alternatesFor(famDoors, FAM_PRIMARY, {
+  path: "/",
+  scope: "site",
+  family: "rental",
+});
+check(
+  "(d) synthetic: the marketplace map is the two marketplace doors",
+  synMk?.["es"] === "https://inmobiliaria.com.py/" &&
+    synMk?.["en"] === "https://realestateinparaguay.com/",
+  JSON.stringify(synMk),
+);
+check(
+  "(d) synthetic: the rental map is the two rental doors",
+  synRent?.["es"] === "https://alquiler.com.py/" &&
+    synRent?.["en"] === "https://rentparaguay.com/",
+  JSON.stringify(synRent),
+);
+check(
+  "(d) synthetic: x-default in a family the primary is not in is that family's Spanish door",
+  synRent?.["x-default"] === "https://alquiler.com.py/",
+  synRent?.["x-default"],
+);
+check(
+  "(d) synthetic: a rental door never appears in the marketplace map",
+  Object.values(synMk ?? {}).every(
+    (u) => !u.includes("rentparaguay.com") && !u.includes("alquiler.com.py"),
+  ),
+);
+
+check(
+  "(e) every vertical declares a family",
+  Object.values(VERTICALS).every((v) =>
+    ["marketplace", "rental", "directory"].includes(v.family),
+  ),
+  Object.entries(VERTICALS)
+    .filter(([, v]) => !v.family)
+    .map(([h]) => h)
+    .join(", "),
+);
+
+/**
+ * (f) A feeder canonicalises /propiedad to the door that owns detail *in the
+ * feeder's own language*. An English page whose canonical is a Spanish URL is
+ * a canonical Google ignores, which is the whole reason this is per-locale
+ * rather than "always the primary". Driven through the pure helper, so no
+ * request is needed.
+ */
+check(
+  "(f) an English feeder's detail canonical is the English detail owner",
+  detailOwnerForLocale(VERTICALS["rentparaguay.com"].locale) ===
+    "realestateinparaguay.com",
+  detailOwnerForLocale("en"),
+);
+check(
+  "(f) a Spanish feeder's is the Spanish primary",
+  detailOwnerForLocale(VERTICALS["terreno.com.py"].locale) ===
+    "inmobiliaria.com.py",
+  detailOwnerForLocale("es"),
+);
+check(
+  "(f) every served feeder resolves to a door that really owns detail",
+  servedDoors(CANONICAL_HOST)
+    .filter((d) => !d.config.ownsListingDetail && d.host !== CANONICAL_HOST)
+    .every((d) => {
+      const owner = VERTICALS[detailOwnerForLocale(d.config.locale)];
+      return Boolean(owner?.ownsListingDetail || owner === VERTICALS[CANONICAL_HOST]);
+    }),
+);
+
+check(
+  "(g) five doors are served — the three live ones plus the two rental doors",
+  servedDoors(CANONICAL_HOST).length === 5,
+  servedDoors(CANONICAL_HOST)
+    .map((d) => d.host)
+    .join(", "),
+);
+
 console.log("\nvertical table: traps that are not type errors");
 
 const servedNow = servedDoors(CANONICAL_HOST);

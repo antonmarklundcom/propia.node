@@ -238,7 +238,11 @@ export async function generateMetadata({
     alternates: {
       canonical,
       languages: indexed
-        ? languageAlternates({ path: r.canonicalPath, scope: "site" })
+        ? languageAlternates({
+            path: r.canonicalPath,
+            scope: "site",
+            family: vertical.family,
+          })
         : undefined,
     },
     // og:title doesn't inherit title.template, so the brand is explicit (F47).

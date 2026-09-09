@@ -488,9 +488,44 @@ doors; Higgsfield regeneration of the generic-stock slots.
 
 ## §9 Build log & handoff
 
-(Empty until O1 runs. Each phase appends a dated 5–10 line entry before
-merging — phase + PR link, what now exists, deviations, where the next phase
-looks first.)
+**2026-09-09 — O1 doors, families and routing.** PR: `[routing — flag before
+merge]`, **open, awaiting founder merge** (per §5.1: a new `VerticalKey` plus
+new hreflang/canonical/sitemap ownership rules is structural, so the founder
+looks first).
+
+What now exists: `VerticalConfig.family` on every entry (`marketplace` |
+`rental` | `directory`) plus `familyOf(key)`; `VerticalKey` gains `"rent"`;
+`alquiler.com.py` re-branded "Alquiler Paraguay", widened to `["alquiler",
+"alquiler_temporal"]` and enabled; `rentparaguay.com` added as `rent`/`en`,
+enabled. `AlternateInput.family` is required and filters doors before
+`doorPerLocale`, so the two families never pair; x-default falls back to a
+family's Spanish door where the primary is not in it. `detailOwnerForLocale()`
+(pure, in `origin.ts`) makes a feeder canonicalise `/propiedad` to the detail
+owner **in its own language** — `rent` → realestateinparaguay.com. The sitemap
+picks its static list by family (`RENTAL_SITEMAP_PATHS`; O3 appends the seven
+service URLs). `sections.ts` gained the rental values and
+`rentalPagesEnabled()`; **no component consumes them yet** — every consumer
+matches `"nordico"`/`"guide-en"` by equality, so both rental doors still
+render the default shell. `verify:seo` gained the "families" block (a)–(g),
+watched failing with the family filter removed (9 checks red, including the
+live marketplace map handing its `en` slot to rentparaguay.com) and passing
+with it.
+
+Deviations from §5.1: none in substance. `STATIC_SITEMAP_PATHS` was renamed
+`MARKETPLACE_SITEMAP_PATHS` (one consumer) rather than kept as an alias; the
+existing "disabled feeders are not served doors" check now names
+`inmobiliarios.com.py`, since `alquiler.com.py` is deliberately no longer
+disabled. The §5.1 `<head>` proof ran on `/terminos` rather than the home
+page: this container has no MySQL (no docker daemon), and the home page needs
+one. Both proofs are empty — the rendered `<head>` of all three live doors is
+byte-identical before and after, and a pure probe of every alternates map,
+registry value, filter set and static sitemap list for the three live doors is
+identical too.
+
+Where O2 looks first: `familyOf()` in `verticals.ts`, `homeLayout()` /
+`chromeVariant()` returning `"rental"` in `sections.ts` (both awaiting their
+component branch), and §5.2. §7 items this phase needs answered: the merge
+decision, and confirmation that `alquiler.com.py` is registered.
 
 ## §10 Backlog
 

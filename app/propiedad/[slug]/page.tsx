@@ -71,10 +71,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const detail = await load(slug);
   if (!detail) return { title: (await dict()).listing.metaNotFound };
   const { listing } = detail;
-  const [brand, t, locale] = await Promise.all([
+  const [brand, t, locale, vertical] = await Promise.all([
     brandName(),
     dict().then((d) => d.listing),
     currentLocale(),
+    currentVertical(),
   ]);
   // English requests fall back to the Spanish text when cron:translate
   // hasn't produced titleEn/descriptionEn yet — never render blank or "es"
@@ -90,7 +91,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // a feeder canonicalises this page away, and hreflang on a non-canonical URL
   // is a contradiction. Same predicate the sitemap gates on (origin.ts).
   const languages = (await hostOwnsListingDetail())
-    ? languageAlternates({ path: listingUrl(listing), scope: "listing" })
+    ? languageAlternates({
+        path: listingUrl(listing),
+        scope: "listing",
+        family: vertical.family,
+      })
     : undefined;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {

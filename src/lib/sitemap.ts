@@ -24,7 +24,10 @@ import {
 import { getIndexability } from "./indexability";
 import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl, agencyUrl, agentUrl } from "./urls";
-import { STATIC_SITEMAP_PATHS } from "../config/site-nav";
+import {
+  MARKETPLACE_SITEMAP_PATHS,
+  RENTAL_SITEMAP_PATHS,
+} from "../config/site-nav";
 import { listPublishedPostSlugs } from "./post-queries";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
@@ -97,8 +100,18 @@ export async function buildSitemapEntries(
   //    every door but the Spanish one (sellerLandingEnabled()), so it is
   //    dropped from every other host's sitemap the same way a feeder's
   //    /propiedad URLs are dropped by includeListingDetail below.
+  //
+  //    Which list applies is the door's family: the rental doors are a
+  //    different business, not a narrowed marketplace, so they submit their
+  //    own pages (/servicios, /nosotros, /contacto) and none of the
+  //    marketplace's. A door with no vertical (an unknown host) gets the
+  //    marketplace list, the same default every other lookup falls back to.
+  const staticPaths =
+    vertical?.family === "rental"
+      ? RENTAL_SITEMAP_PATHS
+      : MARKETPLACE_SITEMAP_PATHS;
   const venderAllowed = vertical ? sellerLandingEnabled(vertical.key) : false;
-  const entries: SitemapEntry[] = STATIC_SITEMAP_PATHS.filter(
+  const entries: SitemapEntry[] = staticPaths.filter(
     (path) => path !== "/vender" || venderAllowed,
   ).map((path) => ({ path }));
 

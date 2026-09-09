@@ -2,27 +2,53 @@
  * Domain routing layer — how one engine serves every door (ARCHITECTURE.md §2.8).
  *
  * Lives in code, not the database: it changes at deploy cadence and wants
- * type safety. Three hosts are enabled today — inmobiliaria.com.py (the
- * Spanish marketplace primary, PLAN.md D6, flipped 2026-09-04),
- * realestateinparaguay.com (its English translation, same flip), and
- * terreno.com.py (consolidated onto this app from its own former standalone
- * Node deployment, 2026-09-04: a terrenos-only feeder, same database,
- * canonicalizing /propiedad back to the Spanish primary); the remaining
- * feeder domains are pre-declared so routing, canonical URLs, and lead
- * attribution never need a schema change when they switch on.
+ * type safety. Five hosts are routed today, in two families
+ * (`VerticalFamily`, below):
+ *
+ *   marketplace — inmobiliaria.com.py (the Spanish primary, PLAN.md D6,
+ *     flipped 2026-09-04), realestateinparaguay.com (its English translation,
+ *     same flip), terreno.com.py (a terrenos-only feeder consolidated onto
+ *     this app from its own standalone deployment, 2026-09-04).
+ *   rental — alquiler.com.py and rentparaguay.com, one rental-services
+ *     business in two languages (fable/plan-rentparaguay.md). Enabled in code
+ *     from the O1 phase; DNS for both is still pending, so neither is reachable
+ *     by a visitor yet.
+ *
+ * The remaining feeder domains are pre-declared so routing, canonical URLs,
+ * and lead attribution never need a schema change when they switch on.
  */
 
 export type VerticalKey =
   | "terreno"
   | "alquiler"
+  | "rent"
   | "agents"
   | "devs"
   | "en"
   | "inmobiliaria";
 
+/**
+ * Which business a door belongs to. Distinct from `key` (one door) and from
+ * `locale` (one language): two doors of the same family are the same site in
+ * two languages, and that is the unit hreflang, the sitemap's static page
+ * list and the chrome variant all reason about.
+ *
+ * It exists because `src/lib/alternates.ts` pairs *every served door* as a
+ * language version of the same content. With the rental doors enabled and no
+ * family field, `languageAlternates({ path: "/" })` on rentparaguay.com would
+ * declare inmobiliaria.com.py as its Spanish version — two unrelated
+ * businesses annotated as translations of each other — and `/servicios/...`
+ * would be declared as existing on doors that redirect it away. Per-key
+ * overrides (theme, card variant) stay per key; only what is genuinely shared
+ * by a business keys off the family.
+ */
+export type VerticalFamily = "marketplace" | "rental" | "directory";
+
 export interface VerticalConfig {
   key: VerticalKey;
   locale: "es" | "en";
+  /** Which business this door belongs to — see `VerticalFamily`. */
+  family: VerticalFamily;
   /**
    * The public brand name for this door. The domain IS the brand (founder
    * decision, 2026-08-16) — there is no separate wordmark to keep in sync, so
@@ -56,24 +82,74 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     key: "terreno",
     brand: "Terreno.com.py",
     locale: "es",
+    family: "marketplace",
     filters: { property_type: ["terreno"] },
     copy: "land",
     enabled: true,
     ownsListingDetail: false,
   },
+  /**
+   * The rental family's Spanish door (fable/plan-rentparaguay.md §1). Not a
+   * marketplace feeder: alquiler.com.py and rentparaguay.com are one rental
+   * services business — letting, Airbnb and apartment management, residency,
+   * a virtual address — in two languages, with the shared listing set narrowed
+   * to what that business rents out.
+   *
+   * `operation: ["alquiler", "alquiler_temporal"]` (widened from `["alquiler"]`,
+   * §1 item 4): the business sells short-term "landing" rentals too, and
+   * dropping them would narrow the door below what its own audience asks for.
+   *
+   * `ownsListingDetail: false` — /propiedad is the marketplace's page type and
+   * inmobiliaria.com.py owns it in Spanish; a rental door renders it but
+   * canonicalises it there (`listingCanonicalOrigin()` picks the detail owner
+   * in the door's OWN language, so this door points at the Spanish primary and
+   * rentparaguay.com at the English one).
+   *
+   * `enabled: true` before DNS exists (§1 item 3): `resolveVertical()` ignores
+   * a disabled host, so a disabled door cannot be previewed with a `Host`
+   * header and `verify:seo` would only ever check a synthetic copy of it.
+   * Nothing reaches a visitor until the domain's DNS points at Hostinger —
+   * that is the go-live switch, not this flag.
+   */
   "alquiler.com.py": {
     key: "alquiler",
-    brand: "Alquiler.com.py",
+    brand: "Alquiler Paraguay",
     locale: "es",
-    filters: { operation: ["alquiler"] },
+    family: "rental",
+    filters: { operation: ["alquiler", "alquiler_temporal"] },
     copy: "rental", // "tu próximo lugar" — never ownership language
-    enabled: false,
+    enabled: true,
+    ownsListingDetail: false,
+  },
+  /**
+   * The rental family's English door — the same business as alquiler.com.py,
+   * not a translation of the marketplace. It is its own `VerticalKey` for the
+   * same reason `en` is one: the middleware carries only the key in
+   * `x-vertical`, `currentVertical()` resolves it by first match, and
+   * `verify:seo` refuses two hosts sharing a key. What ties the two rental
+   * doors together is `family: "rental"`, not a shared key.
+   *
+   * `ownsListingDetail: false`: realestateinparaguay.com already owns
+   * /propiedad in English (`verify:seo` forbids two served doors owning detail
+   * in one language), so this door's detail pages canonicalise there — an
+   * English page whose canonical is a Spanish URL is a canonical Google
+   * ignores, which is why the owner is chosen per locale.
+   */
+  "rentparaguay.com": {
+    key: "rent",
+    brand: "Rent Paraguay",
+    locale: "en",
+    family: "rental",
+    filters: { operation: ["alquiler", "alquiler_temporal"] },
+    copy: "rental",
+    enabled: true,
     ownsListingDetail: false,
   },
   "inmobiliarios.com.py": {
     key: "agents",
     brand: "Inmobiliarios Paraguay",
     locale: "es",
+    family: "directory",
     mode: "directory",
     copy: "directory",
     enabled: false,
@@ -83,6 +159,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     key: "devs",
     brand: "Desarrolladores Paraguay",
     locale: "es",
+    family: "directory",
     mode: "projects",
     copy: "directory",
     enabled: false,
@@ -104,6 +181,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     key: "en",
     brand: "Real Estate in Paraguay",
     locale: "en",
+    family: "marketplace",
     filters: { foreign_exposure: true },
     copy: "foreign",
     enabled: true,
@@ -125,6 +203,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     key: "inmobiliaria",
     brand: "Inmobiliaria Paraguay",
     locale: "es",
+    family: "marketplace",
     copy: "ownership",
     enabled: true,
     ownsListingDetail: true,
@@ -163,6 +242,20 @@ const DEFAULT =
  * DEFAULT so it can never name a door that no longer exists.
  */
 export const DEFAULT_VERTICAL_KEY: VerticalKey = DEFAULT.key;
+
+/**
+ * The family a vertical key belongs to, for the registry functions in
+ * `src/design/sections.ts` and anything else that holds a key rather than a
+ * config. Keys are unique across the table (`verify:seo` enforces it), so
+ * this lookup is total for every key that has an entry.
+ */
+const FAMILY_BY_KEY: Record<string, VerticalFamily> = Object.fromEntries(
+  Object.values(VERTICALS).map((v) => [v.key, v.family]),
+);
+
+export function familyOf(key: VerticalKey): VerticalFamily {
+  return FAMILY_BY_KEY[key] ?? DEFAULT.family;
+}
 
 /** Resolve a Host header to a vertical. Unknown hosts (localhost, previews) → CANONICAL_HOST's vertical. */
 export function resolveVertical(host: string | null): VerticalConfig {

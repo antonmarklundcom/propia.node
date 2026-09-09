@@ -248,11 +248,13 @@ export const FOOTER_TYPES: NavLink[] = PROPERTY_TYPE_OPTIONS.slice(0, 6).map(
 );
 
 /**
- * Static (non-category) pages that belong in the sitemap. Category, listing,
- * price and profile URLs are derived from the DB in src/lib/sitemap.ts; these
- * are the hand-authored ones, listed once so adding a page here is enough.
+ * Static (non-category) pages that belong in the marketplace doors' sitemap
+ * (inmobiliaria.com.py, realestateinparaguay.com, terreno.com.py). Category,
+ * listing, price and profile URLs are derived from the DB in
+ * src/lib/sitemap.ts; these are the hand-authored ones, listed once so adding
+ * a page here is enough. The rental family has its own list below.
  */
-export const STATIC_SITEMAP_PATHS: string[] = [
+export const MARKETPLACE_SITEMAP_PATHS: string[] = [
   "/",
   "/venta",
   "/alquiler",
@@ -274,6 +276,33 @@ export const STATIC_SITEMAP_PATHS: string[] = [
   "/preguntas-frecuentes",
   "/para-inmobiliarias",
   "/planes",
+  "/nosotros",
+  "/contacto",
+  "/terminos",
+  "/privacidad",
+];
+
+/**
+ * The rental family's static pages (alquiler.com.py, rentparaguay.com —
+ * fable/plan-rentparaguay.md §5.1). A separate list rather than a filter over
+ * the marketplace one: those doors are a rental services business, so most of
+ * the marketplace's hand-authored pages (/venta, /proyectos, /tasacion,
+ * /para-inmobiliarias …) are not theirs to submit even where the route still
+ * renders. The seven /servicios/<slug> URLs are appended by O3, from
+ * `src/config/rental-services.ts`, once that file and its route exist.
+ *
+ * `/servicios` itself is listed here from O1 but only exists from O3 — which
+ * is fine while it is: neither rental domain has DNS yet, so nothing requests
+ * this list, and O3 lands before either domain goes live. If that order ever
+ * changes, this entry comes out until the route exists: a sitemap that
+ * submits a 404 is the same Search Console error as one that submits a URL
+ * the host canonicalises away.
+ */
+export const RENTAL_SITEMAP_PATHS: string[] = [
+  "/",
+  "/alquiler",
+  "/alquiler-temporal",
+  "/servicios",
   "/nosotros",
   "/contacto",
   "/terminos",

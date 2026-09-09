@@ -9,12 +9,17 @@
  * component must never branch on `vertical.key` directly. If it needs to
  * differ per vertical, it needs an entry here — never a conditional inline.
  *
- * Every function below returns today's behaviour for every key. That is the
- * point of this PR: the registry exists and pages/components read from it,
- * but no domain's render changes yet. A later PR adds a real branch inside
- * one of these functions for one key — never inside the component.
+ * Every function below returns today's behaviour for every key that is live.
+ * That was the point of the PR that introduced this file — the registry
+ * exists and pages/components read from it, but no domain's render changes —
+ * and it is how a new door is added too: the rental family's values
+ * (`"rental"` layout and chrome, `rentalPagesEnabled()`) are declared here in
+ * O1 and only rendered in O2/O3, because every consumer matches the layouts
+ * it knows by equality and falls through to the default otherwise. A real
+ * branch goes inside one of these functions for one key — never inside the
+ * component.
  */
-import type { VerticalKey } from "@/config/verticals";
+import { familyOf, type VerticalKey } from "@/config/verticals";
 
 export type HomeSectionId =
   | "hero"
@@ -110,7 +115,7 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
   ];
 }
 
-export type HomeLayout = "default" | "nordico" | "guide-en";
+export type HomeLayout = "default" | "nordico" | "guide-en" | "rental";
 
 /**
  * Which component renders the home page. `app/page.tsx` is the one allowed
@@ -122,6 +127,12 @@ export type HomeLayout = "default" | "nordico" | "guide-en";
 export function homeLayout(key: VerticalKey): HomeLayout {
   if (key === "inmobiliaria") return "nordico";
   if (key === "en") return "guide-en";
+  // The rental family renders `RentalHome` — added in O2. Until then
+  // `app/page.tsx` matches only "nordico" and "guide-en" by equality, so both
+  // rental doors fall through to the default template exactly as they do
+  // today; naming the layout here first is what lets O2 be one component plus
+  // one fork line rather than a registry change too.
+  if (familyOf(key) === "rental") return "rental";
   return "default";
 }
 
@@ -158,6 +169,10 @@ export type CardVariant = "photo-scrim" | "framed-pill" | "framed-fact";
 export function cardVariant(key: VerticalKey): CardVariant {
   if (key === "inmobiliaria") return "framed-pill";
   if (key === "en") return "framed-fact";
+  // The rental doors show the same white framed card as the Spanish primary:
+  // a renter compares price, rooms and area, and a photo-as-the-card hides
+  // exactly those (fable/plan-rentparaguay.md §1 item 12).
+  if (familyOf(key) === "rental") return "framed-pill";
   return "photo-scrim";
 }
 
@@ -180,7 +195,12 @@ export function detailSidebarOrder(_key: VerticalKey): DetailSidebarSlot[] {
  * chip renders anywhere on realestateinparaguay.com from here on.
  */
 export function showCuota(key: VerticalKey): boolean {
-  return key !== "en";
+  // Never on the English door (a resident first-home scheme quoted to a
+  // foreign buyer is a false promise) and never on the rental family: a cuota
+  // is a purchase figure. No rental card renders one anyway — the estimate is
+  // cached per venta listing — so this makes the intent explicit rather than
+  // relying on the data to stay that way.
+  return key !== "en" && familyOf(key) !== "rental";
 }
 
 export type AreaUnit = "m2" | "sqft";
@@ -192,7 +212,8 @@ export type AreaUnit = "m2" | "sqft";
  * facts strip on the detail page.
  */
 export function secondaryAreaUnit(key: VerticalKey): AreaUnit | null {
-  return key === "en" ? "sqft" : null;
+  // Both English doors: the audience reading either one thinks in sq ft.
+  return key === "en" || key === "rent" ? "sqft" : null;
 }
 
 /**
@@ -280,7 +301,7 @@ export function contactPrimaryFirst(_key: VerticalKey): boolean {
   return true;
 }
 
-export type ChromeVariant = "default" | "guide-en";
+export type ChromeVariant = "default" | "guide-en" | "rental";
 
 /**
  * Which header/footer nav content and visibility rules apply. `SiteHeader`
@@ -289,7 +310,12 @@ export type ChromeVariant = "default" | "guide-en";
  * dictionary's `guideEn` namespace, keyed by locale like everything else.
  */
 export function chromeVariant(key: VerticalKey): ChromeVariant {
-  return key === "en" ? "guide-en" : "default";
+  if (key === "en") return "guide-en";
+  // "rental" is declared here in O1 and rendered in O2: `SiteHeader` and
+  // `SiteFooter` match "guide-en" by equality, so the rental doors keep the
+  // default chrome until O2 adds the branch.
+  if (familyOf(key) === "rental") return "rental";
+  return "default";
 }
 
 /**
@@ -299,7 +325,10 @@ export function chromeVariant(key: VerticalKey): ChromeVariant {
  * newsletter or publicar entry points in this domain's chrome."
  */
 export function chromeShowLogin(key: VerticalKey): boolean {
-  return key !== "en";
+  // Also off for the rental family: those doors are a services firm's site,
+  // and the only account this app has is a marketplace publisher's
+  // (fable/plan-rentparaguay.md §1 item 11).
+  return key !== "en" && familyOf(key) !== "rental";
 }
 
 /**
@@ -313,7 +342,10 @@ export function chromeShowLogin(key: VerticalKey): boolean {
  * all — resolved this way in PR3, noted in its description.
  */
 export function chromeShowPublishCta(key: VerticalKey): boolean {
-  return key !== "en";
+  // Off for the rental family too: a landlord who lands there is a lead for
+  // the management service, not a self-service publisher, so the chrome's one
+  // CTA is "Contactanos" (O2) rather than /publicar.
+  return key !== "en" && familyOf(key) !== "rental";
 }
 
 /**
@@ -324,5 +356,18 @@ export function chromeShowPublishCta(key: VerticalKey): boolean {
  * exists for any other newsletter entry point a future page might add.)
  */
 export function chromeShowNewsletter(key: VerticalKey): boolean {
-  return key !== "en";
+  return key !== "en" && familyOf(key) !== "rental";
+}
+
+/**
+ * Whether this door renders the rental business's own pages — `/servicios`,
+ * `/servicios/<slug>`, and the rental branches of `/`, `/nosotros` and
+ * `/contacto` (O3). Every other door redirects those routes to `/`, exactly
+ * as `/vender` redirects off every door but the Spanish one
+ * (`sellerLandingEnabled()` above): a route that renders on a door whose
+ * sitemap, chrome and hreflang all say it does not exist there is a
+ * duplicate-content surface nobody links to.
+ */
+export function rentalPagesEnabled(key: VerticalKey): boolean {
+  return familyOf(key) === "rental";
 }
