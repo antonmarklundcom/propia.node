@@ -20,10 +20,10 @@ import { homeSections } from "@/design/sections";
  * decided and the data it was handed.
  *
  * Order: split hero · the seven services · why us · how it works · the door's
- * own rentals · faq · closing CTA. Two of those render **nothing** rather than
- * an empty frame: the rail while this door has no rental rows (the table has
- * essentially none today), and the FAQ until S2 writes it. An empty section on
- * a home page does not read as "coming soon", it reads as broken.
+ * own rentals · faq · closing CTA. The rail renders **nothing** while this
+ * door has no rental rows (the table has essentially none today) — an empty
+ * section on a home page does not read as "coming soon", it reads as broken.
+ * The FAQ (the same five Q&As `RentalServicesHub` shows) is real as of S2.
  *
  * No search bar. The marketplace's hero sells a search over 15k rows; this
  * door sells a conversation with a person, so the hero's two buttons are
@@ -162,9 +162,8 @@ export function RentalHome({
         </section>
       )}
 
-      {/* No FAQ section until S2 writes the questions — an empty accordion is
-          worse than no accordion. The JSON-LD above is gated on the same
-          array, so the markup and the structured data can never disagree. */}
+      {/* The JSON-LD above is gated on the same array, so the markup and the
+          structured data can never disagree. */}
       {sections.includes("faq") && t.faq.length > 0 && (
         <section className="home-faq">
           <div className="home-faq__inner">

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Dictionary } from "@/i18n";
 import { RENTAL_SERVICES } from "@/config/rental-services";
+import { JsonLd } from "@/components/JsonLd";
+import { faqJsonLd } from "@/lib/jsonld";
 
 /**
  * `/servicios` on the rental doors — the index of the seven services.
@@ -9,11 +11,15 @@ import { RENTAL_SERVICES } from "@/config/rental-services";
  * second treatment of the same list: a visitor who arrives here from the nav
  * and one who scrolls the home page are looking at the same seven things, and
  * two layouts for one list is how they drift apart.
+ *
+ * The FAQ (`rental.faq`, S2) is this family's one FAQ, shown here and reused
+ * on the home page — see `RentalHome`.
  */
 export function RentalServicesHub({ d }: { d: Dictionary }) {
   const t = d.rental;
   return (
     <main className="rental-page">
+      {t.faq.length > 0 && <JsonLd data={[faqJsonLd([...t.faq])]} />}
       <section className="rp-hero">
         <div className="ds-container">
           <p className="ds-label">{t.chromeNav[1].label}</p>
@@ -42,6 +48,21 @@ export function RentalServicesHub({ d }: { d: Dictionary }) {
           })}
         </div>
       </section>
+
+      {t.faq.length > 0 && (
+        <section className="home-faq">
+          <div className="home-faq__inner">
+            <h2 className="home-faq__title">{t.faqTitle}</h2>
+            <p className="home-faq__subtitle">{t.faqLead}</p>
+            {t.faq.map((f) => (
+              <details key={f.q} className="home-faq__item">
+                <summary className="home-faq__q">{f.q}</summary>
+                <p className="home-faq__a">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="rh-cta">
         <div className="ds-container rh-cta__inner">
