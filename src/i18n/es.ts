@@ -1736,4 +1736,468 @@ export const esRental = {
         "Una dirección profesional en Asunción para tus necesidades legales y comerciales, sin alquilar oficina.",
     },
   },
+  /**
+   * The services hub (`/servicios`), the shared furniture every service page
+   * uses, and the rental forks of `/nosotros` and `/contacto`. Minimal but
+   * real as of O3 — S2 expands the about and contact copy.
+   */
+  hubMetaTitle: "Servicios",
+  hubMetaDescription: (brand: string) =>
+    `Alquiler, administración de propiedades y Airbnb, residencia, inversión y domicilio virtual en Asunción con ${brand}.`,
+  hubIntro:
+    "Siete servicios que se apoyan entre sí: buscar dónde vivir, poner una propiedad a rendir, quedarse legalmente y decidir dónde invertir.",
+  allServices: "Todos los servicios",
+  serviceFormTitle: "Escribinos",
+  serviceFormLead:
+    "Contanos qué necesitás y te respondemos por WhatsApp.",
+  about: {
+    metaTitle: "Nosotros",
+    metaDescription: (brand: string) =>
+      `${brand} es una consultora boutique en Asunción para extranjeros, nómadas digitales e inversores: alquiler, administración, residencia e inversión.`,
+    h1: "Nosotros",
+    lead: "El puente entre quien llega y el mercado paraguayo.",
+    intro:
+      "Nacimos de una diferencia que se notaba: inversores y extranjeros llegaban a un Paraguay en crecimiento y se encontraban con burocracia local, estándares de servicio dispares y poca transparencia en su idioma. Construimos la firma para ser el socio de esa llegada.",
+    founderTitle: "Quién está detrás",
+    founderText:
+      "Fundada por Anton Marklund, un emprendedor sueco radicado en Asunción, la firma combina una forma de trabajar escandinava —honestidad, puntualidad y estándares altos— con experiencia de campo en el mercado inmobiliario y legal paraguayo.",
+    visionTitle: "Visión",
+    visionText:
+      "Ser el puente más confiable para el capital y el talento internacional en Paraguay, y marcar el estándar en transparencia, diseño y mudanzas sin fricción.",
+    missionTitle: "Misión",
+    missionText:
+      "Eliminar la fricción de una transición internacional con asesoramiento bilingüe, administración impecable y una mirada estratégica sobre la inversión.",
+    valuesTitle: "Cómo trabajamos",
+    values: [
+      {
+        title: "Transparencia",
+        text: "Reportes honestos y detallados para el propietario, condiciones claras y justas para el inquilino.",
+      },
+      {
+        title: "Respeto por tu tiempo",
+        text: "Si algo se puede resolver en 24 horas, no lo estiramos a 48.",
+      },
+      {
+        title: "Creemos en Paraguay",
+        text: "Creemos en el crecimiento del país y estamos acá para que puedas ser parte de forma segura.",
+      },
+    ],
+  },
+  contact: {
+    metaTitle: "Contacto",
+    metaDescription: (brand: string) =>
+      `Escribinos: ${brand} responde por WhatsApp consultas sobre alquiler, administración, residencia e inversión en Asunción.`,
+    h1: "Contacto",
+    lead: "Ya sea que te estés mudando a Asunción, busques la residencia o estés evaluando invertir, nuestro equipo bilingüe está para acompañarte.",
+    formTitle: "Dejanos tu consulta",
+    channelsTitle: "Canales directos",
+    officeTitle: "Dónde estamos",
+    officeText: "Edificio Skytower, en el corazón del distrito financiero de Asunción.",
+    formNote: "Formulario de contacto (respondemos por acá)",
+    reasonRent: "Quiero alquilar o mudarme",
+    reasonManage: "Tengo una propiedad para administrar",
+    reasonInvest: "Quiero comprar o invertir",
+  },
+} as const;
+
+/**
+ * `LeadForm`'s own literals (`/contacto`, `/para-inmobiliarias`, and from O3
+ * every rental service page). Lifted out of the component when the rental
+ * doors needed it in English — every Spanish string here is byte-identical to
+ * what the component hard-coded before, so the two existing call sites render
+ * exactly as they did.
+ */
+export const esLeadForm = {
+  reasonLabel: "Motivo de contacto",
+  nameLabel: "Nombre",
+  namePlaceholder: "Tu nombre",
+  whatsappLabel: "WhatsApp",
+  whatsappPlaceholder: "+595 981 234 567",
+  emailLabel: "Email (opcional)",
+  emailPlaceholder: "tu@email.com",
+  companyLabel: "Inmobiliaria / empresa",
+  companyPlaceholder: "Nombre comercial",
+  /** Prefixed to the message body when the company field is shown and filled. */
+  companyPrefix: "Inmobiliaria / empresa",
+  messageLabel: "Mensaje",
+  messagePlaceholder: "Contanos en qué podemos ayudarte",
+  submitLabel: "Enviar consulta",
+  sending: "Enviando…",
+  successTitle: "¡Gracias! Recibimos tu mensaje.",
+  successText:
+    "Te contactamos por WhatsApp dentro de las próximas 24 horas hábiles.",
+  invalidPhone: "Ingresá un número de WhatsApp válido.",
+  sendError:
+    "No pudimos enviar tu mensaje. Probá de nuevo o escribinos por WhatsApp.",
+  finePrintLead: "Al enviar aceptás nuestros ",
+  finePrintTerms: "términos",
+  finePrintMid: " y la ",
+  finePrintPrivacy: "política de privacidad",
+  finePrintTail: ". Usamos tus datos solo para responderte.",
+} as const;
+
+/**
+ * The seven rental service pages (`/servicios/<slug>`), keyed by `dictKey` in
+ * `src/config/rental-services.ts`. Shape is fixed — plan Appendix C — so
+ * `RentalServicePage` renders every one of them without knowing which.
+ *
+ * O3 ships `alquiler` filled from its own content file as the exemplar S3
+ * copies, and the other six with real meta, h1, tagline, intro and one real
+ * entry per section, so **no route renders empty**. S3 fills the rest from
+ * `docs/rentparaguay-extraction/content/<slug>.md`.
+ *
+ * Empty arrays are honest: a section with nothing in it does not render. That
+ * is why `faq: []` is fine here and a placeholder sentence would not be.
+ */
+export const esRentalServices = {
+  alquiler: {
+    metaTitle: "Alquiler de casas y departamentos en Asunción",
+    metaDescription: (brand: string) =>
+      `${brand} busca, negocia y contrata tu alquiler en Asunción: barrios seguros, contrato traducido y acompañamiento hasta la mudanza.`,
+    h1: "Alquiler de casas y departamentos",
+    tagline:
+      "Alquileres en los barrios más buscados de Asunción, pensados para quien llega de afuera y valora seguridad, calidad y una mudanza sin sobresaltos.",
+    intro:
+      "Buscar dónde vivir en un país nuevo no debería ser la parte más difícil de mudarse. Nos ocupamos de la búsqueda, de las visitas, de la negociación y del contrato, y te acompañamos hasta que tenés las llaves.",
+    challengeTitle: "Por qué alquilar acá es distinto",
+    challengeText:
+      "El mercado de alquiler paraguayo está pensado para quien ya tiene raíces acá. La mayoría de los propietarios pide un codeudor local que firme con vos: negociamos alternativas, como un depósito distinto, para que no dependas de tener un conocido con propiedad. El contrato está en español legal, así que te lo traducimos entero y negociamos por vos. Y buena parte de las mejores propiedades nunca se publica: esas aparecen por red de contactos, no buscando en portales.",
+    frameworkTitle: "Cómo trabajamos tu búsqueda",
+    framework: [
+      {
+        title: "Qué necesitás",
+        text: "Empezamos por cómo vivís: cercanía a un colegio internacional, al centro financiero, a dónde entrenás o a dónde trabajás.",
+      },
+      {
+        title: "Visitas acompañadas",
+        text: "Armamos una lista corta y te llevamos a verlas, con una opinión honesta sobre la calidad del edificio y sobre el barrio.",
+      },
+      {
+        title: "Negociación",
+        text: "No preguntamos solo el precio: negociamos las condiciones, desde las cláusulas de salida hasta quién se hace cargo del mantenimiento.",
+      },
+      {
+        title: "Contrato y firma",
+        text: "Revisamos el contrato, acompañamos el trámite ante escribanía y te explicamos cada cláusula antes de que firmes.",
+      },
+    ],
+    specialTitle: "Servicios para quien recién llega",
+    special: [
+      {
+        title: "Alquiler temporal de aterrizaje",
+        text: "¿Necesitás un lugar por uno a tres meses mientras buscás el definitivo? Tenemos departamentos equipados listos para entrar.",
+      },
+      {
+        title: "Mudanzas corporativas",
+        text: "Trabajamos con áreas de RRHH para reubicar equipos completos, desde la vivienda hasta las visitas a colegios.",
+      },
+      {
+        title: "Búsqueda pet-friendly",
+        text: "Sabemos qué edificios realmente reciben mascotas y cuáles tienen buenas plazas cerca.",
+      },
+    ],
+    benefitsTitle: "Qué ganás trabajando con nosotros",
+    benefits: [
+      {
+        title: "Propiedades que no están publicadas",
+        text: "Muchas de las mejores propiedades de Asunción no llegan a los portales; llegás a ellas por nuestra red.",
+      },
+      {
+        title: "Un contrato que te protege",
+        text: "Revisamos que el contrato cumpla la ley paraguaya y que tus derechos como inquilino extranjero estén contemplados, sin cláusulas escondidas.",
+      },
+      {
+        title: "Sin codeudor local",
+        text: "Negociamos alternativas al codeudor, que es el requisito que deja afuera a casi todo el que recién llega.",
+      },
+      {
+        title: "Acompañamiento bilingüe",
+        text: "Desde la letra chica hasta cómo se pagan las expensas del edificio: somos tu voz mientras te acomodás.",
+      },
+    ],
+    faq: [
+      {
+        q: "¿Qué depósito se pide normalmente?",
+        a: "Por lo general un mes de depósito más el primer mes por adelantado. Para extranjeros sin codeudor negociamos condiciones específicas con el propietario.",
+      },
+      {
+        q: "¿Los servicios están incluidos en el alquiler?",
+        a: "En contratos de largo plazo normalmente no. Te ayudamos a pasar las cuentas a tu nombre o a gestionar los pagos.",
+      },
+      {
+        q: "¿Qué documentos necesito para firmar?",
+        a: "Al principio, tu pasaporte. Cuando arranca tu trámite de residencia podemos actualizar el contrato con tu cédula paraguaya.",
+      },
+    ],
+    ctaTitle: "No recorras el mercado solo",
+    ctaText:
+      "Contanos qué buscás y en cuánto tiempo lo necesitás, y te respondemos con opciones concretas.",
+    ctaButton: "Empezar la búsqueda",
+  },
+  administracionAirbnb: {
+    metaTitle: "Administración de Airbnb en Asunción",
+    metaDescription: (brand: string) =>
+      `${brand} administra tu alquiler temporal en Asunción: ambientación, fotos, precios dinámicos y atención al huésped, de punta a punta.`,
+    h1: "Administración de Airbnb",
+    tagline:
+      "Administración integral de alquiler temporal en Asunción: ambientación, precios y hospitalidad, sin que tengas que estar encima.",
+    intro:
+      "Sostener un alquiler temporal que funcione es un trabajo de tiempo completo: fotos que compitan, un precio que se mueva con la demanda y alguien que conteste a cualquier hora. De eso nos ocupamos nosotros.",
+    challengeTitle: "El mito del ingreso pasivo",
+    challengeText:
+      "Un aviso con fotos promedio queda enterrado en los resultados. Un precio fijo pierde plata en semanas de alta demanda y espanta en las bajas. Y la comunicación con huéspedes y la entrega de llaves, a toda hora, es justo lo que termina cansando al propietario.",
+    frameworkTitle: "Nuestra administración, en tres etapas",
+    framework: [
+      {
+        title: "Lanzamiento y estética",
+        text: "Ambientación, fotografía de calidad editorial y un aviso escrito para que aparezca y convenza.",
+      },
+      {
+        title: "Operación diaria",
+        text: "Precios ajustados según demanda, atención bilingüe al huésped y check-in resuelto.",
+      },
+      {
+        title: "Mantenimiento y limpieza",
+        text: "Limpieza con estándar hotelero, mantenimiento preventivo y reposición de lo que se consume.",
+      },
+    ],
+    specialTitle: "Servicios especializados",
+    special: [],
+    benefitsTitle: "Qué cambia para vos",
+    benefits: [
+      {
+        title: "Una sola cara visible",
+        text: "Nosotros hablamos con los huéspedes, con la limpieza y con el mantenimiento; vos ves el resultado.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Poné tu propiedad a rendir",
+    ctaText: "Contanos dónde está y cómo está, y te decimos qué esperar.",
+    ctaButton: "Hablemos",
+  },
+  administracionDepartamentos: {
+    metaTitle: "Administración de departamentos en Asunción",
+    metaDescription: (brand: string) =>
+      `${brand} administra tu departamento en Asunción: selección de inquilinos, cobro, mantenimiento y reportes claros, aunque vivas afuera.`,
+    h1: "Administración de departamentos",
+    tagline:
+      "Tu propiedad en Asunción, administrada como si vivieras a la vuelta: inquilinos verificados, mantenimiento al día y cuentas claras.",
+    intro:
+      "Alquilar a largo plazo en Asunción es una buena estrategia, hasta que la administración empieza a comerse el rendimiento. Si vivís afuera, la distancia convierte cada trámite en un problema. Nuestro trabajo es que vuelva a ser un ingreso que no te ocupa la cabeza.",
+    challengeTitle: "La realidad de tener una propiedad alquilada",
+    challengeText:
+      "Perseguir pagos atrasados, entender la ley local, resolver una filtración a distancia: son costos que no figuran en ninguna planilla y que terminan agotando al propietario que administra solo.",
+    frameworkTitle: "Cómo administramos",
+    framework: [
+      {
+        title: "Búsqueda y selección de inquilinos",
+        text: "Avisos con fotos profesionales, visitas acompañadas y verificación de antecedentes, ingresos y referencias antes de firmar.",
+      },
+      {
+        title: "Seguridad legal y administración",
+        text: "Contratos firmados ante escribanía, depósitos resguardados e inventario documentado con fotos.",
+      },
+      {
+        title: "Operación y mantenimiento",
+        text: "Somos el único contacto del inquilino y resolvemos con proveedores de confianza a precios de mercado.",
+      },
+      {
+        title: "Reportes",
+        text: "Todos los meses recibís un estado con ingresos, gastos y resultado neto.",
+      },
+    ],
+    specialTitle: "Servicios especializados",
+    special: [],
+    benefitsTitle: "Por qué conviene delegarlo",
+    benefits: [
+      {
+        title: "Menos días vacío",
+        text: "Un buen inquilino encontrado rápido vale más que un mes de alquiler ahorrado en comisiones.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Delegá la administración",
+    ctaText: "Contanos de tu propiedad y te explicamos cómo la administraríamos.",
+    ctaButton: "Hablemos",
+  },
+  inmobiliariaAsuncion: {
+    metaTitle: "Inmobiliaria en Asunción para compradores extranjeros",
+    metaDescription: (brand: string) =>
+      `${brand} te representa en la compra en Asunción: búsqueda, verificación de títulos, negociación y acompañamiento hasta la escritura.`,
+    h1: "Inmobiliaria en Asunción",
+    tagline:
+      "Representación bilingüe para comprar en Asunción, desde la búsqueda hasta la escritura.",
+    intro:
+      "Comprar en una ciudad que no es la tuya pide algo más que acceso a los avisos: pide entender los barrios, saber qué se está construyendo y tener con quién negociar. Trabajamos representándote a vos, no al vendedor.",
+    challengeTitle: "Un mercado en plena transformación",
+    challengeText:
+      "Asunción cambió mucho en pocos años, y con eso llegaron zonas nuevas, desarrolladoras nuevas y precios que se mueven distinto según la cuadra. Sin esa lectura local, es fácil pagar de más por una propiedad difícil de revender.",
+    frameworkTitle: "Cómo te acompañamos",
+    framework: [
+      {
+        title: "Búsqueda y sourcing",
+        text: "Vamos más allá de los portales: red de desarrolladoras y propietarios, filtrando por calidad de construcción y reventa.",
+      },
+      {
+        title: "Debida diligencia",
+        text: "Coordinamos con escribanía la verificación de título y gravámenes, y te traducimos todos los documentos.",
+      },
+      {
+        title: "Negociación",
+        text: "Negociamos con datos del mercado local, para que no pagues el sobreprecio que se le suele cobrar al de afuera.",
+      },
+      {
+        title: "Después de la escritura",
+        text: "Transferencia de servicios, puesta a punto y, si querés, administración desde el primer mes.",
+      },
+    ],
+    specialTitle: "Servicios especializados para compradores y vendedores",
+    special: [],
+    benefitsTitle: "Qué aporta tener representación",
+    benefits: [
+      {
+        title: "Menos riesgo",
+        text: "Revisamos quién construye, con qué materiales y qué hay proyectado alrededor antes de que pongas el dinero.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Comprá con alguien de tu lado",
+    ctaText: "Contanos qué estás buscando y con qué presupuesto.",
+    ctaButton: "Hablemos",
+  },
+  residenciaParaguay: {
+    metaTitle: "Residencia en Paraguay: trámite acompañado",
+    metaDescription: (brand: string) =>
+      `${brand} prepara tu carpeta y te acompaña en todo el trámite de residencia paraguaya, hasta que tenés tu cédula.`,
+    h1: "Residencia en Paraguay",
+    tagline:
+      "Un trámite de residencia acompañado de punta a punta, para inversores, nómadas digitales y familias.",
+    intro:
+      "La residencia paraguaya es de las más accesibles del mundo, pero el trámite tiene pasos, sellos y turnos que conviene no descubrir sobre la marcha. Preparamos la carpeta antes de que viajes y te acompañamos mientras estás acá.",
+    challengeTitle: "Por qué la gente la elige",
+    challengeText:
+      "Paraguay atrae a quien busca un plan B ordenado: costo de vida razonable, un camino claro hacia la ciudadanía y una ubicación cómoda para moverse por la región. Las condiciones fiscales y los plazos concretos los repasamos con vos según tu caso, porque cambian y dependen de tu situación.",
+    frameworkTitle: "El trámite, paso a paso",
+    framework: [
+      {
+        title: "Consulta y documentos",
+        text: "Revisamos tu caso, te damos la lista de documentos de tu país y verificamos apostillas y traducciones antes de viajar.",
+      },
+      {
+        title: "Los días en Asunción",
+        text: "Te acompañamos a cada turno: biometría, chequeo médico y entrevistas, con traslado y acompañamiento bilingüe.",
+      },
+      {
+        title: "Seguimiento",
+        text: "Monitoreamos el expediente mientras avanza y te avisamos en cada etapa.",
+      },
+      {
+        title: "Entrega",
+        text: "Retiramos y te entregamos la documentación cuando sale.",
+      },
+    ],
+    specialTitle: "Servicios especializados para ciudadanos globales",
+    special: [],
+    benefitsTitle: "Qué resolvemos",
+    benefits: [
+      {
+        title: "Pocos días acá",
+        text: "Preparamos todo por adelantado para que tu presencia en Asunción sea la mínima posible.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Empezá tu residencia",
+    ctaText: "Contanos tu nacionalidad y tu situación, y te decimos qué necesitás.",
+    ctaButton: "Hablemos",
+  },
+  invertirEnParaguay: {
+    metaTitle: "Invertir en Paraguay: inmuebles y negocios",
+    metaDescription: (brand: string) =>
+      `${brand} acompaña tu inversión en Paraguay: búsqueda de activos, estructura legal y administración posterior, con reportes claros.`,
+    h1: "Invertir en Paraguay",
+    tagline:
+      "Oportunidades inmobiliarias y productivas en Paraguay, con quien las administre después.",
+    intro:
+      "Invertir a distancia funciona cuando hay alguien de este lado que mira la obra, controla al inquilino y manda los números a tiempo. Buscamos el activo, ordenamos la estructura y después lo administramos.",
+    challengeTitle: "Por qué Paraguay",
+    challengeText:
+      "Paraguay combina un régimen tributario simple, costos operativos bajos y una economía que viene creciendo de forma sostenida. Las cifras concretas —tasas, incentivos y rendimientos esperados— las repasamos caso por caso, porque dependen del activo y del año.",
+    frameworkTitle: "Cómo trabajamos una inversión",
+    framework: [
+      {
+        title: "Inmuebles",
+        text: "Buscamos activos con demanda real de alquiler y reventa en los corredores premium de Asunción.",
+      },
+      {
+        title: "Campo y agronegocio",
+        text: "Facilitamos la compra de tierra productiva, con la asesoría local para evaluarla y administrarla.",
+      },
+      {
+        title: "Estructura legal e impositiva",
+        text: "Trabajamos con estudios locales para que la inversión quede estructurada como corresponde.",
+      },
+      {
+        title: "Administración",
+        text: "Debida diligencia, compra, puesta en marcha y reportes periódicos en tu idioma.",
+      },
+    ],
+    specialTitle: "Vehículos de inversión especializados",
+    special: [],
+    benefitsTitle: "Qué te damos",
+    benefits: [
+      {
+        title: "Presencia local",
+        text: "Alguien acá que mira, decide y responde, mientras vos seguís donde estás.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Hablemos de tu inversión",
+    ctaText: "Contanos qué monto y qué horizonte tenés en mente.",
+    ctaButton: "Hablemos",
+  },
+  domicilioVirtual: {
+    metaTitle: "Domicilio virtual en Asunción",
+    metaDescription: (brand: string) =>
+      `${brand} te da un domicilio comercial y legal en Asunción, con recepción de correspondencia y soporte para tus trámites.`,
+    h1: "Domicilio virtual",
+    tagline:
+      "Una dirección comercial y legal en Asunción, sin la carga de alquilar una oficina.",
+    intro:
+      "Para registrar una empresa, tramitar el RUC o simplemente recibir correspondencia oficial hace falta una dirección estable en Paraguay. Te damos esa base, y alguien que abra el sobre cuando llegue.",
+    challengeTitle: "Para qué sirve",
+    challengeText:
+      "Si estás probando el mercado paraguayo, o si tu operación es remota, una dirección profesional en el distrito financiero te da credibilidad frente a bancos, organismos públicos y clientes, sin el costo de un alquiler.",
+    frameworkTitle: "Qué incluye",
+    framework: [
+      {
+        title: "Domicilio comercial",
+        text: "Una dirección reconocible en Asunción para tu web, tu papelería y tus trámites.",
+      },
+      {
+        title: "Correspondencia",
+        text: "Recibimos, escaneamos y te reenviamos cartas, paquetes y notificaciones oficiales.",
+      },
+      {
+        title: "Domicilio legal y fiscal",
+        text: "Cumple los requisitos locales para inscribir una empresa y tramitar el RUC.",
+      },
+      {
+        title: "Salas de reunión",
+        text: "Cuando venís, tenés dónde reunirte en la misma dirección.",
+      },
+    ],
+    specialTitle: "Soluciones para fundadores globales",
+    special: [],
+    benefitsTitle: "Por qué conviene",
+    benefits: [
+      {
+        title: "Entrar sin comprometerte",
+        text: "Probás el mercado con una presencia formal antes de firmar un alquiler.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Conseguí tu domicilio en Asunción",
+    ctaText: "Contanos para qué lo necesitás y te decimos qué requiere.",
+    ctaButton: "Hablemos",
+  },
 } as const;

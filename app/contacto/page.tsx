@@ -8,6 +8,11 @@ import { LeadForm } from "@/components/LeadForm";
 import { PageHero, Section } from "@/components/MarketingUI";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
+import { dict } from "@/i18n/server";
+import { currentVertical } from "@/lib/vertical-context";
+import { rentalPagesEnabled } from "@/design/sections";
+import { languageAlternates } from "@/lib/alternates";
+import { RentalContact } from "@/components/RentalContact";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +20,38 @@ const TITLE = "Contacto";
 const DESCRIPTION = (brand: string) => `Escribinos por WhatsApp o dejanos tu consulta: publicación de propiedades, cuentas para inmobiliarias, proyectos y soporte de ${brand}.`;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const brand = await brandName();
+  const [brand, vertical, d, origin] = await Promise.all([
+    brandName(),
+    currentVertical(),
+    dict(),
+    siteOrigin(),
+  ]);
+  // Same one-line fork as /nosotros: the marketplace's contact copy is about
+  // publishing an aviso and inmobiliaria accounts, which is not what a rental
+  // door answers.
+  if (rentalPagesEnabled(vertical.key)) {
+    const c = d.rental.contact;
+    return {
+      title: c.metaTitle,
+      description: c.metaDescription(brand),
+      alternates: {
+        canonical: `${origin}/contacto`,
+        languages: languageAlternates({
+          path: "/contacto",
+          scope: "site",
+          family: vertical.family,
+        }),
+      },
+      openGraph: {
+        title: `${c.metaTitle} — ${brand}`,
+        description: c.metaDescription(brand),
+      },
+    };
+  }
   return {
     title: `${TITLE}`,
     description: DESCRIPTION(brand),
-    alternates: { canonical: `${await siteOrigin()}/contacto` },
+    alternates: { canonical: `${origin}/contacto` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
@@ -31,6 +63,10 @@ export async function generateMetadata(): Promise<Metadata> {
  * queue we can't answer.
  */
 export default async function ContactoPage() {
+  const vertical = await currentVertical();
+  if (rentalPagesEnabled(vertical.key)) {
+    return <RentalContact d={await dict()} locale={vertical.locale} />;
+  }
   const brand = await brandName();
   const origin = await siteOrigin();
   const whatsapp = CONTACT_WHATSAPP;

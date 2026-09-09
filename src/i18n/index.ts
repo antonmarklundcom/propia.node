@@ -27,11 +27,13 @@ import {
   esGuideEn,
   esHome,
   esHub,
+  esLeadForm,
   esListing,
   esNordico,
   esProfile,
   esProject,
   esRental,
+  esRentalServices,
   esSearchBar,
   esVender,
 } from "./es";
@@ -44,11 +46,13 @@ import {
   enGuideEn,
   enHome,
   enHub,
+  enLeadForm,
   enListing,
   enNordico,
   enProfile,
   enProject,
   enRental,
+  enRentalServices,
   enSearchBar,
   enVender,
 } from "./en";
@@ -76,8 +80,10 @@ const esDictionary = {
   nordico: esNordico,
   guideEn: esGuideEn,
   rental: esRental,
+  rentalServices: esRentalServices,
   vender: esVender,
   contactForm: esContactForm,
+  leadForm: esLeadForm,
 } as const;
 
 /**
@@ -129,8 +135,10 @@ const enDictionary = {
   nordico: enNordico,
   guideEn: enGuideEn,
   rental: enRental,
+  rentalServices: enRentalServices,
   vender: enVender,
   contactForm: enContactForm,
+  leadForm: enLeadForm,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

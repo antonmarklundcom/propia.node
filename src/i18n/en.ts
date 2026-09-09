@@ -997,4 +997,445 @@ export const enRental = {
         "A professional address in Asunción for your legal and commercial needs, without renting an office.",
     },
   },
+  hubMetaTitle: "Services",
+  hubMetaDescription: (brand: string) =>
+    `Renting, property and Airbnb management, residency, investment and a virtual address in Asunción with ${brand}.`,
+  hubIntro:
+    "Seven services that lean on each other: finding somewhere to live, putting a property to work, staying here legally, and deciding where to invest.",
+  allServices: "All services",
+  serviceFormTitle: "Get in touch",
+  serviceFormLead: "Tell us what you need and we will reply on WhatsApp.",
+  about: {
+    metaTitle: "About us",
+    metaDescription: (brand: string) =>
+      `${brand} is a boutique firm in Asunción for expats, digital nomads and investors: renting, management, residency and investment.`,
+    h1: "About us",
+    lead: "The bridge between arriving here and the Paraguayan market.",
+    intro:
+      "We started from a gap we kept seeing: investors and expats were arriving in a growing Paraguay and running into local bureaucracy, inconsistent service standards and very little transparency in their own language. We built the firm to be the partner for that arrival.",
+    founderTitle: "Who is behind it",
+    founderText:
+      "Founded by Anton Marklund, a Swedish entrepreneur based in Asunción, the firm combines a Scandinavian way of working — honesty, punctuality, high standards — with on-the-ground experience of the Paraguayan property and legal market.",
+    visionTitle: "Vision",
+    visionText:
+      "To be the most trusted bridge for international capital and talent in Paraguay, and to set the standard for transparency, design and friction-free relocation.",
+    missionTitle: "Mission",
+    missionText:
+      "To take the friction out of an international move with bilingual advice, impeccable property management and a strategic view of the investment.",
+    valuesTitle: "How we work",
+    values: [
+      {
+        title: "Transparency",
+        text: "Honest, detailed reporting for owners; clear and fair terms for tenants.",
+      },
+      {
+        title: "Respect for your time",
+        text: "If it can be done in 24 hours, we will not take 48.",
+      },
+      {
+        title: "We believe in Paraguay",
+        text: "We believe in this country's growth, and we are here so you can be part of it safely.",
+      },
+    ],
+  },
+  contact: {
+    metaTitle: "Contact",
+    metaDescription: (brand: string) =>
+      `Write to us: ${brand} answers questions about renting, management, residency and investing in Asunción, on WhatsApp.`,
+    h1: "Contact",
+    lead: "Whether you are moving to Asunción, applying for residency or weighing up an investment, our bilingual team is here to help.",
+    formTitle: "Send us a message",
+    channelsTitle: "Direct channels",
+    officeTitle: "Where we are",
+    officeText: "The Skytower building, in the heart of Asunción's financial district.",
+    formNote: "Contact form (this is where we answer)",
+    reasonRent: "I want to rent or relocate",
+    reasonManage: "I have a property to manage",
+    reasonInvest: "I want to buy or invest",
+  },
+} as const;
+
+/** `LeadForm`'s literals in English — see `esLeadForm`. */
+export const enLeadForm = {
+  reasonLabel: "What is this about?",
+  nameLabel: "Name",
+  namePlaceholder: "Your name",
+  whatsappLabel: "WhatsApp",
+  whatsappPlaceholder: "+595 981 234 567",
+  emailLabel: "Email (optional)",
+  emailPlaceholder: "you@email.com",
+  companyLabel: "Company",
+  companyPlaceholder: "Company name",
+  companyPrefix: "Company",
+  messageLabel: "Message",
+  messagePlaceholder: "Tell us what you need",
+  submitLabel: "Send",
+  sending: "Sending…",
+  successTitle: "Thank you — we have your message.",
+  successText: "We reply on WhatsApp within one business day.",
+  invalidPhone: "Enter a valid WhatsApp number.",
+  sendError: "We could not send your message. Try again, or write to us on WhatsApp.",
+  finePrintLead: "By sending this you accept our ",
+  finePrintTerms: "terms",
+  finePrintMid: " and our ",
+  finePrintPrivacy: "privacy policy",
+  finePrintTail: ". We use your details only to reply to you.",
+} as const;
+
+/**
+ * The seven rental service pages in English — the source language for this
+ * namespace. See `esRentalServices` for the shape (plan Appendix C) and for
+ * what O3 fills versus what S3 finishes.
+ */
+export const enRentalServices = {
+  alquiler: {
+    metaTitle: "Rent an apartment or house in Asunción",
+    metaDescription: (brand: string) =>
+      `${brand} finds, negotiates and closes your rental in Asunción: safe neighbourhoods, a translated lease and someone with you until you move in.`,
+    h1: "Rent an apartment or house",
+    tagline:
+      "Rentals in Asunción's most sought-after neighbourhoods, for people arriving from abroad who want safety, quality and a move that goes smoothly.",
+    intro:
+      "Finding somewhere to live in a new country should not be the hardest part of moving there. We handle the search, the viewings, the negotiation and the lease, and we stay with you until you have the keys.",
+    challengeTitle: "Why renting here is different",
+    challengeText:
+      "The Paraguayan rental market is built for people who already have roots here. Most landlords ask for a local guarantor who co-signs your lease: we negotiate alternatives, such as a different deposit, so you do not need to know someone with property. The contract is in legal Spanish, so we translate all of it and negotiate on your behalf. And many of the best properties are never listed at all — those come through a local network, not a search.",
+    frameworkTitle: "How we run your search",
+    framework: [
+      {
+        title: "What you need",
+        text: "We start with how you live: near an international school, near the financial district, near where you train or where you work.",
+      },
+      {
+        title: "Guided viewings",
+        text: "We build a shortlist and take you to see it, with honest feedback on build quality and on the neighbourhood.",
+      },
+      {
+        title: "Negotiation",
+        text: "We do not just ask the price: we negotiate the terms, from break clauses to who is responsible for maintenance.",
+      },
+      {
+        title: "Lease and signing",
+        text: "We review the contract, handle the notary process and explain every clause before you sign anything.",
+      },
+    ],
+    specialTitle: "For people who have just arrived",
+    special: [
+      {
+        title: "Short-term landing rentals",
+        text: "Need somewhere for one to three months while you look for the long-term place? We keep a portfolio of serviced apartments ready to move into.",
+      },
+      {
+        title: "Corporate relocation",
+        text: "We work with HR teams to relocate whole teams, from housing to school tours.",
+      },
+      {
+        title: "Pet-friendly scouting",
+        text: "We know which buildings genuinely welcome pets and which ones have good parks nearby.",
+      },
+    ],
+    benefitsTitle: "What you get working with us",
+    benefits: [
+      {
+        title: "Properties that were never listed",
+        text: "Many of Asunción's best properties never reach a public portal; you see them through our network.",
+      },
+      {
+        title: "A lease that protects you",
+        text: "We check the lease follows Paraguayan law and that your rights as a foreign tenant are covered, with no hidden clauses.",
+      },
+      {
+        title: "No local guarantor",
+        text: "We negotiate around the guarantor requirement, which is what shuts out almost everyone who has just arrived.",
+      },
+      {
+        title: "Bilingual support",
+        text: "From the fine print to how the building's expensas get paid, we are your voice while you settle in.",
+      },
+    ],
+    faq: [
+      {
+        q: "What deposit is normally asked for?",
+        a: "Usually one month's deposit plus the first month in advance. For foreigners without a local guarantor we negotiate specific terms with the landlord.",
+      },
+      {
+        q: "Are utilities included in the rent?",
+        a: "In long-term leases, usually not. We help you transfer the accounts into your name or manage the payments for you.",
+      },
+      {
+        q: "What documents do I need to sign?",
+        a: "At first, your passport. Once your residency process starts we can update the lease with your Paraguayan ID.",
+      },
+    ],
+    ctaTitle: "Don't navigate the market alone",
+    ctaText:
+      "Tell us what you are looking for and by when, and we will come back with real options.",
+    ctaButton: "Start the search",
+  },
+  administracionAirbnb: {
+    metaTitle: "Airbnb management in Asunción",
+    metaDescription: (brand: string) =>
+      `${brand} runs your short-term rental in Asunción end to end: styling, photography, dynamic pricing and guest communication.`,
+    h1: "Airbnb management",
+    tagline:
+      "Full-service short-term rental management in Asunción: styling, pricing and hospitality, without you having to watch it.",
+    intro:
+      "Running a short-term rental that actually performs is a full-time job: photography that competes, a price that moves with demand, and someone answering at any hour. That is our side of it.",
+    challengeTitle: "The passive income myth",
+    challengeText:
+      "A listing with average photos gets buried in the results. A static price loses money in high-demand weeks and scares people off in slow ones. And guest communication and key handovers, around the clock, are exactly what wears an owner down.",
+    frameworkTitle: "Our management, in three phases",
+    framework: [
+      {
+        title: "Launch and aesthetics",
+        text: "Interior styling, magazine-quality photography and a listing written to be found and to convince.",
+      },
+      {
+        title: "Daily operations",
+        text: "Pricing adjusted to demand, bilingual guest support and check-in handled.",
+      },
+      {
+        title: "Maintenance and housekeeping",
+        text: "Hotel-standard cleaning, preventative maintenance and restocking of the essentials.",
+      },
+    ],
+    specialTitle: "Specialised services",
+    special: [],
+    benefitsTitle: "What changes for you",
+    benefits: [
+      {
+        title: "One point of contact",
+        text: "We talk to the guests, the cleaners and the contractors; you see the result.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Put your property to work",
+    ctaText: "Tell us where it is and what condition it is in, and we will tell you what to expect.",
+    ctaButton: "Talk to us",
+  },
+  administracionDepartamentos: {
+    metaTitle: "Apartment management in Asunción",
+    metaDescription: (brand: string) =>
+      `${brand} manages your Asunción apartment: tenant screening, rent collection, maintenance and clear reporting, wherever you live.`,
+    h1: "Apartment management",
+    tagline:
+      "Your Asunción property managed as if you lived around the corner: vetted tenants, maintenance handled, numbers you can read.",
+    intro:
+      "A long-term rental in Asunción is a sound strategy, right up until the admin starts eating the return. If you live abroad, distance turns every small task into a problem. Our job is to make it an income that does not occupy your head.",
+    challengeTitle: "What owning a rental actually involves",
+    challengeText:
+      "Chasing late payments, learning the local law, fixing a leak from another continent — these are costs that appear on no spreadsheet and that eventually exhaust the owner who self-manages.",
+    frameworkTitle: "How we manage",
+    framework: [
+      {
+        title: "Marketing and tenant placement",
+        text: "Professional photography, escorted viewings, and background, income and reference checks before anyone signs.",
+      },
+      {
+        title: "Legal security and admin",
+        text: "Leases signed at a notary, deposits held securely, and a photo-documented inventory report.",
+      },
+      {
+        title: "Operations and maintenance",
+        text: "We are the tenant's only point of contact and we fix things through trusted local contractors at fair prices.",
+      },
+      {
+        title: "Reporting",
+        text: "Every month you get a statement with income, expenses and net result.",
+      },
+    ],
+    specialTitle: "Specialised services",
+    special: [],
+    benefitsTitle: "Why delegating pays",
+    benefits: [
+      {
+        title: "Fewer vacant days",
+        text: "A good tenant found quickly is worth more than a month of saved commission.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Hand over the management",
+    ctaText: "Tell us about your property and we will explain how we would run it.",
+    ctaButton: "Talk to us",
+  },
+  inmobiliariaAsuncion: {
+    metaTitle: "Realtor in Asunción for foreign buyers",
+    metaDescription: (brand: string) =>
+      `${brand} represents you when buying in Asunción: sourcing, title checks, negotiation and support through to the deed.`,
+    h1: "Realtor in Asunción",
+    tagline:
+      "Bilingual representation for buying in Asunción, from the search to the deed.",
+    intro:
+      "Buying in a city that is not yours takes more than access to listings: it takes knowing the neighbourhoods, knowing what is being built, and having someone to negotiate with. We represent you, not the seller.",
+    challengeTitle: "A market in the middle of a transformation",
+    challengeText:
+      "Asunción has changed a great deal in a few years, and with it came new districts, new developers and prices that move differently block by block. Without that local reading it is easy to overpay for something hard to resell.",
+    frameworkTitle: "How we work with you",
+    framework: [
+      {
+        title: "Sourcing",
+        text: "We go beyond the portals: a network of developers and owners, filtered by build quality and resale potential.",
+      },
+      {
+        title: "Due diligence",
+        text: "We coordinate title and lien checks with a notary, and translate every document for you.",
+      },
+      {
+        title: "Negotiation",
+        text: "We negotiate on local market data, so you do not pay the premium usually charged to an outsider.",
+      },
+      {
+        title: "After the deed",
+        text: "Utility transfers, getting the place ready and, if you want it, management from the first month.",
+      },
+    ],
+    specialTitle: "Specialised services for buyers and sellers",
+    special: [],
+    benefitsTitle: "What representation adds",
+    benefits: [
+      {
+        title: "Less risk",
+        text: "We look at who is building, with what materials, and what is planned around it before your money moves.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Buy with someone on your side",
+    ctaText: "Tell us what you are looking for and what budget you have.",
+    ctaButton: "Talk to us",
+  },
+  residenciaParaguay: {
+    metaTitle: "Residency in Paraguay, handled with you",
+    metaDescription: (brand: string) =>
+      `${brand} prepares your file and walks you through the Paraguayan residency process, up to your cédula.`,
+    h1: "Residency in Paraguay",
+    tagline:
+      "A residency process handled end to end, for investors, digital nomads and families.",
+    intro:
+      "Paraguayan residency is among the most accessible in the world, but the process has steps, stamps and appointments you would rather not discover as you go. We prepare the file before you fly and we are with you while you are here.",
+    challengeTitle: "Why people choose it",
+    challengeText:
+      "Paraguay attracts people who want an orderly plan B: a reasonable cost of living, a clear path towards citizenship, and a convenient base for moving around the region. The tax conditions and the timelines we go through with you case by case, because they change and they depend on your situation.",
+    frameworkTitle: "The process, step by step",
+    framework: [
+      {
+        title: "Consultation and documents",
+        text: "We review your case, give you the checklist for your own country and verify apostilles and translations before you travel.",
+      },
+      {
+        title: "Your days in Asunción",
+        text: "We take you to every appointment — biometrics, medical check and interviews — with transport and someone bilingual alongside.",
+      },
+      {
+        title: "Monitoring",
+        text: "We follow the file as it moves and tell you at each stage.",
+      },
+      {
+        title: "Collection",
+        text: "We collect the documentation and hand it to you when it is issued.",
+      },
+    ],
+    specialTitle: "Specialised services for global citizens",
+    special: [],
+    benefitsTitle: "What we take off your hands",
+    benefits: [
+      {
+        title: "Few days here",
+        text: "We prepare everything in advance so your time in Asunción is as short as possible.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Start your residency",
+    ctaText: "Tell us your nationality and your situation, and we will tell you what you need.",
+    ctaButton: "Talk to us",
+  },
+  invertirEnParaguay: {
+    metaTitle: "Investing in Paraguay: property and business",
+    metaDescription: (brand: string) =>
+      `${brand} supports your investment in Paraguay: sourcing the asset, the legal structure and the management afterwards, with clear reporting.`,
+    h1: "Invest in Paraguay",
+    tagline:
+      "Property and productive opportunities in Paraguay, with someone here to run them afterwards.",
+    intro:
+      "Investing at a distance works when someone on this side looks at the building, checks on the tenant and sends the numbers on time. We find the asset, get the structure right, and then manage it.",
+    challengeTitle: "Why Paraguay",
+    challengeText:
+      "Paraguay combines a simple tax regime, low operating costs and an economy that has been growing steadily. The specific figures — rates, incentives and expected returns — we go through case by case, because they depend on the asset and on the year.",
+    frameworkTitle: "How we work an investment",
+    framework: [
+      {
+        title: "Property",
+        text: "We look for assets with real rental demand and a resale market in Asunción's premium corridors.",
+      },
+      {
+        title: "Farmland and agribusiness",
+        text: "We support the purchase of productive land, with the local advice to evaluate and run it.",
+      },
+      {
+        title: "Legal and tax structure",
+        text: "We work with local firms so the investment is structured properly from the start.",
+      },
+      {
+        title: "Management",
+        text: "Due diligence, purchase, getting it running, and regular reporting in your language.",
+      },
+    ],
+    specialTitle: "Specialised investment vehicles",
+    special: [],
+    benefitsTitle: "What you get",
+    benefits: [
+      {
+        title: "Boots on the ground",
+        text: "Someone here who looks, decides and answers, while you stay where you are.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Let's talk about your investment",
+    ctaText: "Tell us the amount and the horizon you have in mind.",
+    ctaButton: "Talk to us",
+  },
+  domicilioVirtual: {
+    metaTitle: "Virtual address in Asunción",
+    metaDescription: (brand: string) =>
+      `${brand} gives you a commercial and legal domicile in Asunción, with mail handling and support for your paperwork.`,
+    h1: "Virtual address",
+    tagline:
+      "A commercial and legal address in Asunción, without the overhead of renting an office.",
+    intro:
+      "Registering a company, applying for a tax ID or simply receiving official correspondence all need a stable address in Paraguay. We give you that base — and someone who opens the envelope when it arrives.",
+    challengeTitle: "What it is for",
+    challengeText:
+      "If you are testing the Paraguayan market, or your operation is remote, a professional address in the financial district gives you credibility with banks, government offices and clients, without the cost of a lease.",
+    frameworkTitle: "What it includes",
+    framework: [
+      {
+        title: "Business domicile",
+        text: "A recognised Asunción address for your website, your stationery and your paperwork.",
+      },
+      {
+        title: "Mail handling",
+        text: "We receive, scan and forward letters, packages and official notifications.",
+      },
+      {
+        title: "Legal and tax domicile",
+        text: "It meets the local requirements for registering a company and applying for a RUC.",
+      },
+      {
+        title: "Meeting rooms",
+        text: "When you are in town, you have somewhere to meet at the same address.",
+      },
+    ],
+    specialTitle: "Solutions for global founders",
+    special: [],
+    benefitsTitle: "Why it works",
+    benefits: [
+      {
+        title: "Enter without committing",
+        text: "You test the market with a formal presence before signing a lease.",
+      },
+    ],
+    faq: [],
+    ctaTitle: "Get your address in Asunción",
+    ctaText: "Tell us what you need it for and we will tell you what it takes.",
+    ctaButton: "Talk to us",
+  },
 } as const;
