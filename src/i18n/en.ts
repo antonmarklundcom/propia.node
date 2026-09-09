@@ -1221,15 +1221,57 @@ export const enRentalServices = {
       },
     ],
     specialTitle: "Specialised services",
-    special: [],
+    special: [
+      {
+        title: "Full furnishing from scratch",
+        text: "We can furnish and equip a brand-new unit end to end, from the sofa to the Wi-Fi router.",
+      },
+      {
+        title: "Tax and compliance liaison",
+        text: "We help keep your short-term rental compliant with Paraguayan regulations.",
+      },
+      {
+        title: "Your own stays",
+        text: "Block out dates for your own use through our system; we make sure the unit is ready when you arrive.",
+      },
+    ],
     benefitsTitle: "What changes for you",
     benefits: [
       {
         title: "One point of contact",
         text: "We talk to the guests, the cleaners and the contractors; you see the result.",
       },
+      {
+        title: "Dynamic pricing",
+        text: "We adjust your nightly rate against local demand and competitor pricing, instead of leaving it fixed.",
+      },
+      {
+        title: "Multi-channel exposure",
+        text: "Your listing runs on Airbnb, Booking.com and VRBO, not just one channel.",
+      },
+      {
+        title: "Bilingual guest support",
+        text: "Guests are answered in English, Spanish and Portuguese, at any hour.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "How do you decide my nightly price?",
+        a: "We use real-time data on local competitors and seasonal demand in Asunción and adjust the rate daily, rather than leaving it fixed.",
+      },
+      {
+        q: "What happens if a guest damages something?",
+        a: "We run a post-stay inspection and help manage the claim through Airbnb's own protection programme or private insurance.",
+      },
+      {
+        q: "How and when do I get paid?",
+        a: "You get a monthly statement and your net profit goes straight to your bank account.",
+      },
+      {
+        q: "Can I use the property myself sometimes?",
+        a: "Yes — block out your own dates through our system and we make sure the unit is ready for you.",
+      },
+    ],
     ctaTitle: "Put your property to work",
     ctaText: "Tell us where it is and what condition it is in, and we will tell you what to expect.",
     ctaButton: "Talk to us",
@@ -1266,15 +1308,53 @@ export const enRentalServices = {
       },
     ],
     specialTitle: "Specialised services",
-    special: [],
+    special: [
+      {
+        title: "Full tenant verification",
+        text: "Beyond an ID check, we verify income, employment history and past rental references before anyone signs.",
+      },
+      {
+        title: "A protocol for late payment",
+        text: "If a payment is late we follow up immediately, with legal notice if it comes to that.",
+      },
+      {
+        title: "You approve every repair",
+        text: "As the owner you are responsible for upkeep; we coordinate the work and make sure you pay a fair local price.",
+      },
+    ],
     benefitsTitle: "Why delegating pays",
     benefits: [
       {
         title: "Fewer vacant days",
         text: "A good tenant found quickly is worth more than a month of saved commission.",
       },
+      {
+        title: "Preventative maintenance",
+        text: "Catching a small leak or wiring issue early avoids the expensive structural repair later, and protects resale value.",
+      },
+      {
+        title: "Monthly statements in your language",
+        text: "Income, expenses and net result, every month, so you never have to ask.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "How do you screen a tenant?",
+        a: "We verify income, employment history and rental references — not just an ID — before we recommend anyone.",
+      },
+      {
+        q: "What if the tenant stops paying?",
+        a: "We have a set protocol: immediate follow-up, and legal notice if it becomes necessary.",
+      },
+      {
+        q: "Who pays for repairs?",
+        a: "As the owner you cover upkeep, but we coordinate the contractor and negotiate a fair local price.",
+      },
+      {
+        q: "Do you handle the lease and the deposit?",
+        a: "Yes — the lease is signed at a notary for full legal weight, and the deposit is held securely with a photo-documented inventory.",
+      },
+    ],
     ctaTitle: "Hand over the management",
     ctaText: "Tell us about your property and we will explain how we would run it.",
     ctaButton: "Talk to us",
@@ -1311,15 +1391,57 @@ export const enRentalServices = {
       },
     ],
     specialTitle: "Specialised services for buyers and sellers",
-    special: [],
+    special: [
+      {
+        title: "Pre-construction access",
+        text: "\"Floor-one\" prices in new developments, through our relationships with the developers building them.",
+      },
+      {
+        title: "Villa and penthouse search",
+        text: "A tailored search for high-security villas and penthouses in the city's more exclusive gated communities.",
+      },
+      {
+        title: "Land and commercial sourcing",
+        text: "Identifying plots for future development or commercial use in Asunción's growing industrial zones.",
+      },
+    ],
     benefitsTitle: "What representation adds",
     benefits: [
       {
         title: "Less risk",
         text: "We look at who is building, with what materials, and what is planned around it before your money moves.",
       },
+      {
+        title: "You buy on your own passport",
+        text: "Paraguay is open to foreign investment: you can title a property under your own name or a company using only your passport.",
+      },
+      {
+        title: "Closing costs you can plan for",
+        text: "Notary fees and taxes at closing typically run 2–3% of the transaction value; we give you a closing-cost estimate before you commit to anything.",
+      },
+      {
+        title: "A single point of contact",
+        text: "From scouting to deed registration, one team coordinates the agents, lawyers and government offices for you.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "Can I buy property here as a foreigner?",
+        a: "Yes. Paraguay is very open to foreign investment — you can purchase and title property under your own name or a corporation using only a valid passport.",
+      },
+      {
+        q: "What does closing actually cost?",
+        a: "Notary fees and taxes typically run 2–3% of the transaction value; we give you a detailed estimate before anything is finalised.",
+      },
+      {
+        q: "What tax do I pay if I sell later?",
+        a: "If you sell as an individual the tax on the gain is usually low — often in the region of 2.4–3% — which is one reason Asunción is attractive for capital appreciation.",
+      },
+      {
+        q: "Do you only work with buyers?",
+        a: "No — we also represent sellers, and if you buy through us we can move your property straight into our management or Airbnb service once you close.",
+      },
+    ],
     ctaTitle: "Buy with someone on your side",
     ctaText: "Tell us what you are looking for and what budget you have.",
     ctaButton: "Talk to us",
@@ -1356,15 +1478,61 @@ export const enRentalServices = {
       },
     ],
     specialTitle: "Specialised services for global citizens",
-    special: [],
+    special: [
+      {
+        title: "Corporate relocation",
+        text: "We handle residency for whole teams and their families moving to Paraguay together.",
+      },
+      {
+        title: "Investor-category support",
+        text: "Specific guidance for people applying under an investment-based residency category.",
+      },
+      {
+        title: "Digital-nomad tax planning",
+        text: "Advice for remote workers who want to make sense of their global tax position from here.",
+      },
+      {
+        title: "Family packages",
+        text: "Full support for spouses and children, so the whole family moves through the process together.",
+      },
+    ],
     benefitsTitle: "What we take off your hands",
     benefits: [
       {
         title: "Few days here",
         text: "We prepare everything in advance so your time in Asunción is as short as possible.",
       },
+      {
+        title: "Documents checked before you fly",
+        text: "We review your home-country paperwork — birth certificates, police records — before you travel, so nothing gets rejected once you're here.",
+      },
+      {
+        title: "Bilingual, in person",
+        text: "We go with you to every appointment: biometrics, the medical check, interviews.",
+      },
+      {
+        title: "Help after the cédula",
+        text: "Once your ID is issued we help you open a bank account and get set up locally.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "Do I need to live in Paraguay to keep my residency?",
+        a: "No. Paraguay has flexible physical-presence requirements, which is exactly why it works as a plan B.",
+      },
+      {
+        q: "How long does it take?",
+        a: "The in-country part takes less than a week; the physical ID card itself usually takes a few months to be issued.",
+      },
+      {
+        q: "Can I open a bank account once I have residency?",
+        a: "Yes — once your Cédula is issued we help you navigate the local banking system.",
+      },
+      {
+        q: "Will Paraguay tax my income from abroad?",
+        a: "Paraguay runs a territorial tax system: income earned outside the country is generally not taxed here.",
+      },
+    ],
     ctaTitle: "Start your residency",
     ctaText: "Tell us your nationality and your situation, and we will tell you what you need.",
     ctaButton: "Talk to us",
@@ -1401,15 +1569,57 @@ export const enRentalServices = {
       },
     ],
     specialTitle: "Specialised investment vehicles",
-    special: [],
+    special: [
+      {
+        title: "Pooled residential investment",
+        text: "Join a syndicate of investors funding a development from the pre-construction (\"en pozo\") stage.",
+      },
+      {
+        title: "Cattle-fattening partnerships",
+        text: "Invest alongside professional ranchers in cattle-fattening cycles — an asset-backed alternative to property.",
+      },
+      {
+        title: "Industrial and logistics land",
+        text: "Land near the Bioceanic Corridor for warehousing and logistics, as regional trade grows.",
+      },
+    ],
     benefitsTitle: "What you get",
     benefits: [
       {
         title: "Boots on the ground",
         text: "Someone here who looks, decides and answers, while you stay where you are.",
       },
+      {
+        title: "A simple tax regime",
+        text: "Paraguay runs a \"10-10-10\" system — 10% corporate tax, 10% personal income tax, 10% VAT — plus further incentives for larger projects under Law No. 7548/2025.",
+      },
+      {
+        title: "No exchange controls",
+        text: "You can move capital and profits in and out of Paraguay freely, in USD or Euros, through the regular banking system.",
+      },
+      {
+        title: "Full foreign ownership",
+        text: "Foreigners have the same property rights as locals: you can own 100% of real estate or farmland in your own name or through a local company.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "Can foreigners own 100% of a property or farm here?",
+        a: "Yes — foreigners have the same property rights as locals, in your own name or through a local company.",
+      },
+      {
+        q: "What tax do I pay?",
+        a: "Paraguay's headline regime is \"10-10-10\": 10% corporate tax, 10% personal income tax and 10% VAT, with deeper incentives for larger projects under Law No. 7548/2025.",
+      },
+      {
+        q: "Is there a minimum investment for the tax incentives?",
+        a: "The most significant exemptions under Law 7548 start at projects of USD 5 million, with further benefits above USD 13 million — for anything smaller we structure what applies to your case.",
+      },
+      {
+        q: "Can I move my money in and out freely?",
+        a: "Yes — Paraguay has no exchange controls, so capital and profits move in and out in USD or Euros through the ordinary banking system.",
+      },
+    ],
     ctaTitle: "Let's talk about your investment",
     ctaText: "Tell us the amount and the horizon you have in mind.",
     ctaButton: "Talk to us",
@@ -1446,15 +1656,57 @@ export const enRentalServices = {
       },
     ],
     specialTitle: "Solutions for global founders",
-    special: [],
+    special: [
+      {
+        title: "Corporate formation package",
+        text: "We pair the address with legal support to incorporate your Paraguayan S.A. or S.A.S.",
+      },
+      {
+        title: "Bilingual reception",
+        text: "A local phone number, answered in your company's name by a bilingual receptionist.",
+      },
+      {
+        title: "Package forwarding",
+        text: "International shipping for physical goods and documents that arrive at your Asunción address.",
+      },
+    ],
     benefitsTitle: "Why it works",
     benefits: [
       {
         title: "Enter without committing",
         text: "You test the market with a formal presence before signing a lease.",
       },
+      {
+        title: "Meets banks' KYC rules",
+        text: "Banks in Paraguay require a physical or commercial address for KYC purposes; ours is built to meet that standard.",
+      },
+      {
+        title: "Works while you're applying for residency",
+        text: "A stable local address that Migration and the National Police can rely on as your point of contact during the process.",
+      },
+      {
+        title: "You're notified the moment mail arrives",
+        text: "We tell you as soon as something is received and follow your instructions — scan, shred or forward.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "Will a bank accept this as my address?",
+        a: "Yes — banks in Paraguay ask for a physical or commercial address for KYC purposes, and our premium addresses meet that standard.",
+      },
+      {
+        q: "How often will I hear from you about my mail?",
+        a: "As often as it arrives. We notify you immediately and follow your instructions for scanning, shredding or forwarding.",
+      },
+      {
+        q: "Does this help with my residency application?",
+        a: "Yes — it works as a reliable point of contact for Migration and the National Police during the process.",
+      },
+      {
+        q: "Can I use this address to register a company?",
+        a: "Yes, and if you want we combine it with legal support to incorporate your S.A. or S.A.S.",
+      },
+    ],
     ctaTitle: "Get your address in Asunción",
     ctaText: "Tell us what you need it for and we will tell you what it takes.",
     ctaButton: "Talk to us",

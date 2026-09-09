@@ -1982,15 +1982,57 @@ export const esRentalServices = {
       },
     ],
     specialTitle: "Servicios especializados",
-    special: [],
+    special: [
+      {
+        title: "Ambientación completa desde cero",
+        text: "Podemos amoblar y equipar una unidad nueva de punta a punta, desde el sillón hasta el router de wifi.",
+      },
+      {
+        title: "Gestión fiscal y de cumplimiento",
+        text: "Te ayudamos a mantener tu alquiler temporal en regla con la normativa paraguaya.",
+      },
+      {
+        title: "Estadías propias",
+        text: "Bloqueá fechas para tu propio uso a través de nuestro sistema; nos encargamos de que la unidad esté lista cuando llegues.",
+      },
+    ],
     benefitsTitle: "Qué cambia para vos",
     benefits: [
       {
         title: "Una sola cara visible",
         text: "Nosotros hablamos con los huéspedes, con la limpieza y con el mantenimiento; vos ves el resultado.",
       },
+      {
+        title: "Precios dinámicos",
+        text: "Ajustamos tu tarifa según la demanda local y los precios de la competencia, en vez de dejarla fija.",
+      },
+      {
+        title: "Presencia en varios canales",
+        text: "Tu aviso está en Airbnb, Booking.com y VRBO, no solo en uno.",
+      },
+      {
+        title: "Atención bilingüe al huésped",
+        text: "Respondemos a los huéspedes en español, inglés y portugués, a cualquier hora.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Cómo deciden el precio por noche?",
+        a: "Usamos datos en tiempo real de la competencia local y de la demanda estacional en Asunción, y ajustamos la tarifa todos los días en vez de dejarla fija.",
+      },
+      {
+        q: "¿Qué pasa si un huésped rompe algo?",
+        a: "Hacemos una inspección después de la estadía y te ayudamos a gestionar el reclamo con el programa de protección de Airbnb o con el seguro privado.",
+      },
+      {
+        q: "¿Cómo y cuándo cobro?",
+        a: "Recibís un estado mensual y tu ganancia neta va directo a tu cuenta bancaria.",
+      },
+      {
+        q: "¿Puedo usar la propiedad yo también en algún momento?",
+        a: "Sí, bloqueá tus propias fechas desde nuestro sistema y nos encargamos de que la unidad esté lista para vos.",
+      },
+    ],
     ctaTitle: "Poné tu propiedad a rendir",
     ctaText: "Contanos dónde está y cómo está, y te decimos qué esperar.",
     ctaButton: "Hablemos",
@@ -2027,15 +2069,53 @@ export const esRentalServices = {
       },
     ],
     specialTitle: "Servicios especializados",
-    special: [],
+    special: [
+      {
+        title: "Verificación completa del inquilino",
+        text: "Más allá de la cédula, verificamos ingresos, historial laboral y referencias de alquileres anteriores antes de que alguien firme.",
+      },
+      {
+        title: "Protocolo ante un pago atrasado",
+        text: "Si un pago se retrasa, hacemos seguimiento de inmediato y, si hace falta, avanzamos con la notificación legal.",
+      },
+      {
+        title: "Vos aprobás cada arreglo",
+        text: "Como propietario, el mantenimiento corre por tu cuenta, pero coordinamos el trabajo y negociamos precios de mercado, no lo que le cobrarían a un extranjero.",
+      },
+    ],
     benefitsTitle: "Por qué conviene delegarlo",
     benefits: [
       {
         title: "Menos días vacío",
         text: "Un buen inquilino encontrado rápido vale más que un mes de alquiler ahorrado en comisiones.",
       },
+      {
+        title: "Mantenimiento preventivo",
+        text: "Detectar a tiempo una filtración o un problema eléctrico evita la reparación estructural cara más adelante, y protege el valor de reventa.",
+      },
+      {
+        title: "Reportes mensuales en tu idioma",
+        text: "Ingresos, gastos y resultado neto, todos los meses, sin que tengas que preguntar.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Cómo seleccionan al inquilino?",
+        a: "Verificamos ingresos, historial laboral y referencias de alquileres anteriores —no solo la cédula— antes de recomendar a alguien.",
+      },
+      {
+        q: "¿Qué pasa si el inquilino deja de pagar?",
+        a: "Tenemos un protocolo: seguimiento inmediato y, si es necesario, notificación legal.",
+      },
+      {
+        q: "¿Quién paga las reparaciones?",
+        a: "Como propietario, el mantenimiento corre por tu cuenta, pero coordinamos al proveedor y negociamos un precio justo de mercado.",
+      },
+      {
+        q: "¿Se encargan del contrato y del depósito?",
+        a: "Sí: el contrato se firma ante escribanía para que tenga peso legal completo, y el depósito se resguarda con un inventario documentado con fotos.",
+      },
+    ],
     ctaTitle: "Delegá la administración",
     ctaText: "Contanos de tu propiedad y te explicamos cómo la administraríamos.",
     ctaButton: "Hablemos",
@@ -2072,15 +2152,57 @@ export const esRentalServices = {
       },
     ],
     specialTitle: "Servicios especializados para compradores y vendedores",
-    special: [],
+    special: [
+      {
+        title: "Acceso a preventa",
+        text: "Precios de \"primer piso\" en desarrollos nuevos, gracias a nuestra relación directa con las desarrolladoras que los construyen.",
+      },
+      {
+        title: "Búsqueda de villas y penthouses",
+        text: "Búsquedas a medida en los countries y edificios más exclusivos de la ciudad.",
+      },
+      {
+        title: "Terrenos y uso comercial",
+        text: "Identificamos lotes para desarrollo futuro o uso comercial en las zonas industriales que están creciendo en Asunción.",
+      },
+    ],
     benefitsTitle: "Qué aporta tener representación",
     benefits: [
       {
         title: "Menos riesgo",
         text: "Revisamos quién construye, con qué materiales y qué hay proyectado alrededor antes de que pongas el dinero.",
       },
+      {
+        title: "Comprás con tu pasaporte",
+        text: "Paraguay está abierto a la inversión extranjera: podés titular una propiedad a tu nombre o al de una empresa usando solo tu pasaporte.",
+      },
+      {
+        title: "Costos de cierre que podés planificar",
+        text: "Los honorarios de escribanía y los impuestos de cierre rondan el 2–3 % del valor de la operación; te damos una estimación antes de que te comprometas.",
+      },
+      {
+        title: "Un solo interlocutor",
+        text: "Desde la búsqueda hasta la inscripción de la escritura, un equipo coordina agentes, abogados y organismos públicos por vos.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Puedo comprar una propiedad como extranjero?",
+        a: "Sí. Paraguay está muy abierto a la inversión extranjera: podés comprar y titular una propiedad a tu nombre o al de una sociedad usando solo un pasaporte válido.",
+      },
+      {
+        q: "¿Cuánto cuesta cerrar la operación?",
+        a: "Los honorarios de escribanía y los impuestos suelen rondar el 2–3 % del valor de la operación; te damos una estimación detallada antes de firmar nada.",
+      },
+      {
+        q: "¿Qué impuesto pago si después vendo?",
+        a: "Si vendés como persona física, el impuesto sobre la ganancia suele ser bajo —en el orden del 2,4–3 % en muchos casos—, una de las razones por las que Asunción atrae capital que busca valorización.",
+      },
+      {
+        q: "¿Solo trabajan con compradores?",
+        a: "No, también representamos a vendedores, y si comprás con nosotros podemos pasar tu propiedad directamente a administración o a Airbnb en cuanto cierres.",
+      },
+    ],
     ctaTitle: "Comprá con alguien de tu lado",
     ctaText: "Contanos qué estás buscando y con qué presupuesto.",
     ctaButton: "Hablemos",
@@ -2117,15 +2239,61 @@ export const esRentalServices = {
       },
     ],
     specialTitle: "Servicios especializados para ciudadanos globales",
-    special: [],
+    special: [
+      {
+        title: "Mudanzas corporativas",
+        text: "Tramitamos la residencia de equipos completos y sus familias que se mudan juntos a Paraguay.",
+      },
+      {
+        title: "Acompañamiento para inversores",
+        text: "Guía específica para quienes tramitan la residencia bajo una categoría de inversión.",
+      },
+      {
+        title: "Planificación fiscal para nómadas digitales",
+        text: "Asesoramiento para quien trabaja remoto y quiere entender su situación fiscal global desde acá.",
+      },
+      {
+        title: "Paquetes familiares",
+        text: "Acompañamiento completo para que cónyuges e hijos hagan el trámite junto con vos.",
+      },
+    ],
     benefitsTitle: "Qué resolvemos",
     benefits: [
       {
         title: "Pocos días acá",
         text: "Preparamos todo por adelantado para que tu presencia en Asunción sea la mínima posible.",
       },
+      {
+        title: "Documentos revisados antes de viajar",
+        text: "Revisamos tu papelería de origen —partidas de nacimiento, certificados de antecedentes— antes de que viajes, para que nada se rechace ya estando acá.",
+      },
+      {
+        title: "Bilingüe y en persona",
+        text: "Te acompañamos a cada turno: biometría, control médico, entrevistas.",
+      },
+      {
+        title: "Seguimos después de la cédula",
+        text: "Una vez que tenés tu documento, te ayudamos a abrir una cuenta bancaria y a instalarte.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Necesito vivir en Paraguay para mantener la residencia?",
+        a: "No. Paraguay tiene requisitos de permanencia física flexibles, que es justamente lo que la hace funcionar como plan B.",
+      },
+      {
+        q: "¿Cuánto tarda el trámite?",
+        a: "La parte presencial en el país toma menos de una semana; la cédula física en sí suele tardar unos meses en emitirse.",
+      },
+      {
+        q: "¿Puedo abrir una cuenta bancaria una vez que tengo la residencia?",
+        a: "Sí, una vez que tenés tu Cédula te ayudamos a moverte por el sistema bancario local.",
+      },
+      {
+        q: "¿Paraguay me va a cobrar impuestos sobre lo que gano afuera?",
+        a: "Paraguay tiene un sistema tributario territorial: en general, el ingreso generado fuera del país no se grava acá.",
+      },
+    ],
     ctaTitle: "Empezá tu residencia",
     ctaText: "Contanos tu nacionalidad y tu situación, y te decimos qué necesitás.",
     ctaButton: "Hablemos",
@@ -2162,15 +2330,57 @@ export const esRentalServices = {
       },
     ],
     specialTitle: "Vehículos de inversión especializados",
-    special: [],
+    special: [
+      {
+        title: "Inversión residencial en pool",
+        text: "Sumate con otros inversores a financiar un desarrollo desde la etapa \"en pozo\" (preventa).",
+      },
+      {
+        title: "Sociedades de engorde de ganado",
+        text: "Invertí junto a productores profesionales en ciclos de engorde: un activo tangible, distinto al ladrillo.",
+      },
+      {
+        title: "Terrenos industriales y logísticos",
+        text: "Tierra cerca del Corredor Bioceánico para depósitos y logística, a medida que crece el comercio regional.",
+      },
+    ],
     benefitsTitle: "Qué te damos",
     benefits: [
       {
         title: "Presencia local",
         text: "Alguien acá que mira, decide y responde, mientras vos seguís donde estás.",
       },
+      {
+        title: "Un régimen tributario simple",
+        text: "Paraguay tiene un esquema conocido como \"10-10-10\": 10 % de impuesto corporativo, 10 % a la renta personal y 10 % de IVA, con incentivos adicionales para proyectos grandes bajo la Ley N.º 7548/2025.",
+      },
+      {
+        title: "Sin control de cambios",
+        text: "Movés capital y ganancias hacia y desde Paraguay libremente, en dólares o euros, por el sistema bancario tradicional.",
+      },
+      {
+        title: "Propiedad extranjera plena",
+        text: "Los extranjeros tienen los mismos derechos de propiedad que los locales: podés ser dueño del 100 % de un inmueble o un campo a tu nombre o a través de una sociedad local.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Puedo ser dueño del 100 % de una propiedad o un campo?",
+        a: "Sí, los extranjeros tienen los mismos derechos de propiedad que los locales, a tu nombre o a través de una sociedad local.",
+      },
+      {
+        q: "¿Qué impuestos pago?",
+        a: "El régimen general se conoce como \"10-10-10\": 10 % de impuesto corporativo, 10 % a la renta personal y 10 % de IVA, con incentivos adicionales para proyectos grandes bajo la Ley N.º 7548/2025.",
+      },
+      {
+        q: "¿Hay un monto mínimo para acceder a los incentivos fiscales?",
+        a: "Los beneficios más grandes de la Ley 7548 empiezan en proyectos de USD 5 millones, con ventajas mayores por encima de USD 13 millones; para montos menores vemos caso por caso qué aplica.",
+      },
+      {
+        q: "¿Puedo mover mi dinero hacia y desde el país sin restricciones?",
+        a: "Sí, Paraguay no tiene control de cambios, así que el capital y las ganancias entran y salen en dólares o euros por el sistema bancario normal.",
+      },
+    ],
     ctaTitle: "Hablemos de tu inversión",
     ctaText: "Contanos qué monto y qué horizonte tenés en mente.",
     ctaButton: "Hablemos",
@@ -2207,15 +2417,57 @@ export const esRentalServices = {
       },
     ],
     specialTitle: "Soluciones para fundadores globales",
-    special: [],
+    special: [
+      {
+        title: "Paquete de constitución de empresa",
+        text: "Combinamos el domicilio con el acompañamiento legal para constituir tu S.A. o S.A.S. paraguaya.",
+      },
+      {
+        title: "Recepción bilingüe",
+        text: "Un número local que atienden en nombre de tu empresa, en español y en inglés.",
+      },
+      {
+        title: "Reenvío de paquetes",
+        text: "Gestión de envíos internacionales para bienes físicos o documentos que llegan a tu dirección en Asunción.",
+      },
+    ],
     benefitsTitle: "Por qué conviene",
     benefits: [
       {
         title: "Entrar sin comprometerte",
         text: "Probás el mercado con una presencia formal antes de firmar un alquiler.",
       },
+      {
+        title: "Cumple los requisitos de los bancos",
+        text: "Los bancos en Paraguay piden una dirección física o comercial para sus controles de identificación; la nuestra cumple ese estándar.",
+      },
+      {
+        title: "Sirve durante tu trámite de residencia",
+        text: "Una dirección estable que Migraciones y la Policía pueden usar como punto de contacto durante el proceso.",
+      },
+      {
+        title: "Te avisamos apenas llega algo",
+        text: "Notificamos de inmediato cuando recibimos correspondencia y seguimos tus instrucciones: escanear, destruir o reenviar.",
+      },
     ],
-    faq: [],
+    faq: [
+      {
+        q: "¿Un banco va a aceptar esta dirección?",
+        a: "Sí. Los bancos en Paraguay piden una dirección física o comercial para sus controles de identificación, y nuestras direcciones cumplen ese estándar.",
+      },
+      {
+        q: "¿Con qué frecuencia me van a avisar sobre mi correspondencia?",
+        a: "Cada vez que llega algo. Te notificamos de inmediato y seguimos tus instrucciones para escanear, destruir o reenviar.",
+      },
+      {
+        q: "¿Esto ayuda con mi trámite de residencia?",
+        a: "Sí, funciona como punto de contacto confiable para Migraciones y la Policía durante el proceso.",
+      },
+      {
+        q: "¿Puedo usar esta dirección para constituir una empresa?",
+        a: "Sí, y si querés la combinamos con acompañamiento legal para constituir tu S.A. o S.A.S.",
+      },
+    ],
     ctaTitle: "Conseguí tu domicilio en Asunción",
     ctaText: "Contanos para qué lo necesitás y te decimos qué requiere.",
     ctaButton: "Hablemos",

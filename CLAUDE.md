@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-09-04.
+Last verified against the code: 2026-09-09 (rental doors, `fable/plan-rentparaguay.md`).
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -37,6 +37,16 @@ still wins. Also outstanding: `npm run cron:translate` (needs
 database) has not been run yet, so `title_en`/`description_en` are still
 empty for every listing — the English site is live and correctly wired, but
 currently shows the Spanish-fallback text everywhere until that job runs.
+Also outstanding, for the rental family (`alquiler.com.py` /
+`rentparaguay.com`, `fable/plan-rentparaguay.md`, code landed 2026-09-09):
+DNS for both domains still needs to point at Hostinger before either door
+reaches a visitor (both are `enabled: true` today purely so they can be
+previewed with a `Host` header); `NEXT_PUBLIC_CONTACT_WHATSAPP` needs a
+founder decision and a hPanel rebuild — it is shared by every door, so
+setting it also puts a WhatsApp number on the marketplace doors unless that
+is decided against; and the old rentparaguay.com's WordPress install should
+be checked for its own sitemap redirects before being decommissioned (see
+`fable/plan-rentparaguay.md` §7).
 
 Consequences that bite:
 
@@ -345,7 +355,13 @@ the fallback until it does.
   the `/propiedad` detail page — was inline JSX until 2026-08-20 and is now in
   the `esHome` / `esHub` / `esCategory` / `esSearchBar` / `esFilters` /
   `esCard` / `esListing` namespaces. **Do not add a new visitor-facing literal
-  to a page or component**; add it to the namespace and read it back.
+  to a page or component**; add it to the namespace and read it back. The
+  rental family (`alquiler.com.py` / `rentparaguay.com`) adds three more,
+  walked by `dict()` the same way: `rental` (chrome, home, the services hub,
+  about, contact — the one FAQ this family has), `rentalServices` (the seven
+  `/servicios/<slug>` pages, fixed shape per `fable/plan-rentparaguay.md`
+  Appendix C) and `leadForm` (`LeadForm`'s own literals, lifted out so the
+  rental doors could render it in English).
 - **Reach them through the dictionary, not by importing the namespace.**
   Two ways in, and picking the wrong one is the mistake to avoid — the same
   split as `brand.ts` / `brand-server.ts`, for the same reason:
