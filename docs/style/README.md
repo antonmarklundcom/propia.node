@@ -8,6 +8,8 @@ written to be handed to a builder session as-is.
 | --- | --- | --- |
 | inmobiliaria.com.py | `inmobiliaria.com.py.md` | **locked: Nórdico** (2026-09-04), not built |
 | realestateinparaguay.com | `realestateinparaguay.com.md` | **locked: variant A, guide-first** (2026-09-04), not built |
+| rentparaguay.com | `rentparaguay.com.md` | **locked: rental** (2026-09-09), shell built (O2) |
+| alquiler.com.py | `rentparaguay.com.md` | same guide, same tokens — one business, two languages |
 | terreno.com.py | — | keeps the current green/gold editorial baseline |
 | landforsaleinparaguay.com | — | not a vertical yet; inherits the terreno baseline when added |
 

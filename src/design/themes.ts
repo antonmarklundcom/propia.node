@@ -96,6 +96,102 @@ const EDITORIAL: ThemeVars = {
 };
 
 /**
+ * "Rental" — ONE token set for BOTH rental doors (`alquiler` and `rent`,
+ * assigned in OVERRIDES below), per docs/style/rentparaguay.com.md and plan
+ * §1 item 10. The marketplace pair are two brands that happen to share rows;
+ * the rental pair is one business in two languages, so giving them separate
+ * palettes would only make one company look like two.
+ *
+ * The anchor is the slate the old site's own logo files are drawn in
+ * (#182830, sampled from `docs/rentparaguay-extraction/images/Logo-dark-1.png`)
+ * — the one piece of that WordPress theme worth keeping, since its wordmark
+ * was the theme vendor's demo brand rather than the founder's. The accent is
+ * clay: warm for a letting-and-management firm, and unmistakably neither the
+ * marketplace's green (#2E6B4F) nor the English door's brass (#BFA265).
+ *
+ * Type and shape are Nórdico's on purpose — Manrope is already installed,
+ * 10px radius plus one soft shadow is a solved system, and this door's job is
+ * service copy, not a new visual language. Contrast ratios below are computed
+ * (WCAG relative luminance), not eyeballed.
+ */
+const RENTAL: ThemeVars = {
+  "--color-primary": "#182830", // header, footer, dark sections
+  "--color-primary-dark": "#101C22",
+  "--color-primary-soft": "#24363F", // cards/fields on a dark section
+  "--color-accent": "#A64B28", // clay — links, numerals, pills, and the button fill (5.38:1 on paper, white on it 5.74:1)
+  "--color-accent-hover": "#7E3517", // 8.17:1 on paper
+  "--color-accent-soft": "#F6E7DF",
+  "--color-link": "#A64B28", // 5.38:1
+  "--color-link-hover": "#7E3517", // 8.17:1
+  "--color-ink": "#182830", // 14.21:1 on paper
+  "--color-ink-secondary": "#4F5D64", // 6.38:1
+  "--color-ink-muted": "#8A959B", // 2.87:1 — decorative only, never body text (same rule as Nórdico's #9AA09D)
+  "--color-background": "#FAF7F4", // warm paper — apart from Nórdico's #FAFAF8 and the English door's #F3F3EE
+  "--color-border": "rgba(24,40,48,0.12)",
+  "--color-border-accent": "rgba(166,75,40,0.24)",
+  "--color-on-accent": "#FFFFFF", // on the clay fill — 5.74:1
+  "--color-accent-on-dark": "#E39A72", // clay lightened for the dark sections — 6.59:1 on slate
+  // Type: Manrope for both, as Nórdico. No new font package.
+  "--font-display": "'Manrope Variable', system-ui, sans-serif",
+  "--font-sans": "'Manrope Variable', system-ui, sans-serif",
+  // Shape: 10px radius, one soft shadow, hairlines elsewhere.
+  "--radius-control": "10px",
+  "--radius-photo": "10px",
+  "--label-tracking": "0.08em",
+  "--button-case": "none",
+  "--shadow-float": "0 8px 30px rgba(24,40,48,0.10)",
+  // The primary button is the clay fill here (white text, 5.74:1) — this door
+  // sells one action, "talk to us", and a black button next to a clay accent
+  // reads as two competing primaries.
+  "--button-primary-bg": "#A64B28",
+  "--button-primary-bg-hover": "#7E3517",
+  "--button-primary-fg": "#FFFFFF",
+  // Photo scrims: neutral, tinted to the slate rather than pure black.
+  "--overlay-hero":
+    "linear-gradient(95deg, rgba(11,20,25,0.74) 0%, rgba(11,20,25,0.52) 34%, rgba(11,20,25,0.2) 62%, rgba(11,20,25,0.28) 100%)",
+  "--overlay-card":
+    "linear-gradient(to top, rgba(11,20,25,0.86) 0%, rgba(11,20,25,0.78) 24%, rgba(11,20,25,0.5) 46%, rgba(11,20,25,0.16) 70%, rgba(11,20,25,0) 100%)",
+  "--overlay-zone":
+    "linear-gradient(to top, rgba(11,20,25,0.76) 0%, rgba(11,20,25,0.15) 52%, rgba(11,20,25,0) 78%)",
+  "--container": "1280px",
+  "--section-y": "clamp(80px, 8vw, 120px)",
+  "--grid-gap": "24px",
+  // Header: white, hairline bottom, sentence-case nav — the rental home opens
+  // on a white split hero like Nórdico's, not a photo the dark default bar is
+  // meant to sit on.
+  "--header-bg": "rgba(255,255,255,0.96)",
+  "--header-border": "var(--color-border)",
+  "--header-brand-color": "var(--color-ink)",
+  "--header-nav-color": "var(--color-ink)",
+  "--header-nav-size": "15px",
+  "--header-nav-tracking": "0",
+  "--header-nav-case": "none",
+  "--header-panel-bg": "var(--color-surface)",
+  "--header-panel-border": "var(--color-border)",
+  "--header-panel-label-color": "var(--color-ink)",
+  "--header-panel-desc-color": "var(--color-ink-secondary)",
+  "--header-panel-hover-bg": "var(--color-accent-soft)",
+  "--header-cta-border": "var(--button-primary-bg)",
+  "--header-cta-bg": "var(--button-primary-bg)",
+  "--header-cta-fg": "var(--button-primary-fg)",
+  "--header-cta-hover-bg": "var(--button-primary-bg-hover)",
+  "--header-cta-hover-fg": "var(--button-primary-fg)",
+  // Footer: slate, so the page ends on the brand's own colour.
+  "--footer-bg": "var(--color-primary)",
+  "--footer-border": "rgba(255,255,255,0.12)",
+  "--footer-fg": "rgba(255,255,255,0.74)", // 8.6:1 on slate
+  "--footer-fg-strong": "#FFFFFF", // 15.16:1
+  "--footer-fg-muted": "rgba(255,255,255,0.52)",
+  "--footer-fg-faint": "rgba(255,255,255,0.45)",
+  "--footer-tagline-color": "rgba(255,255,255,0.64)",
+  "--footer-hairline": "rgba(255,255,255,0.12)",
+  // .site-notice__label on THIS door's --color-accent-soft (#F6E7DF): the
+  // EDITORIAL baseline (#8C6829) is 3.9:1 there, below AA. accent-hover is
+  // 7.2:1 (computed), so the notice keeps its emphasis and stays readable.
+  "--site-notice-label-color": "#7E3517",
+};
+
+/**
  * Overrides per vertical, merged onto EDITORIAL. An entry here is a
  * deliberate divergence, and the diff should show it.
  */
@@ -278,6 +374,10 @@ const OVERRIDES: Partial<Record<VerticalKey, ThemeVars>> = {
     // touching the other two verticals' (PR3 review, round 2).
     "--site-notice-label-color": "#5C4B22",
   },
+
+  // One business, two languages — the same tokens on both doors (§1 item 10).
+  alquiler: RENTAL,
+  rent: RENTAL,
 };
 
 export function themeFor(key: VerticalKey): ThemeVars {

@@ -12,12 +12,11 @@
  * Every function below returns today's behaviour for every key that is live.
  * That was the point of the PR that introduced this file — the registry
  * exists and pages/components read from it, but no domain's render changes —
- * and it is how a new door is added too: the rental family's values
- * (`"rental"` layout and chrome, `rentalPagesEnabled()`) are declared here in
- * O1 and only rendered in O2/O3, because every consumer matches the layouts
- * it knows by equality and falls through to the default otherwise. A real
- * branch goes inside one of these functions for one key — never inside the
- * component.
+ * and it is how a new door is added too: the rental family's values arrived
+ * one phase ahead of the components that read them, because every consumer
+ * matches the layouts it knows by equality and falls through to the default
+ * otherwise. A real branch goes inside one of these functions for one key —
+ * never inside the component.
  */
 import { familyOf, type VerticalKey } from "@/config/verticals";
 
@@ -55,7 +54,13 @@ export type HomeSectionId =
   | "why-paraguay"
   | "where-to-buy"
   | "how-buying-works"
-  | "relocation";
+  | "relocation"
+  // Rental-family sections (docs/style/rentparaguay.com.md §home). These only
+  // ever appear for a vertical whose homeLayout() is "rental" — see
+  // RentalHome.tsx.
+  | "servicios"
+  | "por-que"
+  | "proceso";
 
 /**
  * Home page sections and their order. `homeLayout()` (below) decides whether
@@ -95,6 +100,23 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
       "faq",
     ];
   }
+  if (familyOf(key) === "rental") {
+    // docs/style/rentparaguay.com.md §home, in order: split hero · the seven
+    // services · why us · how it works · the door's own recent rentals · faq ·
+    // closing CTA. Two of those render nothing until they have content —
+    // "recientes" while the table has no rental rows, "faq" until S2 writes
+    // the questions — because an empty rail reads as a broken site, not as a
+    // section that is coming later.
+    return [
+      "hero",
+      "servicios",
+      "por-que",
+      "proceso",
+      "recientes",
+      "faq",
+      "cta",
+    ];
+  }
   return [
     "hero",
     "zonas",
@@ -127,11 +149,8 @@ export type HomeLayout = "default" | "nordico" | "guide-en" | "rental";
 export function homeLayout(key: VerticalKey): HomeLayout {
   if (key === "inmobiliaria") return "nordico";
   if (key === "en") return "guide-en";
-  // The rental family renders `RentalHome` — added in O2. Until then
-  // `app/page.tsx` matches only "nordico" and "guide-en" by equality, so both
-  // rental doors fall through to the default template exactly as they do
-  // today; naming the layout here first is what lets O2 be one component plus
-  // one fork line rather than a registry change too.
+  // Both rental doors render `RentalHome` (docs/style/rentparaguay.com.md) —
+  // one shell for the family, in each door's own language.
   if (familyOf(key) === "rental") return "rental";
   return "default";
 }
@@ -311,9 +330,10 @@ export type ChromeVariant = "default" | "guide-en" | "rental";
  */
 export function chromeVariant(key: VerticalKey): ChromeVariant {
   if (key === "en") return "guide-en";
-  // "rental" is declared here in O1 and rendered in O2: `SiteHeader` and
-  // `SiteFooter` match "guide-en" by equality, so the rental doors keep the
-  // default chrome until O2 adds the branch.
+  // The rental family's own header and footer: no login, no publish CTA, no
+  // newsletter, one "contact us" button, and nav/footer content from the
+  // `rental` dictionary namespace rather than the Spanish marketplace's
+  // HEADER_NAV.
   if (familyOf(key) === "rental") return "rental";
   return "default";
 }

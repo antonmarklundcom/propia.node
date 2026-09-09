@@ -11,6 +11,7 @@ import { brandName } from "@/lib/brand-server";
 import { dict } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
 import { chromeVariant } from "@/design/sections";
+import { RENTAL_SERVICES } from "@/config/rental-services";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
 
@@ -58,7 +59,77 @@ export async function SiteFooter() {
   const year = new Date().getFullYear();
   const whatsapp = CONTACT_WHATSAPP;
   const waHref = waLink(whatsapp);
-  const isGuideEn = chromeVariant(vertical.key) === "guide-en";
+  const variant = chromeVariant(vertical.key);
+  const isGuideEn = variant === "guide-en";
+
+  /**
+   * The rental family's footer (docs/style/rentparaguay.com.md §chrome): the
+   * brand, one line of what the business does, the seven services, the company
+   * and legal links, and WhatsApp only when the env var is actually set. No
+   * newsletter, no publish CTA, no marketplace columns — the doors do not link
+   * to /venta, /proyectos or /para-inmobiliarias anywhere, so the footer must
+   * not be the exception that does.
+   */
+  if (variant === "rental") {
+    const t = d.rental;
+    const services = RENTAL_SERVICES.map((s) => ({
+      label: t.services[s.dictKey].title,
+      href: `/servicios/${s.slug}`,
+    }));
+    return (
+      <footer className="site-footer">
+        <div className="site-footer__inner site-footer__inner--rental">
+          <div className="site-footer__about">
+            <div className="site-footer__brand">{brand}</div>
+            <p className="site-footer__tagline">{t.footerTagline}</p>
+            <ul className="site-footer__contact">
+              {waHref && (
+                <li>
+                  <a
+                    className="site-footer__link"
+                    href={waHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    💬 WhatsApp {whatsapp}
+                  </a>
+                </li>
+              )}
+              <li>
+                {/* No mailbox exists for these doors either — the form is the
+                    contact path until one does (CLAUDE.md: never a
+                    placeholder address). */}
+                {CONTACT_EMAIL ? (
+                  <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
+                    ✉️ {CONTACT_EMAIL}
+                  </a>
+                ) : (
+                  <Link className="site-footer__link" href="/contacto">
+                    ✉️ {t.footerContactUs}
+                  </Link>
+                )}
+              </li>
+              <li>
+                <span className="site-footer__muted">📍 {t.footerAddress}</span>
+              </li>
+            </ul>
+          </div>
+
+          <Column title={t.footerServicesTitle} links={services} />
+          <Column title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
+          <Column title={t.footerLegalTitle} links={t.footerLegalLinks} />
+        </div>
+
+        <div className="site-footer__bottom">
+          <span>
+            © {year} {brand}
+          </span>
+        </div>
+
+        <div className="site-footer__disclaimer">{t.footerLegalLine(brand)}</div>
+      </footer>
+    );
+  }
 
   if (isGuideEn) {
     const t = d.guideEn;

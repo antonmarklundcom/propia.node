@@ -846,3 +846,155 @@ export const enProject = {
   delivery: (date: Date, numberLocale: string) =>
     `Delivery ${date.toLocaleDateString(numberLocale, { month: "long", year: "numeric" })}`,
 } as const;
+
+/**
+ * The rental family's English door, rentparaguay.com. This is the *source*
+ * language for this namespace: the copy below is the old rentparaguay.com's
+ * own words, cleaned — the theme vendor's fabrications removed (no "400+
+ * agents", no demo listings, no testimonials, no invented team), the theme's
+ * headline grammar straightened out, and every claim left as the service it
+ * describes rather than a number nobody can check (plan §1 item 13).
+ *
+ * `faq` is empty until S2 writes it from the five real Q&As on the old
+ * services page; `RentalHome` renders no FAQ section while it is.
+ */
+export const enRental = {
+  chromeNav: [
+    { label: "Rentals", href: "/alquiler" },
+    { label: "Services", href: "/servicios" },
+    { label: "About", href: "/nosotros" },
+    { label: "Contact", href: "/contacto" },
+  ],
+  chromeCtaLabel: "Contact us",
+  chromeCtaHref: "/contacto",
+  footerTagline:
+    "A real estate and property management agency in Asunción for expats, digital nomads and investors. We find it, we rent it, we manage it — in your language.",
+  footerServicesTitle: "Services",
+  footerCompanyTitle: "Company",
+  footerLegalTitle: "Legal",
+  footerCompanyLinks: [
+    { label: "About us", href: "/nosotros" },
+    { label: "Contact", href: "/contacto" },
+    { label: "Rentals", href: "/alquiler" },
+  ],
+  footerLegalLinks: [
+    { label: "Terms", href: "/terminos" },
+    { label: "Privacy policy", href: "/privacidad" },
+  ],
+  footerContactUs: "Write to us",
+  footerAddress: "Skytower building, Asunción, Paraguay",
+  footerLegalLine: (brand: string) =>
+    `${brand} handles the search, the lease and the management. Everything published here is for guidance and is not legal, tax or financial advice.`,
+
+  metaTagline: "Renting and property management in Asunción",
+  metaDescription:
+    "A real estate and property management agency in Asunción for expats, digital nomads and investors: finding a home, the lease, long-term and Airbnb management, residency and a virtual address.",
+
+  heroKicker: "Renting and property management in Asunción",
+  heroTitle: "Renting in Paraguay, made effortless",
+  heroSubtitle:
+    "We help expats, digital nomads and investors find, rent and manage properties in Asunción. No stress, no language barrier, and no costs that appear at the end.",
+  heroPrimary: "Contact us",
+  heroSecondary: "See our services",
+
+  servicesTitle: "Services",
+  servicesLead: "Everything it takes to move here, stay here, or put your property to work.",
+  servicesMore: "See all services →",
+
+  whyTitle: "Why us",
+  whyLead:
+    "Local expertise, straight answers, and a service built around people arriving from somewhere else.",
+  whyCards: [
+    {
+      title: "We know this market from the inside",
+      text: "We have navigated Asunción's property market both as locals and as foreigners, and that double view is what goes into every search.",
+    },
+    {
+      title: "From the first viewing to move-in",
+      text: "Property search, lease translation, utility setup and long-term management — we handle the details so you can get on with your life here.",
+    },
+    {
+      title: "Vetted properties, clear numbers",
+      text: "We visit every property before we offer it, and we tell you what is paid, when and why, with nothing added at signing.",
+    },
+    {
+      title: "Bilingual by default",
+      text: "We work in English and Spanish, so you understand every clause you sign and every conversation we have on your behalf.",
+    },
+  ],
+
+  processTitle: "How it works",
+  processLead: "Four steps, from the first conversation to the keys.",
+  processSteps: [
+    {
+      step: "01",
+      title: "First conversation",
+      text: "Tell us what you are looking for: neighbourhood, budget, how long for, and who is moving in — or what you want your property to earn.",
+    },
+    {
+      step: "02",
+      title: "A shortlist for you",
+      text: "We filter the best properties in neighbourhoods like Villa Morra and Carmelitas and send you a handpicked list that matches what you asked for.",
+    },
+    {
+      step: "03",
+      title: "Lease and paperwork",
+      text: "We negotiate, translate the contract and walk you through signing, so you know exactly what you are committing to.",
+    },
+    {
+      step: "04",
+      title: "Keys, and after",
+      text: "We help with utilities and getting to know the neighbourhood, and we stay reachable when something needs sorting out.",
+    },
+  ],
+
+  recentTitle: "Available rentals",
+  recentMore: "See all →",
+
+  faqTitle: "Frequently asked questions",
+  faqLead: "Short answers to what people ask us most.",
+  faq: [] as readonly { q: string; a: string }[],
+
+  ctaTitle: "Your next chapter in Paraguay starts here",
+  ctaText:
+    "Whether you are looking for somewhere to live, want your property to earn, or are weighing up an investment, tell us what you need and we will come back with real options.",
+  ctaButton: "Talk to us",
+
+  services: {
+    alquiler: {
+      title: "Rent an apartment or house",
+      tagline:
+        "We find your place in Asunción's safest neighbourhoods and handle the negotiation and the lease.",
+    },
+    administracionAirbnb: {
+      title: "Airbnb management",
+      tagline:
+        "Turn-key short-term management: styling, photography, pricing and all guest communication.",
+    },
+    administracionDepartamentos: {
+      title: "Apartment management",
+      tagline:
+        "You live abroad and your property is here: tenant screening, rent collection, maintenance and legal compliance.",
+    },
+    inmobiliariaAsuncion: {
+      title: "Realtor in Asunción",
+      tagline:
+        "Bilingual guidance for buying your first investment here or adding to a portfolio.",
+    },
+    residenciaParaguay: {
+      title: "Residency in Paraguay",
+      tagline:
+        "We prepare your file and walk you through the whole process, up to your cédula.",
+    },
+    invertirEnParaguay: {
+      title: "Invest in Paraguay",
+      tagline:
+        "Property and business opportunities for capital you want working in Paraguay.",
+    },
+    domicilioVirtual: {
+      title: "Virtual address",
+      tagline:
+        "A professional address in Asunción for your legal and commercial needs, without renting an office.",
+    },
+  },
+} as const;

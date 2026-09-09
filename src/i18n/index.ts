@@ -31,6 +31,7 @@ import {
   esNordico,
   esProfile,
   esProject,
+  esRental,
   esSearchBar,
   esVender,
 } from "./es";
@@ -47,6 +48,7 @@ import {
   enNordico,
   enProfile,
   enProject,
+  enRental,
   enSearchBar,
   enVender,
 } from "./en";
@@ -73,6 +75,7 @@ const esDictionary = {
   project: esProject,
   nordico: esNordico,
   guideEn: esGuideEn,
+  rental: esRental,
   vender: esVender,
   contactForm: esContactForm,
 } as const;
@@ -125,6 +128,7 @@ const enDictionary = {
   project: enProject,
   nordico: enNordico,
   guideEn: enGuideEn,
+  rental: enRental,
   vender: enVender,
   contactForm: enContactForm,
 } satisfies Dictionary;

@@ -77,3 +77,26 @@ it; none of them blocks a phase.
   if pnpm, commit a locally-generated `pnpm-lock.yaml` with the same major, add
   `"packageManager": "pnpm@<version>"` to `package.json`, delete
   `package-lock.json`; if npm, delete `pnpm-workspace.yaml` and `.npmrc`.
+
+- **The home `<title>`'s tagline is hard-coded to Spanish for every door**
+  (`app/page.tsx`: `brandTaglineFor("es")`). `brandTaglineFor` already takes a
+  locale and `brand-server.ts` passes the vertical's, so
+  realestateinparaguay.com's home has been titled "Real Estate in Paraguay —
+  Encontrá tu propiedad en Paraguay" since the D6 flip. Found in O2
+  (fable/plan-rentparaguay.md) and deliberately **not** fixed there: the fix
+  changes a live door's `<head>`, and that phase's exit criterion is that the
+  three live doors' `<head>` is byte-identical. The rental doors do not wait
+  on it — they take their own tagline from `rental.metaTagline` — so this is
+  now a one-line fix for the English marketplace door alone:
+  `brandTaglineFor(vertical.locale)`, in its own PR, with the head diff
+  reviewed rather than asserted empty.
+
+- **The chrome's last hard-coded Spanish literals.** `SiteHeader` renders
+  "Ingresar" for the login link and `MobileMenu` uses "Abrir menú" / "Cerrar
+  menú" / "Menú principal" as its aria labels, in every language. The login
+  one is invisible on the doors that matter (`chromeShowLogin` is false for
+  the English and rental families), but the drawer's aria labels reach a
+  screen reader on realestateinparaguay.com and on rentparaguay.com. Fix: two
+  keys in `common`, read through `dict()` in the header and passed to the
+  drawer as props (it is a client component). Not done in O2 because it
+  touches a live door's rendered markup.
