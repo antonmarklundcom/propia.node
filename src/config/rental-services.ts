@@ -21,8 +21,26 @@
 import type { LeadFormType } from "@/components/LeadForm";
 
 export interface RentalService {
-  /** URL segment under /servicios — Spanish on both doors (plan §1 item 8). */
+  /**
+   * URL segment under `/servicios` — the Spanish door's URL, and the stable
+   * identity of the service everywhere else: `dictKey` keys the copy, `slug`
+   * keys the URL, and R2 changed only the second one *on the English door*.
+   */
   slug: string;
+  /**
+   * URL segment under `/services` — the English door's URL (R2, plan §5.1 /
+   * Stage 1 C2). `rentparaguay.com` is pitched at people who do not read
+   * Spanish, and `/servicios/administracion-de-departamentos` asks them to
+   * type a sentence in a language they came here to avoid; the old WordPress
+   * site published these pages under English paths, which is also what the
+   * links still pointing at it expect.
+   *
+   * Never derive one slug from the other: they are two published URLs, and a
+   * transliteration would silently move a live page the day someone edits the
+   * Spanish one. Both are read through `rentalPath()` (`src/design/sections.ts`),
+   * never concatenated at a call site.
+   */
+  slugEn: string;
   /** Key into `rental.services` and (from S3) `rentalServices`. */
   dictKey:
     | "alquiler"
@@ -53,6 +71,7 @@ export interface RentalService {
 export const RENTAL_SERVICES: readonly RentalService[] = [
   {
     slug: "alquiler",
+    slugEn: "rent",
     dictKey: "alquiler",
     image: "/img/rental/alquiler.webp",
     oldPath: "/rent-apartment-house/",
@@ -60,6 +79,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
   },
   {
     slug: "administracion-airbnb",
+    slugEn: "airbnb-management",
     dictKey: "administracionAirbnb",
     image: "/img/rental/administracion-airbnb.webp",
     oldPath: "/airbnb-management/",
@@ -67,6 +87,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
   },
   {
     slug: "administracion-de-departamentos",
+    slugEn: "apartment-management",
     dictKey: "administracionDepartamentos",
     image: "/img/rental/administracion-de-departamentos.webp",
     oldPath: "/apartment-management/",
@@ -74,6 +95,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
   },
   {
     slug: "inmobiliaria-asuncion",
+    slugEn: "realtor-asuncion",
     dictKey: "inmobiliariaAsuncion",
     image: "/img/rental/inmobiliaria-asuncion.webp",
     oldPath: "/realtor-asuncion/",
@@ -81,6 +103,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
   },
   {
     slug: "residencia-paraguay",
+    slugEn: "residency-paraguay",
     dictKey: "residenciaParaguay",
     image: "/img/rental/residencia-paraguay.webp",
     oldPath: "/residency-paraguay/",
@@ -88,6 +111,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
   },
   {
     slug: "invertir-en-paraguay",
+    slugEn: "invest-in-paraguay",
     dictKey: "invertirEnParaguay",
     image: "/img/rental/invertir-en-paraguay.webp",
     oldPath: "/invest-in-paraguay/",
@@ -95,6 +119,9 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
   },
   {
     slug: "domicilio-virtual",
+    // The old site's own misspelling was `/virtual-adress/`; the new English
+    // URL is spelled correctly and S1's redirect map points the old one here.
+    slugEn: "virtual-address",
     dictKey: "domicilioVirtual",
     image: "/img/rental/domicilio-virtual.webp",
     oldPath: "/virtual-adress/", // the old site's own spelling — S1 redirects it verbatim
@@ -102,7 +129,82 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
   },
 ] as const;
 
-/** The URLs the rental sitemap lists for the services (plan §5.1, appended in O3). */
-export const RENTAL_SERVICE_PATHS: readonly string[] = RENTAL_SERVICES.map(
-  (s) => `/servicios/${s.slug}`,
-);
+/**
+ * The rental business's own pages, per language (R2, plan §5.1 / Stage 1 C2).
+ *
+ * Every other URL in this app is built from Spanish slugs on every door
+ * (`src/lib/urls.ts`) — a listing is the same row whatever language describes
+ * it, so one path is right for all of them. The rental family's own pages are
+ * the exception, and the reason is not symmetry: `rentparaguay.com` sells to
+ * people who do not read Spanish, the WordPress site it replaces published
+ * these pages under English paths, and the inbound links that still exist
+ * expect them. `/propiedad/*` is emphatically NOT in this table — that is the
+ * marketplace's page type, owned in English by `realestateinparaguay.com`, and
+ * it stays Spanish-slugged on every door.
+ *
+ * This lives beside the slugs, in a module with no runtime imports at all, so
+ * `next.config.ts` can build the cross-language 301s from it — see the
+ * re-export in `src/design/sections.ts`, which is where the app imports it
+ * from.
+ */
+export type RentalPageKind = "services" | "about" | "contact";
+
+const RENTAL_PATHS: Record<RentalPageKind, Record<"es" | "en", string>> = {
+  services: { es: "/servicios", en: "/services" },
+  about: { es: "/nosotros", en: "/about" },
+  contact: { es: "/contacto", en: "/contact" },
+};
+
+/**
+ * Where one of the rental business's pages lives on a door of this language.
+ *
+ * The one place a rental URL is spelled. Nav, footer, home, the hub, the
+ * service pages, the canonical tags, the hreflang map, the sitemap and the
+ * cross-language 301s all go through it, so the seven services' two sets of
+ * slugs cannot drift apart between the link that points at a page and the
+ * route that serves it.
+ *
+ * `service` is only meaningful for `"services"`, where it selects one
+ * service's page under the hub; nothing else takes it.
+ */
+export function rentalPath(
+  locale: "es" | "en",
+  page: RentalPageKind,
+  service?: Pick<RentalService, "slug" | "slugEn">,
+): string {
+  const base = RENTAL_PATHS[page][locale];
+  if (!service) return base;
+  return `${base}/${locale === "en" ? service.slugEn : service.slug}`;
+}
+
+/**
+ * The same page in both languages, shaped for `languageAlternates()`'s
+ * `pathByLocale`. Built from `rentalPath()` rather than written out at each
+ * call site: hreflang that points at a URL which 301s somewhere else is worse
+ * than no hreflang, and that is exactly what a hand-typed second copy of these
+ * strings decays into.
+ */
+export function rentalPathsByLocale(
+  page: RentalPageKind,
+  service?: Pick<RentalService, "slug" | "slugEn">,
+): Record<"es" | "en", string> {
+  return {
+    es: rentalPath("es", page, service),
+    en: rentalPath("en", page, service),
+  };
+}
+
+/**
+ * A URL segment back to its service, in whichever language the door speaks.
+ * The route handlers' one lookup — `/servicios/<slug>` on a Spanish door and
+ * `/services/<slugEn>` on an English one resolve to the same row, and a
+ * segment from the *other* language resolves to nothing here (the route
+ * redirects it, so it never reaches this function twice).
+ */
+export function rentalServiceBySlug(
+  slug: string,
+  locale: "es" | "en",
+): RentalService | null {
+  const key = locale === "en" ? "slugEn" : "slug";
+  return RENTAL_SERVICES.find((s) => s[key] === slug) ?? null;
+}

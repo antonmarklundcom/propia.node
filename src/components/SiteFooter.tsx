@@ -10,7 +10,7 @@ import {
 import { brandName } from "@/lib/brand-server";
 import { dict } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
-import { chromeVariant } from "@/design/sections";
+import { chromeVariant, rentalPath } from "@/design/sections";
 import { RENTAL_SERVICES } from "@/config/rental-services";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
@@ -74,7 +74,7 @@ export async function SiteFooter() {
     const t = d.rental;
     const services = RENTAL_SERVICES.map((s) => ({
       label: t.services[s.dictKey].title,
-      href: `/servicios/${s.slug}`,
+      href: rentalPath(vertical.locale, "services", s),
     }));
     return (
       <footer className="site-footer">
@@ -104,7 +104,10 @@ export async function SiteFooter() {
                     ✉️ {CONTACT_EMAIL}
                   </a>
                 ) : (
-                  <Link className="site-footer__link" href="/contacto">
+                  <Link
+                    className="site-footer__link"
+                    href={rentalPath(vertical.locale, "contact")}
+                  >
                     ✉️ {t.footerContactUs}
                   </Link>
                 )}

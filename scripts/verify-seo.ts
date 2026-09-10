@@ -25,6 +25,12 @@ import {
   servedDoors,
   type Door,
 } from "../src/lib/alternates";
+import { RENTAL_SERVICES } from "../src/config/rental-services";
+import { rentalPath, rentalPathsByLocale } from "../src/design/sections";
+import {
+  MARKETPLACE_SITEMAP_PATHS,
+  rentalSitemapPaths,
+} from "../src/config/site-nav";
 
 let failures = 0;
 
@@ -356,6 +362,132 @@ check(
   "(d) synthetic: a rental door never appears in the marketplace map",
   Object.values(synMk ?? {}).every(
     (u) => !u.includes("rentparaguay.com") && !u.includes("alquiler.com.py"),
+  ),
+);
+
+/**
+ * (r2) English URLs for the rental business's own pages (plan §5.1 / Stage 1
+ * C2). Three things have to hold together and none of them shows up in a
+ * rendered page:
+ *
+ * - each door's hreflang entry names **its own** URL, not the other's — an
+ *   alternate that 301s is an alternate Google drops;
+ * - the two slug sets stay disjoint, so a redirect can never point at itself
+ *   (a loop is a page that stops existing, with no error anywhere);
+ * - the sitemaps are per-language and list only what that door serves.
+ *
+ * Everything below is driven through the same pure helpers the app uses, so a
+ * slug added to `RENTAL_SERVICES` without its English twin fails here.
+ */
+console.log("\nrental doors: one page, one URL per language (R2)");
+
+const svcEn = RENTAL_SERVICES.find((s) => s.dictKey === "administracionAirbnb")!;
+const svcAlt = languageAlternates({
+  path: rentalPath("es", "services", svcEn),
+  pathByLocale: rentalPathsByLocale("services", svcEn),
+  scope: "site",
+  family: "rental",
+});
+check(
+  "(r2) a service page pairs its Spanish and English URLs, each on its own door",
+  svcAlt?.["es"] === "https://alquiler.com.py/servicios/administracion-airbnb" &&
+    svcAlt?.["en"] === "https://rentparaguay.com/services/airbnb-management",
+  JSON.stringify(svcAlt),
+);
+check(
+  "(r2) x-default for a rental page is the family's Spanish door, at the Spanish URL",
+  svcAlt?.["x-default"] ===
+    "https://alquiler.com.py/servicios/administracion-airbnb",
+  svcAlt?.["x-default"],
+);
+
+for (const page of ["services", "about", "contact"] as const) {
+  const alt = languageAlternates({
+    path: rentalPath("es", page),
+    pathByLocale: rentalPathsByLocale(page),
+    scope: "site",
+    family: "rental",
+  });
+  check(
+    `(r2) "${page}": every alternate is the path that door actually serves`,
+    alt?.["es"] === `https://alquiler.com.py${rentalPath("es", page)}` &&
+      alt?.["en"] === `https://rentparaguay.com${rentalPath("en", page)}`,
+    JSON.stringify(alt),
+  );
+}
+
+check(
+  "(r2) omitting pathByLocale still gives every locale the same path",
+  languageAlternates({ path: "/", scope: "site", family: "rental" })?.["en"] ===
+    "https://rentparaguay.com/",
+);
+
+const esSlugs = RENTAL_SERVICES.map((s) => s.slug);
+const enSlugs = RENTAL_SERVICES.map((s) => s.slugEn);
+check(
+  "(r2) every service has both slugs, and they are unique within each language",
+  esSlugs.every(Boolean) &&
+    enSlugs.every(Boolean) &&
+    new Set(esSlugs).size === esSlugs.length &&
+    new Set(enSlugs).size === enSlugs.length,
+  `${esSlugs.join(",")} / ${enSlugs.join(",")}`,
+);
+check(
+  "(r2) no service's two URLs collide — a redirect can never target itself",
+  RENTAL_SERVICES.every(
+    (s) => rentalPath("es", "services", s) !== rentalPath("en", "services", s),
+  ),
+);
+check(
+  "(r2) the three page kinds differ between the languages too",
+  (["services", "about", "contact"] as const).every(
+    (p) => rentalPath("es", p) !== rentalPath("en", p),
+  ),
+);
+
+for (const locale of ["es", "en"] as const) {
+  const paths = rentalSitemapPaths(locale);
+  const other = locale === "en" ? "es" : "en";
+  const otherOwn = [
+    rentalPath(other, "services"),
+    rentalPath(other, "about"),
+    rentalPath(other, "contact"),
+    ...RENTAL_SERVICES.map((s) => rentalPath(other, "services", s)),
+  ];
+  check(
+    `(r2) the ${locale} rental sitemap lists its own services hub and seven pages`,
+    paths.includes(rentalPath(locale, "services")) &&
+      RENTAL_SERVICES.every((s) =>
+        paths.includes(rentalPath(locale, "services", s)),
+      ),
+    paths.join(" "),
+  );
+  check(
+    `(r2) …and none of the ${other} door's own URLs, which it 301s away`,
+    otherOwn.every((p) => !paths.includes(p)),
+    paths.filter((p) => otherOwn.includes(p)).join(" "),
+  );
+  check(
+    `(r2) …and no /propiedad URL (the rental doors own no listing detail)`,
+    paths.every((p) => !p.startsWith("/propiedad")),
+  );
+}
+
+check(
+  "(r2) the marketplace sitemap is untouched — still Spanish /nosotros and /contacto",
+  MARKETPLACE_SITEMAP_PATHS.includes("/nosotros") &&
+    MARKETPLACE_SITEMAP_PATHS.includes("/contacto") &&
+    !MARKETPLACE_SITEMAP_PATHS.includes("/about") &&
+    !MARKETPLACE_SITEMAP_PATHS.includes("/contact") &&
+    !MARKETPLACE_SITEMAP_PATHS.includes("/services"),
+);
+check(
+  "(r2) the marketplace's own hreflang for /nosotros is unchanged by all of this",
+  languageAlternates({ path: "/nosotros", scope: "site", family: "marketplace" })?.[
+    "en"
+  ] === "https://realestateinparaguay.com/nosotros",
+  JSON.stringify(
+    languageAlternates({ path: "/nosotros", scope: "site", family: "marketplace" }),
   ),
 );
 

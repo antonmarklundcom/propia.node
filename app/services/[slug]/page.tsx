@@ -7,11 +7,11 @@ type Params = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  return rentalServiceMetadata(slug, "es");
+  return rentalServiceMetadata(slug, "en");
 }
 
-/** One service page at its Spanish URL — see `app/servicios/page.tsx`. */
-export default async function ServicioPage({ params }: Params) {
+/** One service page at its English URL — see `app/servicios/[slug]/page.tsx`. */
+export default async function ServicePage({ params }: Params) {
   const { slug } = await params;
-  return <RentalServiceBody slug={slug} routeLocale="es" />;
+  return <RentalServiceBody slug={slug} routeLocale="en" />;
 }

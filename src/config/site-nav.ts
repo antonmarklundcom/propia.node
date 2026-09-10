@@ -9,7 +9,8 @@
  * are concerned.
  */
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
-import { RENTAL_SERVICE_PATHS } from "@/config/rental-services";
+import { RENTAL_SERVICES } from "@/config/rental-services";
+import { rentalPath } from "@/design/sections";
 import { categoryUrl } from "@/lib/urls";
 
 export interface NavLink {
@@ -295,18 +296,32 @@ export const MARKETPLACE_SITEMAP_PATHS: string[] = [
  * Every path here now renders: `/servicios` and its seven children arrived
  * with O3. Keep it that way — a sitemap that submits a 404 is the same Search
  * Console error as one that submits a URL the host canonicalises away.
+ *
+ * **A function of the door's locale since R2.** The rental business's own
+ * pages have an English URL on `rentparaguay.com` and a Spanish one on
+ * `alquiler.com.py`, and each door 301s the other language's path away — so a
+ * single shared list would put ten redirects into one of the two sitemaps,
+ * which is the same "submitted URL not selected as canonical" report arrived
+ * at from a third direction. Built through `rentalPath()`, the same helper the
+ * links and the canonical tags use.
+ *
+ * `/alquiler`, `/alquiler-temporal`, `/terminos` and `/privacidad` stay
+ * Spanish-slugged in both: those are marketplace routes the rental doors also
+ * render, and R2 deliberately changed only the rental family's own pages.
  */
-export const RENTAL_SITEMAP_PATHS: string[] = [
-  "/",
-  "/alquiler",
-  "/alquiler-temporal",
-  "/servicios",
-  // The seven /servicios/<slug> pages, from the one list that also drives the
-  // hub, the home page, the footer and S1's redirect map — so a service added
-  // there cannot be missing here.
-  ...RENTAL_SERVICE_PATHS,
-  "/nosotros",
-  "/contacto",
-  "/terminos",
-  "/privacidad",
-];
+export function rentalSitemapPaths(locale: "es" | "en"): string[] {
+  return [
+    "/",
+    "/alquiler",
+    "/alquiler-temporal",
+    rentalPath(locale, "services"),
+    // The seven service pages, from the one list that also drives the hub, the
+    // home page, the footer and S1's redirect map — so a service added there
+    // cannot be missing here, in either language.
+    ...RENTAL_SERVICES.map((s) => rentalPath(locale, "services", s)),
+    rentalPath(locale, "about"),
+    rentalPath(locale, "contact"),
+    "/terminos",
+    "/privacidad",
+  ];
+}

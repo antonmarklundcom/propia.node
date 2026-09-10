@@ -1,6 +1,7 @@
 import Link from "next/link";
-import type { Dictionary } from "@/i18n";
+import type { Dictionary, Locale } from "@/i18n";
 import { RENTAL_SERVICES } from "@/config/rental-services";
+import { rentalPath } from "@/design/sections";
 import { JsonLd } from "@/components/JsonLd";
 import { faqJsonLd } from "@/lib/jsonld";
 
@@ -15,7 +16,14 @@ import { faqJsonLd } from "@/lib/jsonld";
  * The FAQ (`rental.faq`, S2) is this family's one FAQ, shown here and reused
  * on the home page — see `RentalHome`.
  */
-export function RentalServicesHub({ d }: { d: Dictionary }) {
+export function RentalServicesHub({
+  d,
+  locale,
+}: {
+  d: Dictionary;
+  /** Which language's service URLs to link — `/servicios/…` or `/services/…`. */
+  locale: Locale;
+}) {
   const t = d.rental;
   return (
     <main className="rental-page">
@@ -33,7 +41,11 @@ export function RentalServicesHub({ d }: { d: Dictionary }) {
           {RENTAL_SERVICES.map((s) => {
             const copy = t.services[s.dictKey];
             return (
-              <Link key={s.slug} className="rh-service" href={`/servicios/${s.slug}`}>
+              <Link
+                key={s.slug}
+                className="rh-service"
+                href={rentalPath(locale, "services", s)}
+              >
                 <img
                   className="rh-service__img"
                   src={s.image}

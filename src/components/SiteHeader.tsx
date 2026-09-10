@@ -11,6 +11,7 @@ import {
   chromeVariant,
   chromeShowLogin,
   chromeShowPublishCta,
+  rentalPath,
 } from "@/design/sections";
 import { dict } from "@/i18n/server";
 
@@ -64,12 +65,16 @@ export async function SiteHeader() {
   // `services[dictKey].tagline` is a full sentence (built for the home-page
   // cards, not a nav panel) — the marketplace's own panel descs are 3-5 word
   // fragments, so a tagline here would blow out a 7-row panel. Label only.
+  // Both sides of the match go through `rentalPath()` (R2): on the English
+  // door the entry's href is `/services`, so a literal "/servicios" here would
+  // quietly stop matching and the dropdown would come back empty.
+  const servicesHref = rentalPath(vertical.locale, "services");
   const rentalNav = d.rental.chromeNav.map((l) => ({
     ...l,
-    links: (l.href === "/servicios"
+    links: (l.href === servicesHref
       ? RENTAL_SERVICES.map((s) => ({
           label: d.rental.services[s.dictKey].title,
-          href: `/servicios/${s.slug}`,
+          href: rentalPath(vertical.locale, "services", s),
         }))
       : []) satisfies NavLink[] as NavLink[],
   }));

@@ -6,7 +6,7 @@ import { ListingCard } from "@/components/ListingCard";
 import { JsonLd } from "@/components/JsonLd";
 import { faqJsonLd } from "@/lib/jsonld";
 import { RENTAL_SERVICES } from "@/config/rental-services";
-import { homeSections } from "@/design/sections";
+import { homeSections, rentalPath } from "@/design/sections";
 
 /**
  * Home page for the rental family — alquiler.com.py and rentparaguay.com
@@ -40,6 +40,8 @@ export function RentalHome({
 }) {
   const t = d.rental;
   const sections = homeSections(vertical.key);
+  // This door's own services URLs, in its own language (R2).
+  const servicesHref = rentalPath(vertical.locale, "services");
 
   return (
     <main className="rental-home">
@@ -58,7 +60,7 @@ export function RentalHome({
                 <Link className="ds-btn ds-btn--primary" href={t.chromeCtaHref}>
                   {t.heroPrimary}
                 </Link>
-                <Link className="ds-btn ds-btn--secondary" href="/servicios">
+                <Link className="ds-btn ds-btn--secondary" href={servicesHref}>
                   {t.heroSecondary}
                 </Link>
               </div>
@@ -82,7 +84,7 @@ export function RentalHome({
               <h2 className="home-section__title">{t.servicesTitle}</h2>
               <p className="rh-section__lead">{t.servicesLead}</p>
             </div>
-            <Link className="home-section__more" href="/servicios">
+            <Link className="home-section__more" href={servicesHref}>
               {t.servicesMore}
             </Link>
           </div>
@@ -93,7 +95,7 @@ export function RentalHome({
                 <Link
                   key={s.slug}
                   className="rh-service"
-                  href={`/servicios/${s.slug}`}
+                  href={rentalPath(vertical.locale, "services", s)}
                 >
                   <img
                     className="rh-service__img"

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Dictionary, Locale } from "@/i18n";
 import type { RentalService } from "@/config/rental-services";
+import { rentalPath } from "@/design/sections";
 import { LeadForm } from "@/components/LeadForm";
 
 /**
@@ -36,7 +37,10 @@ export function RentalServicePage({
       <section className="rp-hero">
         <div className="ds-container rp-hero__grid">
           <div>
-            <Link className="rp-hero__back" href="/servicios">
+            <Link
+              className="rp-hero__back"
+              href={rentalPath(locale, "services")}
+            >
               ← {t.allServices}
             </Link>
             <h1 className="rp-hero__title">{c.h1}</h1>
