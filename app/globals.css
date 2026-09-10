@@ -8541,6 +8541,54 @@ summary.panel-btn::-webkit-details-marker {
   text-decoration: underline;
 }
 
+/* == P1 == */
+
+/* Compact hero: no min-height, tight vertical rhythm (decision 1). */
+.hub-hero__inner {
+  padding: clamp(40px, 5vw, 64px) 16px;
+}
+
+/* Type section as chips, never one lonely tile (decision 4). */
+.hub-chips {
+  gap: 8px;
+}
+
+.hub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: border-color 0.14s ease, transform 0.14s ease;
+}
+
+.hub-chip:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.hub-chip__count {
+  padding: 1px 8px;
+  border-radius: 0;
+  background: var(--color-accent-soft);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #6B4E14;
+}
+
+/* Search button follows the door's own button tokens (decision 5). */
+.search-bar__submit {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+}
+
+.search-bar__submit:hover {
+  background: var(--button-primary-bg-hover);
+}
+
 /* == P2 == */
 
 /* Hero photography for the operation hubs.

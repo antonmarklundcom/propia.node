@@ -360,12 +360,14 @@ hangs and never resolves = neither — look at DNS/SSL or account resources.
       through review, plus a per-agency `trusted` flag (set manually in
       `/admin`, like `is_verified`) that skips the queue.** Veto only if you
       want agencies to keep direct publish.
-- [ ] **D8 — FSBO owner panel: in scope now?** A consumer who publishes via
-      `/publicar` currently has NO page after approval: can't see, edit or
-      pause their listing, and their leads route `internal` where only
-      `/admin/leads` sees them (audit F4 is the same loop). **Recommended:
-      yes — Batch 2 below (F4 contact fix → minimal owner panel → lead
-      notifications) completes the FSBO loop end-to-end.**
+- [x] **D8 — FSBO owner panel: DONE.** `/mis-avisos` (listings, status
+      changes, edit) and `/mis-avisos/consultas` (leads, WhatsApp reply) both
+      exist and read/write scoped to the logged-in owner
+      (`requireOwnerContext`, `app/api/leads/route.ts`'s `owner` `routedTo`
+      lane). The one gap left is proactive notification: an FSBO seller only
+      sees a new lead by opening `/mis-avisos/consultas` themselves — there is
+      no email/push/WhatsApp ping to them the way `alertOperator()` pings the
+      operator. Not scheduled; see CLAUDE.md backlog item 8.
 - [ ] **D9 — Buyer retention features (favorites + real saved-search /
       price-alert engine).** `PriceAlert` today is a manual lead with no
       engine behind it; no favorites/saved-search exists. **Recommended:
@@ -517,7 +519,7 @@ items. Still open / partial:
 | ID | Sev | Status | What remains |
 | --- | --- | --- | --- |
 | F1 | P0 | OPEN | Agency can self-publish; review queue bypassable → **D7** |
-| F4 | P1 | OPEN | FSBO listing has no WhatsApp contact; its leads route `internal` and no panel shows them → **D8 / Batch 2** |
+| F4 | P1 | **DONE** | FSBO listing has a working contact chain and `/mis-avisos` + `/mis-avisos/consultas` give the owner their own panel → **D8, closed**; only owner lead notification is still open |
 | F48 | P3 | **FIXED 2026-08-19** | First publish only, in all three writers: `listing-edit.ts` (reads `publishedAt` in the row it already selects), `approveListing` and `setPanelListingStatus` (`coalesce(published_at, now())` — no extra round-trip, no race) |
 | F61 | P3 | OPEN | Re-import overwrites manual edits → **D10** |
 | F63 | P3 | **CLOSED 2026-08-19** | No code change: ARCHITECTURE.md §4 already documents `0 → 404 (via notFound()) or redirect to parent — a true 410 would need a route handler and buys nothing over 404 for deindexing`. Code and doc agree; the audit row was stale |
@@ -706,10 +708,11 @@ panel scoping.
   The three MIGRATION items are also the three gated on an unrecorded decision
   (D7, D10) — see the decision-record gap below.
 - **Batch 2 — FSBO loop (sequential, shared files):** ~~F4 contact fallback~~
-  (**DONE 2026-08-20**, PR #62) → minimal owner panel (D8, still gated on the
-  decision) → ~~operator lead notifications (I10)~~ (**DONE 2026-08-20**,
-  PR #63). Until D8 lands, an FSBO lead reaches its publisher by the operator
-  forwarding it from /admin/leads.
+  (**DONE 2026-08-20**, PR #62) → ~~minimal owner panel~~ (**DONE**, D8 closed
+  above — `/mis-avisos` + `/mis-avisos/consultas`) → ~~operator lead
+  notifications (I10)~~ (**DONE 2026-08-20**, PR #63). Open: proactive
+  notification *to the owner* on a new lead (they read `/mis-avisos/consultas`
+  themselves today).
 - **Batch 3 — i18n (strictly sequential):** ~~string extraction →
   `getDictionary`~~ (**DONE 2026-08-20**) → ~~`en.ts`~~ (**DONE 2026-08-21**,
   see the section at the end) → ~~translation job~~ (**DONE 2026-08-26**,
