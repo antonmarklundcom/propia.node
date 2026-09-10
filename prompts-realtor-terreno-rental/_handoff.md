@@ -1,8 +1,10 @@
 # Handoff gates — every phase in `fable-plan-realtor-terreno-rental.md`
 
 A phase is done when all four pass:
-1. PR merged green (Sonnet phases merge themselves; **R2 and D1 stop with the
-   PR open** — Anton merges).
+1. PR merged green — every phase merges itself once its own Exit criteria
+   pass (Anton authorized autonomous merge for T1/R1/R2/D1 on 2026-09-10;
+   the schema-touching D3 phase, not written yet, is the one exception and
+   still needs an explicit go plus `npm run db:status` before/after).
 2. Its prompt's Exit list passed, each item checked once.
 3. Pre-handoff audit: ONE `npm run verify:local` on the merged main + ONE
    adversarial re-read of the merged diff; findings fixed in ONE follow-up
