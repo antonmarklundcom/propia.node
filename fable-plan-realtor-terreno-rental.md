@@ -336,6 +336,8 @@ full copy under the `Host` header, PR merged.
 
 (empty — filled by phases as `docs/log/<phase>.md` + one line here)
 
+- **R1** rental Services header dropdown — `docs/log/r1.md`. Merged.
+
 ### §10 Backlog
 
 - D3: `agents.bio/license_no/years_active/zones`, `lead_matches`, admin
