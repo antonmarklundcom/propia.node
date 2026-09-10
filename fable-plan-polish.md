@@ -56,3 +56,5 @@ Phase log ≤ 12/8/8 lines + one Verification line. Add the §9 line.
 ## §9 Build log index
 
 (one line per phase as it lands)
+
+- P2 — hub hero photos: `docs/log/p2.md`. CSS wiring + `data-op` landed; the two WebP files are blocked on the environment network allowlist (no credits spent).

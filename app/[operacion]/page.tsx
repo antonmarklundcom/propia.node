@@ -93,7 +93,7 @@ export default async function OperationHubPage({ params }: Params) {
         ]}
       />
 
-      <section className="hub-hero">
+      <section className="hub-hero" data-op={op}>
         <div className="hub-hero__inner">
           <h1 className="hub-hero__title">{copy.h1}</h1>
           <p className="hub-hero__lead">{copy.lead}</p>
