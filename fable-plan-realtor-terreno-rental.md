@@ -344,6 +344,15 @@ full copy under the `Host` header, PR merged.
   `rentalPath()`, per-locale sitemap, cross-language 301s, WordPress map
   retargeted to the English slugs) — `docs/log/r2.md`.
 
+- **D1** — `docs/log/d1.md` — the directory door: `inmobiliarios.com.py` served
+  (`enabled: true`, DNS pending), `ownsDirectory` added and held on
+  `inmobiliaria.com.py` / `realestateinparaguay.com`, marketplace routes 308 off
+  the door from `middleware.ts` (not `next.config.ts` — see the log), the
+  seller-first home and its lead form, `/para-inmobiliarios`, the directory
+  rendering of `/agentes` and `/inmobiliarias`, `/api/leads` `agentSlug`,
+  derived zones, the `directory` i18n skeleton. `/inmobiliaria/[slug]`'s body
+  and the rest of `/agente/[slug]`'s deferred to D1b.
+
 ### §10 Backlog
 
 - D3: `agents.bio/license_no/years_active/zones`, `lead_matches`, admin
