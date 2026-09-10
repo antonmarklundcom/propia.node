@@ -591,6 +591,144 @@ export const esPanel = {
    */
   statusReviewNote:
     "Para publicar un aviso, ponelo «En revisión»: lo revisamos y lo publicamos nosotros. Es lo que nos permite garantizarle al comprador que cada aviso pasó por una persona.",
+
+  /* ---------------------------------------------------------------- */
+  /* Operaciones (/admin/operaciones) — fable-plan-ops.md §4.2         */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * Staff surface, Spanish only — there is no `enPanel` (see
+   * `fable/KNOWN-ISSUES.md`). Every job's copy is three lines on purpose: what
+   * it is for, what a real run writes, and nothing else. An operator about to
+   * change 4 000 cuotas on a live site should not have to infer any of that from
+   * a job name.
+   */
+  opsTitle: "Operaciones",
+  opsSubtitle:
+    "Los trabajos que antes se corrían desde una terminal. Cada uno se simula primero: ves exactamente qué cambiaría y recién después lo ejecutás.",
+  opsSimulate: "Simular",
+  opsRun: "Ejecutar",
+  opsRunning: "Corriendo…",
+  opsDryHeading: "Simulación: esto es lo que cambiaría",
+  opsRealHeading: "Listo: esto es lo que cambió",
+  opsNothingToDo: "No hay nada que cambiar.",
+  opsLimitLabel: "Máximo de filas en esta corrida",
+  opsLimitRequired: "Poné un máximo para esta corrida.",
+  opsLimitHint:
+    "Obligatorio: cada fila cuesta una llamada paga. Empezá con pocas.",
+  opsWritesLabel: "Qué escribe",
+  opsLastRun: "Última corrida",
+  opsLastRunNever: "Nunca se corrió desde el panel.",
+  opsLastRunDry: "simulación",
+  opsLastRunFailed: "falló",
+  opsLastRunUnfinished: "quedó sin terminar",
+  opsDurationLabel: "Duración",
+  opsSimulateFirst: "Simulá primero para habilitar «Ejecutar».",
+  opsRunConfirm: "¿Ejecutar de verdad? Esto escribe en la base de datos.",
+  opsFollowUp: (label: string) => `Después de esto, corré «${label}».`,
+  opsError: "El trabajo no se pudo completar. El detalle queda en el historial.",
+  opsDisabledR2:
+    "Falta configurar R2 (R2_ACCOUNT_ID y compañía). Se puede simular, no ejecutar.",
+  opsDisabledTranslate:
+    "Falta una clave de traducción (DeepL, Gemini o Claude). Se puede simular, no ejecutar.",
+  /**
+   * Named separately from the run history (S3) because this page's only job is
+   * "press the thing"; the audit view is a different screen.
+   */
+  opsHistoryHint:
+    "Cada simulación y cada ejecución queda registrada con tu usuario.",
+
+  opsFxLabel: "Cotización del dólar",
+  opsFxDescription:
+    "Trae la cotización USD → guaraníes del día y la guarda. Es de donde sale toda conversión de precios y toda cuota.",
+  opsFxWrites: "Agrega una fila en fx_rates. No modifica ninguna anterior.",
+
+  opsCuotasLabel: "Recalcular cuotas",
+  opsCuotasDescription:
+    "Recalcula la cuota mensual que se imprime en cada aviso de venta, con las tasas y la cotización de hoy.",
+  opsCuotasWrites:
+    "Escribe listings.cuota_gs en los avisos donde cambió. Correlo después de tocar una tasa.",
+
+  opsMediansLabel: "Precios medianos del mes",
+  opsMediansDescription:
+    "Calcula el precio mediano y el precio por m² de cada zona, tipo y operación, con los avisos publicados de hoy.",
+  opsMediansWrites: "Escribe market_medians para el mes en curso.",
+
+  opsGeoLabel: "Reparar posiciones en el mapa",
+  opsGeoDescription:
+    "Vuelve a calcular dónde va cada aviso en el mapa. Correlo después de mover el centro de una ciudad o barrio.",
+  opsGeoWrites:
+    "Escribe display_lat/display_lng en los avisos que estaban en el lugar equivocado.",
+
+  opsTranslateLabel: "Traducir avisos al inglés",
+  opsTranslateDescription:
+    "Llena el título y la descripción en inglés que usa realestateinparaguay.com. Solo toca los avisos nuevos o editados.",
+  opsTranslateWrites:
+    "Escribe title_en/description_en. Cada fila es una llamada paga a la API.",
+
+  opsResyncLabel: "Pausar avisos sin señal",
+  opsResyncDescription:
+    "Pausa los avisos que dejaron de aparecer en las planillas de la inmobiliaria hace más de 30 días. No los borra.",
+  opsResyncWrites:
+    "Los pasa a «pausado» y lo registra como un lote reversible desde Importar.",
+
+  opsSessionsLabel: "Limpiar sesiones vencidas",
+  opsSessionsDescription:
+    "Borra las sesiones que ya vencieron y quedaron en la tabla. No desloguea a nadie que esté trabajando.",
+  opsSessionsWrites: "Borra filas de sessions con fecha de vencimiento pasada.",
+
+  opsSeedFinancingLabel: "Cargar programas de financiación",
+  opsSeedFinancingDescription:
+    "Vuelve a escribir las condiciones de AFD y Che Róga Porã tal como están en el código. Las tasas del código son provisorias.",
+  opsSeedFinancingWrites:
+    "Escribe financing_programs. Cambia la plata que se muestra en cada aviso de venta.",
+
+  opsSeedLocationsLabel: "Cargar ciudades y barrios",
+  opsSeedLocationsDescription:
+    "Vuelve a escribir el árbol de departamentos, ciudades y barrios que está en el código, con sus coordenadas.",
+  opsSeedLocationsWrites:
+    "Escribe locations. Si movés el centro de una zona, mueve los pines de todos sus avisos.",
+
+  opsBackfillImagesLabel: "Traer fotos a nuestro storage",
+  opsBackfillImagesDescription:
+    "Descarga las fotos que hoy se muestran desde el servidor de otro y las guarda en el nuestro.",
+  opsBackfillImagesWrites:
+    "Descarga cada foto, la convierte y reescribe listing_images.r2_key.",
+
+  /* ---------------------------------------------------------------- */
+  /* Salud (/admin) — fable-plan-ops.md §1.9                          */
+  /* ---------------------------------------------------------------- */
+
+  healthTitle: "Salud del sitio",
+  healthAllGood: "Nada que reportar.",
+  healthFix: "Arreglar",
+  healthPendingMigrations: (n: number) =>
+    n === 1
+      ? "1 migración sin aplicar en esta base."
+      : `${n} migraciones sin aplicar en esta base.`,
+  healthDrift: (n: number) =>
+    n === 1
+      ? "1 cosa que el código espera y la base no tiene. Cada una es un error 500."
+      : `${n} cosas que el código espera y la base no tiene. Cada una es un error 500.`,
+  healthMigrationsUnknown:
+    "No se pudo leer la lista de migraciones en este servidor. El chequeo de columnas faltantes sí corrió.",
+  healthOrphanMigrations: (n: number) =>
+    `${n} migración(es) registradas en la base que no existen en el código. Revisar a mano.`,
+  healthNotStrict:
+    "La base no está en modo estricto: un valor inválido se guarda como vacío en vez de dar error.",
+  healthNoPosition: (n: number) =>
+    `${n} aviso(s) publicados no aparecen en el mapa: no tienen coordenada ni centro de zona.`,
+  healthNoPhoto: (n: number) => `${n} aviso(s) publicados sin ninguna foto.`,
+  healthNoEnglish: (n: number, total: number) =>
+    `${n} de ${total} avisos publicados todavía no tienen texto en inglés: en realestateinparaguay.com se ven en español.`,
+  healthLeadsNoRoute: (n: number) =>
+    `${n} consulta(s) quedaron sin destinatario por un valor inválido. Son recuperables.`,
+  healthJobsTitle: "Últimas corridas",
+  healthJobNever: "nunca",
+  healthDeployTitle: "Build en línea",
+  healthDeployUnknown: "desconocido",
+  healthCheckedAt: (minutes: number) =>
+    `Los números se recalculan cada ${minutes} minutos.`,
 } as const;
 
 /**

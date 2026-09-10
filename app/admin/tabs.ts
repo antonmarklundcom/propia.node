@@ -18,7 +18,8 @@ export function adminTabs(
     | "listings"
     | "leads"
     | "posts"
-    | "import",
+    | "import"
+    | "operations",
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
   draftPostCount?: number,
@@ -59,6 +60,12 @@ export function adminTabs(
       group: "manage",
       label: esPanel.adminImportTitle,
       active: active === "import",
+    },
+    {
+      href: "/admin/operaciones",
+      group: "manage",
+      label: esPanel.opsTitle,
+      active: active === "operations",
     },
     {
       href: "/admin/inmobiliarias",

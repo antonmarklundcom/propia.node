@@ -56,6 +56,18 @@ export interface MigrationStatus {
   sqlModeStrict: boolean;
   /** Where drizzle's tracking table lives, if anywhere on this server. */
   trackingSchema: string | null;
+  /**
+   * Whether `drizzle/meta/_journal.json` could be read at all.
+   *
+   * False is not an error and not drift: `next.config.ts` sets
+   * `output: "standalone"`, which copies only the files Next can trace, and
+   * these are read from a path built at runtime. So a deployed server may not
+   * have `drizzle/` next to it even though the repo does, and the migration list
+   * is then simply unavailable — while the drift diff below, which needs no
+   * files at all, still works. A caller must say "unavailable" rather than
+   * "0 pending".
+   */
+  journalReadable: boolean;
   entries: MigrationEntry[];
   /** `null` when no tracking table exists — not the same as "0 pending". */
   pending: number | null;
@@ -120,9 +132,12 @@ function hashOf(tag: string): string | null {
   return createHash("sha256").update(readFileSync(path).toString()).digest("hex");
 }
 
-function readJournal(): JournalEntry[] {
+/** null when `drizzle/` is not on disk beside the running process — see `journalReadable`. */
+function readJournal(): JournalEntry[] | null {
+  const path = join(process.cwd(), "drizzle", "meta", "_journal.json");
+  if (!existsSync(path)) return null;
   const journal: { entries: JournalEntry[] } = JSON.parse(
-    readFileSync(join(process.cwd(), "drizzle", "meta", "_journal.json")).toString(),
+    readFileSync(path).toString(),
   );
   return journal.entries;
 }
@@ -151,7 +166,8 @@ export async function readDatabaseStatus(
         WHERE table_name = '__drizzle_migrations'`,
     )) as [Array<{ table_schema: string }>, unknown];
 
-    const journalEntries = readJournal();
+    const journal = readJournal();
+    const journalEntries = journal ?? [];
     const trackingSchema = tracking[0]?.table_schema ?? null;
 
     let entries: MigrationEntry[] = journalEntries.map((e) => ({
@@ -163,7 +179,7 @@ export async function readDatabaseStatus(
     let pending: number | null = null;
     let orphanHashes = 0;
 
-    if (trackingSchema) {
+    if (trackingSchema && journal) {
       const [rows] = (await c.query(
         `SELECT hash, created_at FROM \`${trackingSchema}\`.\`__drizzle_migrations\`
           ORDER BY created_at`,
@@ -290,6 +306,7 @@ export async function readDatabaseStatus(
         database: server.db,
         sqlModeStrict: /STRICT_TRANS_TABLES|STRICT_ALL_TABLES/.test(server.sql_mode),
         trackingSchema,
+        journalReadable: journal !== null,
         entries,
         pending,
         orphanHashes,

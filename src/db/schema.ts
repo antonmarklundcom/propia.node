@@ -813,6 +813,20 @@ export const posts = mysqlTable(
     category: mysqlEnum("category", ["guia", "mercado", "noticia"])
       .notNull()
       .default("guia"),
+    /**
+     * Which door's language this post is written in.
+     *
+     * Until this column existed, `/guias` was the one page type with no
+     * language: the three English guides seeded for the English door also
+     * appeared, in English, in the Spanish door's index and sitemap. It
+     * defaults to `es` because every post written before it was Spanish
+     * except those three, and S2 sets them.
+     *
+     * A locale, not a vertical: two Spanish doors share a guide, and a guide
+     * that only made sense on one door would be a filter on that door, not a
+     * column here.
+     */
+    locale: mysqlEnum("locale", ["es", "en"]).notNull().default("es"),
     status: mysqlEnum("status", ["draft", "published"])
       .notNull()
       .default("draft"),
@@ -824,8 +838,98 @@ export const posts = mysqlTable(
     createdAt: createdAt(),
   },
   (t) => [
-    // The public index's only query: published, newest first.
+    /**
+     * The public index's only query: published, newest first.
+     *
+     * `locale` is deliberately **not** in an index. The door's language filter
+     * is an equality on a two-value column over a table holding a dozen rows,
+     * and adding it here would mean dropping and recreating an index in the
+     * migration for no measurable read — index churn on production in exchange
+     * for nothing. Revisit if `posts` ever reaches a few thousand rows.
+     */
     index("idx_status_published").on(t.status, t.publishedAt),
     index("idx_category").on(t.category, t.status),
   ],
 );
+
+/* ------------------------------------------------------------------ */
+/* 2.11 Operations: ops_runs, site_settings                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The audit trail of every operations job run from `/admin/operaciones` —
+ * `fable-plan-ops.md` §1.8.
+ *
+ * **Dry runs are recorded too, and that is the point.** "Who pressed Simular,
+ * saw 4 000 cuotas about to change, and then pressed Ejecutar" is one story in
+ * two rows; keeping only the second would leave the interesting half — the
+ * preview somebody looked at and the moment they decided — unrecorded. It also
+ * makes the table answer the question `/admin`'s health section actually asks:
+ * *when did this job last run at all*, which a schedule that silently stopped
+ * firing cannot answer any other way.
+ *
+ * `result_json` is the whole `OpsResult` (`src/lib/ops/types.ts`) — counts,
+ * notes, duration. It is display-only, never filtered on, so it stays JSON
+ * rather than becoming columns nobody queries.
+ *
+ * Nothing here is written by a request a visitor can make: every row comes from
+ * a superadmin action or, later, from a CLI run that chooses to record itself.
+ */
+export const opsRuns = mysqlTable(
+  "ops_runs",
+  {
+    id: id(),
+    /**
+     * The job's stable id — one of `OpsJob` in `src/lib/ops/types.ts`, spelled
+     * like the `package.json` script that runs it (`cron:cuotas`,
+     * `seed:financing`, `financing.edit`). A varchar rather than an enum
+     * because a new job must not need a migration to be auditable, and because
+     * an enum the database has not learned yet stores `''` on a non-strict
+     * server (the D8 incident).
+     */
+    job: varchar("job", { length: 60 }).notNull(),
+    dry: boolean("dry").notNull().default(true),
+    startedByUserId: fk("started_by_user_id"),
+    startedAt: datetime("started_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    /** NULL while a run is in flight, or if the process died mid-job. */
+    finishedAt: datetime("finished_at"),
+    /**
+     * Whether the job completed. NULL means "still running or never finished" —
+     * distinct from `false`, which is a job that ran and threw. A row stuck at
+     * NULL is itself a finding for the health panel.
+     */
+    ok: boolean("ok"),
+    /** The `OpsResult`, or `{ error }` when the job threw. Display-only. */
+    resultJson: json("result_json"),
+  },
+  (t) => [
+    // "The last run of each job", the health panel's query, and the history
+    // view's default order.
+    index("idx_job_started").on(t.job, t.startedAt),
+    index("idx_started").on(t.startedAt),
+  ],
+);
+
+/**
+ * Operator-editable settings that override an env var without a rebuild
+ * (`fable-plan-ops.md` §1.10).
+ *
+ * **Override, never replace.** `getSetting(key)` returns the row if there is
+ * one and the existing env constant otherwise, so a database with no rows
+ * behaves exactly like the deployment does today, and deleting a row is how you
+ * go back to the env var. `NEXT_PUBLIC_*` values stay in the env for the
+ * build-time consumers that cannot read a table at all — this is for the
+ * server-rendered ones (the footer, `/contacto`, the JSON-LD).
+ *
+ * The whole table is a handful of rows written by one person, so `key` is the
+ * primary key and there is no index beyond it. `value` is text because a
+ * setting is a string as far as this table is concerned; the reader owns the
+ * meaning. S3 fills it (`contact_whatsapp`, `contact_email`, per-door taglines).
+ */
+export const siteSettings = mysqlTable("site_settings", {
+  key: varchar("key", { length: 60 }).primaryKey(),
+  value: text("value"),
+  updatedAt: datetime("updated_at"),
+  /** Who last changed it — the same accountability `ops_runs` gives a job. */
+  updatedBy: fk("updated_by"),
+});

@@ -272,3 +272,25 @@ Anton has merged O2 and `db:status` is clean; it runs S1, S2, S3 in order.
   registry) and `src/lib/ops/migrations.ts` (`readDatabaseStatus()` /
   `driftCount()` are the health panel's numbers, already computed). No runner
   calls a `revalidate*` helper — that is the O2 action's job, per §4.2 item 4.
+- 2026-09-10 — **O2 opened, NOT merged** (`claude/ops-o2-operaciones`,
+  `docs/log/o2-ops.md`). `/admin/operaciones` has one card per job: Simular runs
+  the real runner with `dry: true`, Ejecutar appears only after a simulation of
+  that job and runs the same function for real, both write an `ops_runs` row,
+  and the action (not the runner) drops the listing cache after a non-dry run.
+  `db:migrate`, `db:status --probe` and `import:csv` are deliberately not
+  buttons. `/admin` gained a "Salud" section from `src/lib/health.ts` — drift,
+  pending migrations, listings with no position / photo / English, leads with a
+  truncated route, last run per job, deployed build — computed, cached 5 min,
+  untagged. One migration, `drizzle/0014_shiny_nehzno.sql`: `ops_runs`,
+  `posts.locale`, `site_settings`, no index churn.
+  **Verified in a real browser**, not just typechecked: Ejecutar disabled until a
+  simulation and disabled again after a real run, dry counts identical to real
+  counts, the limit enforced server-side, a throwing job (`cron:fx`, whose API the
+  sandbox blocks) surfacing its error and recording `ok = 0`, and no hydration
+  errors — one was found and fixed, timestamps are now formatted server-side and
+  pinned to `America/Asuncion`. `db:migrate` + `db:status` on a local database:
+  15 applied, 0 pending, `No drift`.
+  **Anton runs the runbook in `docs/log/o2-ops.md` before merging**
+  (`db:status --probe` → merge → `db:migrate` → `db:status`), because
+  `src/lib/post-queries.ts` selects every column of `posts` and `locale` is one of
+  them. **The Sonnet prompt must not start until `No drift` prints.**

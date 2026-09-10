@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
+import { HealthSection } from "@/components/panel/HealthSection";
 import { requireSuperAdmin } from "@/lib/auth/guards";
+import { getHealth } from "@/lib/health";
 import { countRecentLeads, getReviewQueue } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
@@ -23,9 +25,17 @@ const OPERATION_LABEL: Record<string, string> = {
 
 export default async function AdminReviewPage() {
   const user = await requireSuperAdmin();
-  const [queue, recentLeads] = await Promise.all([
+  const [queue, recentLeads, health] = await Promise.all([
     getReviewQueue(),
     countRecentLeads(),
+    /**
+     * Cached for five minutes and never tagged (`src/lib/health.ts`), so this
+     * adds a handful of counts to the first render of each window and nothing to
+     * the rest. It goes above the review queue because a missing column is more
+     * urgent than an unreviewed listing, and because a section nobody scrolls to
+     * is a section nobody reads.
+     */
+    getHealth(),
   ]);
 
   return (
@@ -37,6 +47,8 @@ export default async function AdminReviewPage() {
         tabs={adminTabs("review", queue.length, undefined, recentLeads)}
       />
       <main className="panel site-main">
+        <HealthSection health={health} />
+
         <h2 className="panel-section__title">{esPanel.adminReviewTitle}</h2>
 
         {queue.length === 0 ? (
