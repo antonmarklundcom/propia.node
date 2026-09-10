@@ -1,4 +1,4 @@
-# Phase R2 — English URLs for the rental business's own pages on rentparaguay.com. OPUS session. Lane 1. GATED: run only after Anton answers plan question 5 with "go" and R1 is merged.
+# Phase R2 — English URLs for the rental business's own pages on rentparaguay.com. OPUS session. Lane 1. Anton said "go" (see plan.md "Decisions (2026-09-10)" §5) — the only remaining gate is R1 merged into main. Check that before starting; if R1 is not yet merged, stop and wait rather than branching off a main that lacks it.
 
 Read ONLY: this file, `fable-plan-realtor-terreno-rental.md` Stage 1 C2, §1,
 §2, §4, §5.1; `docs/log/r1.md`; `src/config/rental-services.ts`;

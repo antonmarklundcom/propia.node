@@ -1,4 +1,4 @@
-# Phase D1 — inmobiliarios.com.py: the directory door (routing, shell, seller form, directory pages). OPUS session. Lane 1. GATED: run only after Anton answers plan questions 1, 2, 3 and 6.
+# Phase D1 — inmobiliarios.com.py: the directory door (routing, shell, seller form, directory pages). OPUS session. Lane 1. Anton has answered questions 1, 2, 3 and 6 (see plan.md "Decisions (2026-09-10)") — ready now, no remaining gate.
 
 Read ONLY: this file, `fable-plan-realtor-terreno-rental.md` Stage 1 D, §1,
 §2, §4, §5.2; `CLAUDE.md` (domains, i18n, caching, filters sections);
