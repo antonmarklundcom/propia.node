@@ -184,6 +184,7 @@ export async function SiteFooter() {
             </ul>
           </div>
 
+          <Column title={t.footerOwnersTitle} links={t.footerOwnersLinks} />
           <Column title={t.footerDirectoryTitle} links={t.footerDirectoryLinks} />
           <Column title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
         </div>

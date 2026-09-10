@@ -1725,21 +1725,30 @@ export const enRentalServices = {
  * Spanish does not state.
  */
 export const enDirectory = {
-  metaTitle: "Find the right real estate agent in Paraguay",
+  metaTitle: "Sell or rent out your property with the best agent in your area",
   metaDescription: (brand: string) =>
-    `${brand} connects you with real estate agents who already work in your area. Tell us what you want to sell or rent out and get proposals, at no cost.`,
+    `${brand} connects you with verified real estate agents in your area and publishes your listing on inmobiliaria.com.py, realestateinparaguay.com and rentparaguay.com. Free for the owner.`,
 
+  // Chrome — nav, CTA and footer. No login, no publicar, no newsletter. The
+  // directory links (Agents / Agencies / For agents) live in the footer only.
   chromeNav: [
-    { label: "Home", href: "/" },
-    { label: "Agents", href: "/agentes" },
-    { label: "Agencies", href: "/inmobiliarias" },
-    { label: "For agents", href: "/para-inmobiliarios" },
-    { label: "Contact", href: "/contacto" },
+    { label: "Sell", href: "/#vender" },
+    { label: "Rent out", href: "/#alquilar" },
+    { label: "How it works", href: "/#como-funciona" },
   ],
   chromeCtaLabel: "Find your agent",
+  breadcrumbHome: "Home",
   chromeCtaHref: "/#form",
   footerTagline: (brand: string) =>
     `${brand} is Paraguay's directory of real estate agents: we put you in touch with the ones who work your area.`,
+  // NEW: the footer's owner-facing column, mirroring esDirectory.
+  footerOwnersTitle: "Owners",
+  footerOwnersLinks: [
+    { label: "Sell my property", href: "/#vender" },
+    { label: "Rent out my property", href: "/#alquilar" },
+    { label: "How it works", href: "/#como-funciona" },
+    { label: "Frequent questions", href: "/#faq" },
+  ],
   footerDirectoryTitle: "Directory",
   footerDirectoryLinks: [
     { label: "Agents", href: "/agentes" },
@@ -1756,20 +1765,64 @@ export const enDirectory = {
   footerLegalLine: (brand: string) =>
     `${brand} introduces owners to independent real estate agents. We take no part in the transaction and charge the owner no commission.`,
 
-  // Copy locked D4 (docs/style/inmobiliarios.com.py.md, artboard "Paso a
-  // Paso" / "Step by Step") — peer of the Spanish, not a literal translation.
-  heroKicker: "For owners · Free",
-  heroTitle: "Sell your property with an agent who already knows your area.",
+  // Hero — "Opción E · Vender o alquilar" (Claude Design artboard OpcionE,
+  // 2026-09-10), English peer.
+  heroKicker: "For owners",
+  heroTitle:
+    "Sell or rent out? The best agent in your area, and buyers from abroad.",
   heroSubtitle:
-    "Sign up in three steps. Get a free valuation, proposals from up to three verified agents, and your listing across the whole network.",
-  heroPoints: [
-    "A free valuation of your property, with data from your area",
-    "You choose the agent from the proposals you receive",
-    "Your listing published on inmobiliaria.com.py and realestateinparaguay.com",
-    "No cost to you: we charge the owner no commission",
+    "Pick your path. Either way we connect you with verified agents and publish your listing across our network of Spanish- and English-language portals.",
+  // NEW: the two hero door-cards, English peer.
+  heroDoors: [
+    {
+      id: "vender",
+      kicker: "I want to sell",
+      title: "Sell at a good price, to local or foreign buyers.",
+      points: [
+        "A free valuation with data from your neighborhood",
+        "Up to three verified agents present their plan",
+        "Listed on inmobiliaria.com.py and realestateinparaguay.com",
+      ],
+      cta: "I want to sell my property",
+    },
+    {
+      id: "alquilar",
+      kicker: "I want to rent out",
+      title:
+        "Rent to tenants from abroad who pay well and take care of the property.",
+      points: [
+        "Agents who manage rentals in your area",
+        "Expats, diplomats and executives via rentparaguay.com",
+        "Also listed on inmobiliaria.com.py for the local market",
+      ],
+      cta: "I want to rent out my property",
+    },
   ],
 
-  formTitle: "Let's start with you",
+  // NEW: "The difference" — the network section between the hero and the form.
+  networkKicker: "The difference",
+  networkTitle:
+    "An agent only shows you Paraguay. We show you the world.",
+  networkText:
+    "Foreign buyers and tenants search in English and never reach the local portals. Our network shows them your property, and the agent you choose closes the deal.",
+  portals: [
+    {
+      domain: "inmobiliaria.com.py",
+      text: "The local market. Buyers and tenants in Paraguay.",
+    },
+    {
+      domain: "realestateinparaguay.com",
+      text: "In English, for investors and foreign buyers paying in dollars.",
+    },
+    {
+      domain: "rentparaguay.com",
+      text: "Tenants from abroad: expats, diplomats and executives looking to rent in Paraguay.",
+    },
+  ],
+
+  formTitle: "Start with your details",
+  formIntro:
+    "We'll message you on WhatsApp with the valuation and the agents who work your area.",
   formSteps: ["1 · Your details", "2 · Your property", "3 · Confirm"],
   formNext: "Continue to step 2 →",
   formNext2: "Continue to step 3 →",
@@ -1814,7 +1867,7 @@ export const enDirectory = {
     },
     {
       title: "Your listing across the network",
-      text: "The agent publishes it on inmobiliaria.com.py and on realestateinparaguay.com.",
+      text: "Published on all three portals, in Spanish and in English.",
     },
   ],
 
