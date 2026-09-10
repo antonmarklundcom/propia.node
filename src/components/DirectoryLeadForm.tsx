@@ -102,6 +102,13 @@ export function DirectoryLeadForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Enter inside step 1 or 2 must advance, never send: the payload is only
+    // complete — and only confirmed by the visitor — on the last step.
+    if (step === 0) return goToStep2();
+    if (step === 1) {
+      if (step2Valid) goToStep3();
+      return;
+    }
 
     // The three structured answers ride in the message body: they are what the
     // operator needs to pick the right three professionals, and none of them
