@@ -6,8 +6,46 @@ import type { NextConfig } from "next";
 // `@/design/sections`), which is what lets the redirects below be generated
 // from the URL table rather than be a second copy of it.
 import { RENTAL_SERVICES, rentalPath } from "./src/config/rental-services";
+import { execSync } from "node:child_process";
+
+/**
+ * Which build is running, for the health section on `/admin`.
+ *
+ * There is no deploy log an operator can see: Hostinger builds on a webhook and
+ * the only evidence a deploy happened is the site changing. So the build stamps
+ * itself, and `/admin` can answer "is the code I merged actually live?".
+ *
+ * Best-effort by design. Hostinger may or may not expose a commit env var, and a
+ * build from an exported tarball has no `.git` at all — in both cases this
+ * returns null and the panel says "desconocido" rather than inventing a value.
+ * It must never fail the build: a health nicety is not worth a deploy.
+ */
+function buildCommit(): string | null {
+  const fromEnv =
+    process.env.HOSTINGER_GIT_COMMIT ??
+    process.env.GIT_COMMIT ??
+    process.env.VERCEL_GIT_COMMIT_SHA;
+  if (fromEnv) return fromEnv.slice(0, 12);
+  try {
+    return execSync("git rev-parse --short=12 HEAD", {
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim() || null;
+  } catch {
+    return null;
+  }
+}
 
 const nextConfig: NextConfig = {
+  /**
+   * Inlined at build time and read by `src/lib/health.ts`. Values, not secrets:
+   * a commit hash and a timestamp.
+   */
+  env: {
+    BUILD_COMMIT: buildCommit() ?? "",
+    BUILD_TIME: new Date().toISOString(),
+  },
   // Listing photos live on Cloudflare R2 behind the CDN — never on hosting disk.
   images: {
     remotePatterns: [

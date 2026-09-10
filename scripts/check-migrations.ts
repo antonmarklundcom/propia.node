@@ -64,7 +64,13 @@ function report(status: DatabaseStatus): void {
   /* ---------------- migration tracking ---------------- */
 
   console.log("\n=== migrations ===");
-  if (m.trackingSchema === null) {
+  if (!m.journalReadable) {
+    console.log(
+      "drizzle/meta/_journal.json is not readable from " + process.cwd() + ".\n" +
+        "Run this from the repository root. The drift section below needs no files\n" +
+        "and is still authoritative.",
+    );
+  } else if (m.trackingSchema === null) {
     console.log(
       "No __drizzle_migrations table exists anywhere on this server.\n" +
         "Drizzle has never recorded a migration here. It does NOT follow that the\n" +
