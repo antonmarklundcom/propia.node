@@ -18,6 +18,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { waLink } from "@/lib/wa";
 import { safeImageUrl } from "@/lib/external-image";
+import { currentVertical } from "@/lib/vertical-context";
 
 // Same shape as the listing detail page: DB-backed, so no static caching —
 // this is the founder's inventory changing, not content that goes stale slowly.
@@ -62,7 +63,8 @@ export default async function AgencyProfilePage({ params }: Params) {
   const ix = getIndexability({ listingCount });
   if (ix.state === "gone") notFound();
 
-  const listings = await getAgencyListings({ agencyId: agency.id, limit: 24 });
+  const vertical = await currentVertical();
+  const listings = await getAgencyListings({ agencyId: agency.id, limit: 24, vertical });
   const origin = await siteOrigin();
   // The ItemList's entries are listing detail URLs, which may be canonical on
   // a different host than the one serving this profile (audit F9).

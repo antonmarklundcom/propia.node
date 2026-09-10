@@ -275,7 +275,7 @@ export default async function ListingPage({ params }: Params) {
         })
       : Promise.resolve([]),
     listing.agencyId
-      ? getAgencyListings({ agencyId: listing.agencyId, excludeId: listing.id, limit: 4 })
+      ? getAgencyListings({ agencyId: listing.agencyId, excludeId: listing.id, limit: 4, vertical })
       : Promise.resolve([]),
     listing.operation === "venta" && cuota
       ? getBestFinancingProgram()
