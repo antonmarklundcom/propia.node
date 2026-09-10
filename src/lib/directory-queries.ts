@@ -692,3 +692,129 @@ export async function listFinancingPrograms(): Promise<FinancingProgramRow[]> {
     updatedAt: r.updatedAt == null ? null : new Date(r.updatedAt),
   }));
 }
+
+/* ------------------------------------------------------------------------ *
+ * D3 — matching candidates
+ * ------------------------------------------------------------------------ */
+
+export interface AgentMatchCandidate {
+  id: number;
+  name: string;
+  slug: string;
+  whatsapp: string | null;
+  agencyName: string | null;
+  /** Self-declared coverage (`agents.zones`), city slugs. Never a filter. */
+  declaredZones: string[];
+  /** Cities where this agent actually has published inventory, slugs. */
+  inventoryZones: string[];
+  listingCount: number;
+}
+
+/**
+ * Every **verified** agent, with both halves of their coverage — the
+ * self-declared `zones` column and the cities their published inventory is
+ * actually in (D3).
+ *
+ * Deliberately **not cached**: it runs on one operator click in /admin/leads,
+ * never on a public page, and a stale candidate list is a wrong hand-off. The
+ * cached directory queries above answer the public pages instead.
+ *
+ * Cities are slugs here rather than the display names the directory rows
+ * carry, because that is what `agents.zones` stores and what a lead's
+ * `utm.city` would be — comparing "Asunción" to "asuncion" is the bug this
+ * avoids. Barrio-level listings roll up to their ciudad, the same rule
+ * `listAgentsForDirectory` and `listDirectoryZones` use.
+ *
+ * Unverified agents are excluded, not ranked last: proposing somebody the
+ * founder has not checked is the failure mode this whole door exists to fix.
+ */
+export async function listAgentMatchCandidates(): Promise<AgentMatchCandidate[]> {
+  const [rows, locRows, listingLocRows] = await Promise.all([
+    db
+      .select({
+        id: agents.id,
+        name: agents.name,
+        slug: agents.slug,
+        whatsapp: agents.whatsapp,
+        zones: agents.zones,
+        agencyName: agencies.name,
+      })
+      .from(agents)
+      .leftJoin(agencies, eq(agents.agencyId, agencies.id))
+      .where(eq(agents.isVerified, true))
+      .orderBy(asc(agents.name)),
+    db
+      .select({
+        id: locations.id,
+        slug: locations.slug,
+        level: locations.level,
+        parentId: locations.parentId,
+      })
+      .from(locations),
+    db
+      .select({
+        agentId: listings.agentId,
+        locationId: listings.locationId,
+        n: sql<number>`COUNT(*)`,
+      })
+      .from(listings)
+      .where(eq(listings.status, "published"))
+      .groupBy(listings.agentId, listings.locationId),
+  ]);
+
+  if (rows.length === 0) return [];
+
+  const locById = new Map(locRows.map((l) => [l.id, l]));
+  const citySlugOf = (locationId: number): string | null => {
+    const loc = locById.get(locationId);
+    if (!loc) return null;
+    if (loc.level === "ciudad") return loc.slug;
+    const parent = loc.parentId != null ? locById.get(loc.parentId) : undefined;
+    return parent?.level === "ciudad" ? parent.slug : null;
+  };
+
+  const cityTotals = new Map<number, Map<string, number>>();
+  const totalByAgent = new Map<number, number>();
+  for (const r of listingLocRows) {
+    if (r.agentId == null) continue;
+    totalByAgent.set(r.agentId, (totalByAgent.get(r.agentId) ?? 0) + Number(r.n));
+    const city = citySlugOf(r.locationId);
+    if (!city) continue;
+    const totals = cityTotals.get(r.agentId) ?? new Map<string, number>();
+    totals.set(city, (totals.get(city) ?? 0) + Number(r.n));
+    cityTotals.set(r.agentId, totals);
+  }
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    whatsapp: r.whatsapp,
+    agencyName: r.agencyName,
+    // mysql2 hands a json column back as a raw string on this stack (the same
+    // trap `leads.utm` fell into in panel-queries), so never trust the type.
+    declaredZones: normalizeZones(r.zones),
+    inventoryZones: [...(cityTotals.get(r.id) ?? new Map())]
+      .sort((a, b) => b[1] - a[1])
+      .map(([slug]) => slug),
+    listingCount: totalByAgent.get(r.id) ?? 0,
+  }));
+}
+
+/** `agents.zones` as a clean slug array, whatever the driver handed back. */
+export function normalizeZones(raw: unknown): string[] {
+  const value = typeof raw === "string" ? safeJson(raw) : raw;
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((z): z is string => typeof z === "string")
+    .map((z) => z.trim())
+    .filter(Boolean);
+}
+
+function safeJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}

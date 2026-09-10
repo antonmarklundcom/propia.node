@@ -279,10 +279,65 @@ export const agents = mysqlTable(
     photoUrl: varchar("photo_url", { length: 500 }),
     whatsapp: varchar("whatsapp", { length: 30 }),
     isVerified: boolean("is_verified").notNull().default(false),
+    /**
+     * Profile fields the directory door needs to match a seller lead to a
+     * professional (D3). All nullable: every existing row predates them, and
+     * an unfilled profile must keep rendering exactly as it does today.
+     *
+     * `zones` is a self-declared array of city SLUGS (`locations.slug` at
+     * ciudad level) — display/matching only, never a filter predicate, which
+     * is why a JSON column is allowed here (schema header rule: JSON columns
+     * are display-only). The derived coverage from published inventory
+     * (`listDirectoryZones`) stays the honest signal and outranks it in
+     * `suggestAgentsForLead`; a declared zone says where somebody would
+     * *like* to work.
+     */
+    bio: text("bio"),
+    licenseNo: varchar("license_no", { length: 60 }),
+    yearsActive: smallint("years_active", { unsigned: true }),
+    zones: json("zones").$type<string[] | null>(),
   },
   (t) => [
     index("idx_agency").on(t.agencyId),
     index("idx_user").on(t.userId), // agency-context lookup: which agency a logged-in user belongs to
+  ],
+);
+
+/**
+ * A proposed introduction between a directory seller lead and an agent (D3).
+ *
+ * This table is what replaces a `leads.agent_id` column: a lead is matched to
+ * *several* professionals ("match 3"), so the relation is many-to-many and
+ * cannot live on `leads`. `leads.utm` keeps carrying the single agent a
+ * profile-page lead named itself with (D1) — that is provenance, this is
+ * routing.
+ *
+ * Nothing here is automatic. A row is written when the operator saves a
+ * proposal in /admin/leads, and `sent` is recorded when they actually open
+ * the WhatsApp hand-off. `accepted`/`declined` have no writer yet — they are
+ * the agent-facing half (D3b) and are declared now so the enum never has to
+ * be ALTERed to add a member in the middle (see `leads.routed_to`).
+ */
+export const leadMatches = mysqlTable(
+  "lead_matches",
+  {
+    id: id(),
+    leadId: fk("lead_id").notNull(),
+    agentId: fk("agent_id").notNull(),
+    status: mysqlEnum("status", ["proposed", "sent", "accepted", "declined"])
+      .notNull()
+      .default("proposed"),
+    note: varchar("note", { length: 280 }),
+    createdAt: createdAt(),
+    /** Set once, when the operator opens the hand-off. NULL = never sent. */
+    sentAt: datetime("sent_at"),
+  },
+  (t) => [
+    // Proposing the same agent twice for one lead is the same proposal, not a
+    // second one: re-saving a proposal must be idempotent, exactly like
+    // re-importing a file (uq_source).
+    uniqueIndex("uq_lead_agent").on(t.leadId, t.agentId),
+    index("idx_lead").on(t.leadId),
   ],
 );
 
