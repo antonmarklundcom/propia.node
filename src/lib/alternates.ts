@@ -49,8 +49,13 @@ import type { Locale } from "@/i18n";
  *   feeder canonicalises its detail pages back to the primary, so it is not a
  *   language version of anything and must not appear in the set. This mirrors
  *   `ownsListingDetail()` in `origin.ts`; the two read the same flag.
+ * - `"directory"` — `/agentes`, `/agente/{slug}`, `/inmobiliarias`,
+ *   `/inmobiliaria/{slug}`. Every marketplace door renders them, but only the
+ *   door named by `ownsDirectory` is canonical for them in its language; a door
+ *   that canonicalises them away is not a language version of anything. Mirrors
+ *   `hostOwnsDirectory()` in `origin.ts`; the two read the same flag.
  */
-export type AlternateScope = "site" | "listing";
+export type AlternateScope = "site" | "listing" | "directory";
 
 export interface AlternateInput {
   /** Path as served, with its leading slash: "/", "/venta/asuncion", … */
@@ -108,6 +113,8 @@ export function servedDoors(primaryHost: string): Door[] {
 
 function ownsScope(door: Door, primaryHost: string, scope: AlternateScope): boolean {
   if (scope === "site") return true;
+  if (scope === "directory")
+    return door.host === primaryHost || Boolean(door.config.ownsDirectory);
   return door.host === primaryHost || door.config.ownsListingDetail;
 }
 

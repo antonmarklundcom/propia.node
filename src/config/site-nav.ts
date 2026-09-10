@@ -309,6 +309,32 @@ export const MARKETPLACE_SITEMAP_PATHS: string[] = [
  * Spanish-slugged in both: those are marketplace routes the rental doors also
  * render, and R2 deliberately changed only the rental family's own pages.
  */
+/**
+ * The directory door's static pages (inmobiliarios.com.py —
+ * fable-plan-realtor-terreno-rental.md §5.2 (f)). A separate list for the same
+ * reason the rental family has one: that door is a realtor lead-gen directory,
+ * so none of the marketplace's category, listing, price or project surfaces are
+ * its to submit — it 308s every one of them to inmobiliaria.com.py
+ * (`middleware.ts`).
+ *
+ * `/agentes` and `/inmobiliarias` are here, but `buildSitemapEntries()` still
+ * drops them (and every profile URL) unless the door actually owns the
+ * directory page type — `ownsDirectory` in `src/config/verticals.ts`, which
+ * stays on inmobiliaria.com.py until this door's DNS resolves. So today this
+ * door submits its home, `/para-inmobiliarios` and the legal pages, and gains
+ * the rest in the go-live PR. `npm run verify:seo` asserts this list contains
+ * no marketplace path.
+ */
+export const DIRECTORY_SITEMAP_PATHS: string[] = [
+  "/",
+  "/inmobiliarias",
+  "/agentes",
+  "/para-inmobiliarios",
+  "/contacto",
+  "/terminos",
+  "/privacidad",
+];
+
 export function rentalSitemapPaths(locale: "es" | "en"): string[] {
   return [
     "/",

@@ -45,9 +45,14 @@ export const CHUNK_SIZE = 10_000;
  * 25 000-URL one both cost one query set per hour per door.
  */
 const cachedEntries = unstable_cache(
-  async (includeListingDetail: boolean, verticalKey: VerticalKey) =>
+  async (
+    includeListingDetail: boolean,
+    includeDirectory: boolean,
+    verticalKey: VerticalKey,
+  ) =>
     buildSitemapEntries({
       includeListingDetail,
+      includeDirectory,
       vertical: Object.values(VERTICALS).find((v) => v.key === verticalKey),
     }),
   ["sitemap-entries"],
@@ -63,9 +68,14 @@ const cachedEntries = unstable_cache(
  */
 export async function sitemapEntries(
   includeListingDetail: boolean,
+  includeDirectory: boolean,
   verticalKey: VerticalKey,
 ): Promise<SitemapEntry[]> {
-  const entries = await cachedEntries(includeListingDetail, verticalKey);
+  const entries = await cachedEntries(
+    includeListingDetail,
+    includeDirectory,
+    verticalKey,
+  );
   return [...entries].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
 

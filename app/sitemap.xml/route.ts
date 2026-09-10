@@ -1,4 +1,8 @@
-import { siteOrigin, hostOwnsListingDetail } from "@/lib/origin";
+import {
+  siteOrigin,
+  hostOwnsListingDetail,
+  hostOwnsDirectory,
+} from "@/lib/origin";
 import { currentVertical } from "@/lib/vertical-context";
 import {
   CHUNK_SIZE,
@@ -20,12 +24,18 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
-  const [origin, ownsListingDetail, vertical] = await Promise.all([
-    siteOrigin(),
-    hostOwnsListingDetail(),
-    currentVertical(),
-  ]);
-  const entries = await sitemapEntries(ownsListingDetail, vertical.key);
+  const [origin, ownsListingDetail, ownsDirectory, vertical] =
+    await Promise.all([
+      siteOrigin(),
+      hostOwnsListingDetail(),
+      hostOwnsDirectory(),
+      currentVertical(),
+    ]);
+  const entries = await sitemapEntries(
+    ownsListingDetail,
+    ownsDirectory,
+    vertical.key,
+  );
 
   return xmlResponse(
     entries.length <= CHUNK_SIZE
