@@ -12,7 +12,6 @@ import { SearchBar } from "@/components/SearchBar";
 import { getRecentListingsBy, listCities } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
 import { getOperationHubData } from "@/lib/directory-queries";
-import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { categoryUrl, parseOperation, operationSlug } from "@/lib/urls";
 import { CtaBand, Section } from "@/components/MarketingUI";
 import type { Operation, PropertyType } from "@/lib/import/types";
@@ -103,7 +102,15 @@ export default async function OperationHubPage({ params }: Params) {
               {t.count(hub.total.toLocaleString(numberLocale))}
             </div>
           )}
-          <SearchBar cities={cities} locale={locale} />
+          {/* The bar opens on THIS hub's operation, not the site default: a
+              visitor on /alquiler who saw "Comprar" preselected was one wrong
+              click from the wrong hub. The bar has no short-term rung, so the
+              temporary-rental hub opens on "alquiler". */}
+          <SearchBar
+            cities={cities}
+            locale={locale}
+            defaultOperation={op === "venta" ? "venta" : "alquiler"}
+          />
         </div>
       </section>
 
@@ -124,7 +131,7 @@ export default async function OperationHubPage({ params }: Params) {
                 })}
               >
                 <span className="hub-tile__label">
-                  {PROPERTY_TYPE_LABELS[row.type as PropertyType] ?? row.type}
+                  {d.category.typeLabel[row.type] ?? row.type}
                 </span>
                 <span className="hub-tile__count">
                   {row.count.toLocaleString(numberLocale)}

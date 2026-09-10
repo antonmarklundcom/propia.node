@@ -50,7 +50,11 @@ export function SearchBar({
   defaultType?: PropertyType | "";
   locale?: Locale;
 }) {
-  const t = getDictionary(locale).searchBar;
+  const dictionary = getDictionary(locale);
+  const t = dictionary.searchBar;
+  // Type names follow the locale, like every other label in this bar;
+  // PROPERTY_TYPE_OPTIONS only fixes the order and the values.
+  const typeLabels = dictionary.category.typeLabel;
   // Number formatting follows the locale, not the copy: "Hasta US$ 150.000"
   // and "Up to US$ 150,000" differ in the separator, not just the words.
   const numberLocale = locale === "en" ? "en-US" : "es-PY";
@@ -128,9 +132,9 @@ export function SearchBar({
           onChange={(e) => setType(e.target.value as PropertyType | "")}
         >
           <option value="">{t.typeAny}</option>
-          {PROPERTY_TYPE_OPTIONS.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
+          {PROPERTY_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {typeLabels[o.value] ?? o.label}
             </option>
           ))}
         </select>
