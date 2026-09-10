@@ -193,6 +193,85 @@ const RENTAL: ThemeVars = {
 };
 
 /**
+ * "Paso a Paso" (docs/style/inmobiliarios.com.py.md, D4 — Claude Design
+ * canvas "Inmobiliarios Home · 3 direcciones", artboard 2a, 2026-09-10).
+ * Warm cream, cobalt accent, Lora (display) + Public Sans (body). The
+ * three-step registration is the hero; every other section ties back to a
+ * step. Distinct from Nórdico's green/black and from the rental doors'
+ * slate/clay — this door is neither marketplace nor rental-services, it is
+ * a seller-first lead form, and its own palette says so. Contrast ratios
+ * below are computed (WCAG relative luminance), not eyeballed.
+ */
+const DIRECTORY: ThemeVars = {
+  "--color-background": "#FAF7F0", // warm cream
+  "--color-ink": "#1A1D2B", // near-black navy — 15.68:1 on cream
+  "--color-primary": "#1A1D2B", // dark ground of the footer/header only
+  "--color-primary-dark": "#1A1D2B",
+  "--color-primary-soft": "#1A1D2B",
+  "--color-ink-secondary": "#4B4E5C", // 8.53:1
+  "--color-ink-muted": "#8A8D99", // decorative only, never body text
+  "--color-accent": "#1F4FD8", // cobalt — white on it 5.9:1
+  "--color-link": "#1F4FD8",
+  "--button-primary-bg": "#1F4FD8",
+  "--color-accent-hover": "#173FB0",
+  "--color-link-hover": "#173FB0",
+  "--button-primary-bg-hover": "#173FB0",
+  "--color-accent-soft": "#E8EEFB", // the one tint allowed as a block fill
+  "--color-accent-on-dark": "#8FB0FF", // cobalt lifted for navy grounds
+  "--color-on-accent": "#FFFFFF",
+  "--button-primary-fg": "#FFFFFF",
+  "--color-border": "rgba(26,29,43,0.12)",
+  "--color-border-accent": "rgba(31,79,216,0.28)",
+  // Fonts: Lora (display, serif) + Public Sans (body) — new packages,
+  // self-hosted the same way Manrope/Newsreader are (app/layout.tsx).
+  "--font-display": "'Lora Variable', Georgia, serif",
+  "--font-sans": "'Public Sans Variable', system-ui, sans-serif",
+  "--radius-control": "8px",
+  "--radius-photo": "16px",
+  "--button-case": "none", // sentence case
+  "--label-tracking": ".1em",
+  "--shadow-float": "0 12px 40px rgba(26,29,43,0.10)", // the form card
+  "--overlay-hero":
+    "linear-gradient(95deg, rgba(26,29,43,0.74) 0%, rgba(26,29,43,0.52) 34%, rgba(26,29,43,0.2) 62%, rgba(26,29,43,0.28) 100%)",
+  "--overlay-card":
+    "linear-gradient(to top, rgba(26,29,43,0.86) 0%, rgba(26,29,43,0.78) 24%, rgba(26,29,43,0.5) 46%, rgba(26,29,43,0.16) 70%, rgba(26,29,43,0) 100%)",
+  "--overlay-zone":
+    "linear-gradient(to top, rgba(26,29,43,0.76) 0%, rgba(26,29,43,0.15) 52%, rgba(26,29,43,0) 78%)",
+  "--container": "1280px",
+  "--section-y": "clamp(72px, 8vw, 112px)",
+  "--grid-gap": "24px",
+  // Header: white ground, navy nav, cobalt-fill CTA — the RENTAL block's
+  // shape (§1 note: "copy the RENTAL block's shape").
+  "--header-bg": "rgba(255,255,255,0.96)",
+  "--header-border": "var(--color-border)",
+  "--header-brand-color": "#1A1D2B",
+  "--header-nav-color": "#1A1D2B",
+  "--header-nav-size": "15px",
+  "--header-nav-tracking": "0",
+  "--header-nav-case": "none",
+  "--header-panel-bg": "var(--color-surface)",
+  "--header-panel-border": "var(--color-border)",
+  "--header-panel-label-color": "var(--color-ink)",
+  "--header-panel-desc-color": "var(--color-ink-secondary)",
+  "--header-panel-hover-bg": "var(--color-accent-soft)",
+  "--header-cta-border": "var(--button-primary-bg)",
+  "--header-cta-bg": "var(--button-primary-bg)",
+  "--header-cta-fg": "var(--button-primary-fg)",
+  "--header-cta-hover-bg": "var(--button-primary-bg-hover)",
+  "--header-cta-hover-fg": "var(--button-primary-fg)",
+  // Footer: navy ground, so the page ends on the brand's own colour.
+  "--footer-bg": "#1A1D2B",
+  "--footer-border": "rgba(255,255,255,0.12)",
+  "--footer-fg": "rgba(255,255,255,0.74)",
+  "--footer-fg-strong": "#FFFFFF",
+  "--footer-fg-muted": "rgba(255,255,255,0.52)",
+  "--footer-fg-faint": "rgba(255,255,255,0.45)",
+  "--footer-tagline-color": "rgba(255,255,255,0.64)",
+  "--footer-hairline": "rgba(255,255,255,0.12)",
+  "--site-notice-label-color": "#173FB0",
+};
+
+/**
  * Overrides per vertical, merged onto EDITORIAL. An entry here is a
  * deliberate divergence, and the diff should show it.
  */
@@ -379,6 +458,10 @@ const OVERRIDES: Partial<Record<VerticalKey, ThemeVars>> = {
   // One business, two languages — the same tokens on both doors (§1 item 10).
   alquiler: RENTAL,
   rent: RENTAL,
+
+  // The directory door's own palette (§1 item 11 / D4) — see the DIRECTORY
+  // const above.
+  agents: DIRECTORY,
 };
 
 export function themeFor(key: VerticalKey): ThemeVars {

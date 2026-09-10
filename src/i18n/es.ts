@@ -2531,17 +2531,28 @@ export const esDirectory = {
     `${brand} pone en contacto a propietarios con inmobiliarios independientes. No intervenimos en la operación ni cobramos comisión al propietario.`,
 
   // Hero + the one form this door exists for.
-  heroKicker: "Gratis y sin compromiso",
-  heroTitle: "Encontrá el inmobiliario indicado para tu propiedad",
+  // Copy locked D4 (docs/style/inmobiliarios.com.py.md, artboard "Paso a
+  // Paso") — the three-step registration is the hero, and each hero point
+  // ties back to one of those steps.
+  heroKicker: "Para propietarios · Gratis",
+  heroTitle: "Vendé tu propiedad con un agente que ya conoce tu barrio.",
   heroSubtitle:
-    "Contanos qué querés vender o alquilar y te ponemos en contacto con hasta tres inmobiliarios que trabajan en tu zona.",
+    "Registrate en tres pasos. Recibís una tasación gratuita, propuestas de hasta tres agentes verificados y tu aviso en toda la red.",
   heroPoints: [
-    "Hablás con personas, no con un formulario perdido",
+    "Tasación gratuita de tu propiedad, con datos de tu zona",
+    "Vos elegís el agente entre las propuestas que recibís",
+    "Tu aviso publicado en inmobiliaria.com.py y realestateinparaguay.com",
     "Sin costo para vos: no cobramos comisión al propietario",
-    "Vos elegís con quién seguir",
   ],
 
-  formTitle: "Contanos de tu propiedad",
+  formTitle: "Empecemos por vos",
+  // The three-step stepper's own progress-bar labels (DirectoryLeadForm,
+  // D4). Exactly three — the component maps this array 1:1 onto the bar.
+  formSteps: ["1 · Tus datos", "2 · Tu propiedad", "3 · Confirmar"],
+  formNext: "Continuar al paso 2 →",
+  formNext2: "Continuar al paso 3 →",
+  formBack: "← Volver",
+  formEdit: "Editar",
   formNameLabel: "Tu nombre",
   formPhoneLabel: "WhatsApp",
   formPhonePlaceholder: "+595 981 234 567",
@@ -2554,35 +2565,35 @@ export const esDirectory = {
     { value: "venta", label: "Vender" },
     { value: "alquiler", label: "Alquilar" },
   ],
-  formMessageLabel: "Algo más que debamos saber",
-  formMessagePlaceholder: "Barrio, metros, estado, cuándo querés empezar…",
-  formSubmit: "Quiero recibir propuestas",
+  formMessageLabel: "Algo más que quieras contarnos",
+  formMessagePlaceholder: "m², estado, si está alquilada…",
+  formSubmit: "Quiero mi tasación gratuita",
   formSending: "Enviando…",
   formPhoneError: "Escribí un número de WhatsApp válido.",
   formError: "No pudimos enviar tu consulta. Probá de nuevo en un momento.",
-  formNote: "Te escribimos por WhatsApp. No publicamos tus datos en ningún lado.",
+  formNote: "Gratis y sin compromiso. Solo te contactan agentes verificados.",
   formFineprintPrefix: "Al enviar aceptás los",
   formTerms: "términos",
   formFineprintAnd: "y la",
   formPrivacy: "política de privacidad",
   formSuccessTitle: "Recibimos tu consulta",
   formSuccessText:
-    "Te escribimos por WhatsApp con los inmobiliarios que trabajan tu zona.",
+    "Te escribimos por WhatsApp con los agentes que trabajan tu zona.",
 
-  // The three-step explainer.
-  howTitle: "Cómo funciona",
+  // "Qué pasa después de registrarte" — the three-step explainer.
+  howTitle: "Qué pasa después de registrarte",
   howSteps: [
     {
-      title: "Contanos",
-      text: "Un formulario corto: qué tenés, dónde y qué querés hacer con la propiedad.",
+      title: "Tasamos tu propiedad",
+      text: "Un valor estimado con datos de tu barrio, sin costo.",
     },
     {
-      title: "Compará",
-      text: "Te presentamos inmobiliarios que trabajan esa zona, con su cartera publicada a la vista.",
+      title: "Recibís propuestas",
+      text: "Hasta tres agentes verificados de tu zona te presentan su plan. Vos elegís con quién trabajar.",
     },
     {
-      title: "Elegí",
-      text: "Hablás con quien quieras y seguís sólo con el que te convenza. Sin exclusividad con nosotros.",
+      title: "Tu aviso en toda la red",
+      text: "El agente lo publica en inmobiliaria.com.py y en realestateinparaguay.com.",
     },
   ],
 
@@ -2609,9 +2620,9 @@ export const esDirectory = {
 
   // Directory teaser. Never padded: with fewer than the minimum verified
   // agents the empty band renders instead (§1 item 7).
-  teaserTitle: "Inmobiliarios verificados",
+  teaserTitle: "Red de agentes verificados",
   teaserSubtitle: "Los que ya trabajan con nosotros y tienen cartera activa.",
-  teaserAllLink: "Ver todo el directorio",
+  teaserAllLink: "Ver el directorio",
   teaserEmptyTitle: "Sé de los primeros",
   teaserEmptyText:
     "Estamos armando el directorio inmobiliario por inmobiliario. Si trabajás en el rubro, éste es el momento de entrar.",
