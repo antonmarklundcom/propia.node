@@ -1897,6 +1897,16 @@ export const enDirectory = {
     "Tell us about your property and we will introduce up to three agents who work your area.",
   listCtaButton: "Get proposals",
 
+  // The two profile page types on this door (/agente/<slug>, /inmobiliaria/<slug>).
+  profileKindAgent: "Independent agent",
+  profileKindAgency: "Real estate agency",
+  profileCoverage: (cities: string[]) =>
+    `Works in ${cities.slice(0, -1).join(", ")}${cities.length > 1 ? " and " : ""}${cities[cities.length - 1] ?? ""}`,
+  profileFormTitle: (name: string) => `Contact ${name}`,
+  profilePortfolioTitle: "Published portfolio",
+  profileEmpty: "No properties published yet.",
+  profileTeamTitle: "Team",
+
   faqTitle: "Frequent questions",
   faq: [
     {

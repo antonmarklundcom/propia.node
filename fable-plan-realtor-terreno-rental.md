@@ -367,6 +367,12 @@ full copy under the `Host` header, PR merged.
   state, same payload, same one `fetch`), the hero/how/pro copy rewritten
   around the three steps in `es.ts` + `en.ts`, `docs/style/inmobiliarios.com.py.md`.
 
+- **D1b** — `docs/log/d1b.md` — the two profile page bodies D1 deferred:
+  `/agente/[slug]` and `/inmobiliaria/[slug]` now render a directory body
+  (header, derived coverage line, lead form before the portfolio rail, no raw
+  WhatsApp or mailto) behind `directoryPagesEnabled`, plus the `agencySlug`
+  lane in `/api/leads` mirroring `agentSlug`.
+
 ### §10 Backlog
 
 - D3: `agents.bio/license_no/years_active/zones`, `lead_matches`, admin

@@ -3,12 +3,18 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
-import { dict } from "@/i18n/server";
+import { currentLocale, dict } from "@/i18n/server";
 import {
   getAgencyBySlug,
   getAgencyListings,
   countAgencyListings,
+  listCities,
+  locationChain,
 } from "@/lib/queries";
+import { listAgentsForDirectory } from "@/lib/directory-queries";
+import { DirectoryLeadForm } from "@/components/DirectoryLeadForm";
+import { directoryPagesEnabled } from "@/design/sections";
+import { agentUrl } from "@/lib/urls";
 import { agencyUrl } from "@/lib/urls";
 import {
   directoryCanonicalOrigin,
@@ -84,11 +90,33 @@ export default async function AgencyProfilePage({ params }: Params) {
   if (ix.state === "gone") notFound();
 
   const vertical = await currentVertical();
-  const listings = await getAgencyListings({ agencyId: agency.id, limit: 24, vertical });
+  const isDirectory = directoryPagesEnabled(vertical.key);
+  const locale = await currentLocale();
+  const [listings, zoneCities, directoryAgents] = await Promise.all([
+    getAgencyListings({ agencyId: agency.id, limit: 24, vertical }),
+    // Only the directory rendering has a form with a city select, and only it
+    // shows a team list — every other door skips both queries entirely.
+    isDirectory
+      ? listCities()
+      : Promise.resolve([] as { slug: string; name: string }[]),
+    isDirectory
+      ? listAgentsForDirectory()
+      : Promise.resolve([] as Awaited<ReturnType<typeof listAgentsForDirectory>>),
+  ]);
+  // The team list reuses the /agentes query rather than adding one of its own
+  // (D1b decision 3): same cached, `directory`-tagged read, filtered to this
+  // office. It therefore lists only agents with published inventory, which is
+  // the same honesty rule the directory index already applies.
+  const team = directoryAgents.filter((a) => a.agencySlug === agency.slug);
+  // Where this office actually has inventory, in portfolio order, at most four.
+  // Derived from the listings already loaded above — `agencies` has no zones
+  // column and D1b adds no schema.
+  const coverage = isDirectory ? await coverageCities(listings) : [];
   const origin = await siteOrigin();
   // The ItemList's entries are listing detail URLs, which may be canonical on
   // a different host than the one serving this profile (audit F9).
   const listingOrigin = await listingCanonicalOrigin();
+  const logo = safeImageUrl(agency.logoUrl) ?? undefined;
   const initials = agency.name
     .split(/\s+/)
     .slice(0, 2)
@@ -128,66 +156,182 @@ export default async function AgencyProfilePage({ params }: Params) {
         </span>
       </nav>
 
-      <header className="agency-profile__header">
-        {safeImageUrl(agency.logoUrl) ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="agency-profile__logo" src={safeImageUrl(agency.logoUrl) ?? undefined} alt={agency.name} referrerPolicy="no-referrer" />
-        ) : (
-          <div className="agency-profile__avatar" aria-hidden>
-            {initials || "I"}
-          </div>
-        )}
-        <div>
-          <h1 className="agency-profile__name">
-            {agency.name}
-            {agency.isVerified && (
-              <span className="agency-profile__verified" title={d.listing.sellerVerified}>
-                ✓
-              </span>
+      {isDirectory ? (
+        <>
+          {/**
+           * The directory door's agency body (D1b), the mirror of
+           * /agente/[slug]'s: who this office is, where it works, a form that
+           * reaches it through the operator, then its portfolio. No raw
+           * WhatsApp and no mailto — a directory lead the operator never sees
+           * is one this door cannot follow up (D1 "Leads").
+           */}
+          <header className="agency-profile__header">
+            {logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="agency-profile__logo" src={logo} alt={agency.name} referrerPolicy="no-referrer" />
+            ) : (
+              <div className="agency-profile__avatar" aria-hidden>
+                {initials || "I"}
+              </div>
             )}
-          </h1>
-          <p className="agency-profile__meta">
-            Inmobiliaria ·{" "}
-            {listingCount > 0
-              ? `${listingCount} ${listingCount === 1 ? "propiedad publicada" : "propiedades publicadas"}`
-              : d.profile.emptyState}
-          </p>
-          {(agency.whatsapp || agency.email) && (
-            <div className="agency-profile__contact">
-              {waLink(agency.whatsapp) && (
-                <a
-                  className="contact-form__altlink"
-                  href={waLink(agency.whatsapp)!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  💬 WhatsApp
-                </a>
-              )}
-              {agency.email && (
-                <a className="contact-form__altlink" href={`mailto:${agency.email}`}>
-                  ✉️ {agency.email}
-                </a>
+            <div>
+              <h1 className="agency-profile__name">
+                {agency.name}
+                {agency.isVerified && (
+                  <span className="agency-profile__verified" title={d.directory.listVerified}>
+                    ✓
+                  </span>
+                )}
+              </h1>
+              <p className="agency-profile__meta">
+                {d.directory.profileKindAgency} ·{" "}
+                {listingCount > 0
+                  ? d.directory.listListingCount(listingCount)
+                  : d.directory.profileEmpty}
+              </p>
+              {coverage.length > 0 && (
+                <p className="agency-profile__meta">
+                  {d.directory.profileCoverage(coverage)}
+                </p>
               )}
             </div>
-          )}
-        </div>
-      </header>
+          </header>
 
-      {listings.length > 0 ? (
-        <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-          <h2 className="similar-listings__title">Propiedades publicadas</h2>
-          <div className="similar-listings__grid">
-            {listings.map((card) => (
-              <ListingCard key={card.id} card={card} />
-            ))}
-          </div>
-        </section>
+          {/* The form comes before the portfolio: on this door it is the
+              product, not an afterthought under the listings. */}
+          <section className="contact-panel" id="contacto">
+            <h2 className="contact-panel__title">
+              {d.directory.profileFormTitle(agency.name)}
+            </h2>
+            <p className="contact-panel__subtitle">{d.directory.heroSubtitle}</p>
+            <DirectoryLeadForm
+              cities={zoneCities}
+              idPrefix="dir-profile"
+              locale={locale}
+              agencySlug={agency.slug}
+              source="directory:profile"
+            />
+          </section>
+
+          {team.length > 0 && (
+            <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
+              <h2 className="similar-listings__title">
+                {d.directory.profileTeamTitle}
+              </h2>
+              <ul className="agency-profile__team">
+                {team.map((member) => (
+                  <li key={member.slug}>
+                    <Link href={agentUrl(member.slug)}>{member.name}</Link>{" "}
+                    <span className="agency-profile__meta">
+                      {d.directory.listListingCount(member.listingCount)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {listings.length > 0 ? (
+            <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
+              <h2 className="similar-listings__title">
+                {d.directory.profilePortfolioTitle}
+              </h2>
+              <div className="similar-listings__grid">
+                {listings.map((card) => (
+                  <ListingCard key={card.id} card={card} />
+                ))}
+              </div>
+            </section>
+          ) : (
+            <p className="agency-profile__empty">{d.directory.profileEmpty}</p>
+          )}
+        </>
       ) : (
-        <p className="agency-profile__empty">
-          Esta inmobiliaria todavía no tiene propiedades publicadas.
-        </p>
+        <>
+        <header className="agency-profile__header">
+          {safeImageUrl(agency.logoUrl) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="agency-profile__logo" src={safeImageUrl(agency.logoUrl) ?? undefined} alt={agency.name} referrerPolicy="no-referrer" />
+          ) : (
+            <div className="agency-profile__avatar" aria-hidden>
+              {initials || "I"}
+            </div>
+          )}
+          <div>
+            <h1 className="agency-profile__name">
+              {agency.name}
+              {agency.isVerified && (
+                <span className="agency-profile__verified" title={d.listing.sellerVerified}>
+                  ✓
+                </span>
+              )}
+            </h1>
+            <p className="agency-profile__meta">
+              Inmobiliaria ·{" "}
+              {listingCount > 0
+                ? `${listingCount} ${listingCount === 1 ? "propiedad publicada" : "propiedades publicadas"}`
+                : d.profile.emptyState}
+            </p>
+            {(agency.whatsapp || agency.email) && (
+              <div className="agency-profile__contact">
+                {waLink(agency.whatsapp) && (
+                  <a
+                    className="contact-form__altlink"
+                    href={waLink(agency.whatsapp)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    💬 WhatsApp
+                  </a>
+                )}
+                {agency.email && (
+                  <a className="contact-form__altlink" href={`mailto:${agency.email}`}>
+                    ✉️ {agency.email}
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </header>
+
+        {listings.length > 0 ? (
+          <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
+            <h2 className="similar-listings__title">Propiedades publicadas</h2>
+            <div className="similar-listings__grid">
+              {listings.map((card) => (
+                <ListingCard key={card.id} card={card} />
+              ))}
+            </div>
+          </section>
+        ) : (
+          <p className="agency-profile__empty">
+            Esta inmobiliaria todavía no tiene propiedades publicadas.
+          </p>
+        )}
+
+        </>
       )}
     </main>
   );
+}
+
+/**
+ * Distinct city names behind a set of listing cards, in card order, capped at
+ * four. `locationChain()` reads the per-request map of the whole `locations`
+ * table (tens of rows), so this adds no query of its own. Same helper shape as
+ * app/agente/[slug]/page.tsx's.
+ */
+async function coverageCities(
+  cards: { locationId: number | null }[],
+): Promise<string[]> {
+  const names: string[] = [];
+  for (const card of cards) {
+    if (card.locationId == null) continue;
+    const city = (await locationChain(card.locationId)).find(
+      (l) => l.level === "ciudad",
+    );
+    if (city && !names.includes(city.name)) names.push(city.name);
+    if (names.length === 4) break;
+  }
+  return names;
 }

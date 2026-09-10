@@ -2685,6 +2685,20 @@ export const esDirectory = {
     "Contanos de tu propiedad y te presentamos hasta tres inmobiliarios que trabajan tu zona.",
   listCtaButton: "Recibir propuestas",
 
+  // The two profile page types on this door (/agente/<slug>, /inmobiliaria/<slug>).
+  // What a property owner needs to decide, and nothing invented: no rating, no
+  // response time, no count that is not the real published one.
+  profileKindAgent: "Inmobiliario independiente",
+  profileKindAgency: "Inmobiliaria",
+  /** Derived from the cities of the listings the page already loads, capped at
+   *  four — nothing stored, because `agents` has no zones column (D1). */
+  profileCoverage: (cities: string[]) =>
+    `Trabaja en ${cities.slice(0, -1).join(", ")}${cities.length > 1 ? " y " : ""}${cities[cities.length - 1] ?? ""}`,
+  profileFormTitle: (name: string) => `Contactá a ${name}`,
+  profilePortfolioTitle: "Cartera publicada",
+  profileEmpty: "Todavía no tiene propiedades publicadas.",
+  profileTeamTitle: "Equipo",
+
   faqTitle: "Preguntas frecuentes",
   faq: [
     {

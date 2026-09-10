@@ -49,6 +49,7 @@ export function DirectoryLeadForm({
   idPrefix,
   locale = "es",
   agentSlug,
+  agencySlug,
   source = "directory:home",
 }: {
   cities: DirectoryFormCity[];
@@ -60,6 +61,10 @@ export function DirectoryLeadForm({
   locale?: Locale;
   /** Set on a profile page: who the visitor asked for, by slug. */
   agentSlug?: string;
+  /** Set on an agency profile: the office the visitor asked for. `/api/leads`
+   *  mirrors the agent lane for it and routes the lead `agency`; if both are
+   *  sent the agent wins. */
+  agencySlug?: string;
   source?: "directory:home" | "directory:profile";
 }) {
   const t = getDictionary(locale).directory;
@@ -133,6 +138,7 @@ export function DirectoryLeadForm({
           whatsapp: phone.trim(),
           message: composedMessage || undefined,
           agentSlug,
+          agencySlug,
           utm: { ...readUtm(), source },
         }),
       });
