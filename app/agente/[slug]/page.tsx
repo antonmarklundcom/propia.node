@@ -9,6 +9,7 @@ import {
   countAgentListings,
   getAgencyById,
   listCities,
+  locationChain,
 } from "@/lib/queries";
 import { DirectoryLeadForm } from "@/components/DirectoryLeadForm";
 import { directoryPagesEnabled } from "@/design/sections";
@@ -102,10 +103,16 @@ export default async function AgentProfilePage({ params }: Params) {
       ? listCities()
       : Promise.resolve([] as { slug: string; name: string }[]),
   ]);
+  const isDirectory = directoryPagesEnabled(vertical.key);
+  // Where this professional actually has inventory, in portfolio order, at most
+  // four. Derived from the listings already loaded above: `agents` has no zones
+  // column and D1b adds no schema.
+  const coverage = isDirectory ? await coverageCities(listings) : [];
   const origin = await siteOrigin();
   // ItemList entries are listing detail URLs — canonical host may differ (F9).
   const listingOrigin = await listingCanonicalOrigin();
   const canonical = `${origin}${agentUrl(agent.slug)}`;
+  const photo = safeImageUrl(agent.photoUrl) ?? undefined;
   const initials = agent.name
     .split(/\s+/)
     .slice(0, 2)
@@ -145,97 +152,177 @@ export default async function AgentProfilePage({ params }: Params) {
         </span>
       </nav>
 
-      <header className="agent-profile__header">
-        {safeImageUrl(agent.photoUrl) ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="agent-profile__logo" src={safeImageUrl(agent.photoUrl) ?? undefined} alt={agent.name} referrerPolicy="no-referrer" />
-        ) : (
-          <div className="agent-profile__avatar" aria-hidden>
-            {initials || "A"}
-          </div>
-        )}
-        <div>
-          <h1 className="agent-profile__name">
-            {agent.name}
-            {agent.isVerified && (
-              <span className="agent-profile__verified" title={esAgentProfile.verified}>
-                ✓
-              </span>
+      {isDirectory ? (
+        <>
+          {/**
+           * The directory door's profile body (D1b). What a property owner
+           * needs to decide and nothing else: who this is, where they work,
+           * and a form that reaches them through the operator. No raw
+           * WhatsApp or mailto link — a directory lead the operator never
+           * sees is a lead this door cannot follow up (D1 "Leads").
+           */}
+          <header className="agent-profile__header">
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="agent-profile__logo" src={photo} alt={agent.name} referrerPolicy="no-referrer" />
+            ) : (
+              <div className="agent-profile__avatar" aria-hidden>
+                {initials || "A"}
+              </div>
             )}
-          </h1>
-          <p className="agent-profile__meta">
-            {esAgentProfile.kind} ·{" "}
-            {listingCount > 0
-              ? esAgentProfile.listingCount(listingCount)
-              : esAgentProfile.noListings}
-          </p>
-          {agency && (
-            <p className="agent-profile__agency">
-              {esAgentProfile.agencyPrefix}{" "}
-              <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
-            </p>
+            <div>
+              <h1 className="agent-profile__name">
+                {agent.name}
+                {agent.isVerified && (
+                  <span className="agent-profile__verified" title={d.directory.listVerified}>
+                    ✓
+                  </span>
+                )}
+              </h1>
+              <p className="agent-profile__meta">
+                {d.directory.profileKindAgent} ·{" "}
+                {listingCount > 0
+                  ? d.directory.listListingCount(listingCount)
+                  : d.directory.profileEmpty}
+              </p>
+              {agency && (
+                <p className="agent-profile__agency">
+                  <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
+                </p>
+              )}
+              {coverage.length > 0 && (
+                <p className="agent-profile__meta">
+                  {d.directory.profileCoverage(coverage)}
+                </p>
+              )}
+            </div>
+          </header>
+
+          {/* The form comes before the portfolio: on this door it is the
+              product, not an afterthought under the listings. */}
+          <section className="contact-panel" id="contacto">
+            <h2 className="contact-panel__title">
+              {d.directory.profileFormTitle(agent.name)}
+            </h2>
+            <p className="contact-panel__subtitle">{d.directory.heroSubtitle}</p>
+            <DirectoryLeadForm
+              cities={zoneCities}
+              idPrefix="dir-profile"
+              locale={locale}
+              agentSlug={agent.slug}
+              source="directory:profile"
+            />
+          </section>
+
+          {listings.length > 0 ? (
+            <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
+              <h2 className="similar-listings__title">
+                {d.directory.profilePortfolioTitle}
+              </h2>
+              <div className="similar-listings__grid">
+                {listings.map((card) => (
+                  <ListingCard key={card.id} card={card} />
+                ))}
+              </div>
+            </section>
+          ) : (
+            <p className="agent-profile__empty">{d.directory.profileEmpty}</p>
           )}
-          {agent.whatsapp && (
-            <div className="agent-profile__contact">
-              <a className="contact-form__altlink" href="#contacto">
-                {esAgentProfile.whatsappLink}
-              </a>
+        </>
+      ) : (
+        <>
+        <header className="agent-profile__header">
+          {safeImageUrl(agent.photoUrl) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="agent-profile__logo" src={safeImageUrl(agent.photoUrl) ?? undefined} alt={agent.name} referrerPolicy="no-referrer" />
+          ) : (
+            <div className="agent-profile__avatar" aria-hidden>
+              {initials || "A"}
             </div>
           )}
-        </div>
-      </header>
-
-      {listings.length > 0 ? (
-        <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-          <h2 className="similar-listings__title">{esAgentProfile.listingsTitle}</h2>
-          <div className="similar-listings__grid">
-            {listings.map((card) => (
-              <ListingCard key={card.id} card={card} />
-            ))}
+          <div>
+            <h1 className="agent-profile__name">
+              {agent.name}
+              {agent.isVerified && (
+                <span className="agent-profile__verified" title={esAgentProfile.verified}>
+                  ✓
+                </span>
+              )}
+            </h1>
+            <p className="agent-profile__meta">
+              {esAgentProfile.kind} ·{" "}
+              {listingCount > 0
+                ? esAgentProfile.listingCount(listingCount)
+                : esAgentProfile.noListings}
+            </p>
+            {agency && (
+              <p className="agent-profile__agency">
+                {esAgentProfile.agencyPrefix}{" "}
+                <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
+              </p>
+            )}
+            {agent.whatsapp && (
+              <div className="agent-profile__contact">
+                <a className="contact-form__altlink" href="#contacto">
+                  {esAgentProfile.whatsappLink}
+                </a>
+              </div>
+            )}
           </div>
-        </section>
-      ) : (
-        <p className="agent-profile__empty">{esAgentProfile.empty}</p>
-      )}
+        </header>
 
-      {/**
-       * The directory door's contact block (Stage 1 D item 3): a
-       * profile-originated `seller` lead that names THIS professional, rather
-       * than the marketplace's buyer enquiry about a listing.
-       *
-       * It renders whether or not the agent has a WhatsApp number on file —
-       * the lead reaches the operator either way, and a profile with no way to
-       * make contact is the one thing this door must never show. The
-       * marketplace rendering below still gates on `agent.whatsapp`, because
-       * there the form hands off to the seller's own number.
-       */}
-      {directoryPagesEnabled(vertical.key) ? (
-        <section className="contact-panel" id="contacto">
-          <h2 className="contact-panel__title">{d.directory.formTitle}</h2>
-          <p className="contact-panel__subtitle">{d.directory.heroSubtitle}</p>
-          <DirectoryLeadForm
-            cities={zoneCities}
-            idPrefix="dir-profile"
-            locale={locale}
-            agentSlug={agent.slug}
-            source="directory:profile"
-          />
-        </section>
-      ) : (
-        agent.whatsapp && (
-        <section className="contact-panel" id="contacto">
-          <h2 className="contact-panel__title">{esAgentProfile.contactTitle}</h2>
-          <p className="contact-panel__subtitle">{esAgentProfile.contactSubtitle}</p>
-          <ContactForm
-            contactWhatsapp={agent.whatsapp}
-            leadType="buyer"
-            prefillMessage={agentInquiryPrefillFor(brand, agent.name, canonical)}
-            variant="panel"
-            locale={locale}
-          />
-        </section>
-        )
+        {listings.length > 0 ? (
+          <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
+            <h2 className="similar-listings__title">{esAgentProfile.listingsTitle}</h2>
+            <div className="similar-listings__grid">
+              {listings.map((card) => (
+                <ListingCard key={card.id} card={card} />
+              ))}
+            </div>
+          </section>
+        ) : (
+          <p className="agent-profile__empty">{esAgentProfile.empty}</p>
+        )}
+
+        {/* The marketplace's contact block: a buyer enquiry handed off to the
+            agent's own number, so it still gates on having one. The directory
+            door's form is the branch above. */}
+        {agent.whatsapp && (
+          <section className="contact-panel" id="contacto">
+            <h2 className="contact-panel__title">{esAgentProfile.contactTitle}</h2>
+            <p className="contact-panel__subtitle">{esAgentProfile.contactSubtitle}</p>
+            <ContactForm
+              contactWhatsapp={agent.whatsapp}
+              leadType="buyer"
+              prefillMessage={agentInquiryPrefillFor(brand, agent.name, canonical)}
+              variant="panel"
+              locale={locale}
+            />
+          </section>
+        )}
+
+        </>
       )}
     </main>
   );
+}
+
+/**
+ * Distinct city names behind a set of listing cards, in card order, capped at
+ * four. `locationChain()` reads the per-request map of the whole `locations`
+ * table (tens of rows), so this adds no query of its own.
+ */
+async function coverageCities(
+  cards: { locationId: number | null }[],
+): Promise<string[]> {
+  const names: string[] = [];
+  for (const card of cards) {
+    if (card.locationId == null) continue;
+    const city = (await locationChain(card.locationId)).find(
+      (l) => l.level === "ciudad",
+    );
+    if (city && !names.includes(city.name)) names.push(city.name);
+    if (names.length === 4) break;
+  }
+  return names;
 }

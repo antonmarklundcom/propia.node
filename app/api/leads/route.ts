@@ -8,7 +8,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { agents, leads, listings } from "@/db/schema";
+import { agencies, agents, leads, listings } from "@/db/schema";
 import { alertOperator, getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
@@ -38,6 +38,17 @@ const bodySchema = z.object({
    * parameterised lookup. An unknown slug is NOT a 400 — see `routedTo` below.
    */
   agentSlug: z
+    .string()
+    .max(190)
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
+  /**
+   * The same lane for an agency profile (`/inmobiliaria/{slug}` on the
+   * directory door). Exact mirror of `agentSlug` above, including the "an
+   * unknown slug is never a 400" rule. If both arrive, the agent wins: a
+   * person the visitor picked outranks the office they belong to.
+   */
+  agencySlug: z
     .string()
     .max(190)
     .regex(/^[a-z0-9-]+$/)
@@ -155,6 +166,18 @@ export async function POST(req: NextRequest) {
     explicitAgent = row ?? null;
   }
 
+  // Only when no agent was named or resolved: the agent is the more specific
+  // answer, and a lead has one addressee.
+  let explicitAgency: { id: number; name: string; slug: string } | null = null;
+  if (!explicitAgent && parsed.agencySlug) {
+    const [row] = await db
+      .select({ id: agencies.id, name: agencies.name, slug: agencies.slug })
+      .from(agencies)
+      .where(eq(agencies.slug, parsed.agencySlug))
+      .limit(1);
+    explicitAgency = row ?? null;
+  }
+
   /**
    * `leads` has no `agent_id` column and D1 adds no schema, so the resolved
    * agent rides in `utm` — the same json field `/vender` already marks itself
@@ -173,11 +196,19 @@ export async function POST(req: NextRequest) {
         agent_slug: explicitAgent.slug,
         agent_name: explicitAgent.name,
       }
-    : parsed.utm;
+    : explicitAgency
+      ? {
+          ...(parsed.utm ?? {}),
+          agency_slug: explicitAgency.slug,
+          agency_name: explicitAgency.name,
+        }
+      : parsed.utm;
 
   const routedTo: LeadPayload["routedTo"] = explicitAgent
     ? "agent"
-    : listing?.agentId
+    : explicitAgency
+      ? "agency"
+      : listing?.agentId
       ? "agent"
       : listing?.agencyId
         ? "agency"

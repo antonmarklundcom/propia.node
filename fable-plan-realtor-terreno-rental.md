@@ -360,6 +360,12 @@ full copy under the `Host` header, PR merged.
   professional-facing `proFaq` and its own JSON-LD. README's domain section
   now names the directory door. Last phase in the plan.
 
+- **D1b** — `docs/log/d1b.md` — the two profile page bodies D1 deferred:
+  `/agente/[slug]` and `/inmobiliaria/[slug]` now render a directory body
+  (header, derived coverage line, lead form before the portfolio rail, no raw
+  WhatsApp or mailto) behind `directoryPagesEnabled`, plus the `agencySlug`
+  lane in `/api/leads` mirroring `agentSlug`.
+
 ### §10 Backlog
 
 - D3: `agents.bio/license_no/years_active/zones`, `lead_matches`, admin
