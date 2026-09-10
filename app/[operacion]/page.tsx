@@ -93,15 +93,10 @@ export default async function OperationHubPage({ params }: Params) {
         ]}
       />
 
-      <section className="hub-hero">
+      <section className="hub-hero" data-op={op}>
         <div className="hub-hero__inner">
           <h1 className="hub-hero__title">{copy.h1}</h1>
           <p className="hub-hero__lead">{copy.lead}</p>
-          {hub.total > 0 && (
-            <div className="hub-hero__count">
-              {t.count(hub.total.toLocaleString(numberLocale))}
-            </div>
-          )}
           {/* The bar opens on THIS hub's operation, not the site default: a
               visitor on /alquiler who saw "Comprar" preselected was one wrong
               click from the wrong hub. The bar has no short-term rung, so the
@@ -114,31 +109,22 @@ export default async function OperationHubPage({ params }: Params) {
         </div>
       </section>
 
-      {hub.types.length > 0 && (
+      {recent.length > 0 && (
         <Section
-          title={t.byTypeTitle}
-          subtitle={t.byTypeSubtitle(copy.label.toLowerCase())}
+          title={t.latestTitle(hub.total.toLocaleString(numberLocale))}
         >
-          <div className="hub-grid">
-            {hub.types.map((row) => (
-              <Link
-                key={row.type}
-                className="hub-tile"
-                href={categoryUrl({
-                  operation: op,
-                  citySlug: topCity,
-                  type: row.type as PropertyType,
-                })}
-              >
-                <span className="hub-tile__label">
-                  {d.category.typeLabel[row.type] ?? row.type}
-                </span>
-                <span className="hub-tile__count">
-                  {row.count.toLocaleString(numberLocale)}
-                </span>
-              </Link>
+          <div className="mk-project-grid">
+            {recent.map((card) => (
+              <ListingCard key={card.id} card={card} />
             ))}
           </div>
+          <p className="mk-note">
+            {t.latestNoteLead}{" "}
+            <Link href={categoryUrl({ operation: op, citySlug: topCity })}>
+              {copy.cityLabel} {hub.cities[0]?.name ?? "Asunción"}
+            </Link>{" "}
+            {t.latestNoteTail}
+          </p>
         </Section>
       )}
 
@@ -167,20 +153,29 @@ export default async function OperationHubPage({ params }: Params) {
         </Section>
       )}
 
-      {recent.length > 0 && (
-        <Section title={t.latestTitle}>
-          <div className="mk-project-grid">
-            {recent.map((card) => (
-              <ListingCard key={card.id} card={card} />
+      {hub.types.length >= 2 && (
+        <Section
+          title={t.byTypeTitle}
+          subtitle={t.byTypeSubtitle(copy.label.toLowerCase())}
+        >
+          <div className="mk-chips hub-chips">
+            {hub.types.map((row) => (
+              <Link
+                key={row.type}
+                className="mk-chip hub-chip"
+                href={categoryUrl({
+                  operation: op,
+                  citySlug: topCity,
+                  type: row.type as PropertyType,
+                })}
+              >
+                {d.category.typeLabel[row.type] ?? row.type}
+                <span className="hub-chip__count">
+                  {row.count.toLocaleString(numberLocale)}
+                </span>
+              </Link>
             ))}
           </div>
-          <p className="mk-note">
-            {t.latestNoteLead}{" "}
-            <Link href={categoryUrl({ operation: op, citySlug: topCity })}>
-              {copy.cityLabel} {hub.cities[0]?.name ?? "Asunción"}
-            </Link>{" "}
-            {t.latestNoteTail}
-          </p>
         </Section>
       )}
 
