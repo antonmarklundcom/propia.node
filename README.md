@@ -81,11 +81,13 @@ Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
    and has not been applied to prod.
 3. **Domains:** the live marketplace doors are `realestateinparaguay.com`
    (primary, canonical) and `inmobiliaria.com.py`, both pointed at the same
-   app. A separate rental-services business, `alquiler.com.py` (Spanish) /
-   `rentparaguay.com` (English) — same app, own `family: "rental"`, own
-   `VerticalKey`s — has its code merged but is not yet live: DNS for both
-   domains is still pending, so `enabled: true` only means the doors can be
-   previewed with a `Host` header today. See CLAUDE.md's domain table for
+   app. Two other doors share the app but are separate businesses, both
+   merged with their code done and DNS still pending — `enabled: true` only
+   means they can be previewed with a `Host` header today: a rental-services
+   business, `alquiler.com.py` (Spanish) / `rentparaguay.com` (English), own
+   `family: "rental"`; and a realtor lead-gen directory, `inmobiliarios.com.py`
+   (`family: "directory"`) — not a listings marketplace, every marketplace
+   path on it 308s to `inmobiliaria.com.py`. See CLAUDE.md's domain table for
    which domains are owned before pointing a new one here. `middleware.ts`
    routes by Host header; an unrecognized host resolves to the canonical
    primary.

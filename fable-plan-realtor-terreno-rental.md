@@ -353,6 +353,13 @@ full copy under the `Host` header, PR merged.
   derived zones, the `directory` i18n skeleton. `/inmobiliaria/[slug]`'s body
   and the rest of `/agente/[slug]`'s deferred to D1b.
 
+- **D2** — `docs/log/d2.md` — directory copy review: fixed a stale "skeleton"
+  comment in `es.ts` (D1 had already shipped finished copy, not a skeleton),
+  extended the home FAQ from two to five questions, and filled the one real
+  gap D1 left — `/para-inmobiliarios` had no FAQ of its own — with a
+  professional-facing `proFaq` and its own JSON-LD. README's domain section
+  now names the directory door. Last phase in the plan.
+
 ### §10 Backlog
 
 - D3: `agents.bio/license_no/years_active/zones`, `lead_matches`, admin

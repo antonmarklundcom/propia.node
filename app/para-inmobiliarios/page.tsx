@@ -5,7 +5,7 @@ import { currentVertical } from "@/lib/vertical-context";
 import { directoryPagesEnabled } from "@/design/sections";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
-import { breadcrumbJsonLd } from "@/lib/jsonld";
+import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { LeadForm } from "@/components/LeadForm";
 import { PageHero, Section } from "@/components/MarketingUI";
@@ -42,10 +42,11 @@ export async function generateMetadata(): Promise<Metadata> {
  * sitemap, chrome and hreflang all say it does not exist there is a
  * duplicate-content surface nobody links to.
  *
- * D1 ships the structure and the working form. D2
- * (`sonnet-d2-directory-copy.md`) writes the real value-prop copy and the FAQ.
- * No pricing and no plan table: paid placement would reuse `agencies.plan`,
- * and there are no payments in this plan (§3).
+ * D1 shipped the structure, the value-prop copy and the working form; D2
+ * (`sonnet-d2-directory-copy.md`) added this page's own FAQ (`t.proFaq`,
+ * distinct questions from the home page's owner-facing `t.faq`) with its own
+ * JSON-LD. No pricing and no plan table: paid placement would reuse
+ * `agencies.plan`, and there are no payments in this plan (§3).
  */
 export default async function ParaInmobiliariosPage() {
   const [vertical, d, brand, origin] = await Promise.all([
@@ -66,6 +67,7 @@ export default async function ParaInmobiliariosPage() {
             { name: t.chromeNav[0].label, url: "/" },
             { name: t.proTitle, url: "/para-inmobiliarios" },
           ]),
+          ...(t.proFaq.length > 0 ? [faqJsonLd([...t.proFaq])] : []),
         ]}
       />
 
@@ -92,6 +94,19 @@ export default async function ParaInmobiliariosPage() {
         />
         <p className="mk-note">{t.footerLegalLine(brand)}</p>
       </Section>
+
+      {t.proFaq.length > 0 && (
+        <Section title={t.proFaqTitle} width="narrow">
+          <div className="mk-faq">
+            {t.proFaq.map((f) => (
+              <details key={f.q} className="mk-faq__item">
+                <summary className="mk-faq__q">{f.q}</summary>
+                <p className="mk-faq__a">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </Section>
+      )}
     </main>
   );
 }
