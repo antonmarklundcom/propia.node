@@ -309,6 +309,70 @@ export const MARKETPLACE_SITEMAP_PATHS: string[] = [
  * Spanish-slugged in both: those are marketplace routes the rental doors also
  * render, and R2 deliberately changed only the rental family's own pages.
  */
+/**
+ * The marketplace's own page types, by first path segment.
+ *
+ * A door where `marketplacePagesEnabled()` is false (the directory door)
+ * redirects every one of these to the Spanish marketplace primary — the
+ * redirect lives in `middleware.ts`, which already resolves the vertical from
+ * the Host header, so one predicate decides both what a visitor hits and what
+ * the sitemap submits.
+ *
+ * Not here on purpose: `admin`, `agencia`, `login`, `registro`, `contacto`,
+ * `terminos`, `privacidad`. The first four are staff and account surfaces every
+ * host serves (CLAUDE.md, domains) — they are simply absent from this door's
+ * chrome — and the last three are pages this door renders as its own.
+ */
+export const MARKETPLACE_PATH_ROOTS: readonly string[] = [
+  "venta",
+  "alquiler",
+  "alquiler-temporal",
+  "propiedad",
+  "publicar",
+  "precios",
+  "proyecto",
+  "proyectos",
+  "desarrolladora",
+  "desarrolladoras",
+  "tasacion",
+  "vender",
+  "planes",
+  "datos",
+  "guias",
+  "financiamiento",
+  "como-funciona",
+  "preguntas-frecuentes",
+  "para-inmobiliarias",
+  "mis-avisos",
+  "servicios",
+];
+
+/**
+ * The directory door's static pages (inmobiliarios.com.py —
+ * fable-plan-realtor-terreno-rental.md §5.2 (f)). A separate list for the same
+ * reason the rental family has one: that door is a realtor lead-gen directory,
+ * so none of the marketplace's category, listing, price or project surfaces are
+ * its to submit — it 308s every one of them to inmobiliaria.com.py
+ * (`middleware.ts`).
+ *
+ * `/agentes` and `/inmobiliarias` are here, but `buildSitemapEntries()` still
+ * drops them (and every profile URL) unless the door actually owns the
+ * directory page type — `ownsDirectory` in `src/config/verticals.ts`, which
+ * stays on inmobiliaria.com.py until this door's DNS resolves. So today this
+ * door submits its home, `/para-inmobiliarios` and the legal pages, and gains
+ * the rest in the go-live PR. `npm run verify:seo` asserts this list contains
+ * no marketplace path.
+ */
+export const DIRECTORY_SITEMAP_PATHS: string[] = [
+  "/",
+  "/inmobiliarias",
+  "/agentes",
+  "/para-inmobiliarios",
+  "/contacto",
+  "/terminos",
+  "/privacidad",
+];
+
 export function rentalSitemapPaths(locale: "es" | "en"): string[] {
   return [
     "/",

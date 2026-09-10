@@ -1712,3 +1712,171 @@ export const enRentalServices = {
     ctaButton: "Talk to us",
   },
 } as const;
+
+/**
+ * The English peer of `esDirectory`. The directory door serves Spanish only —
+ * inmobiliarios.com.py is `locale: "es"` and there is no English directory
+ * door — so nothing renders these strings today. They exist because
+ * `Dictionary` is derived from the Spanish shape and a missing key is a type
+ * error (src/i18n/index.ts), and because the day an English door appears the
+ * copy should already be a peer rather than a rushed translation.
+ *
+ * Translated as intent, like the rest of en.ts: "inmobiliario" is a real
+ * estate agent, "vos" has no English form, and no figure appears here that the
+ * Spanish does not state.
+ */
+export const enDirectory = {
+  metaTitle: "Find the right real estate agent in Paraguay",
+  metaDescription: (brand: string) =>
+    `${brand} connects you with real estate agents who already work in your area. Tell us what you want to sell or rent out and get proposals, at no cost.`,
+
+  chromeNav: [
+    { label: "Home", href: "/" },
+    { label: "Agents", href: "/agentes" },
+    { label: "Agencies", href: "/inmobiliarias" },
+    { label: "For agents", href: "/para-inmobiliarios" },
+    { label: "Contact", href: "/contacto" },
+  ],
+  chromeCtaLabel: "Find your agent",
+  chromeCtaHref: "/#form",
+  footerTagline: (brand: string) =>
+    `${brand} is Paraguay's directory of real estate agents: we put you in touch with the ones who work your area.`,
+  footerDirectoryTitle: "Directory",
+  footerDirectoryLinks: [
+    { label: "Agents", href: "/agentes" },
+    { label: "Agencies", href: "/inmobiliarias" },
+    { label: "For agents", href: "/para-inmobiliarios" },
+  ],
+  footerCompanyTitle: "Company",
+  footerCompanyLinks: [
+    { label: "Contact", href: "/contacto" },
+    { label: "Terms and conditions", href: "/terminos" },
+    { label: "Privacy policy", href: "/privacidad" },
+  ],
+  footerContactUs: "Write to us",
+  footerLegalLine: (brand: string) =>
+    `${brand} introduces owners to independent real estate agents. We take no part in the transaction and charge the owner no commission.`,
+
+  heroKicker: "Free, no strings attached",
+  heroTitle: "Find the right agent for your property",
+  heroSubtitle:
+    "Tell us what you want to sell or rent out and we will put you in touch with up to three agents who work in your area.",
+  heroPoints: [
+    "You talk to people, not to a form that goes nowhere",
+    "No cost to you: we charge the owner nothing",
+    "You decide who to keep talking to",
+  ],
+
+  formTitle: "Tell us about your property",
+  formNameLabel: "Your name",
+  formPhoneLabel: "WhatsApp",
+  formPhonePlaceholder: "+595 981 234 567",
+  formCityLabel: "City or area",
+  formCityPlaceholder: "Choose a city",
+  formTypeLabel: "Property type",
+  formTypePlaceholder: "Choose a type",
+  formOperationLabel: "What you want to do",
+  formOperationOptions: [
+    { value: "venta", label: "Sell" },
+    { value: "alquiler", label: "Rent out" },
+  ],
+  formMessageLabel: "Anything else we should know",
+  formMessagePlaceholder:
+    "Neighbourhood, size, condition, when you want to start…",
+  formSubmit: "Send me proposals",
+  formSending: "Sending…",
+  formPhoneError: "Please enter a valid WhatsApp number.",
+  formError: "We could not send your enquiry. Please try again in a moment.",
+  formNote: "We reply on WhatsApp. Your details are never published anywhere.",
+  formFineprintPrefix: "By sending this you accept the",
+  formTerms: "terms",
+  formFineprintAnd: "and the",
+  formPrivacy: "privacy policy",
+  formSuccessTitle: "We have your enquiry",
+  formSuccessText:
+    "We will message you on WhatsApp with the agents who work your area.",
+
+  howTitle: "How it works",
+  howSteps: [
+    {
+      title: "Tell us",
+      text: "A short form: what you have, where it is, and what you want to do with it.",
+    },
+    {
+      title: "Compare",
+      text: "We introduce agents who work that area, with their published portfolio in plain sight.",
+    },
+    {
+      title: "Choose",
+      text: "Talk to whoever you like and continue only with the one who convinces you. No exclusivity with us.",
+    },
+  ],
+
+  chooseTitle: "How we decide who to introduce",
+  chooseSubtitle:
+    "No paid ranking and no star ratings. These are the criteria, exactly as they stand today.",
+  choosePoints: [
+    {
+      title: "Verification",
+      text: "We confirm the person or the office is real and that the portfolio they publish is theirs.",
+    },
+    {
+      title: "Real activity",
+      text: "Only agents with properties published today appear here — never empty profiles.",
+    },
+    {
+      title: "Area",
+      text: "We start with whoever already works the city your property is in.",
+    },
+  ],
+
+  teaserTitle: "Verified agents",
+  teaserSubtitle: "The ones already with us, with an active portfolio.",
+  teaserAllLink: "See the full directory",
+  teaserEmptyTitle: "Be among the first",
+  teaserEmptyText:
+    "We are building this directory one agency at a time. If you work in the trade, now is the moment to join.",
+  teaserEmptyCta: "I want a profile",
+
+  proKicker: "For professionals",
+  proTitle: "Are you a real estate agent?",
+  proText:
+    "Get enquiries from owners in your area and show your portfolio on a profile of your own. Free while we build the directory.",
+  proBullets: [
+    "Enquiries from owners who have already decided to sell or rent out",
+    "A profile with your published portfolio and your direct contact",
+    "No cost at this stage",
+  ],
+  proCta: "See how it works",
+
+  listAgentsTitle: "Real estate agents in Paraguay",
+  listAgentsSubtitle:
+    "Each profile shows the portfolio that person has published today and the cities they work in.",
+  listAgenciesTitle: "Real estate agencies in Paraguay",
+  listAgenciesSubtitle:
+    "Offices with an active portfolio. Open a profile to see their properties and their team.",
+  listFilterTitle: "Filter by city",
+  listFilterAll: "All",
+  listVerified: "Verified",
+  listListingCount: (n: number) =>
+    n === 1 ? "1 property published" : `${n} properties published`,
+  listProfileCta: "See profile",
+  listEmpty:
+    "Nobody is listed for that filter yet. Try another city, or tell us what you need and we will look.",
+  listCtaTitle: "Not sure who to choose?",
+  listCtaText:
+    "Tell us about your property and we will introduce up to three agents who work your area.",
+  listCtaButton: "Get proposals",
+
+  faqTitle: "Frequent questions",
+  faq: [
+    {
+      q: "What does it cost me?",
+      a: "Nothing. We do not charge owners for introducing agents. Whatever commission you agree is between you and the agent you choose.",
+    },
+    {
+      q: "Am I tied to anyone?",
+      a: "No. We make introductions; the relationship and any exclusivity agreement are settled directly with the agent, not with us.",
+    },
+  ],
+} as const;

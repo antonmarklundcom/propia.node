@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import {
+  directoryCanonicalOrigin,
+  hostOwnsDirectory,
+  siteOrigin,
+} from "@/lib/origin";
+import { languageAlternates } from "@/lib/alternates";
+import { currentVertical } from "@/lib/vertical-context";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { agencyUrl } from "@/lib/urls";
-import { listAgenciesForDirectory } from "@/lib/directory-queries";
+import {
+  listAgenciesForDirectory,
+  listDirectoryZones,
+} from "@/lib/directory-queries";
+import { DirectoryList } from "@/components/DirectoryList";
+import { directoryPagesEnabled } from "@/design/sections";
+import { dict } from "@/i18n/server";
 import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 import { safeImageUrl } from "@/lib/external-image";
 
@@ -15,20 +27,73 @@ const TITLE = "Directorio de inmobiliarias";
 const DESCRIPTION = (brand: string) => `Inmobiliarias y agentes que publican su cartera en ${brand}. Mirá sus propiedades activas y contactalos directo por WhatsApp.`;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const brand = await brandName();
+  const [brand, directoryOrigin, ownsDirectory, vertical] = await Promise.all([
+    brandName(),
+    // See app/agentes/page.tsx: the directory page type has its own owner per
+    // locale, and it is not simply the host that served the request.
+    directoryCanonicalOrigin(),
+    hostOwnsDirectory(),
+    currentVertical(),
+  ]);
   return {
     title: `${TITLE} de Paraguay`,
     description: DESCRIPTION(brand),
-    alternates: { canonical: `${await siteOrigin()}/inmobiliarias` },
+    alternates: {
+      canonical: `${directoryOrigin}/inmobiliarias`,
+      languages: languageAlternates({
+        path: "/inmobiliarias",
+        scope: "directory",
+        family: vertical.family,
+      }),
+    },
+    robots: { index: ownsDirectory, follow: true },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 
-export default async function InmobiliariasPage() {
-  const [origin, agencies] = await Promise.all([
+export default async function InmobiliariasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ciudad?: string }>;
+}) {
+  const [origin, agencies, vertical, d, params] = await Promise.all([
     siteOrigin(),
     listAgenciesForDirectory(),
+    currentVertical(),
+    dict(),
+    searchParams,
   ]);
+
+  // The directory door's rendering — see app/agentes/page.tsx for why the city
+  // filter is applied in memory over the cached row set rather than in SQL.
+  if (directoryPagesEnabled(vertical.key)) {
+    const zones = await listDirectoryZones(vertical);
+    const cityName = zones.find((z) => z.slug === params.ciudad)?.name ?? null;
+    const rows = (
+      cityName ? agencies.filter((a) => a.cities.includes(cityName)) : agencies
+    ).map((a) => ({
+      id: a.id,
+      name: a.name,
+      slug: a.slug,
+      imageUrl: a.logoUrl,
+      isVerified: a.isVerified,
+      affiliation: null,
+      listingCount: a.listingCount,
+      cities: a.cities,
+      href: agencyUrl(a.slug),
+    }));
+    return (
+      <DirectoryList
+        d={d}
+        title={d.directory.listAgenciesTitle}
+        subtitle={d.directory.listAgenciesSubtitle}
+        rows={rows}
+        zones={zones}
+        activeCity={cityName ? (params.ciudad ?? null) : null}
+        basePath="/inmobiliarias"
+      />
+    );
+  }
 
   return (
     <main>

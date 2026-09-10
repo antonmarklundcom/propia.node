@@ -2474,3 +2474,189 @@ export const esRentalServices = {
     ctaButton: "Hablemos",
   },
 } as const;
+
+/**
+ * inmobiliarios.com.py — the realtor directory door
+ * (fable-plan-realtor-terreno-rental.md Stage 1 D).
+ *
+ * D1 lands the **skeleton**: every key a rendered surface reads, with one
+ * real exemplar sentence each. D2 (`sonnet-d2-directory-copy.md`) rewrites the
+ * copy and fills the FAQ. Nothing here may invent a figure — no review counts,
+ * no "X inmobiliarios registrados" — because there is no data behind either
+ * and the competitor's padded directory is exactly what this door is not
+ * (§1 item 7).
+ *
+ * Vos-form Spanish, like the rest of the Spanish dictionary. The brand is
+ * always an argument, never baked in: this namespace is read by one door
+ * today and the door IS the brand.
+ */
+export const esDirectory = {
+  metaTitle: "Encontrá tu inmobiliario en Paraguay",
+  metaDescription: (brand: string) =>
+    `${brand} te conecta con inmobiliarios que trabajan en tu zona. Contanos qué querés vender o alquilar y recibí propuestas, sin costo.`,
+
+  // Chrome — nav, CTA and footer. No login, no publicar, no newsletter.
+  chromeNav: [
+    { label: "Inicio", href: "/" },
+    { label: "Inmobiliarios", href: "/agentes" },
+    { label: "Inmobiliarias", href: "/inmobiliarias" },
+    { label: "Para inmobiliarios", href: "/para-inmobiliarios" },
+    { label: "Contacto", href: "/contacto" },
+  ],
+  chromeCtaLabel: "Encontrá tu inmobiliario",
+  chromeCtaHref: "/#form",
+  footerTagline: (brand: string) =>
+    `${brand} es el directorio de inmobiliarios de Paraguay: te ponemos en contacto con quien trabaja tu zona.`,
+  footerDirectoryTitle: "Directorio",
+  footerDirectoryLinks: [
+    { label: "Inmobiliarios", href: "/agentes" },
+    { label: "Inmobiliarias", href: "/inmobiliarias" },
+    { label: "Para inmobiliarios", href: "/para-inmobiliarios" },
+  ],
+  footerCompanyTitle: "La empresa",
+  footerCompanyLinks: [
+    { label: "Contacto", href: "/contacto" },
+    { label: "Términos y condiciones", href: "/terminos" },
+    { label: "Política de privacidad", href: "/privacidad" },
+  ],
+  footerContactUs: "Escribinos",
+  // No invented claim about how many professionals are listed: there is no
+  // number behind it, and this door's whole pitch is that its directory is
+  // real (§1 item 7).
+  footerLegalLine: (brand: string) =>
+    `${brand} pone en contacto a propietarios con inmobiliarios independientes. No intervenimos en la operación ni cobramos comisión al propietario.`,
+
+  // Hero + the one form this door exists for.
+  heroKicker: "Gratis y sin compromiso",
+  heroTitle: "Encontrá el inmobiliario indicado para tu propiedad",
+  heroSubtitle:
+    "Contanos qué querés vender o alquilar y te ponemos en contacto con hasta tres inmobiliarios que trabajan en tu zona.",
+  heroPoints: [
+    "Hablás con personas, no con un formulario perdido",
+    "Sin costo para vos: no cobramos comisión al propietario",
+    "Vos elegís con quién seguir",
+  ],
+
+  formTitle: "Contanos de tu propiedad",
+  formNameLabel: "Tu nombre",
+  formPhoneLabel: "WhatsApp",
+  formPhonePlaceholder: "+595 981 234 567",
+  formCityLabel: "Ciudad o zona",
+  formCityPlaceholder: "Elegí una ciudad",
+  formTypeLabel: "Tipo de propiedad",
+  formTypePlaceholder: "Elegí un tipo",
+  formOperationLabel: "Qué querés hacer",
+  formOperationOptions: [
+    { value: "venta", label: "Vender" },
+    { value: "alquiler", label: "Alquilar" },
+  ],
+  formMessageLabel: "Algo más que debamos saber",
+  formMessagePlaceholder: "Barrio, metros, estado, cuándo querés empezar…",
+  formSubmit: "Quiero recibir propuestas",
+  formSending: "Enviando…",
+  formPhoneError: "Escribí un número de WhatsApp válido.",
+  formError: "No pudimos enviar tu consulta. Probá de nuevo en un momento.",
+  formNote: "Te escribimos por WhatsApp. No publicamos tus datos en ningún lado.",
+  formFineprintPrefix: "Al enviar aceptás los",
+  formTerms: "términos",
+  formFineprintAnd: "y la",
+  formPrivacy: "política de privacidad",
+  formSuccessTitle: "Recibimos tu consulta",
+  formSuccessText:
+    "Te escribimos por WhatsApp con los inmobiliarios que trabajan tu zona.",
+
+  // The three-step explainer.
+  howTitle: "Cómo funciona",
+  howSteps: [
+    {
+      title: "Contanos",
+      text: "Un formulario corto: qué tenés, dónde y qué querés hacer con la propiedad.",
+    },
+    {
+      title: "Compará",
+      text: "Te presentamos inmobiliarios que trabajan esa zona, con su cartera publicada a la vista.",
+    },
+    {
+      title: "Elegí",
+      text: "Hablás con quien quieras y seguís sólo con el que te convenza. Sin exclusividad con nosotros.",
+    },
+  ],
+
+  // "Cómo elegimos" — the honesty section. Verification and real activity are
+  // the only two signals this door has today; it says so rather than implying
+  // a rating system that does not exist (CLAUDE.md backlog 4).
+  chooseTitle: "Cómo elegimos a quién te presentamos",
+  chooseSubtitle:
+    "No hay ranking pago ni estrellas. Estos son los criterios, tal cual son hoy.",
+  choosePoints: [
+    {
+      title: "Verificación",
+      text: "Confirmamos que la persona o la oficina existe y que la cartera que publica es suya.",
+    },
+    {
+      title: "Actividad real",
+      text: "Aparecen quienes tienen propiedades publicadas hoy, no perfiles vacíos.",
+    },
+    {
+      title: "Zona",
+      text: "Priorizamos a quien ya trabaja en la ciudad donde está tu propiedad.",
+    },
+  ],
+
+  // Directory teaser. Never padded: with fewer than the minimum verified
+  // agents the empty band renders instead (§1 item 7).
+  teaserTitle: "Inmobiliarios verificados",
+  teaserSubtitle: "Los que ya trabajan con nosotros y tienen cartera activa.",
+  teaserAllLink: "Ver todo el directorio",
+  teaserEmptyTitle: "Sé de los primeros",
+  teaserEmptyText:
+    "Estamos armando el directorio inmobiliario por inmobiliario. Si trabajás en el rubro, éste es el momento de entrar.",
+  teaserEmptyCta: "Quiero mi perfil",
+
+  // The "¿Sos inmobiliario?" band.
+  proKicker: "Para profesionales",
+  proTitle: "¿Sos inmobiliario?",
+  proText:
+    "Recibí consultas de propietarios de tu zona y mostrá tu cartera en un perfil propio. Gratis mientras armamos el directorio.",
+  proBullets: [
+    "Consultas de propietarios que ya decidieron vender o alquilar",
+    "Un perfil con tu cartera publicada y tu contacto directo",
+    "Sin costo en esta etapa",
+  ],
+  proCta: "Ver cómo funciona",
+
+  // The two list pages, rendered by /agentes and /inmobiliarias when the door
+  // is the directory one. The city filter's options are DERIVED from published
+  // inventory (`listDirectoryZones`), so a city only appears when somebody
+  // actually works there.
+  listAgentsTitle: "Inmobiliarios en Paraguay",
+  listAgentsSubtitle:
+    "Cada perfil muestra la cartera que esa persona tiene publicada hoy y en qué ciudades trabaja.",
+  listAgenciesTitle: "Inmobiliarias en Paraguay",
+  listAgenciesSubtitle:
+    "Oficinas con cartera activa. Entrá al perfil para ver sus propiedades y su equipo.",
+  listFilterTitle: "Filtrar por ciudad",
+  listFilterAll: "Todas",
+  listVerified: "Verificado",
+  listListingCount: (n: number) =>
+    n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`,
+  listProfileCta: "Ver perfil",
+  listEmpty:
+    "Todavía no hay nadie publicado para ese filtro. Probá con otra ciudad o contanos qué necesitás y lo buscamos.",
+  listCtaTitle: "¿No sabés a quién elegir?",
+  listCtaText:
+    "Contanos de tu propiedad y te presentamos hasta tres inmobiliarios que trabajan tu zona.",
+  listCtaButton: "Recibir propuestas",
+
+  faqTitle: "Preguntas frecuentes",
+  faq: [
+    {
+      q: "¿Cuánto me cuesta?",
+      a: "Nada. No cobramos al propietario por presentarle inmobiliarios. Lo que acuerdes de comisión es entre vos y el inmobiliario que elijas.",
+    },
+    {
+      q: "¿Me quedo obligado con alguien?",
+      a: "No. Te presentamos contactos; la relación y cualquier contrato de exclusividad los arreglás directamente con el inmobiliario, no con nosotros.",
+    },
+  ],
+} as const;

@@ -8,6 +8,8 @@ import { currentVertical } from "@/lib/vertical-context";
 import { homeSections, homeLayout } from "@/design/sections";
 import { NordicoHome } from "@/components/home/NordicoHome";
 import { RentalHome } from "@/components/home/RentalHome";
+import { DirectoryHome } from "@/components/home/DirectoryHome";
+import { listAgentsForDirectory } from "@/lib/directory-queries";
 import { EnHome } from "@/components/home/EnHome";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import {
@@ -139,13 +141,22 @@ export async function generateMetadata(): Promise<Metadata> {
   // not what either rental door sells. Same fork point as the layout choice
   // below (`homeLayout`), so a reader finds both decisions in one file.
   const isRental = vertical.family === "rental";
+  // Same fork, one family further: the directory door's home is about finding
+  // a professional, not about searching listings or publishing one.
+  const isDirectory = vertical.family === "directory";
   return {
     title: {
-      absolute: isRental
-        ? `${brand} — ${d.rental.metaTagline}`
-        : `${brand} — ${brandTaglineFor("es")}`,
+      absolute: isDirectory
+        ? `${d.directory.metaTitle} — ${brand}`
+        : isRental
+          ? `${brand} — ${d.rental.metaTagline}`
+          : `${brand} — ${brandTaglineFor("es")}`,
     },
-    description: isRental ? d.rental.metaDescription : d.home.metaDescription,
+    description: isDirectory
+      ? d.directory.metaDescription(brand)
+      : isRental
+        ? d.rental.metaDescription
+        : d.home.metaDescription,
     // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
     // `languages` pairs this home with the other door of the SAME family only
     // — the rental home is its own site, not a translation of this one
@@ -227,6 +238,37 @@ export default async function Home() {
   // Number formatting follows the request's locale, not the copy: the
   // thousands separator is not the same character everywhere.
   const numberLocale = vertical.locale === "en" ? "en-US" : "es-PY";
+  /**
+   * The directory door forks BEFORE the home payload runs. That payload is ten
+   * marketplace queries — recent listings, four rails, projects, developers,
+   * price cities — and this door renders none of them: it is a seller-first
+   * lead-gen landing page, not a narrowed marketplace. Running them and
+   * throwing the result away would be ten queries per render of a page with no
+   * listing on it.
+   *
+   * The form's city select reads the full city list, not the derived zones:
+   * an owner in a city where no professional works yet still has to be able to
+   * name their city — that lead is exactly the one worth having. The derived
+   * zones (`listDirectoryZones`) are the *filter* on the directory pages,
+   * where offering a city with no supply would be an empty result.
+   */
+  if (homeLayout(vertical.key) === "directory") {
+    const [zoneCities, directoryAgents] = await Promise.all([
+      listCities(),
+      listAgentsForDirectory(),
+    ]);
+    return (
+      <DirectoryHome
+        vertical={vertical}
+        d={d}
+        cities={zoneCities.map((c) => ({ slug: c.slug, name: c.name }))}
+        // Verified only, and never padded: DirectoryHome renders the recruiting
+        // band instead when there are fewer than three (§1 item 7).
+        agents={directoryAgents.filter((a) => a.isVerified)}
+      />
+    );
+  }
+
   const {
     recent,
     cities,

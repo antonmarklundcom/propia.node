@@ -10,7 +10,14 @@ import {
   countAgencyListings,
 } from "@/lib/queries";
 import { agencyUrl } from "@/lib/urls";
-import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
+import {
+  directoryCanonicalOrigin,
+  hostOwnsDirectory,
+  listingCanonicalOrigin,
+  siteOrigin,
+} from "@/lib/origin";
+import { languageAlternates } from "@/lib/alternates";
+import { currentVertical } from "@/lib/vertical-context";
 import { getIndexability, robotsFor } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
@@ -18,7 +25,6 @@ import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { waLink } from "@/lib/wa";
 import { safeImageUrl } from "@/lib/external-image";
-import { currentVertical } from "@/lib/vertical-context";
 
 // Same shape as the listing detail page: DB-backed, so no static caching —
 // this is the founder's inventory changing, not content that goes stale slowly.
@@ -40,12 +46,26 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!r) return { title: `Inmobiliaria no encontrada` };
   const { agency, listingCount } = r;
   const ix = getIndexability({ listingCount });
-  const canonical = `${await siteOrigin()}${agencyUrl(agency.slug)}`;
+  const [directoryOrigin, ownsDirectory, vertical] = await Promise.all([
+    // See app/agente/[slug]/page.tsx: the directory page type has one owner
+    // per locale, and it is not simply the host that served the request.
+    directoryCanonicalOrigin(),
+    hostOwnsDirectory(),
+    currentVertical(),
+  ]);
+  const canonical = `${directoryOrigin}${agencyUrl(agency.slug)}`;
   return {
     title: `${agency.name} — Propiedades en venta y alquiler`,
     description: `${listingCount} ${listingCount === 1 ? "propiedad" : "propiedades"} publicadas por ${agency.name} en ${brand}.`,
-    alternates: { canonical },
-    robots: { index: ix.state === "index", follow: true },
+    alternates: {
+      canonical,
+      languages: languageAlternates({
+        path: agencyUrl(agency.slug),
+        scope: "directory",
+        family: vertical.family,
+      }),
+    },
+    robots: { index: ownsDirectory && ix.state === "index", follow: true },
   };
 }
 
