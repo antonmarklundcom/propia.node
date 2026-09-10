@@ -56,3 +56,5 @@ Phase log ≤ 12/8/8 lines + one Verification line. Add the §9 line.
 ## §9 Build log index
 
 (one line per phase as it lands)
+
+- P4 — `docs/log/p4.md` — D3: `agents.bio/license_no/years_active/zones`, the `lead_matches` table and the "match 3" panel in `/admin/leads`. Schema; PR open, Anton merges after `db:status`.
