@@ -16,9 +16,17 @@
  *
  * Idempotent: upsert by slug, so re-running never duplicates.
  *
- *   DATABASE_URL="mysql://propia:propia@127.0.0.1:3306/propia" \
- *     npx tsx scripts/seed-guias-en.ts
+ *   DATABASE_URL="mysql://propia:propia@127.0.0.1:3306/propia" npm run seed:guias-en -- --dry
+ *   DATABASE_URL="mysql://propia:propia@127.0.0.1:3306/propia" npm run seed:guias-en
+ *
+ * `--dry` reports which of the three posts would be created and which already
+ * exist, writing nothing. This script has no runner in `src/lib/ops/` because S2
+ * replaces it with `posts:upsert` over markdown files under `content/guias/en/`
+ * (`fable-plan-ops.md` §5.2) — the dry flag is here so that, until then, no
+ * writing script in the repo lacks one.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
+import { inArray } from "drizzle-orm";
 import { db } from "../src/db";
 import { posts } from "../src/db/schema";
 
@@ -109,9 +117,25 @@ See also: [How buying property in Paraguay works](/guias/buying-property-in-para
   },
 ];
 
+const dry = process.argv.includes("--dry");
+
 async function main() {
   const now = new Date();
+
+  const existing = await db
+    .select({ slug: posts.slug })
+    .from(posts)
+    .where(
+      inArray(
+        posts.slug,
+        GUIDES.map((g) => g.slug),
+      ),
+    );
+  const known = new Set(existing.map((r) => r.slug));
+
   for (const g of GUIDES) {
+    console.log(`  ${known.has(g.slug) ? "update" : "create"}  ${g.slug}`);
+    if (dry) continue;
     await db
       .insert(posts)
       .values({
@@ -134,7 +158,11 @@ async function main() {
         },
       });
   }
-  console.log(`seeded ${GUIDES.length} English guide posts`);
+  console.log(
+    dry
+      ? `--dry: ${GUIDES.length} English guide post(s) would be written, nothing written.`
+      : `seeded ${GUIDES.length} English guide posts`,
+  );
   process.exit(0);
 }
 

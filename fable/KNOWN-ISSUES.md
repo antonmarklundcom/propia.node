@@ -6,6 +6,35 @@ it; none of them blocks a phase.
 
 ## Open
 
+- **`verify:import`'s database half fails against MariaDB, and it is the sandbox
+  rather than the code.** Found in ops O1, which got a local database up for the
+  first time in several phases (a MariaDB 10.11 stand-in — Docker Hub blob
+  fetches are blocked in that sandbox, so `mysql:8.4` could not be pulled).
+  Every check passes except "rollback restored the old prices". Cause: MariaDB
+  implements `json` as `longtext`, so `mysql2` hands `import_rows.previous_json`
+  back as a **string**, and `rollbackImportJob`'s
+  `const { _images, _source, ...columns } = row.previousJson` then spreads a
+  string into an object of character indices, restores nothing, and still reports
+  success. On MySQL 8 (Hostinger, and `docker compose`'s image) the column is
+  native JSON and `mysql2` parses it, which is why this has never been seen in
+  production. Fix, if a portability guarantee is ever wanted: parse defensively in
+  `src/lib/import/jobs.ts` (`typeof previousJson === "string" ? JSON.parse(…)`) —
+  O1 deliberately did not, because rewriting the rollback path to accommodate a
+  server the project does not target is the wrong trade during a guardrails
+  phase. Until then: run `verify:import`'s DB half against MySQL 8 only.
+
+- **`planImport` reaches for an `unstable_cache` rate by default, and any
+  non-request caller has to pass one instead.** `planImport(db, rows, opts)`
+  defaults `usdToPyg` to `getUsdToPygRate()`. O1 made that function degrade to the
+  uncached read when `NEXT_RUNTIME` is unset, so nothing throws any more, but the
+  underlying shape is still a trap: a *new* cached reader added inside the import
+  pipeline would break every `tsx` caller again with `Invariant: incrementalCache
+  missing`, and the error names the cache rather than the caller. `src/lib/ops/`
+  runners pass the rate explicitly (which also guarantees the plan and the commit
+  price a batch with the same number). Fix, if it recurs: give every cached
+  reader an uncached sibling at the point it is written, as `src/lib/fx.ts` now
+  does, rather than making batch code fake a runtime.
+
 - **Plan Appendix B lists nine image slots S1 did not build.** `hero-home-2.webp`,
   `services.webp`, `contact.webp`, and a `-2` variant for `alquiler`,
   `administracion-airbnb`, `inmobiliaria-asuncion`, `residencia-paraguay`,
@@ -42,10 +71,14 @@ it; none of them blocks a phase.
   URL through `/agencia/importar`, and confirm `select count(*) from listings
   where public_id = …` is 0.
 
-- **`npm run verify:scopes` has not been run since O1.** It refuses to run
-  against anything but a localhost database, and there is none here. O1 touches
-  no `listingScopeWhere`, `panelScope` or panel query, so it is not implicated;
-  a session with a local database should still run it opportunistically.
+- ~~**`npm run verify:scopes` has not been run since O1.**~~ **Run green on
+  2026-09-10** in ops O1, on a local database, after fixing what had been
+  stopping it: it died partway through with `Invariant: incrementalCache missing`
+  the moment it reached `updateListing`, which reads the `unstable_cache`-wrapped
+  USD→PYG rate. `src/lib/fx.ts` now falls back to the uncached read when
+  `NEXT_RUNTIME` is unset, and all 60-odd scope, profile and session checks pass.
+  Keep running it on anything touching `listingScopeWhere`, `panelScope` or a
+  panel query.
 
 - **`src/lib/rate-limit.ts` has no automated regression test.** O2 fixed a real
   bug in it — the sweep expired every bucket against whichever caller's window

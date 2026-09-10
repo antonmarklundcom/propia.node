@@ -251,3 +251,24 @@ Anton has merged O2 and `db:status` is clean; it runs S1, S2, S3 in order.
 ## §9 Build log & handoff
 
 - 2026-09-10 — plan written (Fable). No phase started.
+- 2026-09-10 — **O1 landed** (`claude/ops-o1-guardrails`, `docs/log/o1-ops.md`).
+  Eleven jobs now have one runner each in `src/lib/ops/` (`run<Job>(opts) →
+  OpsResult`), every writing script takes `--dry`, and `scripts/*.ts` are thin
+  CLIs over them. `AGENTS.md` is the self-contained rules file; `CLAUDE.md`'s
+  "Working agreements" is `@AGENTS.md` and its "Migrations" section carries the
+  0012/0013 truth line. `db:push` removed; `DATABASE_URL` / `DATABASE_URL_RW`
+  split implemented in `scripts/db-credential.ts` and documented in
+  `.env.example`; `README.md` corrected (brand decided, `export DATABASE_URL`
+  before any tsx script, the three translation providers, `cron:fx` in the cron
+  list). **Deviation:** `src/lib/fx.ts` and `scripts/verify-import.ts` were
+  touched, outside §4.1's file list — three documented commands (`import:csv`,
+  `verify:import`'s DB half, and `verify:scopes`) were dying on `Invariant:
+  incrementalCache missing` and O1's own exit criteria could not be met without
+  the fix. `verify:scopes` now runs green end to end for the first time since
+  2026-09-05. Verified against a local MariaDB 10.11 (Docker Hub is blocked in
+  the sandbox, so `mysql:8.4` could not be pulled); `cron:fx --dry` could not
+  reach its rate API and is the one job not exercised end to end.
+  **O2 looks first at** `src/lib/ops/types.ts` (`OpsJob` is the `ops_runs.job`
+  registry) and `src/lib/ops/migrations.ts` (`readDatabaseStatus()` /
+  `driftCount()` are the health panel's numbers, already computed). No runner
+  calls a `revalidate*` helper — that is the O2 action's job, per §4.2 item 4.

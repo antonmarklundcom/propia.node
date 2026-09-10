@@ -15,7 +15,12 @@ import { db } from "../db";
 import { fxRates } from "../db/schema";
 import { CACHE_TAGS, CACHE_TTL } from "./cache";
 
-const ENV_FALLBACK_USD_TO_PYG = Number(process.env.USD_TO_PYG ?? 7300);
+/**
+ * Last resort, for a database `cron:fx` has never written to. Exported so a
+ * caller that must *say* which source it used (`runCuotas` prints it) does not
+ * re-spell the default and drift from it.
+ */
+export const ENV_FALLBACK_USD_TO_PYG = Number(process.env.USD_TO_PYG ?? 7300);
 
 /**
  * Raw DB read, no cache — for callers outside the Next.js runtime
@@ -34,6 +39,18 @@ export async function getLatestFxRateRaw(
   return row ? Number(row.rate) : null;
 }
 
+/**
+ * The rate for a batch job: the raw read plus the same env fallback the cached
+ * reader uses. Callers outside a request — the `src/lib/ops/` runners, which run
+ * under `tsx` as well as in a server action — must use this rather than
+ * `getUsdToPygRate()`: `unstable_cache` throws `Invariant: incrementalCache
+ * missing` when there is no Next.js cache around it, which is what made
+ * `npm run import:csv` fail before it read a single row.
+ */
+export async function getUsdToPygRateRaw(): Promise<number> {
+  return (await getLatestFxRateRaw("PYG")) ?? ENV_FALLBACK_USD_TO_PYG;
+}
+
 const cachedFxRate = unstable_cache(
   async (): Promise<number | null> => getLatestFxRateRaw("PYG"),
   ["fx:usdToPyg"],
@@ -46,6 +63,20 @@ const cachedFxRate = unstable_cache(
  * never written a row.
  */
 export async function getUsdToPygRate(): Promise<number> {
+  /**
+   * Outside a Next.js server there is no incremental cache for
+   * `unstable_cache` to read, and calling it throws `Invariant:
+   * incrementalCache missing` — which is how `npm run verify:scopes` and
+   * `verify:import`'s database half died partway through, and `import:csv`
+   * before it read a row: each reaches app code (`updateListing`,
+   * `planImport`) that legitimately wants the cached rate in a request.
+   *
+   * `NEXT_RUNTIME` is set by Next in both its runtimes and by nothing else, so
+   * its absence is the discriminator. The fallback is the same read without the
+   * cache around it, so the worst case in a request that somehow lacks the flag
+   * is one extra query — never a wrong number.
+   */
+  if (!process.env.NEXT_RUNTIME) return getUsdToPygRateRaw();
   const rate = await cachedFxRate();
   return rate ?? ENV_FALLBACK_USD_TO_PYG;
 }

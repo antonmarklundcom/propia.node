@@ -526,14 +526,31 @@ lead inserts, inside a transaction it always rolls back.
 Run it **before merging any PR that touches `schema.ts`** and **again
 immediately after `db:migrate`**. `No drift` is the only green.
 
+**What is on `main` past 0011, as of 2026-09-10.** Two migrations were generated
+and merged after PLAN.md's "Pending migration" section was last rewritten, so
+that section no longer lists everything:
+
+| File | What it adds | Recorded as applied to prod? |
+| --- | --- | --- |
+| `drizzle/0012_cooing_shatterstar.sql` | the `fx_rates` table (backlog #2, `cron:fx`) | **nobody knows** |
+| `drizzle/0013_ambitious_violations.sql` | the `lead_matches` table and `agents.bio` / `license_no` / `years_active` / `zones` (D3) | **nobody knows** |
+
+"Nobody knows" is the literal state, and it is the reason `db:status` exists: no
+file in this repo can answer it, because a migration pasted into phpMyAdmin
+records nothing and nothing else has ever been written down. **Only
+`npm run db:status` against the production database can say**, and its
+schema-drift section is the half that matters — 0013 adds columns to `agents`, a
+table the directory doors read on every profile page, so if the code is live and
+0013 is not applied, `/agente/*` and `/inmobiliaria/*` 500 rather than degrade.
+Run it before merging anything else that touches `schema.ts`, and paste the
+output into the PR.
+
 ## Working agreements with the founder
 
-- **Autonomous build + merge is authorised** for well-verified, low-risk work
-  (CSS, UI, copy, docs). Zero live users, everything git-revertible.
-- **Flag before merging** anything touching auth, payments, or the DB schema.
-- **Always** `git fetch origin main && git reset --hard origin/main` before
-  branching. Merges happen through the GitHub API, so local `main` goes stale
-  and a merged PR can look "missing". This has already cost a session.
-- Verify with `npx tsc --noEmit` **and** `npm run build` before merging;
-  Hostinger auto-deploys `main` with no staging environment.
-- Branch naming: `claude/<feature-name>`.
+@AGENTS.md
+
+The working agreements moved there on 2026-09-10 (`fable-plan-ops.md` §1.6): one
+self-contained rules file that Codex reads natively and Claude Code imports, so
+the two agents cannot be working to different rules. Autonomy, the merge gates,
+the two database credentials, the verification checklist and the stop-and-ask
+list all live in `AGENTS.md` now; this file keeps the state of the world.
