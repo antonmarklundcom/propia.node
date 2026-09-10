@@ -9,6 +9,7 @@ import { homeSections, homeLayout } from "@/design/sections";
 import { NordicoHome } from "@/components/home/NordicoHome";
 import { RentalHome } from "@/components/home/RentalHome";
 import { EnHome } from "@/components/home/EnHome";
+import { LeadsHome } from "@/components/home/LeadsHome";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import {
   getRecentListings,
@@ -281,6 +282,10 @@ export default async function Home() {
         cities={cities}
       />
     );
+  }
+
+  if (homeLayout(vertical.key) === "leads") {
+    return <LeadsHome brand={brand} />;
   }
 
   return (

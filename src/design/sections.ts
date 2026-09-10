@@ -137,14 +137,14 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
   ];
 }
 
-export type HomeLayout = "default" | "nordico" | "guide-en" | "rental";
+export type HomeLayout = "default" | "nordico" | "guide-en" | "rental" | "leads";
 
 /**
  * Which component renders the home page. `app/page.tsx` is the one allowed
  * fork point (it already resolves `vertical` for the page); it renders
  * `NordicoHome` when this returns "nordico", `EnHome` when it returns
- * "guide-en", and its own default JSX otherwise. No other file branches on
- * this.
+ * "guide-en", `LeadsHome` when it returns "leads", and its own default JSX
+ * otherwise. No other file branches on this.
  */
 export function homeLayout(key: VerticalKey): HomeLayout {
   if (key === "inmobiliaria") return "nordico";
@@ -152,6 +152,14 @@ export function homeLayout(key: VerticalKey): HomeLayout {
   // Both rental doors render `RentalHome` (docs/style/rentparaguay.com.md) —
   // one shell for the family, in each door's own language.
   if (familyOf(key) === "rental") return "rental";
+  // inmobiliarios.com.py ("agents"): not a narrowed marketplace feeder like
+  // terreno.com.py — it sells two things the marketplace doesn't: seller
+  // leads for property owners, and a marketing/exposure service for
+  // realtors. Its own shell, `LeadsHome`, is why — the default template's
+  // listings grid would just mirror inmobiliaria.com.py's catalogue under a
+  // different domain, which is the exact "looks like a copy" complaint this
+  // layout exists to fix.
+  if (key === "agents") return "leads";
   return "default";
 }
 

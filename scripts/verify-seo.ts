@@ -61,7 +61,7 @@ check(
 );
 check(
   "disabled feeders are not served doors",
-  !servedDoors(CANONICAL_HOST).some((d) => d.host === "inmobiliarios.com.py"),
+  !servedDoors(CANONICAL_HOST).some((d) => d.host === "desarrolladores.com.py"),
 );
 
 console.log("\nhreflang: the post-flip shape, re-derived independently");
@@ -400,8 +400,8 @@ check(
 );
 
 check(
-  "(g) five doors are served — the three live ones plus the two rental doors",
-  servedDoors(CANONICAL_HOST).length === 5,
+  "(g) six doors are served — the three marketplace doors, the two rental doors, and inmobiliarios.com.py",
+  servedDoors(CANONICAL_HOST).length === 6,
   servedDoors(CANONICAL_HOST)
     .map((d) => d.host)
     .join(", "),

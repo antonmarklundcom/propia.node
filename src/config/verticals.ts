@@ -145,14 +145,25 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     enabled: true,
     ownsListingDetail: false,
   },
+  /**
+   * Not a marketplace feeder and not the future agent-directory listing
+   * either — that idea is shelved. This door sells two things instead
+   * (owner decision): seller leads for property owners
+   * (`leadType: "seller"`, same pipeline `/vender` and `/contacto` use) and
+   * a marketing/exposure service pitch to realtors and agencies
+   * (`leadType: "agent_signup"`), distinct from `/para-inmobiliarias`'
+   * free "publish your own inventory" offer. Its home page is its own
+   * shell (`LeadsHome`, `src/design/sections.ts`'s `homeLayout() ===
+   * "leads"`) precisely so enabling it does not just mirror
+   * inmobiliaria.com.py's catalogue under a different domain.
+   */
   "inmobiliarios.com.py": {
     key: "agents",
     brand: "Inmobiliarios Paraguay",
     locale: "es",
     family: "directory",
-    mode: "directory",
     copy: "directory",
-    enabled: false,
+    enabled: true,
     ownsListingDetail: false,
   },
   "desarrolladores.com.py": {
