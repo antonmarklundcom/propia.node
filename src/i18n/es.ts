@@ -544,6 +544,40 @@ export const esPanel = {
     ]
       .filter(Boolean)
       .join("\n"),
+
+  /**
+   * D3 — proponer inmobiliarios para una consulta del directorio.
+   *
+   * Sólo el panel (staff, un solo host, siempre en español), así que vive en
+   * `esPanel` y no en el diccionario bilingüe, igual que el resto de /admin.
+   */
+  matchTitle: "Proponer inmobiliarios",
+  matchHint: (n: number) =>
+    `Elegí hasta ${n} profesionales verificados y reenviales la consulta por WhatsApp. No se envía nada solo.`,
+  matchNoCity:
+    "La consulta no declara ciudad, así que el orden es por inventario publicado. La ciudad está en el mensaje.",
+  matchNoCandidates:
+    "Todavía no hay agentes verificados para proponer.",
+  matchZoneDeclared: "Zona declarada",
+  matchInventoryThere: "Con avisos en la ciudad",
+  matchListingCount: (n: number) =>
+    n === 1 ? "1 aviso publicado" : `${n} avisos publicados`,
+  matchIndependent: "Independiente",
+  matchSave: "Guardar propuesta",
+  matchExistingTitle: "Propuestos",
+  matchSend: "Enviar por WhatsApp",
+  matchNoWhatsapp: "Sin WhatsApp cargado",
+  matchStatus: {
+    proposed: "Propuesto",
+    sent: "Enviado",
+    accepted: "Aceptado",
+    declined: "Rechazado",
+  } as Record<string, string>,
+  matchSavedFlash: "Propuesta guardada.",
+  matchNoneFlash: "Sin cambios: ya estaban propuestos.",
+  matchLimitError: "Elegí entre 1 y 3 profesionales.",
+  matchInvalidError: "No se pudo guardar la propuesta.",
+
   // Read-only status rows (audit F25): the status <select> used to pre-set
   // "Borrador" on a row en revisión, so one save silently cancelled the review.
   statusPendingNote:

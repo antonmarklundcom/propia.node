@@ -10,9 +10,17 @@ import {
   type AdminLeadRow,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
+import { listAgentMatchCandidates } from "@/lib/directory-queries";
+import {
+  leadCitySlug,
+  listMatchesForLeads,
+  rankCandidates,
+  type LeadMatchRow,
+} from "@/lib/matching";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
+import { MatchPanel } from "./MatchPanel";
 
 export const metadata: Metadata = {
   title: `Consultas`,
@@ -83,6 +91,25 @@ function forwardHref(lead: AdminLeadRow) {
   );
 }
 
+/**
+ * A lead that came in through the directory door (D1): `leadType: "seller"`
+ * plus a `directory:*` `utm.source`. There is no `leads.source` column and D3
+ * does not add one — the marker is the marker.
+ */
+function isDirectoryLead(lead: AdminLeadRow): boolean {
+  return (
+    lead.leadType === "seller" &&
+    (lead.utm?.source ?? "").startsWith("directory:")
+  );
+}
+
+const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
+  match_saved: { text: esPanel.matchSavedFlash },
+  match_none: { text: esPanel.matchNoneFlash },
+  match_limit: { text: esPanel.matchLimitError, error: true },
+  match_invalid: { text: esPanel.matchInvalidError, error: true },
+};
+
 function formatWhen(d: Date): string {
   return new Intl.DateTimeFormat("es-PY", {
     day: "2-digit",
@@ -95,9 +122,9 @@ function formatWhen(d: Date): string {
 export default async function AdminLeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; q?: string }>;
+  searchParams: Promise<{ tipo?: string; q?: string; msg?: string }>;
 }) {
-  const [{ tipo, q }, user] = await Promise.all([
+  const [{ tipo, q, msg }, user] = await Promise.all([
     searchParams,
     requireSuperAdmin(),
   ]);
@@ -113,6 +140,22 @@ export default async function AdminLeadsPage({
     listAllLeads({ type: activeType, q }),
   ]);
 
+  // D3 matching, loaded once for the page rather than per card: one candidate
+  // query and one matches query, then the ranking is pure TS per lead. Skipped
+  // entirely when the filter shows no directory lead — a buyer inbox must not
+  // pay for a feature it never renders.
+  const directoryLeads = rows.filter(isDirectoryLead);
+  const [candidates, matchesByLead] = await Promise.all([
+    directoryLeads.length > 0
+      ? listAgentMatchCandidates()
+      : Promise.resolve([]),
+    directoryLeads.length > 0
+      ? listMatchesForLeads(directoryLeads.map((l) => l.id))
+      : Promise.resolve(new Map<number, LeadMatchRow[]>()),
+  ]);
+
+  const flash = msg ? MATCH_FLASH[msg] : undefined;
+
   return (
     <>
       <PanelBar
@@ -122,6 +165,12 @@ export default async function AdminLeadsPage({
         tabs={adminTabs("leads", reviewCount, undefined, recentLeads)}
       />
       <main className="panel site-main">
+        {flash ? (
+          <p className={flash.error ? "auth-error" : "panel-flash"}>
+            {flash.text}
+          </p>
+        ) : null}
+
         <h2 className="panel-section__title">{esPanel.adminLeadsTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 13, marginTop: 0 }}>
           {esPanel.adminLeadsHint}
@@ -241,6 +290,27 @@ export default async function AdminLeadsPage({
 
               {lead.message ? (
                 <div className="panel-card__body">{lead.message}</div>
+              ) : null}
+
+              {/* Directory leads belong to nobody yet: the operator proposes
+                  up to three verified professionals and hands the lead over on
+                  WhatsApp. Every other lead already has an inbox. */}
+              {isDirectoryLead(lead) ? (
+                <MatchPanel
+                  leadId={lead.id}
+                  citySlug={leadCitySlug(lead.utm)}
+                  suggestions={rankCandidates(
+                    candidates,
+                    leadCitySlug(lead.utm),
+                  )}
+                  matches={matchesByLead.get(lead.id) ?? []}
+                  forwardText={esPanel.forwardLeadMessage({
+                    listingTitle: lead.listingTitle,
+                    name: lead.name,
+                    whatsapp: lead.whatsapp,
+                    message: lead.message,
+                  })}
+                />
               ) : null}
             </article>
           ))
