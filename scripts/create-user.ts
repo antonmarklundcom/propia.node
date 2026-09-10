@@ -15,7 +15,11 @@
  *
  * Linking an agency/agent login to a specific agency is done via the agents
  * table (agents.user_id) in Drizzle Studio — the dashboard scopes on it.
+ *
+ * It always writes, so it always uses `DATABASE_URL_RW ?? DATABASE_URL` — a
+ * read-only credential cannot create a login (see AGENTS.md).
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { users } from "../src/db/schema";

@@ -1083,6 +1083,16 @@ counter deliberately avoids the same trick; see `recordListingView`.
 
 ## Pending migration
 
+> **Historical, and no longer complete — superseded 2026-09-10.** This section
+> was written migration by migration and stops at 0011; `drizzle/0012`
+> (`fx_rates`) and `drizzle/0013` (`lead_matches` + the `agents` columns) landed
+> after it and are not described below. More importantly, no file in this repo
+> can say which migrations production has actually applied — only
+> `npm run db:status` against the production database can. See CLAUDE.md's
+> "Migrations" section for the current truth line and the runbook. What follows
+> is kept for the reasoning about each individual migration, not as a status
+> board.
+
 **`drizzle/0011` (Batch 3 layer 3, the English columns) is generated and NOT
 applied to production.** It adds `listings.title_en` and
 `listings.translation_hash` — two additive nullable columns, no data touched,

@@ -1,54 +1,20 @@
 /**
- * Pause listings whose source feed has gone quiet.
+ * CLI over `runResync()` — pause listings whose source feed has gone quiet. The
+ * job lives in `src/lib/ops/resync.ts` (the sweep itself is
+ * `src/lib/import/resync.ts`, next to the rest of the intake pipeline).
  *
- *   npm run cron:resync -- --dry
- *   npm run cron:resync -- --days=45
+ *   DATABASE_URL="mysql://..." npm run cron:resync -- --dry
+ *   DATABASE_URL="mysql://..." npm run cron:resync -- --days=45
  *
- * `--dry` lists what would be paused and writes nothing — run it first the
- * first time, because the right cutoff depends on how often the agencies
- * actually re-send their spreadsheets, and 30 days is a guess until you have
- * seen one full cycle.
+ * `--dry` lists what would be paused and writes nothing — run it first, because
+ * the right cutoff depends on how often the agencies actually re-send their
+ * spreadsheets, and 30 days is a guess until you have seen one full cycle.
  *
- * Everything it does is recorded as an import job and can be reverted from
- * /admin/importar, so a cutoff set too aggressively is one click to undo.
+ * Everything a real run does is recorded as an import job and can be reverted
+ * from /admin/importar, so a cutoff set too aggressively is one click to undo.
  */
-import { DEFAULT_STALE_DAYS, runResync } from "../src/lib/import/resync";
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
+import { runResync } from "../src/lib/ops/resync";
+import { DRY, flagNumber, runCli } from "./ops-cli";
 
-async function main() {
-  const args = process.argv.slice(2);
-  const dryRun = args.includes("--dry");
-  const daysArg = args.find((a) => a.startsWith("--days="));
-  const staleDays = daysArg
-    ? Number(daysArg.slice("--days=".length))
-    : Number(process.env.RESYNC_STALE_DAYS ?? DEFAULT_STALE_DAYS);
-
-  if (!Number.isFinite(staleDays) || staleDays < 1) {
-    console.error(`invalid --days value '${daysArg}'`);
-    process.exit(1);
-  }
-
-  const result = await runResync(staleDays, { dryRun });
-
-  console.log(
-    `\nresync (cutoff ${staleDays} days${dryRun ? ", DRY RUN" : ""})\n` +
-      `  stale listings: ${result.candidates.length}\n` +
-      `  paused:         ${result.paused}` +
-      (result.jobId ? `\n  job:            #${result.jobId}` : ""),
-  );
-  for (const c of result.candidates.slice(0, 50)) {
-    console.log(
-      `  - #${c.listingId} ${c.title} (last seen ${c.lastSeenAt
-        .toISOString()
-        .slice(0, 10)})`,
-    );
-  }
-  if (result.candidates.length > 50)
-    console.log(`  … and ${result.candidates.length - 50} more`);
-
-  process.exit(0);
-}
-
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+void runCli(() => runResync({ dry: DRY, days: flagNumber("--days") }));

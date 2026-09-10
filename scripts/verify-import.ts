@@ -170,6 +170,18 @@ async function dbChecks() {
   const { createImportJob, recordImportRows, rollbackImportJob } = await import(
     "../src/lib/import/jobs"
   );
+  const { getUsdToPygRateRaw } = await import("../src/lib/fx");
+
+  /**
+   * Passed to every plan/commit below instead of letting `planImport` reach for
+   * its own default. That default is `getUsdToPygRate()`, which is
+   * `unstable_cache`-wrapped and throws `Invariant: incrementalCache missing`
+   * outside a Next.js runtime — so this whole section died on its first call
+   * before a single row was planned. Any caller of the import pipeline from a
+   * plain `tsx` process has to pass the rate; `src/lib/ops/import-csv.ts` is the
+   * one the CLI uses.
+   */
+  const usdToPyg = await getUsdToPygRateRaw();
 
   console.log("\ndatabase");
 
@@ -220,8 +232,8 @@ async function dbChecks() {
     locationName: loc.name,
   }));
 
-  const plan1 = await planImport(db, flats, { agencyId: agencyA });
-  const committed1 = await commitImport(db, plan1, { agencyId: agencyA });
+  const plan1 = await planImport(db, flats, { agencyId: agencyA, usdToPyg });
+  const committed1 = await commitImport(db, plan1, { agencyId: agencyA, usdToPyg });
   const report1 = reportFromCommitted(committed1);
   check(
     "three phone-less flats create three listings",
@@ -230,8 +242,8 @@ async function dbChecks() {
   );
 
   // Re-run the identical file: the M2 gate.
-  const plan2 = await planImport(db, flats, { agencyId: agencyA });
-  const report2 = reportFromCommitted(await commitImport(db, plan2, { agencyId: agencyA }));
+  const plan2 = await planImport(db, flats, { agencyId: agencyA, usdToPyg });
+  const report2 = reportFromCommitted(await commitImport(db, plan2, { agencyId: agencyA, usdToPyg }));
   check(
     "re-importing the same file changes nothing",
     report2.unchanged === 3 && report2.created === 0,
@@ -250,8 +262,8 @@ async function dbChecks() {
   );
 
   // A second agency reusing the same external ids 1,2,3.
-  const planB = await planImport(db, flats, { agencyId: agencyB });
-  const reportB = reportFromCommitted(await commitImport(db, planB, { agencyId: agencyB }));
+  const planB = await planImport(db, flats, { agencyId: agencyB, usdToPyg });
+  const reportB = reportFromCommitted(await commitImport(db, planB, { agencyId: agencyB, usdToPyg }));
   check(
     "another agency's ids 1-3 do not overwrite the first agency's",
     reportB.created === 3,
@@ -260,8 +272,8 @@ async function dbChecks() {
 
   // A price change is an update, and the old price is captured for rollback.
   const changed = flats.map((f) => ({ ...f, priceAmount: 99000 }));
-  const planC = await planImport(db, changed, { agencyId: agencyA });
-  const committedC = await commitImport(db, planC, { agencyId: agencyA });
+  const planC = await planImport(db, changed, { agencyId: agencyA, usdToPyg });
+  const committedC = await commitImport(db, planC, { agencyId: agencyA, usdToPyg });
   const reportC = reportFromCommitted(committedC);
   check("a changed price updates, not duplicates", reportC.updated === 3);
   check(
