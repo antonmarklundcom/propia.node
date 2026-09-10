@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { BRAND_KICKER } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
-import { HEADER_NAV } from "@/config/site-nav";
+import { HEADER_NAV, type NavLink } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
 import { currentVertical } from "@/lib/vertical-context";
+import { RENTAL_SERVICES } from "@/config/rental-services";
 import {
   headerExtraNavHref,
   sellerCtaHref,
@@ -57,7 +58,21 @@ export async function SiteHeader() {
   // marketplace's dropdown tree. One CTA, "Contactanos", pointing at
   // /contacto: this door sells a conversation, not a self-service publish.
   const isRental = chromeVariant(vertical.key) === "rental";
-  const rentalNav = d.rental.chromeNav.map((l) => ({ ...l, links: [] as never[] }));
+  // Match by href, never by array index — RentalServicesHub reads
+  // chromeNav[1] positionally already, and a second index dependency here
+  // would silently break if `rental.chromeNav`'s order ever changes.
+  // `services[dictKey].tagline` is a full sentence (built for the home-page
+  // cards, not a nav panel) — the marketplace's own panel descs are 3-5 word
+  // fragments, so a tagline here would blow out a 7-row panel. Label only.
+  const rentalNav = d.rental.chromeNav.map((l) => ({
+    ...l,
+    links: (l.href === "/servicios"
+      ? RENTAL_SERVICES.map((s) => ({
+          label: d.rental.services[s.dictKey].title,
+          href: `/servicios/${s.slug}`,
+        }))
+      : []) satisfies NavLink[] as NavLink[],
+  }));
   // §5 "Header" (Nórdico): Comprar · Alquilar · Vender · Proyectos ·
   // Inmobiliarias — the extra entry (when the registry adds one) sits right
   // after "Proyectos".
