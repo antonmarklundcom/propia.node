@@ -2831,6 +2831,21 @@ body {
   font-size: 14.5px;
 }
 
+/* The directory door's agency profile lists the office's agents (D1b). A plain
+   list of links: no card, no photo, nothing that implies a ranking. */
+.agency-profile__team {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agency-profile__team li {
+  font-size: 15px;
+}
+
 @media (max-width: 560px) {
   .agency-profile__header,
   .agent-profile__header {
