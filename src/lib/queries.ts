@@ -409,10 +409,12 @@ export async function getAgencyListings(params: {
   agencyId: number;
   excludeId?: number;
   limit?: number;
+  vertical?: VerticalConfig;
 }): Promise<ListingCard[]> {
   const conds = [
     eq(listings.status, "published"),
     eq(listings.agencyId, params.agencyId),
+    ...(params.vertical ? verticalConds(params.vertical) : []),
   ];
   if (params.excludeId != null) conds.push(ne(listings.id, params.excludeId));
   const rows = await db
@@ -475,10 +477,12 @@ export async function getAgentListings(params: {
   agentId: number;
   excludeId?: number;
   limit?: number;
+  vertical?: VerticalConfig;
 }): Promise<ListingCard[]> {
   const conds = [
     eq(listings.status, "published"),
     eq(listings.agentId, params.agentId),
+    ...(params.vertical ? verticalConds(params.vertical) : []),
   ];
   if (params.excludeId != null) conds.push(ne(listings.id, params.excludeId));
   const rows = await db

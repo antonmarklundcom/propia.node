@@ -334,7 +334,8 @@ full copy under the `Host` header, PR merged.
 
 ### §9 Build log index
 
-(empty — filled by phases as `docs/log/<phase>.md` + one line here)
+- T1: `docs/log/t1.md` — terreno.com.py agency/agent rail leak fixed
+  (`getAgencyListings`/`getAgentListings` now take `vertical`).
 
 ### §10 Backlog
 

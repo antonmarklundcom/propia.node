@@ -20,6 +20,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { ContactForm } from "@/components/ContactForm";
 import { safeImageUrl } from "@/lib/external-image";
+import { currentVertical } from "@/lib/vertical-context";
 
 // Mirrors app/inmobiliaria/[slug]/page.tsx: DB-backed profile, no static
 // caching — the founder's inventory changes, not slow-to-stale content.
@@ -64,8 +65,9 @@ export default async function AgentProfilePage({ params }: Params) {
   const ix = getIndexability({ listingCount });
   if (ix.state === "gone") notFound();
 
+  const vertical = await currentVertical();
   const [listings, agency] = await Promise.all([
-    getAgentListings({ agentId: agent.id, limit: 24 }),
+    getAgentListings({ agentId: agent.id, limit: 24, vertical }),
     agent.agencyId ? getAgencyById(agent.agencyId) : Promise.resolve(null),
   ]);
   const origin = await siteOrigin();
