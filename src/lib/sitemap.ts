@@ -26,7 +26,7 @@ import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl, agencyUrl, agentUrl } from "./urls";
 import {
   MARKETPLACE_SITEMAP_PATHS,
-  RENTAL_SITEMAP_PATHS,
+  rentalSitemapPaths,
 } from "../config/site-nav";
 import { listPublishedPostSlugs } from "./post-queries";
 import { listingUrl } from "./urls";
@@ -106,9 +106,13 @@ export async function buildSitemapEntries(
   //    own pages (/servicios, /nosotros, /contacto) and none of the
   //    marketplace's. A door with no vertical (an unknown host) gets the
   //    marketplace list, the same default every other lookup falls back to.
+  //
+  //    The rental list is per-locale (R2): its own pages are English on
+  //    rentparaguay.com and Spanish on alquiler.com.py, and each door 301s the
+  //    other's — so each submits only the URLs it actually serves.
   const staticPaths =
     vertical?.family === "rental"
-      ? RENTAL_SITEMAP_PATHS
+      ? rentalSitemapPaths(vertical.locale)
       : MARKETPLACE_SITEMAP_PATHS;
   const venderAllowed = vertical ? sellerLandingEnabled(vertical.key) : false;
   const entries: SitemapEntry[] = staticPaths.filter(

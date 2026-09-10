@@ -339,6 +339,11 @@ full copy under the `Host` header, PR merged.
 
 - **R1** rental Services header dropdown — `docs/log/r1.md`. Merged.
 
+- **R2** English URLs for the rental business's own pages on
+  `rentparaguay.com` (`/services/<en>`, `/about`, `/contact`; `slugEn`,
+  `rentalPath()`, per-locale sitemap, cross-language 301s, WordPress map
+  retargeted to the English slugs) — `docs/log/r2.md`.
+
 ### §10 Backlog
 
 - D3: `agents.bio/license_no/years_active/zones`, `lead_matches`, admin

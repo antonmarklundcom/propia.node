@@ -391,3 +391,24 @@ export function chromeShowNewsletter(key: VerticalKey): boolean {
 export function rentalPagesEnabled(key: VerticalKey): boolean {
   return familyOf(key) === "rental";
 }
+
+/**
+ * The rental family's URL helper (R2). Re-exported here because this registry
+ * is where the rest of the app asks structural questions about a door, and
+ * every consumer — the chrome, the home page, the hub, the routes, the
+ * sitemap — already imports from it.
+ *
+ * It is *defined* one module down, in `src/config/rental-services.ts`, and
+ * that is not a style choice: `next.config.ts` builds the cross-language 301s
+ * from the same helper, and Next's config loader compiles that file outside
+ * the app's module graph, where the `@/…` alias does not resolve. A module
+ * `next.config.ts` can import must therefore import nothing that uses the
+ * alias — which this file does (`@/config/verticals`, above). Keeping the
+ * helper alias-free is what stops the redirects from being a second,
+ * hand-maintained copy of the URL table.
+ */
+export {
+  rentalPath,
+  rentalPathsByLocale,
+  type RentalPageKind,
+} from "@/config/rental-services";

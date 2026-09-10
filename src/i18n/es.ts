@@ -3,6 +3,9 @@
  * All local-facing copy is Paraguayan voseo. NEVER generate
  * neutral-Spanish variants of these.
  */
+// Pure (config + a lookup table, no `next/*`), so the client components that
+// read this dictionary are unaffected — the same rule `brand.ts` follows.
+import { rentalPath } from "@/design/sections";
 
 export const es = {
   searchPlaceholder: "¿Dónde querés vivir?",
@@ -1585,22 +1588,25 @@ export const esProject = {
  */
 export const esRental = {
   // ---- chrome (SiteHeader / SiteFooter / MobileMenu, chromeVariant "rental")
+  // Hrefs through `rentalPath()` (R2) — the Spanish door keeps the Spanish
+  // URLs it always had; the helper is what guarantees the English door's nav
+  // stays the mirror image of this one rather than a second hand-typed list.
   chromeNav: [
     { label: "Alquileres", href: "/alquiler" },
-    { label: "Servicios", href: "/servicios" },
-    { label: "Nosotros", href: "/nosotros" },
-    { label: "Contacto", href: "/contacto" },
+    { label: "Servicios", href: rentalPath("es", "services") },
+    { label: "Nosotros", href: rentalPath("es", "about") },
+    { label: "Contacto", href: rentalPath("es", "contact") },
   ],
   chromeCtaLabel: "Contactanos",
-  chromeCtaHref: "/contacto",
+  chromeCtaHref: rentalPath("es", "contact"),
   footerTagline:
     "Inmobiliaria y administración de propiedades en Asunción, para extranjeros, nómadas digitales e inversores. Buscamos, alquilamos y administramos, en tu idioma.",
   footerServicesTitle: "Servicios",
   footerCompanyTitle: "Empresa",
   footerLegalTitle: "Legal",
   footerCompanyLinks: [
-    { label: "Nosotros", href: "/nosotros" },
-    { label: "Contacto", href: "/contacto" },
+    { label: "Nosotros", href: rentalPath("es", "about") },
+    { label: "Contacto", href: rentalPath("es", "contact") },
     { label: "Alquileres", href: "/alquiler" },
   ],
   footerLegalLinks: [

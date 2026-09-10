@@ -27,6 +27,8 @@
  * has two implementations, so a key added to one and forgotten in the other
  * is a type error rather than a blank string on a live page.
  */
+// Pure (config + a lookup table, no `next/*`) — see the same import in es.ts.
+import { rentalPath } from "@/design/sections";
 
 /**
  * English peer of `esSiteNotice` (es.ts). Not part of the `Dictionary` shape
@@ -859,22 +861,27 @@ export const enProject = {
  * both the home page and the services hub, the one FAQ this family has.
  */
 export const enRental = {
+  // Hrefs through `rentalPath()` (R2): this door's own pages are English URLs
+  // (`/services`, `/about`, `/contact`) and it 301s the Spanish ones, so a
+  // literal here would be a nav full of redirects the day someone forgot.
+  // `/alquiler` is not in that table — it is the marketplace's rental hub,
+  // Spanish-slugged on every door.
   chromeNav: [
     { label: "Rentals", href: "/alquiler" },
-    { label: "Services", href: "/servicios" },
-    { label: "About", href: "/nosotros" },
-    { label: "Contact", href: "/contacto" },
+    { label: "Services", href: rentalPath("en", "services") },
+    { label: "About", href: rentalPath("en", "about") },
+    { label: "Contact", href: rentalPath("en", "contact") },
   ],
   chromeCtaLabel: "Contact us",
-  chromeCtaHref: "/contacto",
+  chromeCtaHref: rentalPath("en", "contact"),
   footerTagline:
     "A real estate and property management agency in Asunción for expats, digital nomads and investors. We find it, we rent it, we manage it — in your language.",
   footerServicesTitle: "Services",
   footerCompanyTitle: "Company",
   footerLegalTitle: "Legal",
   footerCompanyLinks: [
-    { label: "About us", href: "/nosotros" },
-    { label: "Contact", href: "/contacto" },
+    { label: "About us", href: rentalPath("en", "about") },
+    { label: "Contact", href: rentalPath("en", "contact") },
     { label: "Rentals", href: "/alquiler" },
   ],
   footerLegalLinks: [

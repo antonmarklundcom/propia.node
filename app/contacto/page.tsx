@@ -11,7 +11,10 @@ import { waLink } from "@/lib/wa";
 import { dict } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
 import { rentalPagesEnabled } from "@/design/sections";
-import { languageAlternates } from "@/lib/alternates";
+import {
+  rentalContactMetadata,
+  redirectRentalToEnglish,
+} from "@/lib/rental-routes";
 import { RentalContact } from "@/components/RentalContact";
 
 export const dynamic = "force-dynamic";
@@ -29,25 +32,8 @@ export async function generateMetadata(): Promise<Metadata> {
   // Same one-line fork as /nosotros: the marketplace's contact copy is about
   // publishing an aviso and inmobiliaria accounts, which is not what a rental
   // door answers.
-  if (rentalPagesEnabled(vertical.key)) {
-    const c = d.rental.contact;
-    return {
-      title: c.metaTitle,
-      description: c.metaDescription(brand),
-      alternates: {
-        canonical: `${origin}/contacto`,
-        languages: languageAlternates({
-          path: "/contacto",
-          scope: "site",
-          family: vertical.family,
-        }),
-      },
-      openGraph: {
-        title: `${c.metaTitle} — ${brand}`,
-        description: c.metaDescription(brand),
-      },
-    };
-  }
+  // Shared with `/contact`, the English door's URL for this same page (R2).
+  if (rentalPagesEnabled(vertical.key)) return rentalContactMetadata();
   return {
     title: `${TITLE}`,
     description: DESCRIPTION(brand),
@@ -64,6 +50,8 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function ContactoPage() {
   const vertical = await currentVertical();
+  // The English rental door publishes this page at /contact (R2).
+  redirectRentalToEnglish(vertical, "contact");
   if (rentalPagesEnabled(vertical.key)) {
     return <RentalContact d={await dict()} locale={vertical.locale} />;
   }

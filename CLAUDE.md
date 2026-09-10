@@ -21,8 +21,8 @@ table.
 | `propia.com.py` | **NOT owned, and as of 2026-08-17 no longer in the code.** Its `verticals.ts` entry (and the `"propia"` vertical key) is deleted, the `hola@propia.com.py` contact fallback is gone, and the founder has ruled out *propia* as a brand name anywhere a client or realtor can see it. ARCHITECTURE.md and README.md still name it — that is stale prose, not a fact. `inmobiliaria.com.py` is the `.com.py` domain it was standing in for; do **not** reintroduce it as a fallback for anything. |
 | `inmobiliarios.com.py` (plural) | Not owned. The future agent-directory vertical already declared in `verticals.ts`. Distinct from the singular above — do not conflate them. |
 | `terreno.com.py` | **Owned, enabled, consolidated onto this app 2026-09-04** from its own former standalone Node deployment — retire that deployment separately (infra, not this repo). Terrenos-only feeder (`filters: { property_type: ["terreno"] }`), Spanish, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` and its sitemap omits them. |
-| `alquiler.com.py` | **The rental family's Spanish door — code landed 2026-09-09 (O1), DNS pending.** Not a marketplace feeder: with `rentparaguay.com` it is one rental-services business in two languages (`family: "rental"`, `fable/plan-rentparaguay.md`). `enabled: true` so it can be previewed with a `Host` header and checked by `verify:seo`; nothing reaches a visitor until DNS points at Hostinger. Brand "Alquiler Paraguay", `filters: { operation: ["alquiler", "alquiler_temporal"] }`, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` (the Spanish detail owner) and its sitemap omits them. Confirm the domain is actually registered before go-live. |
-| `rentparaguay.com` | **The same rental business in English — code landed 2026-09-09 (O1), DNS pending.** Its own `VerticalKey` (`"rent"`), paired to `alquiler.com.py` by `family`, not by key. Brand "Rent Paraguay", `locale: "en"`, same filters, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com`, the door that owns detail **in its own language**. hreflang pairs it only with `alquiler.com.py`: a door is never a language version of a door in another family. |
+| `alquiler.com.py` | **The rental family's Spanish door — code landed 2026-09-09 (O1), DNS pending.** Not a marketplace feeder: with `rentparaguay.com` it is one rental-services business in two languages (`family: "rental"`, `fable/plan-rentparaguay.md`). `enabled: true` so it can be previewed with a `Host` header and checked by `verify:seo`; nothing reaches a visitor until DNS points at Hostinger. Brand "Alquiler Paraguay", `filters: { operation: ["alquiler", "alquiler_temporal"] }`, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` (the Spanish detail owner) and its sitemap omits them. Serves the rental business's own pages at **Spanish** URLs (`/servicios/<slug>`, `/nosotros`, `/contacto`) and 301s the English ones (R2, 2026-09-10). Confirm the domain is actually registered before go-live. |
+| `rentparaguay.com` | **The same rental business in English — code landed 2026-09-09 (O1), DNS pending.** Its own `VerticalKey` (`"rent"`), paired to `alquiler.com.py` by `family`, not by key. Brand "Rent Paraguay", `locale: "en"`, same filters, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com`, the door that owns detail **in its own language**. hreflang pairs it only with `alquiler.com.py`: a door is never a language version of a door in another family. **Its own pages are English URLs since R2 (2026-09-10)** — `/services/<slugEn>`, `/about`, `/contact` — and it 301s the Spanish ones; `alquiler.com.py` does the reverse. `/propiedad/*` is NOT localised: that is the marketplace's page type and stays Spanish-slugged on every door. |
 | `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
 
 **Outstanding manual step:** `NEXT_PUBLIC_CANONICAL_HOST` on Hostinger must
@@ -52,6 +52,16 @@ Consequences that bite:
   `/propiedad` pages in the same language, where two doors share a vertical
   key (`currentVertical()` resolves the header by first match), or where a
   host key is spelled in a form `resolveVertical()` never looks up.
+- **A rental URL is spelled in exactly one place: `rentalPath()`.** The rental
+  family's own pages have a Spanish URL on `alquiler.com.py` and an English one
+  on `rentparaguay.com` (R2), and every door 301s the other language's. Nav,
+  footer, home, hub, canonical, hreflang, sitemap and the redirects in
+  `next.config.ts` all build their paths from that one helper — a literal
+  `"/servicios/…"` at a new call site is a link into a redirect on half the
+  doors. It is *defined* in `src/config/rental-services.ts` (an import-free
+  module, because `next.config.ts` reads it and the `@/…` alias does not
+  resolve in Next's config loader) and re-exported from `@/design/sections`,
+  which is where the app imports it from.
 - **hreflang is derived, not hand-maintained.** `languageAlternates()`
   (`src/lib/alternates.ts`) builds a page's language map from the same
   `verticals.ts` entries — the D6 flip turned the tags on with no separate
@@ -366,7 +376,9 @@ the fallback until it does.
   dictionary), and `esRentalServices` / `enRentalServices` for the seven
   `/servicios/<slug>` pages (`rentalServices`, keyed by `dictKey` in
   `src/config/rental-services.ts`, shape fixed by plan Appendix C) — filled
-  2026-09-09 (S3).
+  2026-09-09 (S3). The English door serves those seven at `/services/<slugEn>`
+  since R2 (2026-09-10); `dictKey` is still the copy's key, so localising the
+  URLs touched no string.
 - **Reach them through the dictionary, not by importing the namespace.**
   Two ways in, and picking the wrong one is the mistake to avoid — the same
   split as `brand.ts` / `brand-server.ts`, for the same reason:
