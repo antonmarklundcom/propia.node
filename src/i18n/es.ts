@@ -1398,14 +1398,13 @@ export const esHub = {
     },
   } as Record<string, { h1: string; lead: string; label: string; cityLabel: string }>,
   breadcrumbHome: "Inicio",
-  count: (total: string) => `${total} propiedades publicadas`,
   byTypeTitle: "Por tipo de propiedad",
   byTypeSubtitle: (opLabel: string) =>
     `Elegí qué estás buscando. Los totales son avisos publicados hoy en ${opLabel}.`,
   byCityTitle: "Por ciudad",
   byCitySubtitle:
     "Todas las ciudades con inventario activo, ordenadas por cantidad de avisos.",
-  latestTitle: "Últimas publicaciones",
+  latestTitle: (total: string) => `Últimas publicaciones · ${total} avisos`,
   latestNoteLead: "¿Buscás en una zona puntual? Entrá a",
   latestNoteTail: "y filtrá por barrio, precio y dormitorios.",
   emptyBody: (opLabel: string) =>
