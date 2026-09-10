@@ -78,10 +78,24 @@ export async function SiteHeader() {
         }))
       : []) satisfies NavLink[] as NavLink[],
   }));
+  // The directory door (inmobiliarios.com.py): Inicio · Inmobiliarios ·
+  // Inmobiliarias · Para inmobiliarios · Contacto, flat, from the `directory`
+  // namespace. One CTA — "Encontrá tu inmobiliario" — pointing at the home
+  // form, because that form is the whole product. No login, no /publicar and
+  // no search: this door introduces a seller to a professional, it does not
+  // sell a search over listings (§1 item 4). No dropdown panels: five flat
+  // entries, unlike the rental nav's Services group above.
+  const isDirectory = chromeVariant(vertical.key) === "directory";
+  const directoryNav = d.directory.chromeNav.map((l) => ({
+    ...l,
+    links: [] as never[],
+  }));
   // §5 "Header" (Nórdico): Comprar · Alquilar · Vender · Proyectos ·
   // Inmobiliarias — the extra entry (when the registry adds one) sits right
   // after "Proyectos".
-  const nav = isRental
+  const nav = isDirectory
+    ? directoryNav
+    : isRental
     ? rentalNav
     : isGuideEn
       ? guideEnNav
@@ -92,21 +106,29 @@ export async function SiteHeader() {
             ...HEADER_NAV.slice(3),
           ]
         : HEADER_NAV;
-  const ctaLabelFull = isRental
-    ? d.rental.chromeCtaLabel
-    : nordicoCta
-      ? nordicoCta.headerVenderCtaFull
-      : "Publicar propiedad";
-  const ctaLabelShort = isRental
-    ? d.rental.chromeCtaLabel
-    : nordicoCta
-      ? nordicoCta.headerVenderCtaShort
-      : "Publicar";
+  const ctaLabelFull = isDirectory
+    ? d.directory.chromeCtaLabel
+    : isRental
+      ? d.rental.chromeCtaLabel
+      : nordicoCta
+        ? nordicoCta.headerVenderCtaFull
+        : "Publicar propiedad";
+  const ctaLabelShort = isDirectory
+    ? d.directory.chromeCtaLabel
+    : isRental
+      ? d.rental.chromeCtaLabel
+      : nordicoCta
+        ? nordicoCta.headerVenderCtaShort
+        : "Publicar";
   // `chromeShowPublishCta` is false for this family — that flag is about the
   // /publicar wizard, which these doors have no use for. The contact CTA is
   // this chrome's own, so it is decided here alongside the nav.
-  const headerCtaHref = isRental ? d.rental.chromeCtaHref : ctaHref;
-  const showHeaderCta = isRental || showPublishCta;
+  const headerCtaHref = isDirectory
+    ? d.directory.chromeCtaHref
+    : isRental
+      ? d.rental.chromeCtaHref
+      : ctaHref;
+  const showHeaderCta = isDirectory || isRental || showPublishCta;
   return (
     <header className="site-header">
       <div className="site-header__inner">

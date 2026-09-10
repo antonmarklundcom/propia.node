@@ -134,6 +134,71 @@ export async function SiteFooter() {
     );
   }
 
+  /**
+   * The directory door's footer (inmobiliarios.com.py). Same shape as the
+   * rental one and for the same reason: this door is not a narrowed
+   * marketplace, so none of the marketplace columns — /venta, /proyectos,
+   * /publicar, the city and property-type link farms — belong here. What is
+   * left is the brand, what the door does, the directory itself, and the legal
+   * pages.
+   *
+   * No newsletter and no "Ingresar": the chrome flags say this door has
+   * neither (`chromeShowLogin` / `chromeShowNewsletter`), and a footer that
+   * quietly reintroduces them is how a door's promise and its markup drift
+   * apart.
+   */
+  if (variant === "directory") {
+    const t = d.directory;
+    return (
+      <footer className="site-footer">
+        <div className="site-footer__inner site-footer__inner--rental">
+          <div className="site-footer__about">
+            <div className="site-footer__brand">{brand}</div>
+            <p className="site-footer__tagline">{t.footerTagline(brand)}</p>
+            <ul className="site-footer__contact">
+              {waHref && (
+                <li>
+                  <a
+                    className="site-footer__link"
+                    href={waHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    💬 WhatsApp {whatsapp}
+                  </a>
+                </li>
+              )}
+              <li>
+                {/* There is no portal mailbox and this door does not invent
+                    one (CLAUDE.md: never a placeholder address). */}
+                {CONTACT_EMAIL ? (
+                  <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
+                    ✉️ {CONTACT_EMAIL}
+                  </a>
+                ) : (
+                  <Link className="site-footer__link" href="/contacto">
+                    ✉️ {t.footerContactUs}
+                  </Link>
+                )}
+              </li>
+            </ul>
+          </div>
+
+          <Column title={t.footerDirectoryTitle} links={t.footerDirectoryLinks} />
+          <Column title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
+        </div>
+
+        <div className="site-footer__bottom">
+          <span>
+            © {year} {brand}
+          </span>
+        </div>
+
+        <div className="site-footer__disclaimer">{t.footerLegalLine(brand)}</div>
+      </footer>
+    );
+  }
+
   if (isGuideEn) {
     const t = d.guideEn;
     return (
