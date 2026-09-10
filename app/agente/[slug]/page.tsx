@@ -93,17 +93,15 @@ export default async function AgentProfilePage({ params }: Params) {
   if (ix.state === "gone") notFound();
 
   const vertical = await currentVertical();
+  const isDirectory = directoryPagesEnabled(vertical.key);
   const [listings, agency, zoneCities] = await Promise.all([
     getAgentListings({ agentId: agent.id, limit: 24, vertical }),
     agent.agencyId ? getAgencyById(agent.agencyId) : Promise.resolve(null),
     // Only the directory rendering has a form with a city select; every other
     // door skips the query entirely rather than loading a list it will not
     // render.
-    directoryPagesEnabled(vertical.key)
-      ? listCities()
-      : Promise.resolve([] as { slug: string; name: string }[]),
+    isDirectory ? listCities() : Promise.resolve([] as { slug: string; name: string }[]),
   ]);
-  const isDirectory = directoryPagesEnabled(vertical.key);
   // Where this professional actually has inventory, in portfolio order, at most
   // four. Derived from the listings already loaded above: `agents` has no zones
   // column and D1b adds no schema.
@@ -119,8 +117,13 @@ export default async function AgentProfilePage({ params }: Params) {
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
 
+  // The directory door's own breadcrumb gets one intermediate — Inicio ›
+  // Inmobiliarios › name — labels from `directory.chromeNav` (P3 decision 5).
+  // The marketplace branch's crumbs are unchanged.
+  const dirCrumb = isDirectory ? d.directory.chromeNav[1] : null;
   const crumbs = [
     { name: d.listing.breadcrumbHome, url: "/" },
+    ...(dirCrumb ? [{ name: dirCrumb.label, url: dirCrumb.href }] : []),
     { name: agent.name, url: agentUrl(agent.slug) },
   ];
 
@@ -139,96 +142,103 @@ export default async function AgentProfilePage({ params }: Params) {
       )}
 
       <nav className="breadcrumb-nav" aria-label={d.profile.navAriaLabel}>
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Link className="breadcrumb-nav__link" href="/">
-            {d.listing.breadcrumbHome}
-          </Link>
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span aria-hidden>›</span>
-          <span className="breadcrumb-nav__current" aria-current="page">
-            {agent.name}
+        {crumbs.map((crumb, i) => (
+          <span key={crumb.url} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {i > 0 && <span aria-hidden>›</span>}
+            {i === crumbs.length - 1 ? (
+              <span className="breadcrumb-nav__current" aria-current="page">
+                {crumb.name}
+              </span>
+            ) : (
+              <Link className="breadcrumb-nav__link" href={crumb.url}>
+                {crumb.name}
+              </Link>
+            )}
           </span>
-        </span>
+        ))}
       </nav>
 
       {isDirectory ? (
-        <>
+        <div className="dir-profile">
           {/**
-           * The directory door's profile body (D1b). What a property owner
-           * needs to decide and nothing else: who this is, where they work,
-           * and a form that reaches them through the operator. No raw
-           * WhatsApp or mailto link — a directory lead the operator never
-           * sees is a lead this door cannot follow up (D1 "Leads").
+           * The directory door's profile body (D1b), restyled to the "Paso a
+           * Paso" look (P3): the header as a card, two columns from 960px
+           * (rail left, sticky form right), form directly under the header
+           * on mobile. What a property owner needs to decide and nothing
+           * else — no raw WhatsApp or mailto link, no invented figures.
            */}
-          <header className="agent-profile__header">
+          <header className="dir-profile__header">
             {photo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="agent-profile__logo" src={photo} alt={agent.name} referrerPolicy="no-referrer" />
+              <img className="dir-profile__photo" src={photo} alt={agent.name} referrerPolicy="no-referrer" />
             ) : (
-              <div className="agent-profile__avatar" aria-hidden>
+              <div className="dir-profile__avatar" aria-hidden>
                 {initials || "A"}
               </div>
             )}
             <div>
-              <h1 className="agent-profile__name">
+              <h1 className="dir-profile__name">
                 {agent.name}
                 {agent.isVerified && (
-                  <span className="agent-profile__verified" title={d.directory.listVerified}>
-                    ✓
-                  </span>
+                  <span className="dir-profile__verified">{d.directory.listVerified}</span>
                 )}
               </h1>
-              <p className="agent-profile__meta">
+              <p className="dir-profile__meta">
                 {d.directory.profileKindAgent} ·{" "}
                 {listingCount > 0
                   ? d.directory.listListingCount(listingCount)
                   : d.directory.profileEmpty}
               </p>
               {agency && (
-                <p className="agent-profile__agency">
+                <p className="dir-profile__meta">
                   <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
                 </p>
               )}
               {coverage.length > 0 && (
-                <p className="agent-profile__meta">
+                <p className="dir-profile__meta">
                   {d.directory.profileCoverage(coverage)}
                 </p>
               )}
             </div>
           </header>
 
-          {/* The form comes before the portfolio: on this door it is the
-              product, not an afterthought under the listings. */}
-          <section className="contact-panel" id="contacto">
-            <h2 className="contact-panel__title">
-              {d.directory.profileFormTitle(agent.name)}
-            </h2>
-            <p className="contact-panel__subtitle">{d.directory.heroSubtitle}</p>
-            <DirectoryLeadForm
-              cities={zoneCities}
-              idPrefix="dir-profile"
-              locale={locale}
-              agentSlug={agent.slug}
-              source="directory:profile"
-            />
-          </section>
-
-          {listings.length > 0 ? (
-            <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-              <h2 className="similar-listings__title">
-                {d.directory.profilePortfolioTitle}
+          <div className="dir-profile__grid">
+            {/* DOM order matches mobile order (P3 decision 3): form directly
+                under the header, then the rail. On desktop the grid places
+                this panel in the right column via `grid-column`, not by
+                reordering the markup. */}
+            <section className="contact-panel dir-profile__side" id="contacto">
+              <h2 className="contact-panel__title">
+                {d.directory.profileFormTitle(agent.name)}
               </h2>
-              <div className="similar-listings__grid">
-                {listings.map((card) => (
-                  <ListingCard key={card.id} card={card} />
-                ))}
-              </div>
+              <p className="contact-panel__subtitle">{d.directory.heroSubtitle}</p>
+              <DirectoryLeadForm
+                cities={zoneCities}
+                idPrefix="dir-profile"
+                locale={locale}
+                agentSlug={agent.slug}
+                source="directory:profile"
+              />
             </section>
-          ) : (
-            <p className="agent-profile__empty">{d.directory.profileEmpty}</p>
-          )}
-        </>
+
+            <div className="dir-profile__main">
+              {listings.length > 0 ? (
+                <section className="similar-listings dir-profile__rail" style={{ borderTop: "none", paddingTop: 0 }}>
+                  <h2 className="similar-listings__title">
+                    {d.directory.profilePortfolioTitle}
+                  </h2>
+                  <div className="similar-listings__grid dir-profile__rail-grid">
+                    {listings.map((card) => (
+                      <ListingCard key={card.id} card={card} />
+                    ))}
+                  </div>
+                </section>
+              ) : (
+                <p className="dir-profile__empty">{d.directory.profileEmpty}</p>
+              )}
+            </div>
+          </div>
+        </div>
       ) : (
         <>
         <header className="agent-profile__header">

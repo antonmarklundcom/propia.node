@@ -57,4 +57,25 @@ Phase log ≤ 12/8/8 lines + one Verification line. Add the §9 line.
 
 (one line per phase as it lands)
 
+- **P5 — docs truth pass**: D8 owner inbox found already built (only owner
+  lead notification is open, not the inbox itself); directory/rentparaguay
+  rows corrected to live; `alquiler.com.py` marked not-purchased; README
+  domain section rewritten; reviews decision logged to
+  `docs/decisions-needed.md`. `docs/log/p5.md`.
+- **P1 — operation hubs: compact hero, listings first, chips for types**:
+  hero shrunk to title/lead/search bar with no min-height; count badge
+  dropped, its number folded into the latest-listings heading; section
+  order is hero → latest listings → by city → by type (types last, as
+  chips, hidden under 2); search button now follows the door's button
+  tokens. `docs/log/p1.md`.
+- **P3 — directory profiles: Paso a Paso look**: `/agente/[slug]` and
+  `/inmobiliaria/[slug]`'s directory branch restyled under a new
+  `.dir-profile` wrapper — header as a white card (96px photo/initials,
+  cobalt "Verificado" pill), two columns ≥960px (rail/Equipo left, sticky
+  form right), form directly under the header on mobile, hairline empty
+  state, one extra breadcrumb (Inicio › Inmobiliarios/Inmobiliarias ›
+  name). No new copy — reused existing `directory` keys. Marketplace branch
+  of both pages untouched. `docs/log/p3.md`.
+
+- P2 — hub hero photos: `docs/log/p2.md`. CSS wiring + `data-op` landed; the two WebP files are blocked on the environment network allowlist (no credits spent).
 - P4 — `docs/log/p4.md` — D3: `agents.bio/license_no/years_active/zones`, the `lead_matches` table and the "match 3" panel in `/admin/leads`. Schema; PR open, Anton merges after `db:status`.

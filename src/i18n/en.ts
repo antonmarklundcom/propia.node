@@ -669,14 +669,13 @@ export const enHub = {
     { h1: string; lead: string; label: string; cityLabel: string }
   >,
   breadcrumbHome: "Home",
-  count: (total: string) => `${total} properties listed`,
   byTypeTitle: "By property type",
   byTypeSubtitle: (opLabel: string) =>
     `Choose what you are looking for. The totals are listings published today under ${opLabel}.`,
   byCityTitle: "By city",
   byCitySubtitle:
     "Every city with active inventory, ordered by number of listings.",
-  latestTitle: "Latest listings",
+  latestTitle: (total: string) => `Latest listings · ${total} properties`,
   latestNoteLead: "Looking in one particular area? Go to",
   latestNoteTail: "and filter by neighbourhood, price and bedrooms.",
   emptyBody: (opLabel: string) =>

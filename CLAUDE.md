@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-09-09.
+Last verified against the code: 2026-09-10.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -22,8 +22,8 @@ table.
 | `inmobiliarios.com.py` (plural) | **Owned (confirmed by the founder 2026-09-10, correcting the old "not owned" line here). The realtor directory door — code landed 2026-09-10 (D1/D2/D1b/D4), DNS live and `ownsDirectory` flipped onto it the same day.** Not a marketplace: a seller-first lead-gen directory (`family: "directory"`, `mode: "directory"`, `fable-plan-realtor-terreno-rental.md` Stage 1 D). Brand "Inmobiliarios Paraguay", Spanish, `ownsListingDetail: false`, **`ownsDirectory: true`** (the Spanish owner of the directory page type — see the row below). Every marketplace path (`/venta`, `/propiedad`, `/publicar`, `/precios`, `/proyectos`, …) 308s to `https://inmobiliaria.com.py<path>` from `middleware.ts`. Distinct from the singular above — do not conflate them. |
 | `ownsDirectory` (a flag, not a domain) | Which host is canonical for `/agentes`, `/agente/*`, `/inmobiliarias`, `/inmobiliaria/*` — the `ownsListingDetail` pattern, **per locale**. Today: `inmobiliarios.com.py` (es, since the 2026-09-10 go-live) and `realestateinparaguay.com` (en). The marketplace doors still render those pages but canonicalise to the owner and omit them from their sitemaps. `verify:seo` asserts one owner per locale and that the Spanish owner is the directory door. |
 | `terreno.com.py` | **Owned, enabled, consolidated onto this app 2026-09-04** from its own former standalone Node deployment — retire that deployment separately (infra, not this repo). Terrenos-only feeder (`filters: { property_type: ["terreno"] }`), Spanish, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` and its sitemap omits them. |
-| `alquiler.com.py` | **The rental family's Spanish door — code landed 2026-09-09 (O1), DNS pending.** Not a marketplace feeder: with `rentparaguay.com` it is one rental-services business in two languages (`family: "rental"`, `fable/plan-rentparaguay.md`). `enabled: true` so it can be previewed with a `Host` header and checked by `verify:seo`; nothing reaches a visitor until DNS points at Hostinger. Brand "Alquiler Paraguay", `filters: { operation: ["alquiler", "alquiler_temporal"] }`, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` (the Spanish detail owner) and its sitemap omits them. Serves the rental business's own pages at **Spanish** URLs (`/servicios/<slug>`, `/nosotros`, `/contacto`) and 301s the English ones (R2, 2026-09-10). Confirm the domain is actually registered before go-live. |
-| `rentparaguay.com` | **The same rental business in English — code landed 2026-09-09 (O1), DNS pending.** Its own `VerticalKey` (`"rent"`), paired to `alquiler.com.py` by `family`, not by key. Brand "Rent Paraguay", `locale: "en"`, same filters, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com`, the door that owns detail **in its own language**. hreflang pairs it only with `alquiler.com.py`: a door is never a language version of a door in another family. **Its own pages are English URLs since R2 (2026-09-10)** — `/services/<slugEn>`, `/about`, `/contact` — and it 301s the Spanish ones; `alquiler.com.py` does the reverse. `/propiedad/*` is NOT localised: that is the marketplace's page type and stays Spanish-slugged on every door. |
+| `alquiler.com.py` | **The rental family's Spanish door — code landed 2026-09-09 (O1). Not purchased yet, and that is the actual blocker, not DNS.** `enabled: true` in `verticals.ts` so it can be previewed with a `Host` header and checked by `verify:seo`, but the host key is a domain nobody owns: there is nothing to point DNS at. Anton's first choice if `alquiler.com.py` stays unavailable is `alquileres.com.py`; once a domain is bought, renaming the host key in `verticals.ts` + the redirect map in `next.config.ts` + this doc is a one-hour Sonnet task (`fable-plan-polish.md`'s "Spanish rental domain" row), not a new build. Not a marketplace feeder: with `rentparaguay.com` it is one rental-services business in two languages (`family: "rental"`, `fable/plan-rentparaguay.md`). Brand "Alquiler Paraguay", `filters: { operation: ["alquiler", "alquiler_temporal"] }`, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` (the Spanish detail owner) and its sitemap omits them. Serves the rental business's own pages at **Spanish** URLs (`/servicios/<slug>`, `/nosotros`, `/contacto`) and 301s the English ones (R2, 2026-09-10). |
+| `rentparaguay.com` | **The same rental business in English — code landed 2026-09-09 (O1). DNS live as of 2026-09-10** (Anton confirmed the domain points at Hostinger), so this door now reaches real visitors. Its own `VerticalKey` (`"rent"`), paired to `alquiler.com.py` by `family`, not by key. Brand "Rent Paraguay", `locale: "en"`, same filters, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com`, the door that owns detail **in its own language**. hreflang pairs it only with `alquiler.com.py`: a door is never a language version of a door in another family. **Its own pages are English URLs since R2 (2026-09-10)** — `/services/<slugEn>`, `/about`, `/contact` — and it 301s the Spanish ones. `/propiedad/*` is NOT localised: that is the marketplace's page type and stays Spanish-slugged on every door. **Still open, founder-only**: `NEXT_PUBLIC_CONTACT_WHATSAPP` is unset, so this door's WhatsApp CTA is hidden until it is set and the app rebuilt (see backlog item 10); the old `rentparaguay.com`'s WordPress redirects still need checking before that deployment is decommissioned. `alquiler.com.py`, its Spanish pair, is not reachable yet — see its own row. |
 | `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
 
 **Outstanding manual step:** `NEXT_PUBLIC_CANONICAL_HOST` on Hostinger must
@@ -215,31 +215,38 @@ default, `--dry` first). It records itself as a revertible import job.
    screen that does not exist yet. Flipping `active` back to `true` site-wide
    is NOT the intended path.
 
-8. **FSBO loop — half built, on purpose.** As of 2026-08-20 (PRs #62–#64) a
-   listing published through `/publicar` has a working contact: the chain on
-   the detail page is agent → agency → **owner** (`ListingDetail.ownerUser`,
-   resolved only when there is no agency and no agent), the seller card labels
-   them "Particular", and `/admin/leads` names that publisher behind an
-   `internal` lead and offers a one-tap WhatsApp forward. An FSBO publisher
-   does **not** get an `agents` row — that would put a private seller into
-   `/agente/[slug]` and the agent directory with a professional's trust
-   signal. What is still missing is their own inbox: **PLAN.md D8**, a founder
-   decision. Until it lands the operator forwards, which is why the forward
-   button exists. `routed_to` has no `owner` lane and adding one is a schema
-   change — do not add it without D8.
+8. **FSBO loop — the owner inbox (PLAN.md D8) is done; only notification is
+   open.** A listing published through `/publicar` has a working contact: the
+   chain on the detail page is agent → agency → **owner**
+   (`ListingDetail.ownerUser`, resolved only when there is no agency and no
+   agent), the seller card labels them "Particular", `/admin/leads` still
+   offers the operator a one-tap WhatsApp forward, and `leads.routed_to` has
+   an `owner` lane (`app/api/leads/route.ts`'s `routedTo` chain: agent →
+   agency → owner → internal). The owner's own panel exists and is live:
+   `/mis-avisos` lists their listings with status changes and an edit link
+   (`app/mis-avisos/page.tsx`, `actions.ts`), `/mis-avisos/consultas` lists
+   their leads with a WhatsApp reply button (`app/mis-avisos/consultas/page.tsx`),
+   both scoped to the logged-in owner by `requireOwnerContext()`. FSBO
+   publishers still get **no** `agents` row, on purpose — that would put a
+   private seller into `/agente/[slug]` with a professional's trust signal.
+   **The one real gap:** nothing pings the owner when a lead arrives — they
+   only see it by opening `/mis-avisos/consultas`. `alertOperator()` still
+   only notifies the operator (item 9 below). Adding an owner-facing
+   notification is unscheduled, not blocked on a decision.
 9. **Operator alerts are optional and silent when unset.** `alertOperator()`
    in `src/lib/crm.ts` posts `{"event":"operator_alert"}` to
    `LEAD_WEBHOOK_URL` on a new lead and a new review submission. With no
    webhook there is no alert and no fake one — the zero-config signal is the
    `/admin` badges (review queue, and leads from the last 24 h). Same rule as
    `sendOtp`: never log a line that pretends a message was delivered.
-10. **The rental doors' code is done; going live is manual.** All of
+10. **The rental doors' code is done; going live is half manual now.** All of
     `fable/plan-rentparaguay.md` landed 2026-09-09 (O1–O3, S1–S3):
     `alquiler.com.py` / `rentparaguay.com` are `enabled: true`, previewable
-    with a `Host` header, and pass `verify:seo`. **Still pending, founder-only**:
-    (a) DNS for both domains must actually point at Hostinger before either
-    door reaches a real visitor — confirm both are registered first; (b) the
-    old `rentparaguay.com`'s WordPress redirects need checking before that
+    with a `Host` header, and pass `verify:seo`. **`rentparaguay.com`'s DNS is
+    live as of 2026-09-10** — it reaches real visitors. **Still pending,
+    founder-only**: (a) `alquiler.com.py` is not purchased (see the domain
+    table row) so the Spanish half of the pair is not reachable at all; (b)
+    the old `rentparaguay.com`'s WordPress redirects need checking before that
     deployment is decommissioned, so the S1 301 map (plan §6.1) isn't
     replacing live traffic with 404s; (c) `NEXT_PUBLIC_CONTACT_WHATSAPP`
     (`.env.example`) is unset today, so the rental footer's WhatsApp CTA is

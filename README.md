@@ -79,18 +79,27 @@ Cuota conversion uses `USD_TO_PYG` (default 7300) to turn normalized
    missing `listings.review_notes` broke every listing detail page after M5).
    PLAN.md's "Pending migration" section is the current runbook of what has
    and has not been applied to prod.
-3. **Domains:** the live marketplace doors are `realestateinparaguay.com`
-   (primary, canonical) and `inmobiliaria.com.py`, both pointed at the same
-   app. Two other doors share the app but are separate businesses, both
-   merged with their code done and DNS still pending — `enabled: true` only
-   means they can be previewed with a `Host` header today: a rental-services
-   business, `alquiler.com.py` (Spanish) / `rentparaguay.com` (English), own
-   `family: "rental"`; and a realtor lead-gen directory, `inmobiliarios.com.py`
-   (`family: "directory"`) — not a listings marketplace, every marketplace
-   path on it 308s to `inmobiliaria.com.py`. See CLAUDE.md's domain table for
-   which domains are owned before pointing a new one here. `middleware.ts`
-   routes by Host header; an unrecognized host resolves to the canonical
-   primary.
+3. **Domains:** five doors share this app, routed by `middleware.ts` on the
+   Host header (an unrecognized host resolves to the canonical primary). As
+   of 2026-09-10:
+   - `inmobiliaria.com.py` — **live.** The Spanish marketplace primary
+     (`family: "marketplace"`, PLAN.md D6).
+   - `realestateinparaguay.com` — **live.** Its English translation, same
+     app/database; `title_en`/`description_en` still fall back to Spanish
+     until `npm run cron:translate` runs against prod.
+   - `inmobiliarios.com.py` — **live.** The realtor directory door
+     (`family: "directory"`); every marketplace path on it 308s to
+     `inmobiliaria.com.py`. It now owns `/agentes`, `/agente/*`,
+     `/inmobiliarias`, `/inmobiliaria/*` in Spanish (`ownsDirectory`).
+   - `rentparaguay.com` — **live.** The rental business's English door
+     (`family: "rental"`); its WhatsApp CTA stays hidden until
+     `NEXT_PUBLIC_CONTACT_WHATSAPP` is set.
+   - `alquiler.com.py` — **not live: the domain is not purchased.**
+     `enabled: true` in code so it can be previewed with a `Host` header and
+     checked by `verify:seo`, but there is nothing to point DNS at yet; the
+     Spanish half of the rental pair has no real address.
+   See CLAUDE.md's domain table for the full detail (ownership, filters,
+   `ownsListingDetail`/`ownsDirectory`) before pointing a new one here.
 4. **Cron jobs:** hPanel → Cron Jobs → schedule
    `npx tsx scripts/<job>.ts` for each `cron:*` script in `package.json`
    (`cron:cuotas`, `cron:medians`, `cron:geo`, `cron:translate`,
