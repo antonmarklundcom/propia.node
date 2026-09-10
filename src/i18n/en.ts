@@ -1757,17 +1757,25 @@ export const enDirectory = {
   footerLegalLine: (brand: string) =>
     `${brand} introduces owners to independent real estate agents. We take no part in the transaction and charge the owner no commission.`,
 
-  heroKicker: "Free, no strings attached",
-  heroTitle: "Find the right agent for your property",
+  // Copy locked D4 (docs/style/inmobiliarios.com.py.md, artboard "Paso a
+  // Paso" / "Step by Step") — peer of the Spanish, not a literal translation.
+  heroKicker: "For owners · Free",
+  heroTitle: "Sell your property with an agent who already knows your area.",
   heroSubtitle:
-    "Tell us what you want to sell or rent out and we will put you in touch with up to three agents who work in your area.",
+    "Sign up in three steps. Get a free valuation, proposals from up to three verified agents, and your listing across the whole network.",
   heroPoints: [
-    "You talk to people, not to a form that goes nowhere",
-    "No cost to you: we charge the owner nothing",
-    "You decide who to keep talking to",
+    "A free valuation of your property, with data from your area",
+    "You choose the agent from the proposals you receive",
+    "Your listing published on inmobiliaria.com.py and realestateinparaguay.com",
+    "No cost to you: we charge the owner no commission",
   ],
 
-  formTitle: "Tell us about your property",
+  formTitle: "Let's start with you",
+  formSteps: ["1 · Your details", "2 · Your property", "3 · Confirm"],
+  formNext: "Continue to step 2 →",
+  formNext2: "Continue to step 3 →",
+  formBack: "← Back",
+  formEdit: "Edit",
   formNameLabel: "Your name",
   formPhoneLabel: "WhatsApp",
   formPhonePlaceholder: "+595 981 234 567",
@@ -1780,14 +1788,13 @@ export const enDirectory = {
     { value: "venta", label: "Sell" },
     { value: "alquiler", label: "Rent out" },
   ],
-  formMessageLabel: "Anything else we should know",
-  formMessagePlaceholder:
-    "Neighbourhood, size, condition, when you want to start…",
-  formSubmit: "Send me proposals",
+  formMessageLabel: "Anything else you'd like to tell us",
+  formMessagePlaceholder: "Size, condition, whether it's rented…",
+  formSubmit: "I want my free valuation",
   formSending: "Sending…",
   formPhoneError: "Please enter a valid WhatsApp number.",
   formError: "We could not send your enquiry. Please try again in a moment.",
-  formNote: "We reply on WhatsApp. Your details are never published anywhere.",
+  formNote: "Free, no strings attached. Only verified agents contact you.",
   formFineprintPrefix: "By sending this you accept the",
   formTerms: "terms",
   formFineprintAnd: "and the",
@@ -1796,19 +1803,19 @@ export const enDirectory = {
   formSuccessText:
     "We will message you on WhatsApp with the agents who work your area.",
 
-  howTitle: "How it works",
+  howTitle: "What happens after you sign up",
   howSteps: [
     {
-      title: "Tell us",
-      text: "A short form: what you have, where it is, and what you want to do with it.",
+      title: "We value your property",
+      text: "An estimated value with data from your area, at no cost.",
     },
     {
-      title: "Compare",
-      text: "We introduce agents who work that area, with their published portfolio in plain sight.",
+      title: "You get proposals",
+      text: "Up to three verified agents in your area present their plan. You choose who to work with.",
     },
     {
-      title: "Choose",
-      text: "Talk to whoever you like and continue only with the one who convinces you. No exclusivity with us.",
+      title: "Your listing across the network",
+      text: "The agent publishes it on inmobiliaria.com.py and on realestateinparaguay.com.",
     },
   ],
 
@@ -1830,9 +1837,9 @@ export const enDirectory = {
     },
   ],
 
-  teaserTitle: "Verified agents",
+  teaserTitle: "Network of verified agents",
   teaserSubtitle: "The ones already with us, with an active portfolio.",
-  teaserAllLink: "See the full directory",
+  teaserAllLink: "See the directory",
   teaserEmptyTitle: "Be among the first",
   teaserEmptyText:
     "We are building this directory one agency at a time. If you work in the trade, now is the moment to join.",

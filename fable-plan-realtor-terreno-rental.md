@@ -358,7 +358,14 @@ full copy under the `Host` header, PR merged.
   extended the home FAQ from two to five questions, and filled the one real
   gap D1 left — `/para-inmobiliarios` had no FAQ of its own — with a
   professional-facing `proFaq` and its own JSON-LD. README's domain section
-  now names the directory door. Last phase in the plan.
+  now names the directory door.
+
+- **D4** — `docs/log/d4.md` — the directory home's "Paso a Paso" visual
+  direction (Claude Design canvas *Inmobiliarios Home · 3 direcciones*,
+  artboard 2a): a new `DIRECTORY` token set (cream/cobalt/Lora + Public Sans)
+  on `agents`, `DirectoryLeadForm` rebuilt as a real three-step stepper (same
+  state, same payload, same one `fetch`), the hero/how/pro copy rewritten
+  around the three steps in `es.ts` + `en.ts`, `docs/style/inmobiliarios.com.py.md`.
 
 - **D1b** — `docs/log/d1b.md` — the two profile page bodies D1 deferred:
   `/agente/[slug]` and `/inmobiliaria/[slug]` now render a directory body

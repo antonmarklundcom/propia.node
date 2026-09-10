@@ -12,6 +12,12 @@ import "@fontsource-variable/newsreader";
 import "@fontsource/ibm-plex-sans/400.css";
 import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/ibm-plex-sans/600.css";
+// Self-hosted Lora + Public Sans, unconditionally available the same way —
+// only inmobiliarios.com.py's theme override (OVERRIDES.agents) actually
+// selects them via --font-display/--font-sans (D4,
+// docs/style/inmobiliarios.com.py.md).
+import "@fontsource-variable/lora";
+import "@fontsource-variable/public-sans";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNotice } from "@/components/SiteNotice";

@@ -8365,3 +8365,178 @@ summary.panel-btn::-webkit-details-marker {
 .rp-channels a {
   color: var(--color-link);
 }
+
+/* ---------------------------------------------------------------------- */
+/* inmobiliarios.com.py home — "Paso a Paso" (D4,                         */
+/* docs/style/inmobiliarios.com.py.md). Scoped under .directory-home so    */
+/* these rules only ever apply to that door's shell; everything else here */
+/* rides the DIRECTORY theme tokens already (colour/type come from        */
+/* :root vars, never a branch in the component).                          */
+/* ---------------------------------------------------------------------- */
+
+/* Hero: copy 7 / form card 5 on desktop, stacked with the form directly
+   under the H1/subtitle on mobile (the existing .nh-hero__grid media query
+   already stacks at 900px — this only changes the desktop ratio). */
+.directory-home .nh-hero__grid {
+  grid-template-columns: 7fr 5fr;
+}
+
+/* "Qué pasa después de registrarte" numerals: Lora 48px cobalt, per the
+   artboard — the shared .home-how block stays a 22px circular badge on
+   every other door. */
+.directory-home .home-how__num {
+  position: static;
+  width: auto;
+  height: auto;
+  background: none;
+  border-radius: 0;
+  display: block;
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-accent);
+  margin-bottom: 6px;
+}
+
+.directory-home .home-how__step {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.directory-home .home-how__step-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.directory-home .home-how__step-text {
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* "¿Sos inmobiliario?" band: cobalt-on-dark kicker, outline CTA (the
+   artboard's one action on a navy ground reads as an outline, not a second
+   solid fill next to the hero's). */
+.directory-home .home-pro__kicker {
+  color: var(--color-accent-on-dark);
+}
+
+.directory-home .home-pro__button {
+  background: transparent;
+  border: 1px solid var(--color-accent-on-dark);
+  color: #fff;
+}
+
+.directory-home .home-pro__button:hover {
+  background: rgba(143, 176, 255, 0.12);
+  filter: none;
+}
+
+/* The stepper's own step bar — three segments, current cobalt, done navy,
+   pending grey. */
+.df-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.df-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.df-step__bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+.df-step--done .df-step__bar {
+  background: var(--color-ink);
+}
+
+.df-step--current .df-step__bar {
+  background: var(--color-accent);
+}
+
+.df-step__label {
+  font-size: 11px;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.df-step--done .df-step__label {
+  color: var(--color-ink);
+}
+
+.df-step--current .df-step__label {
+  color: var(--color-accent);
+  font-weight: 650;
+}
+
+.df-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.df-actions .vd-form__submit {
+  flex: 1;
+}
+
+.df-back {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.df-back:hover {
+  color: var(--color-ink);
+  border-color: var(--color-ink-muted);
+}
+
+.df-summary {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14.5px;
+}
+
+.df-summary__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-ink-secondary);
+}
+
+.df-summary__row strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.df-edit {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--color-link);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
