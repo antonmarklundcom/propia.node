@@ -56,3 +56,15 @@ Phase log ≤ 12/8/8 lines + one Verification line. Add the §9 line.
 ## §9 Build log index
 
 (one line per phase as it lands)
+
+- **P5 — docs truth pass**: D8 owner inbox found already built (only owner
+  lead notification is open, not the inbox itself); directory/rentparaguay
+  rows corrected to live; `alquiler.com.py` marked not-purchased; README
+  domain section rewritten; reviews decision logged to
+  `docs/decisions-needed.md`. `docs/log/p5.md`.
+- **P1 — operation hubs: compact hero, listings first, chips for types**:
+  hero shrunk to title/lead/search bar with no min-height; count badge
+  dropped, its number folded into the latest-listings heading; section
+  order is hero → latest listings → by city → by type (types last, as
+  chips, hidden under 2); search button now follows the door's button
+  tokens. `docs/log/p1.md`.
