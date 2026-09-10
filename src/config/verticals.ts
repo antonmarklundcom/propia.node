@@ -88,11 +88,10 @@ export interface VerticalConfig {
    * an English page whose canonical is a Spanish URL is a canonical Google
    * ignores.
    *
-   * It is deliberately NOT on `inmobiliarios.com.py` yet. The directory door's
-   * code ships before its DNS does (§1 item 6), and a canonical pointing at a
-   * host that does not resolve is worse than a duplicate — so the Spanish
-   * owner stays `inmobiliaria.com.py` and the flip is one line in the go-live
-   * PR, after DNS resolves.
+   * Owners today: `inmobiliarios.com.py` (es, since the 2026-09-10 go-live —
+   * the flag stayed off it until its DNS resolved, because a canonical pointing
+   * at a dead host is worse than a duplicate) and `realestateinparaguay.com`
+   * (en, there is no English directory door).
    */
   ownsDirectory?: boolean;
 }
@@ -180,8 +179,8 @@ export const VERTICALS: Record<string, VerticalConfig> = {
    * synthetic copy of it. Nothing reaches a visitor until the domain's DNS
    * points at Hostinger — that is the go-live switch, not this flag.
    *
-   * `ownsDirectory` is deliberately absent: see the field's doc comment. It
-   * flips here, and off `inmobiliaria.com.py`, in the go-live PR.
+   * `ownsDirectory` moved here from `inmobiliaria.com.py` at go-live
+   * (2026-09-10), once DNS resolved — see the field's doc comment.
    */
   "inmobiliarios.com.py": {
     key: "agents",
@@ -192,6 +191,10 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "directory",
     enabled: true,
     ownsListingDetail: false,
+    // Go-live 2026-09-10: DNS resolves, so this door is now the Spanish owner
+    // of the directory page type. Marketplace doors keep rendering those pages
+    // and canonicalise here.
+    ownsDirectory: true,
   },
   "desarrolladores.com.py": {
     key: "devs",
@@ -249,10 +252,9 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "ownership",
     enabled: true,
     ownsListingDetail: true,
-    // The Spanish owner of /agentes, /inmobiliarias and the two profile page
-    // types — until inmobiliarios.com.py's DNS resolves and the go-live PR
-    // moves this one line (see `ownsDirectory` on VerticalConfig).
-    ownsDirectory: true,
+    // Directory pages (/agentes, /inmobiliarias, the two profile types) are
+    // rendered here but canonical on inmobiliarios.com.py since the go-live
+    // flip of 2026-09-10 — see `ownsDirectory` on VerticalConfig.
   },
 } as const;
 

@@ -571,8 +571,14 @@ check(
 console.log("\ndirectory: one owner per locale, and no marketplace URLs");
 
 const servedForDirectory = servedDoors(CANONICAL_HOST);
+// Mirrors directoryOwnerForLocale(): a door that sets the flag owns its
+// locale; the primary host is the owner only for a locale nobody claims.
+const flaggedOwners = servedForDirectory.filter((d) => d.config.ownsDirectory);
 const directoryOwners = servedForDirectory.filter(
-  (d) => d.host === CANONICAL_HOST || d.config.ownsDirectory,
+  (d) =>
+    d.config.ownsDirectory ||
+    (d.host === CANONICAL_HOST &&
+      !flaggedOwners.some((o) => o.config.locale === d.config.locale)),
 );
 const directoryLocales = directoryOwners.map((d) => d.config.locale);
 check(
@@ -589,14 +595,15 @@ check(
 );
 check(
   "(h) the resolved owner per locale is a door that really owns them",
-  directoryOwnerForLocale("es") === "inmobiliaria.com.py" &&
+  directoryOwnerForLocale("es") === "inmobiliarios.com.py" &&
     directoryOwnerForLocale("en") === "realestateinparaguay.com",
   `${directoryOwnerForLocale("es")} / ${directoryOwnerForLocale("en")}`,
 );
 check(
-  "(h) the directory door does NOT own them yet — DNS is pending (§1 item 6)",
-  VERTICALS["inmobiliarios.com.py"]?.ownsDirectory !== true,
-  "a canonical pointing at a host that does not resolve is worse than a duplicate; this flips in the go-live PR, after DNS",
+  "(h) the directory door owns the Spanish directory pages (go-live 2026-09-10)",
+  VERTICALS["inmobiliarios.com.py"]?.ownsDirectory === true &&
+    VERTICALS["inmobiliaria.com.py"]?.ownsDirectory !== true,
+  "DNS resolves, so the flag moved off inmobiliaria.com.py; two Spanish owners would be the duplicate the flag exists to prevent",
 );
 check(
   "(h) the directory door is served, so it can be previewed and verified",
