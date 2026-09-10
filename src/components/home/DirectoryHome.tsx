@@ -52,32 +52,90 @@ export function DirectoryHome({
       {t.faq.length > 0 && <JsonLd data={[faqJsonLd([...t.faq])]} />}
 
       {sections.includes("hero") && (
-        <section className="nh-hero vd-hero" id="form">
-          <div className="ds-container nh-hero__grid">
-            <div className="nh-hero__copy">
-              <p className="ds-label">{t.heroKicker}</p>
-              <h1 className="nh-hero__title">{t.heroTitle}</h1>
-              <p className="rh-hero__subtitle">{t.heroSubtitle}</p>
-              <ul className="vd-hero__lines">
-                {t.heroPoints.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
+        <section className="dir-hero">
+          <div className="ds-container dir-hero__inner">
+            <div className="dir-hero__copy">
+              <p className="ds-label dir-hero__kicker">{t.heroKicker}</p>
+              <h1 className="dir-hero__title">{t.heroTitle}</h1>
+              <p className="dir-hero__subtitle">{t.heroSubtitle}</p>
             </div>
-            <div className="vd-hero__form-wrap">
-              <h2 className="home-section__title">{t.formTitle}</h2>
-              <DirectoryLeadForm
-                cities={cities}
-                idPrefix="dir-hero"
-                locale={vertical.locale}
-              />
+            <div className="dir-doors">
+              {t.heroDoors.map((door, i) => (
+                <div
+                  key={door.id}
+                  id={door.id}
+                  className={
+                    "dir-door" + (i === 1 ? " dir-door--accent" : "")
+                  }
+                >
+                  <p className="dir-door__kicker">{door.kicker}</p>
+                  <h2 className="dir-door__title">{door.title}</h2>
+                  <ul className="dir-door__points">
+                    {door.points.map((point) => (
+                      <li key={point} className="dir-door__point">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <path d="M20 6 9 17l-5-5"></path>
+                        </svg>
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link className="dir-door__cta" href="/#form">
+                    {door.cta}
+                  </Link>
+                </div>
+              ))}
             </div>
           </div>
         </section>
       )}
 
+      {sections.includes("red-portales") && (
+        <section className="ds-section ds-container dir-network">
+          <div className="dir-network__copy">
+            <p className="ds-label">{t.networkKicker}</p>
+            <h2 className="dir-network__title">{t.networkTitle}</h2>
+            <p className="dir-network__text">{t.networkText}</p>
+          </div>
+          <div className="dir-portals">
+            {t.portals.map((p) => (
+              <div key={p.domain} className="dir-portal">
+                <p className="dir-portal__domain">{p.domain}</p>
+                <p className="dir-portal__text">{p.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {sections.includes("formulario") && (
+        <section className="ds-section ds-container dir-form" id="form">
+          <div className="dir-form__copy">
+            <h2 className="home-section__title">{t.formTitle}</h2>
+            <p className="dir-form__intro">{t.formIntro}</p>
+          </div>
+          <div className="vd-hero__form-wrap">
+            <DirectoryLeadForm
+              cities={cities}
+              idPrefix="dir-hero"
+              locale={vertical.locale}
+            />
+          </div>
+        </section>
+      )}
+
       {sections.includes("como-funciona") && (
-        <section className="home-how">
+        <section className="home-how" id="como-funciona">
           <div className="home-how__inner">
             <h2 className="home-how__title">{t.howTitle}</h2>
             <div className="home-how__grid">
@@ -213,7 +271,7 @@ export function DirectoryHome({
       )}
 
       {sections.includes("faq") && t.faq.length > 0 && (
-        <section className="home-faq">
+        <section className="home-faq" id="faq">
           <div className="home-faq__inner">
             <h2 className="home-faq__title">{t.faqTitle}</h2>
             {t.faq.map((f) => (

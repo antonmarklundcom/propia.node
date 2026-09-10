@@ -69,7 +69,13 @@ export type HomeSectionId =
   // item 1). These only ever appear for a vertical whose homeLayout() is
   // "directory" — see DirectoryHome.tsx.
   | "como-elegimos"
-  | "directorio-teaser";
+  | "directorio-teaser"
+  // "Opción E · Vender o alquilar" (Claude Design artboard OpcionE,
+  // 2026-09-10): the network-reach section between the hero and the form.
+  | "red-portales"
+  // The form gets its own section id ("formulario") now that it is no
+  // longer inline in the hero.
+  | "formulario";
 
 /**
  * Home page sections and their order. `homeLayout()` (below) decides whether
@@ -127,13 +133,17 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
     ];
   }
   if (familyOf(key) === "directory") {
-    // Stage 1 D item 1, in order: the seller form hero · the three-step
-    // explainer · "cómo elegimos" · the directory teaser (real verified agents
-    // only, §1 item 7) · the "¿Sos inmobiliario?" band · faq. No listing grid,
-    // no search bar, no /publicar CTA — this door sells an introduction to a
-    // person, not a search over rows.
+    // "Opción E · Vender o alquilar" (Claude Design artboard OpcionE,
+    // 2026-09-10), in order: the two-door hero (sell / rent) · the network
+    // section · the form · the three-step explainer · "cómo elegimos" · the
+    // directory teaser (real verified agents only, §1 item 7) · the "¿Sos
+    // inmobiliario?" band · faq. No listing grid, no search bar, no /publicar
+    // CTA — this door sells an introduction to a person, not a search over
+    // rows.
     return [
       "hero",
+      "red-portales",
+      "formulario",
       "como-funciona",
       "como-elegimos",
       "directorio-teaser",

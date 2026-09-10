@@ -2528,22 +2528,32 @@ export const esRentalServices = {
  * today and the door IS the brand.
  */
 export const esDirectory = {
-  metaTitle: "Encontrá tu inmobiliario en Paraguay",
+  metaTitle: "Vendé o alquilá tu propiedad con el mejor inmobiliario de tu zona",
   metaDescription: (brand: string) =>
-    `${brand} te conecta con inmobiliarios que trabajan en tu zona. Contanos qué querés vender o alquilar y recibí propuestas, sin costo.`,
+    `${brand} te conecta con inmobiliarios verificados de tu zona y publica tu aviso en inmobiliaria.com.py, realestateinparaguay.com y rentparaguay.com. Gratis para el propietario.`,
 
-  // Chrome — nav, CTA and footer. No login, no publicar, no newsletter.
+  // Chrome — nav, CTA and footer. No login, no publicar, no newsletter. The
+  // directory links (Inmobiliarios / Inmobiliarias / Para inmobiliarios) live
+  // in the footer only — the nav is the owner's three anchors.
   chromeNav: [
-    { label: "Inicio", href: "/" },
-    { label: "Inmobiliarios", href: "/agentes" },
-    { label: "Inmobiliarias", href: "/inmobiliarias" },
-    { label: "Para inmobiliarios", href: "/para-inmobiliarios" },
-    { label: "Contacto", href: "/contacto" },
+    { label: "Vender", href: "/#vender" },
+    { label: "Alquilar", href: "/#alquilar" },
+    { label: "Cómo funciona", href: "/#como-funciona" },
   ],
   chromeCtaLabel: "Encontrá tu inmobiliario",
+  breadcrumbHome: "Inicio",
   chromeCtaHref: "/#form",
   footerTagline: (brand: string) =>
     `${brand} es el directorio de inmobiliarios de Paraguay: te ponemos en contacto con quien trabaja tu zona.`,
+  // NEW: the footer's owner-facing column — the three home anchors plus faq,
+  // in front of the Directorio column so the owner path leads.
+  footerOwnersTitle: "Propietarios",
+  footerOwnersLinks: [
+    { label: "Vender mi propiedad", href: "/#vender" },
+    { label: "Alquilar mi propiedad", href: "/#alquilar" },
+    { label: "Cómo funciona", href: "/#como-funciona" },
+    { label: "Preguntas frecuentes", href: "/#faq" },
+  ],
   footerDirectoryTitle: "Directorio",
   footerDirectoryLinks: [
     { label: "Inmobiliarios", href: "/agentes" },
@@ -2563,22 +2573,67 @@ export const esDirectory = {
   footerLegalLine: (brand: string) =>
     `${brand} pone en contacto a propietarios con inmobiliarios independientes. No intervenimos en la operación ni cobramos comisión al propietario.`,
 
-  // Hero + the one form this door exists for.
-  // Copy locked D4 (docs/style/inmobiliarios.com.py.md, artboard "Paso a
-  // Paso") — the three-step registration is the hero, and each hero point
-  // ties back to one of those steps.
-  heroKicker: "Para propietarios · Gratis",
-  heroTitle: "Vendé tu propiedad con un agente que ya conoce tu barrio.",
+  // Hero — "Opción E · Vender o alquilar" (Claude Design artboard OpcionE,
+  // 2026-09-10). Two doors, not a single three-step pitch: the owner picks
+  // sell or rent before anything else, and both close on the network reach
+  // no single inmobiliario has on their own.
+  heroKicker: "Para propietarios",
+  heroTitle:
+    "¿Vender o alquilar? El mejor inmobiliario de tu zona, y compradores del exterior.",
   heroSubtitle:
-    "Registrate en tres pasos. Recibís una tasación gratuita, propuestas de hasta tres agentes verificados y tu aviso en toda la red.",
-  heroPoints: [
-    "Tasación gratuita de tu propiedad, con datos de tu zona",
-    "Vos elegís el agente entre las propuestas que recibís",
-    "Tu aviso publicado en inmobiliaria.com.py y realestateinparaguay.com",
-    "Sin costo para vos: no cobramos comisión al propietario",
+    "Elegí tu camino. En los dos te conectamos con inmobiliarios verificados y publicamos tu aviso en nuestra red de portales en español e inglés.",
+  // NEW: the two hero door-cards. `id` becomes the section id the /#vender
+  // and /#alquilar anchors land on.
+  heroDoors: [
+    {
+      id: "vender",
+      kicker: "Quiero vender",
+      title: "Vendé a buen precio, a compradores locales o extranjeros.",
+      points: [
+        "Tasación gratuita con datos de tu barrio",
+        "Hasta tres inmobiliarios verificados te presentan su plan",
+        "Aviso en inmobiliaria.com.py y realestateinparaguay.com",
+      ],
+      cta: "Quiero vender mi propiedad",
+    },
+    {
+      id: "alquilar",
+      kicker: "Quiero alquilar",
+      title:
+        "Alquilá a inquilinos del exterior que pagan bien y cuidan la propiedad.",
+      points: [
+        "Inmobiliarios que administran alquileres en tu zona",
+        "Expatriados, diplomáticos y ejecutivos vía rentparaguay.com",
+        "Aviso también en inmobiliaria.com.py para el mercado local",
+      ],
+      cta: "Quiero alquilar mi propiedad",
+    },
   ],
 
-  formTitle: "Empecemos por vos",
+  // NEW: "La diferencia" — the network section between the hero and the form.
+  networkKicker: "La diferencia",
+  networkTitle:
+    "Un inmobiliario solo te muestra a Paraguay. Nosotros te mostramos al mundo.",
+  networkText:
+    "Los compradores e inquilinos extranjeros buscan en inglés y no llegan a los portales locales. Nuestra red les muestra tu propiedad, y el inmobiliario que elegís cierra la operación.",
+  portals: [
+    {
+      domain: "inmobiliaria.com.py",
+      text: "El mercado local. Compradores e inquilinos de Paraguay.",
+    },
+    {
+      domain: "realestateinparaguay.com",
+      text: "En inglés, para inversores y compradores extranjeros que pagan en dólares.",
+    },
+    {
+      domain: "rentparaguay.com",
+      text: "Inquilinos del exterior: expatriados, diplomáticos y ejecutivos que buscan alquiler en Paraguay.",
+    },
+  ],
+
+  formTitle: "Empezá con tus datos",
+  formIntro:
+    "Te escribimos por WhatsApp con la tasación y los inmobiliarios que trabajan tu zona.",
   // The three-step stepper's own progress-bar labels (DirectoryLeadForm,
   // D4). Exactly three — the component maps this array 1:1 onto the bar.
   formSteps: ["1 · Tus datos", "2 · Tu propiedad", "3 · Confirmar"],
@@ -2626,7 +2681,7 @@ export const esDirectory = {
     },
     {
       title: "Tu aviso en toda la red",
-      text: "El agente lo publica en inmobiliaria.com.py y en realestateinparaguay.com.",
+      text: "Publicado en los tres portales, en español y en inglés.",
     },
   ],
 

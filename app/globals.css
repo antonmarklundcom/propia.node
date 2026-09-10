@@ -8374,13 +8374,6 @@ summary.panel-btn::-webkit-details-marker {
 /* :root vars, never a branch in the component).                          */
 /* ---------------------------------------------------------------------- */
 
-/* Hero: copy 7 / form card 5 on desktop, stacked with the form directly
-   under the H1/subtitle on mobile (the existing .nh-hero__grid media query
-   already stacks at 900px — this only changes the desktop ratio). */
-.directory-home .nh-hero__grid {
-  grid-template-columns: 7fr 5fr;
-}
-
 /* "Qué pasa después de registrarte" numerals: Lora 48px cobalt, per the
    artboard — the shared .home-how block stays a 22px circular badge on
    every other door. */
@@ -8431,6 +8424,233 @@ summary.panel-btn::-webkit-details-marker {
 .directory-home .home-pro__button:hover {
   background: rgba(143, 176, 255, 0.12);
   filter: none;
+}
+
+/* ---------------------------------------------------------------------- */
+/* inmobiliarios.com.py home — "Opción E · Vender o alquilar" (Claude      */
+/* Design artboard OpcionE, 2026-09-10). Scoped under .directory-home,     */
+/* theme vars only — colour/type ride the DIRECTORY tokens already.       */
+/* ---------------------------------------------------------------------- */
+
+.directory-home .dir-hero {
+  background: var(--color-primary);
+  color: #fff;
+  padding-block: var(--section-y);
+}
+
+.directory-home .dir-hero__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.directory-home .dir-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 900px;
+}
+
+.directory-home .dir-hero__kicker {
+  color: var(--color-accent-on-dark);
+}
+
+.directory-home .dir-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4.6vw, 56px);
+  line-height: 1.06;
+  color: #fff;
+}
+
+.directory-home .dir-hero__subtitle {
+  font-size: 18px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+  max-width: 680px;
+}
+
+.directory-home .dir-doors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .directory-home .dir-doors {
+    grid-template-columns: 1fr;
+  }
+}
+
+.directory-home .dir-door {
+  background: #fff;
+  color: var(--color-ink);
+  border-radius: var(--radius-photo);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.directory-home .dir-door__kicker {
+  font-size: 12px;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.directory-home .dir-door__title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.4vw, 32px);
+  line-height: 1.1;
+}
+
+.directory-home .dir-door__points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.directory-home .dir-door__point {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--color-accent);
+}
+
+.directory-home .dir-door__point span {
+  color: var(--color-ink);
+}
+
+.directory-home .dir-door__cta {
+  min-height: 56px;
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 17px;
+  text-decoration: none;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.directory-home .dir-door--accent {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.directory-home .dir-door--accent .dir-door__kicker {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.directory-home .dir-door--accent .dir-door__point {
+  color: var(--color-accent-on-dark);
+}
+
+.directory-home .dir-door--accent .dir-door__point span {
+  color: #fff;
+}
+
+.directory-home .dir-door--accent .dir-door__cta {
+  background: #fff;
+  color: var(--color-accent);
+}
+
+.directory-home .dir-network {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 72px;
+  align-items: center;
+}
+
+.directory-home .dir-network__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.directory-home .dir-network__title {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 42px);
+  line-height: 1.1;
+}
+
+.directory-home .dir-network__text {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--color-ink-secondary);
+}
+
+.directory-home .dir-portals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.directory-home .dir-portal {
+  padding: 24px;
+  background: #fff;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.directory-home .dir-portal__domain {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.directory-home .dir-portal__text {
+  font-size: 14px;
+  color: var(--color-ink-secondary);
+}
+
+@media (max-width: 900px) {
+  .directory-home .dir-network {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .directory-home .dir-portals {
+    grid-template-columns: 1fr;
+  }
+}
+
+.directory-home .dir-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 72px;
+  align-items: start;
+}
+
+.directory-home .dir-form__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.directory-home .dir-form__intro {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--color-ink-secondary);
+}
+
+.directory-home .dir-form .vd-hero__form-wrap {
+  box-shadow: var(--shadow-float);
+}
+
+@media (max-width: 900px) {
+  .directory-home .dir-form {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
 }
 
 /* The stepper's own step bar — three segments, current cobalt, done navy,

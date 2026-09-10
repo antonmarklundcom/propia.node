@@ -64,7 +64,7 @@ export default async function ParaInmobiliariosPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: t.chromeNav[0].label, url: "/" },
+            { name: t.breadcrumbHome, url: "/" },
             { name: t.proTitle, url: "/para-inmobiliarios" },
           ]),
           ...(t.proFaq.length > 0 ? [faqJsonLd([...t.proFaq])] : []),
