@@ -123,8 +123,13 @@ export default async function AgencyProfilePage({ params }: Params) {
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
 
+  // The directory door's own breadcrumb gets one intermediate — Inicio ›
+  // Inmobiliarias › name — labels from `directory.chromeNav` (P3 decision 5).
+  // The marketplace branch's crumbs are unchanged.
+  const dirCrumb = isDirectory ? d.directory.chromeNav[2] : null;
   const crumbs = [
     { name: d.listing.breadcrumbHome, url: "/" },
+    ...(dirCrumb ? [{ name: dirCrumb.label, url: dirCrumb.href }] : []),
     { name: agency.name, url: agencyUrl(agency.slug) },
   ];
 
@@ -143,109 +148,115 @@ export default async function AgencyProfilePage({ params }: Params) {
       )}
 
       <nav className="breadcrumb-nav" aria-label={d.profile.navAriaLabel}>
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Link className="breadcrumb-nav__link" href="/">
-            {d.listing.breadcrumbHome}
-          </Link>
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span aria-hidden>›</span>
-          <span className="breadcrumb-nav__current" aria-current="page">
-            {agency.name}
+        {crumbs.map((crumb, i) => (
+          <span key={crumb.url} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {i > 0 && <span aria-hidden>›</span>}
+            {i === crumbs.length - 1 ? (
+              <span className="breadcrumb-nav__current" aria-current="page">
+                {crumb.name}
+              </span>
+            ) : (
+              <Link className="breadcrumb-nav__link" href={crumb.url}>
+                {crumb.name}
+              </Link>
+            )}
           </span>
-        </span>
+        ))}
       </nav>
 
       {isDirectory ? (
-        <>
+        <div className="dir-profile">
           {/**
            * The directory door's agency body (D1b), the mirror of
-           * /agente/[slug]'s: who this office is, where it works, a form that
-           * reaches it through the operator, then its portfolio. No raw
-           * WhatsApp and no mailto — a directory lead the operator never sees
-           * is one this door cannot follow up (D1 "Leads").
+           * /agente/[slug]'s, restyled to the "Paso a Paso" look (P3): header
+           * as a card, two columns from 960px (rail + Equipo left, sticky
+           * form right). No raw WhatsApp and no mailto — a directory lead
+           * the operator never sees is one this door cannot follow up.
            */}
-          <header className="agency-profile__header">
+          <header className="dir-profile__header">
             {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="agency-profile__logo" src={logo} alt={agency.name} referrerPolicy="no-referrer" />
+              <img className="dir-profile__photo dir-profile__photo--square" src={logo} alt={agency.name} referrerPolicy="no-referrer" />
             ) : (
-              <div className="agency-profile__avatar" aria-hidden>
+              <div className="dir-profile__avatar dir-profile__avatar--square" aria-hidden>
                 {initials || "I"}
               </div>
             )}
             <div>
-              <h1 className="agency-profile__name">
+              <h1 className="dir-profile__name">
                 {agency.name}
                 {agency.isVerified && (
-                  <span className="agency-profile__verified" title={d.directory.listVerified}>
-                    ✓
-                  </span>
+                  <span className="dir-profile__verified">{d.directory.listVerified}</span>
                 )}
               </h1>
-              <p className="agency-profile__meta">
+              <p className="dir-profile__meta">
                 {d.directory.profileKindAgency} ·{" "}
                 {listingCount > 0
                   ? d.directory.listListingCount(listingCount)
                   : d.directory.profileEmpty}
               </p>
               {coverage.length > 0 && (
-                <p className="agency-profile__meta">
+                <p className="dir-profile__meta">
                   {d.directory.profileCoverage(coverage)}
                 </p>
               )}
             </div>
           </header>
 
-          {/* The form comes before the portfolio: on this door it is the
-              product, not an afterthought under the listings. */}
-          <section className="contact-panel" id="contacto">
-            <h2 className="contact-panel__title">
-              {d.directory.profileFormTitle(agency.name)}
-            </h2>
-            <p className="contact-panel__subtitle">{d.directory.heroSubtitle}</p>
-            <DirectoryLeadForm
-              cities={zoneCities}
-              idPrefix="dir-profile"
-              locale={locale}
-              agencySlug={agency.slug}
-              source="directory:profile"
-            />
-          </section>
-
-          {team.length > 0 && (
-            <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-              <h2 className="similar-listings__title">
-                {d.directory.profileTeamTitle}
+          <div className="dir-profile__grid">
+            {/* DOM order matches mobile order (P3 decision 3): form directly
+                under the header, then the rail and "Equipo". Desktop places
+                this panel in the right column via `grid-column`. */}
+            <section className="contact-panel dir-profile__side" id="contacto">
+              <h2 className="contact-panel__title">
+                {d.directory.profileFormTitle(agency.name)}
               </h2>
-              <ul className="agency-profile__team">
-                {team.map((member) => (
-                  <li key={member.slug}>
-                    <Link href={agentUrl(member.slug)}>{member.name}</Link>{" "}
-                    <span className="agency-profile__meta">
-                      {d.directory.listListingCount(member.listingCount)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <p className="contact-panel__subtitle">{d.directory.heroSubtitle}</p>
+              <DirectoryLeadForm
+                cities={zoneCities}
+                idPrefix="dir-profile"
+                locale={locale}
+                agencySlug={agency.slug}
+                source="directory:profile"
+              />
             </section>
-          )}
 
-          {listings.length > 0 ? (
-            <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-              <h2 className="similar-listings__title">
-                {d.directory.profilePortfolioTitle}
-              </h2>
-              <div className="similar-listings__grid">
-                {listings.map((card) => (
-                  <ListingCard key={card.id} card={card} />
-                ))}
-              </div>
-            </section>
-          ) : (
-            <p className="agency-profile__empty">{d.directory.profileEmpty}</p>
-          )}
-        </>
+            <div className="dir-profile__main">
+              {team.length > 0 && (
+                <section className="similar-listings dir-profile__rail" style={{ borderTop: "none", paddingTop: 0 }}>
+                  <h2 className="similar-listings__title">
+                    {d.directory.profileTeamTitle}
+                  </h2>
+                  <ul className="agency-profile__team">
+                    {team.map((member) => (
+                      <li key={member.slug}>
+                        <Link href={agentUrl(member.slug)}>{member.name}</Link>{" "}
+                        <span className="dir-profile__meta">
+                          {d.directory.listListingCount(member.listingCount)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {listings.length > 0 ? (
+                <section className="similar-listings dir-profile__rail" style={{ borderTop: "none", paddingTop: 0 }}>
+                  <h2 className="similar-listings__title">
+                    {d.directory.profilePortfolioTitle}
+                  </h2>
+                  <div className="similar-listings__grid dir-profile__rail-grid">
+                    {listings.map((card) => (
+                      <ListingCard key={card.id} card={card} />
+                    ))}
+                  </div>
+                </section>
+              ) : (
+                <p className="dir-profile__empty">{d.directory.profileEmpty}</p>
+              )}
+            </div>
+          </div>
+        </div>
       ) : (
         <>
         <header className="agency-profile__header">

@@ -8540,3 +8540,178 @@ summary.panel-btn::-webkit-details-marker {
   cursor: pointer;
   text-decoration: underline;
 }
+
+/* ---------------------------------------------------------------------- */
+/* == P3 == inmobiliarios.com.py agent/agency profiles — "Paso a Paso"    */
+/* look (docs/style/inmobiliarios.com.py.md). Scoped under .dir-profile so */
+/* these rules only ever apply to the directory branch of                 */
+/* app/agente/[slug]/page.tsx and app/inmobiliaria/[slug]/page.tsx — the   */
+/* marketplace branch of both pages keeps agent-profile__* /               */
+/* agency-profile__* untouched. Colour/type ride the DIRECTORY theme       */
+/* tokens already (:root vars), never a branch in the component.          */
+/* ---------------------------------------------------------------------- */
+
+/* Header as a card on the door's cream ground. */
+.dir-profile__header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  margin: 8px 0 24px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(26, 29, 43, 0.1);
+}
+
+.dir-profile__photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* Agencies keep a squared logo box (same distinction as
+   agency-profile__logo / agent-profile__logo) rather than a round crop. */
+.dir-profile__photo--square {
+  border-radius: 12px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--color-border);
+}
+
+.dir-profile__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.dir-profile__avatar--square {
+  border-radius: 12px;
+}
+
+.dir-profile__name {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+/* The verified tick becomes a small cobalt pill with a label, not a bare
+   check mark — P3 decision 2. */
+.dir-profile__verified {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: var(--label-tracking, 0.02em);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.dir-profile__meta {
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-ink-secondary);
+}
+
+.dir-profile__meta a {
+  color: var(--color-link);
+}
+
+/* Two columns from 960px: rail (+ Equipo on the agency page) left, the
+   sticky lead form right. Mobile stacks in DOM order — form under the
+   header, then the rail (P3 decision 3). */
+.dir-profile__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.dir-profile__side {
+  margin-top: 0;
+  grid-row: 1;
+}
+
+.dir-profile__main {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dir-profile__rail {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.dir-profile__rail-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Empty portfolio: a quiet hairline box, never a big grey block
+   (P3 decision 4). */
+.dir-profile__empty {
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-ink-secondary);
+  font-size: 14.5px;
+}
+
+@media (min-width: 960px) {
+  .dir-profile__grid {
+    grid-template-columns: 1fr 380px;
+    align-items: start;
+  }
+
+  .dir-profile__main {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .dir-profile__side {
+    grid-row: 1;
+    grid-column: 2;
+    position: sticky;
+    top: 88px;
+  }
+}
+
+@media (max-width: 560px) {
+  .dir-profile__header {
+    gap: 14px;
+    padding: 18px;
+  }
+  .dir-profile__photo,
+  .dir-profile__avatar {
+    width: 64px;
+    height: 64px;
+  }
+  .dir-profile__name {
+    font-size: 21px;
+  }
+  .dir-profile__rail-grid {
+    grid-template-columns: 1fr;
+  }
+}
