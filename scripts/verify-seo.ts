@@ -16,15 +16,35 @@
 import {
   VERTICALS,
   CANONICAL_HOST,
+  MARKETPLACE_PRIMARY_HOST,
   type VerticalConfig,
 } from "../src/config/verticals";
-import { detailOwnerForLocale } from "../src/lib/origin";
+import {
+  detailOwnerForLocale,
+  directoryOwnerForLocale,
+} from "../src/lib/origin";
+import {
+  DIRECTORY_SITEMAP_PATHS,
+  MARKETPLACE_PATH_ROOTS,
+} from "../src/config/site-nav";
+import {
+  chromeShowLogin,
+  chromeShowNewsletter,
+  chromeShowPublishCta,
+  marketplacePagesEnabled,
+} from "../src/design/sections";
 import {
   alternatesFor,
   languageAlternates,
   servedDoors,
   type Door,
 } from "../src/lib/alternates";
+import { RENTAL_SERVICES } from "../src/config/rental-services";
+import { rentalPath, rentalPathsByLocale } from "../src/design/sections";
+import {
+  MARKETPLACE_SITEMAP_PATHS,
+  rentalSitemapPaths,
+} from "../src/config/site-nav";
 
 let failures = 0;
 
@@ -60,8 +80,13 @@ check(
   servedDoors(CANONICAL_HOST).some((d) => d.host === CANONICAL_HOST),
 );
 check(
+  // inmobiliarios.com.py moved out of this check in D1: it is `enabled: true`
+  // from that phase (DNS is the go-live switch, not the flag), so the disabled
+  // feeder left to stand for the rule is desarrolladores.com.py.
   "disabled feeders are not served doors",
-  !servedDoors(CANONICAL_HOST).some((d) => d.host === "desarrolladores.com.py"),
+  !servedDoors(CANONICAL_HOST).some(
+    (d) => d.host === "desarrolladores.com.py",
+  ),
 );
 
 console.log("\nhreflang: the post-flip shape, re-derived independently");
@@ -359,6 +384,132 @@ check(
   ),
 );
 
+/**
+ * (r2) English URLs for the rental business's own pages (plan §5.1 / Stage 1
+ * C2). Three things have to hold together and none of them shows up in a
+ * rendered page:
+ *
+ * - each door's hreflang entry names **its own** URL, not the other's — an
+ *   alternate that 301s is an alternate Google drops;
+ * - the two slug sets stay disjoint, so a redirect can never point at itself
+ *   (a loop is a page that stops existing, with no error anywhere);
+ * - the sitemaps are per-language and list only what that door serves.
+ *
+ * Everything below is driven through the same pure helpers the app uses, so a
+ * slug added to `RENTAL_SERVICES` without its English twin fails here.
+ */
+console.log("\nrental doors: one page, one URL per language (R2)");
+
+const svcEn = RENTAL_SERVICES.find((s) => s.dictKey === "administracionAirbnb")!;
+const svcAlt = languageAlternates({
+  path: rentalPath("es", "services", svcEn),
+  pathByLocale: rentalPathsByLocale("services", svcEn),
+  scope: "site",
+  family: "rental",
+});
+check(
+  "(r2) a service page pairs its Spanish and English URLs, each on its own door",
+  svcAlt?.["es"] === "https://alquiler.com.py/servicios/administracion-airbnb" &&
+    svcAlt?.["en"] === "https://rentparaguay.com/services/airbnb-management",
+  JSON.stringify(svcAlt),
+);
+check(
+  "(r2) x-default for a rental page is the family's Spanish door, at the Spanish URL",
+  svcAlt?.["x-default"] ===
+    "https://alquiler.com.py/servicios/administracion-airbnb",
+  svcAlt?.["x-default"],
+);
+
+for (const page of ["services", "about", "contact"] as const) {
+  const alt = languageAlternates({
+    path: rentalPath("es", page),
+    pathByLocale: rentalPathsByLocale(page),
+    scope: "site",
+    family: "rental",
+  });
+  check(
+    `(r2) "${page}": every alternate is the path that door actually serves`,
+    alt?.["es"] === `https://alquiler.com.py${rentalPath("es", page)}` &&
+      alt?.["en"] === `https://rentparaguay.com${rentalPath("en", page)}`,
+    JSON.stringify(alt),
+  );
+}
+
+check(
+  "(r2) omitting pathByLocale still gives every locale the same path",
+  languageAlternates({ path: "/", scope: "site", family: "rental" })?.["en"] ===
+    "https://rentparaguay.com/",
+);
+
+const esSlugs = RENTAL_SERVICES.map((s) => s.slug);
+const enSlugs = RENTAL_SERVICES.map((s) => s.slugEn);
+check(
+  "(r2) every service has both slugs, and they are unique within each language",
+  esSlugs.every(Boolean) &&
+    enSlugs.every(Boolean) &&
+    new Set(esSlugs).size === esSlugs.length &&
+    new Set(enSlugs).size === enSlugs.length,
+  `${esSlugs.join(",")} / ${enSlugs.join(",")}`,
+);
+check(
+  "(r2) no service's two URLs collide — a redirect can never target itself",
+  RENTAL_SERVICES.every(
+    (s) => rentalPath("es", "services", s) !== rentalPath("en", "services", s),
+  ),
+);
+check(
+  "(r2) the three page kinds differ between the languages too",
+  (["services", "about", "contact"] as const).every(
+    (p) => rentalPath("es", p) !== rentalPath("en", p),
+  ),
+);
+
+for (const locale of ["es", "en"] as const) {
+  const paths = rentalSitemapPaths(locale);
+  const other = locale === "en" ? "es" : "en";
+  const otherOwn = [
+    rentalPath(other, "services"),
+    rentalPath(other, "about"),
+    rentalPath(other, "contact"),
+    ...RENTAL_SERVICES.map((s) => rentalPath(other, "services", s)),
+  ];
+  check(
+    `(r2) the ${locale} rental sitemap lists its own services hub and seven pages`,
+    paths.includes(rentalPath(locale, "services")) &&
+      RENTAL_SERVICES.every((s) =>
+        paths.includes(rentalPath(locale, "services", s)),
+      ),
+    paths.join(" "),
+  );
+  check(
+    `(r2) …and none of the ${other} door's own URLs, which it 301s away`,
+    otherOwn.every((p) => !paths.includes(p)),
+    paths.filter((p) => otherOwn.includes(p)).join(" "),
+  );
+  check(
+    `(r2) …and no /propiedad URL (the rental doors own no listing detail)`,
+    paths.every((p) => !p.startsWith("/propiedad")),
+  );
+}
+
+check(
+  "(r2) the marketplace sitemap is untouched — still Spanish /nosotros and /contacto",
+  MARKETPLACE_SITEMAP_PATHS.includes("/nosotros") &&
+    MARKETPLACE_SITEMAP_PATHS.includes("/contacto") &&
+    !MARKETPLACE_SITEMAP_PATHS.includes("/about") &&
+    !MARKETPLACE_SITEMAP_PATHS.includes("/contact") &&
+    !MARKETPLACE_SITEMAP_PATHS.includes("/services"),
+);
+check(
+  "(r2) the marketplace's own hreflang for /nosotros is unchanged by all of this",
+  languageAlternates({ path: "/nosotros", scope: "site", family: "marketplace" })?.[
+    "en"
+  ] === "https://realestateinparaguay.com/nosotros",
+  JSON.stringify(
+    languageAlternates({ path: "/nosotros", scope: "site", family: "marketplace" }),
+  ),
+);
+
 check(
   "(e) every vertical declares a family",
   Object.values(VERTICALS).every((v) =>
@@ -400,11 +551,163 @@ check(
 );
 
 check(
-  "(g) six doors are served — the three marketplace doors, the two rental doors, and inmobiliarios.com.py",
+  "(g) six doors are served — three live, two rental, one directory (D1)",
   servedDoors(CANONICAL_HOST).length === 6,
   servedDoors(CANONICAL_HOST)
     .map((d) => d.host)
     .join(", "),
+);
+
+/**
+ * The directory door (fable-plan-realtor-terreno-rental.md D1, §5.2 (g)).
+ *
+ * inmobiliarios.com.py is served from D1 with its own chrome, home and lead
+ * form, and it is the first door whose page-type ownership is a *third* axis:
+ * `ownsDirectory` decides which host is canonical for /agentes, /agente/*,
+ * /inmobiliarias and /inmobiliaria/* — page types every marketplace door
+ * renders. Two Spanish doors each self-canonicalising a profile is the same
+ * duplicate the detail flag exists to prevent, one page type over.
+ */
+console.log("\ndirectory: one owner per locale, and no marketplace URLs");
+
+const servedForDirectory = servedDoors(CANONICAL_HOST);
+const directoryOwners = servedForDirectory.filter(
+  (d) => d.host === CANONICAL_HOST || d.config.ownsDirectory,
+);
+const directoryLocales = directoryOwners.map((d) => d.config.locale);
+check(
+  "(h) exactly one served door owns the directory pages per locale",
+  new Set(directoryLocales).size === directoryLocales.length,
+  directoryOwners.map((d) => `${d.host} (${d.config.locale})`).join(" + "),
+);
+check(
+  "(h) …and every locale that has a served door has an owner for it",
+  [...new Set(servedForDirectory.map((d) => d.config.locale))].every((loc) =>
+    directoryOwners.some((d) => d.config.locale === loc),
+  ),
+  "a door whose language has no directory owner would canonicalise its profiles into another language — a canonical Google drops",
+);
+check(
+  "(h) the resolved owner per locale is a door that really owns them",
+  directoryOwnerForLocale("es") === "inmobiliaria.com.py" &&
+    directoryOwnerForLocale("en") === "realestateinparaguay.com",
+  `${directoryOwnerForLocale("es")} / ${directoryOwnerForLocale("en")}`,
+);
+check(
+  "(h) the directory door does NOT own them yet — DNS is pending (§1 item 6)",
+  VERTICALS["inmobiliarios.com.py"]?.ownsDirectory !== true,
+  "a canonical pointing at a host that does not resolve is worse than a duplicate; this flips in the go-live PR, after DNS",
+);
+check(
+  "(h) the directory door is served, so it can be previewed and verified",
+  servedForDirectory.some((d) => d.host === "inmobiliarios.com.py"),
+  "the alquiler.com.py precedent: resolveVertical() ignores a disabled host",
+);
+check(
+  "(h) a directory door claims no listing detail",
+  VERTICALS["inmobiliarios.com.py"]?.ownsListingDetail === false,
+);
+
+const dirAlt = languageAlternates({
+  path: "/agentes",
+  scope: "directory",
+  family: "marketplace",
+});
+check(
+  "(i) the marketplace's directory pages pair es↔en",
+  dirAlt?.["es"] === "https://inmobiliaria.com.py/agentes" &&
+    dirAlt?.["en"] === "https://realestateinparaguay.com/agentes",
+  JSON.stringify(dirAlt),
+);
+check(
+  "(i) a door that canonicalises the directory away is in no language map",
+  Object.values(dirAlt ?? {}).every(
+    (u) => !u.includes("terreno.com.py") && !u.includes("alquiler.com.py"),
+  ),
+  JSON.stringify(dirAlt),
+);
+check(
+  "(i) the directory family declares no alternates while it owns nothing",
+  languageAlternates({
+    path: "/agentes",
+    scope: "directory",
+    family: "directory",
+  }) === undefined,
+);
+
+/**
+ * (j) The door's sitemap. It 301s every marketplace path (next.config.ts), so
+ * submitting one would be a redirect in a sitemap — the same Search Console
+ * error as submitting a URL the host canonicalises away.
+ */
+const MARKETPLACE_PREFIXES = [
+  "/propiedad",
+  "/venta",
+  "/alquiler",
+  "/precios",
+  "/proyecto",
+  "/desarrolladora",
+  "/publicar",
+  "/tasacion",
+  "/vender",
+  "/planes",
+  "/datos",
+  "/guias",
+  "/financiamiento",
+  "/para-inmobiliarias",
+];
+check(
+  "(j) the directory door's static sitemap list holds no marketplace path",
+  DIRECTORY_SITEMAP_PATHS.every(
+    (p) => !MARKETPLACE_PREFIXES.some((m) => p === m || p.startsWith(`${m}/`)),
+  ),
+  DIRECTORY_SITEMAP_PATHS.join(", "),
+);
+check(
+  "(j) …and every path in it is one the directory door renders",
+  DIRECTORY_SITEMAP_PATHS.every((p) =>
+    [
+      "/",
+      "/agentes",
+      "/inmobiliarias",
+      "/para-inmobiliarios",
+      "/contacto",
+      "/terminos",
+      "/privacidad",
+    ].includes(p),
+  ),
+  "a sitemap that submits a 404 is the same error as one that submits a redirect",
+);
+check(
+  "(j) marketplacePagesEnabled() is false only for the directory family",
+  !marketplacePagesEnabled("agents") &&
+    marketplacePagesEnabled("inmobiliaria") &&
+    marketplacePagesEnabled("en") &&
+    marketplacePagesEnabled("alquiler"),
+);
+check(
+  "(j) the redirect target is a served Spanish marketplace door that owns detail",
+  Boolean(
+    VERTICALS[MARKETPLACE_PRIMARY_HOST]?.enabled &&
+      VERTICALS[MARKETPLACE_PRIMARY_HOST]?.locale === "es" &&
+      VERTICALS[MARKETPLACE_PRIMARY_HOST]?.family === "marketplace" &&
+      VERTICALS[MARKETPLACE_PRIMARY_HOST]?.ownsListingDetail,
+  ),
+  `${MARKETPLACE_PRIMARY_HOST} — every marketplace path on a directory door 308s here (middleware.ts); if it is not a served door that owns those pages, the redirect points at nothing`,
+);
+check(
+  "(j) no marketplace-redirected root is in the directory door's sitemap",
+  DIRECTORY_SITEMAP_PATHS.every(
+    (p) => !MARKETPLACE_PATH_ROOTS.includes(p.split("/")[1] ?? ""),
+  ),
+  "a sitemap that submits a path the same door 308s away is a redirect in a sitemap",
+);
+check(
+  "(j) the directory door's chrome carries no login, publish CTA or newsletter",
+  !chromeShowLogin("agents") &&
+    !chromeShowPublishCta("agents") &&
+    !chromeShowNewsletter("agents"),
+  "§1 item 4: no grids, no search, no /publicar, no login in its chrome",
 );
 
 console.log("\nvertical table: traps that are not type errors");

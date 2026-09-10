@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveVertical } from "@/config/verticals";
+import {
+  MARKETPLACE_PRIMARY_HOST,
+  resolveVertical,
+} from "@/config/verticals";
+import { MARKETPLACE_PATH_ROOTS } from "@/config/site-nav";
+import { marketplacePagesEnabled } from "@/design/sections";
 import { bareHostFrom } from "@/lib/host";
 import { cspHeader, newNonce } from "@/lib/csp";
 
@@ -12,6 +17,35 @@ import { cspHeader, newNonce } from "@/lib/csp";
  */
 export function middleware(req: NextRequest) {
   const vertical = resolveVertical(bareHostFrom(req.headers));
+
+  /**
+   * A door that serves no marketplace page type sends those requests to the
+   * Spanish marketplace primary (the directory door — D1, plan §5.2 (f)).
+   *
+   * **Here rather than in `next.config.ts`'s `redirects()`** even though that
+   * is where the rental family's 301 map lives: this rule is per *door*, not
+   * per host string, and the middleware is the one place that has already
+   * resolved the Host header to a vertical. So it reads the same
+   * `marketplacePagesEnabled()` predicate the sitemap reads, and a door added
+   * to the directory family later is covered without a second list of hosts to
+   * keep in step. A host-scoped `has` rule would also have to be repeated for
+   * the `www.` form of every such host.
+   *
+   * **Absolute, and 308.** A relative redirect would resolve against this same
+   * host and loop. 308 keeps the method and says "permanent" — these paths are
+   * never coming back to this door.
+   */
+  if (!marketplacePagesEnabled(vertical.key)) {
+    const root = req.nextUrl.pathname.split("/")[1] ?? "";
+    if (MARKETPLACE_PATH_ROOTS.includes(root)) {
+      const target = new URL(
+        `${req.nextUrl.pathname}${req.nextUrl.search}`,
+        `https://${MARKETPLACE_PRIMARY_HOST}`,
+      );
+      return NextResponse.redirect(target, 308);
+    }
+  }
+
   const headers = new Headers(req.headers);
   headers.set("x-vertical", vertical.key);
   headers.set("x-locale", vertical.locale);

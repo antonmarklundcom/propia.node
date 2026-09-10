@@ -22,6 +22,12 @@ import { unstable_cache } from "next/cache";
 import { CACHE_TAGS, CACHE_TTL } from "./cache";
 import { projectCardsFrom } from "./queries";
 import type { ProjectCard } from "./queries";
+import { verticalConds } from "./facet-sql";
+import {
+  VERTICALS,
+  type VerticalConfig,
+  type VerticalKey,
+} from "@/config/verticals";
 
 export interface AgencyDirectoryRow {
   id: number;
@@ -380,6 +386,110 @@ async function listAgentsForDirectoryUncached(): Promise<AgentDirectoryRow[]> {
       .slice(0, 3)
       .map(([name]) => name),
   }));
+}
+
+export interface DirectoryZone {
+  name: string;
+  slug: string;
+  /** Published listings in this city that belong to an agent or an agency. */
+  count: number;
+}
+
+/**
+ * The city filter on the directory door's `/agentes` and `/inmobiliarias`
+ * (fable-plan-realtor-terreno-rental.md Stage 1 D item 3).
+ *
+ * **Derived, not stored.** `agents` has no `zones` column and D1 adds no
+ * schema (§1 item 5), so a professional's coverage is inferred from where
+ * their published inventory actually is — which is also the more honest
+ * signal: a self-declared zone list says where someone would *like* to work.
+ * The column arrives in D3, with the matching work that needs it.
+ *
+ * Only listings with an agent or an agency count: a city whose entire supply
+ * is FSBO has no directory to filter.
+ *
+ * Barrio-level rows roll up to their ciudad, the same rule the agency and
+ * agent directories use for their city chips — a filter offering "Villa Morra"
+ * next to "Asunción" reads as noise.
+ */
+async function listDirectoryZonesUncached(
+  vertical: VerticalConfig | null,
+): Promise<DirectoryZone[]> {
+  const [locRows, rows] = await Promise.all([
+    db
+      .select({
+        id: locations.id,
+        name: locations.name,
+        slug: locations.slug,
+        level: locations.level,
+        parentId: locations.parentId,
+      })
+      .from(locations),
+    db
+      .select({
+        locationId: listings.locationId,
+        n: sql<number>`COUNT(*)`,
+      })
+      .from(listings)
+      .where(
+        and(
+          eq(listings.status, "published"),
+          sql`(${listings.agentId} IS NOT NULL OR ${listings.agencyId} IS NOT NULL)`,
+          ...(vertical ? verticalConds(vertical) : []),
+        ),
+      )
+      .groupBy(listings.locationId),
+  ]);
+
+  const locById = new Map(locRows.map((l) => [l.id, l]));
+  const byCity = new Map<number, number>();
+  for (const r of rows) {
+    const loc = locById.get(r.locationId);
+    if (!loc) continue;
+    const city =
+      loc.level === "ciudad"
+        ? loc
+        : loc.parentId != null && locById.get(loc.parentId)?.level === "ciudad"
+          ? locById.get(loc.parentId)!
+          : null;
+    if (!city) continue;
+    byCity.set(city.id, (byCity.get(city.id) ?? 0) + Number(r.n));
+  }
+
+  return [...byCity.entries()]
+    .map(([id, count]) => {
+      const loc = locById.get(id)!;
+      return { name: loc.name, slug: loc.slug, count };
+    })
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+const cachedDirectoryZones = unstable_cache(
+  // The vertical arrives as a KEY, not a config object: the key is what enters
+  // the cache key, and a config object would serialize its future fields into
+  // it too (the same reason `getHomePayload` takes one). A door with hard
+  // filters therefore gets its own entry instead of another door's zone list —
+  // CLAUDE.md, "a cached query that filters by vertical must put the vertical
+  // key in its cache key", which is a live cross-door leak, not a hypothesis.
+  async (verticalKey: VerticalKey | null) =>
+    listDirectoryZonesUncached(
+      verticalKey
+        ? (Object.values(VERTICALS).find((v) => v.key === verticalKey) ?? null)
+        : null,
+    ),
+  ["directory:zones"],
+  // Tagged `listings`, not `directory`: the zone list changes when a listing is
+  // published, paused or moved, and every writer of that already calls
+  // `revalidateListings()` (verified across app/admin, app/agencia and
+  // app/mis-avisos actions). The TTL is the backstop, not the mechanism.
+  { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings] },
+);
+
+/** Cities where the directory has supply — the door's city filter. */
+export function listDirectoryZones(
+  vertical: VerticalConfig | null,
+): Promise<DirectoryZone[]> {
+  return cachedDirectoryZones(vertical?.key ?? null);
 }
 
 export interface OperationHubData {

@@ -27,6 +27,8 @@
  * has two implementations, so a key added to one and forgotten in the other
  * is a type error rather than a blank string on a live page.
  */
+// Pure (config + a lookup table, no `next/*`) — see the same import in es.ts.
+import { rentalPath } from "@/design/sections";
 
 /**
  * English peer of `esSiteNotice` (es.ts). Not part of the `Dictionary` shape
@@ -859,22 +861,27 @@ export const enProject = {
  * both the home page and the services hub, the one FAQ this family has.
  */
 export const enRental = {
+  // Hrefs through `rentalPath()` (R2): this door's own pages are English URLs
+  // (`/services`, `/about`, `/contact`) and it 301s the Spanish ones, so a
+  // literal here would be a nav full of redirects the day someone forgot.
+  // `/alquiler` is not in that table — it is the marketplace's rental hub,
+  // Spanish-slugged on every door.
   chromeNav: [
     { label: "Rentals", href: "/alquiler" },
-    { label: "Services", href: "/servicios" },
-    { label: "About", href: "/nosotros" },
-    { label: "Contact", href: "/contacto" },
+    { label: "Services", href: rentalPath("en", "services") },
+    { label: "About", href: rentalPath("en", "about") },
+    { label: "Contact", href: rentalPath("en", "contact") },
   ],
   chromeCtaLabel: "Contact us",
-  chromeCtaHref: "/contacto",
+  chromeCtaHref: rentalPath("en", "contact"),
   footerTagline:
     "A real estate and property management agency in Asunción for expats, digital nomads and investors. We find it, we rent it, we manage it — in your language.",
   footerServicesTitle: "Services",
   footerCompanyTitle: "Company",
   footerLegalTitle: "Legal",
   footerCompanyLinks: [
-    { label: "About us", href: "/nosotros" },
-    { label: "Contact", href: "/contacto" },
+    { label: "About us", href: rentalPath("en", "about") },
+    { label: "Contact", href: rentalPath("en", "contact") },
     { label: "Rentals", href: "/alquiler" },
   ],
   footerLegalLinks: [
@@ -1436,11 +1443,11 @@ export const enRentalServices = {
       },
       {
         q: "What are the closing costs when buying in Asunción?",
-        a: "Closing costs (including notary fees and taxes) typically range between 2% and 3% of the transaction value. We provide a detailed estimate before any deal is finalised.",
+        a: "Closing costs (notary fees, registry filing and taxes) typically range between 2% and 3.5% of the transaction value. We provide a detailed estimate before any deal is finalised.",
       },
       {
         q: "What tax do I pay if I sell later on?",
-        a: "Paraguay has a very competitive tax environment. If you sell as an individual, the tax on the gain is usually low, effectively around 2.4% to 3% in many cases.",
+        a: "Paraguay has a very competitive tax environment. If you sell as an individual, the notary withholds the tax when the deed is signed, and in practice it works out to an effective 2.4% of the sale value (there is an alternative method based on the actual gain, but that 2.4% presumptive method is what applies by default).",
       },
     ],
     ctaTitle: "Buy with someone on your side",
@@ -1458,7 +1465,7 @@ export const enRentalServices = {
       "Paraguayan residency is among the most accessible in the world, but the process has steps, stamps and appointments you would rather not discover as you go. We prepare the file before you fly and we are with you while you are here.",
     challengeTitle: "Why people choose it",
     challengeText:
-      "Paraguay has become a top destination for people looking to escape high taxes and heavy regulation elsewhere. It runs on a territorial tax system: local income is taxed at a flat 10%, and income earned outside Paraguay is generally not taxed at all. Permanent residency is also the first formal step toward Paraguayan citizenship and a passport, and the country sits in a stable, convenient location for moving around the region.",
+      "Paraguay has become a top destination for people looking to escape high taxes and heavy regulation elsewhere. It runs on a territorial tax system: income earned outside Paraguay is generally not taxed at all, and local income is taxed at low personal-income rates. Residency — first temporary and, after two years, permanent — is also the formal path toward Paraguayan citizenship and a passport, and the country sits in a stable, convenient location for moving around the region.",
     frameworkTitle: "The process, step by step",
     framework: [
       {
@@ -1531,7 +1538,11 @@ export const enRentalServices = {
       },
       {
         q: "Will I pay tax on income from outside Paraguay?",
-        a: "Paraguay runs a territorial tax system, so income earned outside the country is generally not taxed. Local income is taxed at a flat 10%.",
+        a: "Paraguay runs a territorial tax system, so income earned outside the country is generally not taxed. Local income is taxed at low personal-income rates, depending on the type of income.",
+      },
+      {
+        q: "Can I apply for permanent residency directly?",
+        a: "For most people, no: you first get temporary residency, and only after two years with that status can you apply for permanent. People who qualify under one of the investment categories can access a more direct route. We tell you which path fits your situation.",
       },
     ],
     ctaTitle: "Start your residency",
@@ -1549,7 +1560,7 @@ export const enRentalServices = {
       "Investing at a distance works when someone on this side looks at the building, checks on the tenant and sends the numbers on time. We find the asset, get the structure right, and then manage it.",
     challengeTitle: "Why Paraguay",
     challengeText:
-      "Paraguay's economy runs on fiscal discipline: a flat \"10-10-10\" system (10% corporate tax, 10% personal income tax, 10% VAT) and a territorial tax regime that only taxes income earned inside the country, so your wealth elsewhere stays untouched, with no inheritance, wealth or gift tax on top. Law No. 7548/2025 adds further incentives for larger projects, including exemptions on dividends and profit remittances. The specific figures for your case — rates, incentives and expected returns — we go through case by case, because they depend on the asset and on the year.",
+      "Paraguay's economy runs on fiscal discipline: a flat 10% corporate income tax on profits, a general 10% VAT, and a territorial tax regime that only taxes income earned inside the country, so your wealth elsewhere stays untouched, with no inheritance, wealth or gift tax on top. Dividend distributions carry their own withholding on top of that (lower for residents than for non-residents), so the effective burden on profits you remit abroad is not the same as on profits you reinvest here. Law No. 7548/2025 adds further incentives for larger projects, including exemptions on dividends and profit remittances above a certain investment size. The specific figures for your case — rates, incentives and expected returns — we go through case by case, because they depend on the asset, the structure and the year.",
     frameworkTitle: "How we work an investment",
     framework: [
       {
@@ -1602,15 +1613,15 @@ export const enRentalServices = {
     faq: [
       {
         q: "Can foreigners buy property or farmland in Paraguay?",
-        a: "Yes. Foreigners have the same property rights as Paraguayan citizens and can own real estate or farmland outright, in their own name or through a local company.",
+        a: "Yes. Foreigners have the same property rights as Paraguayan citizens and can own real estate or farmland outright, in their own name or through a local company — with one specific exception: buying farmland inside the border security zone is restricted to citizens of neighbouring countries. Outside that zone, and in urban areas like Asunción, no such restriction applies.",
       },
       {
         q: "What tax regime applies to my investment?",
-        a: "Paraguay taxes only income earned within the country, applies a flat 10% rate to corporate profits, personal income and VAT, and charges no inheritance, wealth or gift tax. Larger projects can also apply for the incentives under Law No. 7548/2025.",
+        a: "Paraguay taxes only income earned within the country. Corporate profits pay a flat 10% corporate income tax and the general VAT rate is 10%; dividend distributions carry their own withholding on top, lower for residents than for non-residents. There is no inheritance, wealth or gift tax. Larger projects can also apply for the incentives under Law No. 7548/2025.",
       },
       {
         q: "Is there a minimum investment to access the Law 7548/2025 benefits?",
-        a: "You can invest any amount, but the law's most significant tax exemptions apply to projects starting at USD 5 million, with further benefits above USD 13 million.",
+        a: "You can invest any amount. Projects starting around USD 500,000 already qualify for base-tier benefits (duty-free capital equipment imports, fiscal credits), while the most significant exemptions — a full 10-year exemption on dividends and on interest from foreign project financing — are reserved for projects starting at USD 13 million.",
       },
       {
         q: "Can I move my capital and profits freely?",
@@ -1700,4 +1711,206 @@ export const enRentalServices = {
     ctaText: "Tell us what you need it for and we will tell you what it takes.",
     ctaButton: "Talk to us",
   },
+} as const;
+
+/**
+ * The English peer of `esDirectory`. The directory door serves Spanish only —
+ * inmobiliarios.com.py is `locale: "es"` and there is no English directory
+ * door — so nothing renders these strings today. They exist because
+ * `Dictionary` is derived from the Spanish shape and a missing key is a type
+ * error (src/i18n/index.ts), and because the day an English door appears the
+ * copy should already be a peer rather than a rushed translation.
+ *
+ * Translated as intent, like the rest of en.ts: "inmobiliario" is a real
+ * estate agent, "vos" has no English form, and no figure appears here that the
+ * Spanish does not state.
+ */
+export const enDirectory = {
+  metaTitle: "Find the right real estate agent in Paraguay",
+  metaDescription: (brand: string) =>
+    `${brand} connects you with real estate agents who already work in your area. Tell us what you want to sell or rent out and get proposals, at no cost.`,
+
+  chromeNav: [
+    { label: "Home", href: "/" },
+    { label: "Agents", href: "/agentes" },
+    { label: "Agencies", href: "/inmobiliarias" },
+    { label: "For agents", href: "/para-inmobiliarios" },
+    { label: "Contact", href: "/contacto" },
+  ],
+  chromeCtaLabel: "Find your agent",
+  chromeCtaHref: "/#form",
+  footerTagline: (brand: string) =>
+    `${brand} is Paraguay's directory of real estate agents: we put you in touch with the ones who work your area.`,
+  footerDirectoryTitle: "Directory",
+  footerDirectoryLinks: [
+    { label: "Agents", href: "/agentes" },
+    { label: "Agencies", href: "/inmobiliarias" },
+    { label: "For agents", href: "/para-inmobiliarios" },
+  ],
+  footerCompanyTitle: "Company",
+  footerCompanyLinks: [
+    { label: "Contact", href: "/contacto" },
+    { label: "Terms and conditions", href: "/terminos" },
+    { label: "Privacy policy", href: "/privacidad" },
+  ],
+  footerContactUs: "Write to us",
+  footerLegalLine: (brand: string) =>
+    `${brand} introduces owners to independent real estate agents. We take no part in the transaction and charge the owner no commission.`,
+
+  heroKicker: "Free, no strings attached",
+  heroTitle: "Find the right agent for your property",
+  heroSubtitle:
+    "Tell us what you want to sell or rent out and we will put you in touch with up to three agents who work in your area.",
+  heroPoints: [
+    "You talk to people, not to a form that goes nowhere",
+    "No cost to you: we charge the owner nothing",
+    "You decide who to keep talking to",
+  ],
+
+  formTitle: "Tell us about your property",
+  formNameLabel: "Your name",
+  formPhoneLabel: "WhatsApp",
+  formPhonePlaceholder: "+595 981 234 567",
+  formCityLabel: "City or area",
+  formCityPlaceholder: "Choose a city",
+  formTypeLabel: "Property type",
+  formTypePlaceholder: "Choose a type",
+  formOperationLabel: "What you want to do",
+  formOperationOptions: [
+    { value: "venta", label: "Sell" },
+    { value: "alquiler", label: "Rent out" },
+  ],
+  formMessageLabel: "Anything else we should know",
+  formMessagePlaceholder:
+    "Neighbourhood, size, condition, when you want to start…",
+  formSubmit: "Send me proposals",
+  formSending: "Sending…",
+  formPhoneError: "Please enter a valid WhatsApp number.",
+  formError: "We could not send your enquiry. Please try again in a moment.",
+  formNote: "We reply on WhatsApp. Your details are never published anywhere.",
+  formFineprintPrefix: "By sending this you accept the",
+  formTerms: "terms",
+  formFineprintAnd: "and the",
+  formPrivacy: "privacy policy",
+  formSuccessTitle: "We have your enquiry",
+  formSuccessText:
+    "We will message you on WhatsApp with the agents who work your area.",
+
+  howTitle: "How it works",
+  howSteps: [
+    {
+      title: "Tell us",
+      text: "A short form: what you have, where it is, and what you want to do with it.",
+    },
+    {
+      title: "Compare",
+      text: "We introduce agents who work that area, with their published portfolio in plain sight.",
+    },
+    {
+      title: "Choose",
+      text: "Talk to whoever you like and continue only with the one who convinces you. No exclusivity with us.",
+    },
+  ],
+
+  chooseTitle: "How we decide who to introduce",
+  chooseSubtitle:
+    "No paid ranking and no star ratings. These are the criteria, exactly as they stand today.",
+  choosePoints: [
+    {
+      title: "Verification",
+      text: "We confirm the person or the office is real and that the portfolio they publish is theirs.",
+    },
+    {
+      title: "Real activity",
+      text: "Only agents with properties published today appear here — never empty profiles.",
+    },
+    {
+      title: "Area",
+      text: "We start with whoever already works the city your property is in.",
+    },
+  ],
+
+  teaserTitle: "Verified agents",
+  teaserSubtitle: "The ones already with us, with an active portfolio.",
+  teaserAllLink: "See the full directory",
+  teaserEmptyTitle: "Be among the first",
+  teaserEmptyText:
+    "We are building this directory one agency at a time. If you work in the trade, now is the moment to join.",
+  teaserEmptyCta: "I want a profile",
+
+  proKicker: "For professionals",
+  proTitle: "Are you a real estate agent?",
+  proText:
+    "Get enquiries from owners in your area and show your portfolio on a profile of your own. Free while we build the directory.",
+  proBullets: [
+    "Enquiries from owners who have already decided to sell or rent out",
+    "A profile with your published portfolio and your direct contact",
+    "No cost at this stage",
+  ],
+  proCta: "See how it works",
+
+  // Professional-facing FAQ, rendered only on /para-inmobiliarios — distinct
+  // questions from the owner-facing `faq` below (own JSON-LD there, per D2).
+  proFaqTitle: "Questions from agents",
+  proFaq: [
+    {
+      q: "What does it cost to be listed in the directory?",
+      a: "Nothing for now: we are building the directory, and joining is free while this stage lasts.",
+    },
+    {
+      q: "Do I need listings published somewhere else already?",
+      a: "Yes — we show the portfolio you already publish on inmobiliaria.com.py, because real activity is one of the criteria we use to decide who to introduce (along with area and verification).",
+    },
+    {
+      q: "How do you verify me?",
+      a: "We confirm the person or the office is real and that the portfolio they publish is theirs before turning on the verified mark on your profile.",
+    },
+    {
+      q: "How do enquiries reach me?",
+      a: "On WhatsApp, with the details the owner left. You decide how to continue the conversation from there.",
+    },
+  ],
+
+  listAgentsTitle: "Real estate agents in Paraguay",
+  listAgentsSubtitle:
+    "Each profile shows the portfolio that person has published today and the cities they work in.",
+  listAgenciesTitle: "Real estate agencies in Paraguay",
+  listAgenciesSubtitle:
+    "Offices with an active portfolio. Open a profile to see their properties and their team.",
+  listFilterTitle: "Filter by city",
+  listFilterAll: "All",
+  listVerified: "Verified",
+  listListingCount: (n: number) =>
+    n === 1 ? "1 property published" : `${n} properties published`,
+  listProfileCta: "See profile",
+  listEmpty:
+    "Nobody is listed for that filter yet. Try another city, or tell us what you need and we will look.",
+  listCtaTitle: "Not sure who to choose?",
+  listCtaText:
+    "Tell us about your property and we will introduce up to three agents who work your area.",
+  listCtaButton: "Get proposals",
+
+  faqTitle: "Frequent questions",
+  faq: [
+    {
+      q: "What does it cost me?",
+      a: "Nothing. We do not charge owners for introducing agents. Whatever commission you agree is between you and the agent you choose.",
+    },
+    {
+      q: "Am I tied to anyone?",
+      a: "No. We make introductions; the relationship and any exclusivity agreement are settled directly with the agent, not with us.",
+    },
+    {
+      q: "How do you decide which agents to introduce me to?",
+      a: "We prioritize whoever already works in your city and has a published portfolio today — no paid ranking and no star ratings. The detail is in this page's \"How we decide\" section.",
+    },
+    {
+      q: "What if there is nobody verified in my area yet?",
+      a: "Tell us anyway: we save your enquiry and let you know as soon as an agent who works there joins.",
+    },
+    {
+      q: "Do I have to sell or rent through an agent?",
+      a: "No. You can keep showing the property yourself at the same time — we do not ask for exclusivity to make the introduction.",
+    },
+  ],
 } as const;

@@ -8,9 +8,19 @@ import {
   getAgentListings,
   countAgentListings,
   getAgencyById,
+  listCities,
 } from "@/lib/queries";
+import { DirectoryLeadForm } from "@/components/DirectoryLeadForm";
+import { directoryPagesEnabled } from "@/design/sections";
 import { agentUrl, agencyUrl } from "@/lib/urls";
-import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
+import {
+  directoryCanonicalOrigin,
+  hostOwnsDirectory,
+  listingCanonicalOrigin,
+  siteOrigin,
+} from "@/lib/origin";
+import { languageAlternates } from "@/lib/alternates";
+import { currentVertical } from "@/lib/vertical-context";
 import { getIndexability } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
@@ -41,12 +51,29 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!r) return { title: esAgentProfile.notFoundTitle };
   const { agent, listingCount } = r;
   const ix = getIndexability({ listingCount });
-  const canonical = `${await siteOrigin()}${agentUrl(agent.slug)}`;
+  const [directoryOrigin, ownsDirectory, vertical] = await Promise.all([
+    // The profile's canonical follows `ownsDirectory`, not the serving host:
+    // every marketplace door renders this page and only one owns it per
+    // language (src/config/verticals.ts).
+    directoryCanonicalOrigin(),
+    hostOwnsDirectory(),
+    currentVertical(),
+  ]);
+  const canonical = `${directoryOrigin}${agentUrl(agent.slug)}`;
   return {
     title: esAgentProfile.metaTitle(agent.name),
     description: esAgentProfile.metaDescription(brand, agent.name, listingCount),
-    alternates: { canonical },
-    robots: { index: ix.state === "index", follow: true },
+    alternates: {
+      canonical,
+      languages: languageAlternates({
+        path: agentUrl(agent.slug),
+        scope: "directory",
+        family: vertical.family,
+      }),
+    },
+    // Both gates, and the thin-page rule still wins: a profile this door
+    // canonicalises away is noindex whatever its listing count says.
+    robots: { index: ownsDirectory && ix.state === "index", follow: true },
   };
 }
 
@@ -64,9 +91,16 @@ export default async function AgentProfilePage({ params }: Params) {
   const ix = getIndexability({ listingCount });
   if (ix.state === "gone") notFound();
 
-  const [listings, agency] = await Promise.all([
-    getAgentListings({ agentId: agent.id, limit: 24 }),
+  const vertical = await currentVertical();
+  const [listings, agency, zoneCities] = await Promise.all([
+    getAgentListings({ agentId: agent.id, limit: 24, vertical }),
     agent.agencyId ? getAgencyById(agent.agencyId) : Promise.resolve(null),
+    // Only the directory rendering has a form with a city select; every other
+    // door skips the query entirely rather than loading a list it will not
+    // render.
+    directoryPagesEnabled(vertical.key)
+      ? listCities()
+      : Promise.resolve([] as { slug: string; name: string }[]),
   ]);
   const origin = await siteOrigin();
   // ItemList entries are listing detail URLs — canonical host may differ (F9).
@@ -164,7 +198,31 @@ export default async function AgentProfilePage({ params }: Params) {
         <p className="agent-profile__empty">{esAgentProfile.empty}</p>
       )}
 
-      {agent.whatsapp && (
+      {/**
+       * The directory door's contact block (Stage 1 D item 3): a
+       * profile-originated `seller` lead that names THIS professional, rather
+       * than the marketplace's buyer enquiry about a listing.
+       *
+       * It renders whether or not the agent has a WhatsApp number on file —
+       * the lead reaches the operator either way, and a profile with no way to
+       * make contact is the one thing this door must never show. The
+       * marketplace rendering below still gates on `agent.whatsapp`, because
+       * there the form hands off to the seller's own number.
+       */}
+      {directoryPagesEnabled(vertical.key) ? (
+        <section className="contact-panel" id="contacto">
+          <h2 className="contact-panel__title">{d.directory.formTitle}</h2>
+          <p className="contact-panel__subtitle">{d.directory.heroSubtitle}</p>
+          <DirectoryLeadForm
+            cities={zoneCities}
+            idPrefix="dir-profile"
+            locale={locale}
+            agentSlug={agent.slug}
+            source="directory:profile"
+          />
+        </section>
+      ) : (
+        agent.whatsapp && (
         <section className="contact-panel" id="contacto">
           <h2 className="contact-panel__title">{esAgentProfile.contactTitle}</h2>
           <p className="contact-panel__subtitle">{esAgentProfile.contactSubtitle}</p>
@@ -176,6 +234,7 @@ export default async function AgentProfilePage({ params }: Params) {
             locale={locale}
           />
         </section>
+        )
       )}
     </main>
   );

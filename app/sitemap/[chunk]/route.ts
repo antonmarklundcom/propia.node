@@ -1,4 +1,8 @@
-import { siteOrigin, hostOwnsListingDetail } from "@/lib/origin";
+import {
+  siteOrigin,
+  hostOwnsListingDetail,
+  hostOwnsDirectory,
+} from "@/lib/origin";
 import { currentVertical } from "@/lib/vertical-context";
 import {
   chunkCount,
@@ -29,12 +33,18 @@ export async function GET(
   if (!match) return new Response("Not found", { status: 404 });
   const chunk = Number(match[1]);
 
-  const [origin, ownsListingDetail, vertical] = await Promise.all([
-    siteOrigin(),
-    hostOwnsListingDetail(),
-    currentVertical(),
-  ]);
-  const entries = await sitemapEntries(ownsListingDetail, vertical.key);
+  const [origin, ownsListingDetail, ownsDirectory, vertical] =
+    await Promise.all([
+      siteOrigin(),
+      hostOwnsListingDetail(),
+      hostOwnsDirectory(),
+      currentVertical(),
+    ]);
+  const entries = await sitemapEntries(
+    ownsListingDetail,
+    ownsDirectory,
+    vertical.key,
+  );
 
   /**
    * Out of range is a 404, not an empty sitemap. An empty `<urlset>` at

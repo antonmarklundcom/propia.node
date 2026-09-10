@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { BRAND_KICKER } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
-import { HEADER_NAV } from "@/config/site-nav";
+import { HEADER_NAV, type NavLink } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
 import { currentVertical } from "@/lib/vertical-context";
+import { RENTAL_SERVICES } from "@/config/rental-services";
 import {
   headerExtraNavHref,
   sellerCtaHref,
   chromeVariant,
   chromeShowLogin,
   chromeShowPublishCta,
+  rentalPath,
 } from "@/design/sections";
 import { dict } from "@/i18n/server";
 
@@ -57,11 +59,43 @@ export async function SiteHeader() {
   // marketplace's dropdown tree. One CTA, "Contactanos", pointing at
   // /contacto: this door sells a conversation, not a self-service publish.
   const isRental = chromeVariant(vertical.key) === "rental";
-  const rentalNav = d.rental.chromeNav.map((l) => ({ ...l, links: [] as never[] }));
+  // Match by href, never by array index — RentalServicesHub reads
+  // chromeNav[1] positionally already, and a second index dependency here
+  // would silently break if `rental.chromeNav`'s order ever changes.
+  // `services[dictKey].tagline` is a full sentence (built for the home-page
+  // cards, not a nav panel) — the marketplace's own panel descs are 3-5 word
+  // fragments, so a tagline here would blow out a 7-row panel. Label only.
+  // Both sides of the match go through `rentalPath()` (R2): on the English
+  // door the entry's href is `/services`, so a literal "/servicios" here would
+  // quietly stop matching and the dropdown would come back empty.
+  const servicesHref = rentalPath(vertical.locale, "services");
+  const rentalNav = d.rental.chromeNav.map((l) => ({
+    ...l,
+    links: (l.href === servicesHref
+      ? RENTAL_SERVICES.map((s) => ({
+          label: d.rental.services[s.dictKey].title,
+          href: rentalPath(vertical.locale, "services", s),
+        }))
+      : []) satisfies NavLink[] as NavLink[],
+  }));
+  // The directory door (inmobiliarios.com.py): Inicio · Inmobiliarios ·
+  // Inmobiliarias · Para inmobiliarios · Contacto, flat, from the `directory`
+  // namespace. One CTA — "Encontrá tu inmobiliario" — pointing at the home
+  // form, because that form is the whole product. No login, no /publicar and
+  // no search: this door introduces a seller to a professional, it does not
+  // sell a search over listings (§1 item 4). No dropdown panels: five flat
+  // entries, unlike the rental nav's Services group above.
+  const isDirectory = chromeVariant(vertical.key) === "directory";
+  const directoryNav = d.directory.chromeNav.map((l) => ({
+    ...l,
+    links: [] as never[],
+  }));
   // §5 "Header" (Nórdico): Comprar · Alquilar · Vender · Proyectos ·
   // Inmobiliarias — the extra entry (when the registry adds one) sits right
   // after "Proyectos".
-  const nav = isRental
+  const nav = isDirectory
+    ? directoryNav
+    : isRental
     ? rentalNav
     : isGuideEn
       ? guideEnNav
@@ -72,21 +106,29 @@ export async function SiteHeader() {
             ...HEADER_NAV.slice(3),
           ]
         : HEADER_NAV;
-  const ctaLabelFull = isRental
-    ? d.rental.chromeCtaLabel
-    : nordicoCta
-      ? nordicoCta.headerVenderCtaFull
-      : "Publicar propiedad";
-  const ctaLabelShort = isRental
-    ? d.rental.chromeCtaLabel
-    : nordicoCta
-      ? nordicoCta.headerVenderCtaShort
-      : "Publicar";
+  const ctaLabelFull = isDirectory
+    ? d.directory.chromeCtaLabel
+    : isRental
+      ? d.rental.chromeCtaLabel
+      : nordicoCta
+        ? nordicoCta.headerVenderCtaFull
+        : "Publicar propiedad";
+  const ctaLabelShort = isDirectory
+    ? d.directory.chromeCtaLabel
+    : isRental
+      ? d.rental.chromeCtaLabel
+      : nordicoCta
+        ? nordicoCta.headerVenderCtaShort
+        : "Publicar";
   // `chromeShowPublishCta` is false for this family — that flag is about the
   // /publicar wizard, which these doors have no use for. The contact CTA is
   // this chrome's own, so it is decided here alongside the nav.
-  const headerCtaHref = isRental ? d.rental.chromeCtaHref : ctaHref;
-  const showHeaderCta = isRental || showPublishCta;
+  const headerCtaHref = isDirectory
+    ? d.directory.chromeCtaHref
+    : isRental
+      ? d.rental.chromeCtaHref
+      : ctaHref;
+  const showHeaderCta = isDirectory || isRental || showPublishCta;
   return (
     <header className="site-header">
       <div className="site-header__inner">

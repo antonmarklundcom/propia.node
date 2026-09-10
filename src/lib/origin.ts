@@ -135,3 +135,70 @@ export async function hostOwnsListingDetail(): Promise<boolean> {
   const p = await hostParts();
   return p ? ownsListingDetail(p) : true;
 }
+
+/* ------------------------------------------------------------------------ *
+ * Directory pages — /agentes, /agente/{slug}, /inmobiliarias,
+ * /inmobiliaria/{slug}.
+ *
+ * The same three functions as listing detail, over `ownsDirectory` instead of
+ * `ownsListingDetail`, and for the same reason: every marketplace door renders
+ * these pages, so without one named owner per locale two Spanish doors publish
+ * the same profile at two URLs. Kept as its own trio rather than a `scope`
+ * parameter on the ones above so each page type's owner is greppable.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Which served host is canonical for the directory pages in a given language —
+ * pure, so `npm run verify:seo` can drive it without a request.
+ *
+ * Per-locale for the same reason detail is: a canonical from an English page
+ * to a Spanish URL is one Google ignores. Falls back to the primary host, which
+ * owns every page type whatever its own row says.
+ */
+export function directoryOwnerForLocale(
+  locale: VerticalConfig["locale"],
+): string {
+  for (const [host, v] of Object.entries(VERTICALS)) {
+    const served = v.enabled || host === CANONICAL_HOST;
+    if (served && v.ownsDirectory && v.locale === locale) return host;
+  }
+  return CANONICAL_HOST;
+}
+
+function ownsDirectoryPages(p: HostParts): boolean {
+  if (p.local) return true;
+  const v = VERTICALS[p.bare];
+  if (v?.enabled && v.ownsDirectory) return true;
+  // The primary host owns what nobody else claims — but only in its own
+  // language, so an English door never inherits a Spanish owner's claim.
+  if (p.bare === CANONICAL_HOST) {
+    return directoryOwnerForLocale(
+      VERTICALS[CANONICAL_HOST]?.locale ?? "es",
+    ) === CANONICAL_HOST;
+  }
+  return false;
+}
+
+/**
+ * Origin for a directory page's canonical. A door that does not own them
+ * points at the door that owns them in its own language — terreno.com.py and
+ * alquiler.com.py at the Spanish owner, rentparaguay.com at the English one —
+ * rather than competing with it.
+ */
+export async function directoryCanonicalOrigin(): Promise<string> {
+  const p = await hostParts();
+  if (!p) return PRIMARY_ORIGIN;
+  if (p.local) return `http://${p.raw}`;
+  if (ownsDirectoryPages(p)) return `https://${p.bare}`;
+  const v = VERTICALS[p.bare];
+  return v ? `https://${directoryOwnerForLocale(v.locale)}` : PRIMARY_ORIGIN;
+}
+
+/**
+ * Same question as a boolean, for the sitemap and for `robots`: a host must
+ * never submit — or claim indexable — a URL it canonicalises away.
+ */
+export async function hostOwnsDirectory(): Promise<boolean> {
+  const p = await hostParts();
+  return p ? ownsDirectoryPages(p) : true;
+}

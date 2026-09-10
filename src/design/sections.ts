@@ -18,7 +18,11 @@
  * otherwise. A real branch goes inside one of these functions for one key —
  * never inside the component.
  */
-import { familyOf, type VerticalKey } from "@/config/verticals";
+import {
+  familyOf,
+  type VerticalFamily,
+  type VerticalKey,
+} from "@/config/verticals";
 
 export type HomeSectionId =
   | "hero"
@@ -60,7 +64,12 @@ export type HomeSectionId =
   // RentalHome.tsx.
   | "servicios"
   | "por-que"
-  | "proceso";
+  | "proceso"
+  // Directory-family sections (fable-plan-realtor-terreno-rental.md Stage 1 D
+  // item 1). These only ever appear for a vertical whose homeLayout() is
+  // "directory" — see DirectoryHome.tsx.
+  | "como-elegimos"
+  | "directorio-teaser";
 
 /**
  * Home page sections and their order. `homeLayout()` (below) decides whether
@@ -117,6 +126,21 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
       "cta",
     ];
   }
+  if (familyOf(key) === "directory") {
+    // Stage 1 D item 1, in order: the seller form hero · the three-step
+    // explainer · "cómo elegimos" · the directory teaser (real verified agents
+    // only, §1 item 7) · the "¿Sos inmobiliario?" band · faq. No listing grid,
+    // no search bar, no /publicar CTA — this door sells an introduction to a
+    // person, not a search over rows.
+    return [
+      "hero",
+      "como-funciona",
+      "como-elegimos",
+      "directorio-teaser",
+      "profesional",
+      "faq",
+    ];
+  }
   return [
     "hero",
     "zonas",
@@ -137,14 +161,19 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
   ];
 }
 
-export type HomeLayout = "default" | "nordico" | "guide-en" | "rental" | "leads";
+export type HomeLayout =
+  | "default"
+  | "nordico"
+  | "guide-en"
+  | "rental"
+  | "directory";
 
 /**
  * Which component renders the home page. `app/page.tsx` is the one allowed
  * fork point (it already resolves `vertical` for the page); it renders
  * `NordicoHome` when this returns "nordico", `EnHome` when it returns
- * "guide-en", `LeadsHome` when it returns "leads", and its own default JSX
- * otherwise. No other file branches on this.
+ * "guide-en", and its own default JSX otherwise. No other file branches on
+ * this.
  */
 export function homeLayout(key: VerticalKey): HomeLayout {
   if (key === "inmobiliaria") return "nordico";
@@ -152,14 +181,11 @@ export function homeLayout(key: VerticalKey): HomeLayout {
   // Both rental doors render `RentalHome` (docs/style/rentparaguay.com.md) —
   // one shell for the family, in each door's own language.
   if (familyOf(key) === "rental") return "rental";
-  // inmobiliarios.com.py ("agents"): not a narrowed marketplace feeder like
-  // terreno.com.py — it sells two things the marketplace doesn't: seller
-  // leads for property owners, and a marketing/exposure service for
-  // realtors. Its own shell, `LeadsHome`, is why — the default template's
-  // listings grid would just mirror inmobiliaria.com.py's catalogue under a
-  // different domain, which is the exact "looks like a copy" complaint this
-  // layout exists to fix.
-  if (key === "agents") return "leads";
+  // The directory door renders its own seller-first shell (DirectoryHome).
+  // `desarrolladores.com.py` shares the family but is `mode: "projects"` and
+  // still disabled, so nothing routes to it — when it switches on it gets its
+  // own branch here rather than inheriting this one.
+  if (familyOf(key) === "directory") return "directory";
   return "default";
 }
 
@@ -328,7 +354,7 @@ export function contactPrimaryFirst(_key: VerticalKey): boolean {
   return true;
 }
 
-export type ChromeVariant = "default" | "guide-en" | "rental";
+export type ChromeVariant = "default" | "guide-en" | "rental" | "directory";
 
 /**
  * Which header/footer nav content and visibility rules apply. `SiteHeader`
@@ -343,8 +369,22 @@ export function chromeVariant(key: VerticalKey): ChromeVariant {
   // `rental` dictionary namespace rather than the Spanish marketplace's
   // HEADER_NAV.
   if (familyOf(key) === "rental") return "rental";
+  // The directory door's own header and footer: Inicio · Inmobiliarios ·
+  // Inmobiliarias · Para inmobiliarios · Contacto, one CTA ("Encontrá tu
+  // inmobiliario" → the home form), and no login, publish CTA or newsletter
+  // (Stage 1 D item 1 / §1 item 4).
+  if (familyOf(key) === "directory") return "directory";
   return "default";
 }
+
+/**
+ * The families whose chrome carries no login, no `/publicar` CTA and no
+ * newsletter. The rental doors are a services firm's site; the directory door
+ * is a lead-gen directory (§1 item 4: "no grids, no search, no /publicar, no
+ * login in its chrome"). The only account this app has is a marketplace
+ * publisher's, which is not what either audience arrived for.
+ */
+const NO_ACCOUNT_CHROME: VerticalFamily[] = ["rental", "directory"];
 
 /**
  * Whether the header/mobile-drawer shows a login link. realestateinparaguay.com
@@ -355,8 +395,9 @@ export function chromeVariant(key: VerticalKey): ChromeVariant {
 export function chromeShowLogin(key: VerticalKey): boolean {
   // Also off for the rental family: those doors are a services firm's site,
   // and the only account this app has is a marketplace publisher's
-  // (fable/plan-rentparaguay.md §1 item 11).
-  return key !== "en" && familyOf(key) !== "rental";
+  // (fable/plan-rentparaguay.md §1 item 11). The directory door joins them —
+  // see NO_ACCOUNT_CHROME above.
+  return key !== "en" && !NO_ACCOUNT_CHROME.includes(familyOf(key));
 }
 
 /**
@@ -372,8 +413,9 @@ export function chromeShowLogin(key: VerticalKey): boolean {
 export function chromeShowPublishCta(key: VerticalKey): boolean {
   // Off for the rental family too: a landlord who lands there is a lead for
   // the management service, not a self-service publisher, so the chrome's one
-  // CTA is "Contactanos" (O2) rather than /publicar.
-  return key !== "en" && familyOf(key) !== "rental";
+  // CTA is "Contactanos" (O2) rather than /publicar. Same for the directory
+  // door, whose one CTA is "Encontrá tu inmobiliario" → the home form.
+  return key !== "en" && !NO_ACCOUNT_CHROME.includes(familyOf(key));
 }
 
 /**
@@ -384,7 +426,7 @@ export function chromeShowPublishCta(key: VerticalKey): boolean {
  * exists for any other newsletter entry point a future page might add.)
  */
 export function chromeShowNewsletter(key: VerticalKey): boolean {
-  return key !== "en" && familyOf(key) !== "rental";
+  return key !== "en" && !NO_ACCOUNT_CHROME.includes(familyOf(key));
 }
 
 /**
@@ -398,4 +440,60 @@ export function chromeShowNewsletter(key: VerticalKey): boolean {
  */
 export function rentalPagesEnabled(key: VerticalKey): boolean {
   return familyOf(key) === "rental";
+}
+
+/**
+ * The rental family's URL helper (R2). Re-exported here because this registry
+ * is where the rest of the app asks structural questions about a door, and
+ * every consumer — the chrome, the home page, the hub, the routes, the
+ * sitemap — already imports from it.
+ *
+ * It is *defined* one module down, in `src/config/rental-services.ts`, and
+ * that is not a style choice: `next.config.ts` builds the cross-language 301s
+ * from the same helper, and Next's config loader compiles that file outside
+ * the app's module graph, where the `@/…` alias does not resolve. A module
+ * `next.config.ts` can import must therefore import nothing that uses the
+ * alias — which this file does (`@/config/verticals`, above). Keeping the
+ * helper alias-free is what stops the redirects from being a second,
+ * hand-maintained copy of the URL table.
+ */
+export {
+  rentalPath,
+  rentalPathsByLocale,
+  type RentalPageKind,
+} from "@/config/rental-services";
+
+/**
+ * Whether this door renders the directory business's own pages — the
+ * seller-first home, `/para-inmobiliarios`, and the directory rendering of
+ * `/agentes`, `/inmobiliarias` and the two profile page types. Same rule as
+ * `rentalPagesEnabled()`: `/para-inmobiliarios` redirects to `/` off every
+ * other door, because a route that renders on a door whose sitemap, chrome and
+ * hreflang all say it does not exist there is a duplicate-content surface
+ * nobody links to.
+ *
+ * Note what this does NOT gate: `/agentes`, `/inmobiliarias` and the profile
+ * pages still render on the marketplace doors — they are marketplace pages
+ * too. The directory door changes how they look, and `ownsDirectory`
+ * (`src/config/verticals.ts`) changes which host is canonical for them.
+ */
+export function directoryPagesEnabled(key: VerticalKey): boolean {
+  return familyOf(key) === "directory";
+}
+
+/**
+ * Whether this door serves the marketplace's own page types — the category
+ * grids, `/propiedad`, `/publicar`, `/precios`, `/proyectos` and friends. False
+ * only on the directory door, which 308s all of them to the Spanish
+ * marketplace primary (`middleware.ts`, absolute: a relative redirect would
+ * loop on that host) and lists none of them in its sitemap
+ * (`src/lib/sitemap.ts`).
+ *
+ * The redirect is what a visitor hits; this predicate is what the sitemap
+ * reads. Sharing one answer is what stops a door from submitting URLs it
+ * redirects away — the same discipline `hostOwnsListingDetail()` enforces for
+ * canonicals.
+ */
+export function marketplacePagesEnabled(key: VerticalKey): boolean {
+  return familyOf(key) !== "directory";
 }

@@ -25,15 +25,19 @@ import { getIndexability } from "./indexability";
 import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl, agencyUrl, agentUrl } from "./urls";
 import {
+  DIRECTORY_SITEMAP_PATHS,
   MARKETPLACE_SITEMAP_PATHS,
-  RENTAL_SITEMAP_PATHS,
+  rentalSitemapPaths,
 } from "../config/site-nav";
 import { listPublishedPostSlugs } from "./post-queries";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 import type { VerticalConfig } from "@/config/verticals";
 import { verticalConds } from "./facet-sql";
-import { sellerLandingEnabled } from "@/design/sections";
+import {
+  marketplacePagesEnabled,
+  sellerLandingEnabled,
+} from "@/design/sections";
 
 export interface SitemapEntry {
   path: string;
@@ -52,6 +56,17 @@ export interface SitemapOptions {
    */
   includeListingDetail?: boolean;
   /**
+   * Whether to emit the directory page type — `/agentes`, `/inmobiliarias` and
+   * the two profile URLs. Exactly the `includeListingDetail` rule for the page
+   * type `ownsDirectory` governs: a door that canonicalises a profile to
+   * another host must not submit it. The caller passes `hostOwnsDirectory()`
+   * from `src/lib/origin.ts`, so sitemap and canonical are one predicate.
+   *
+   * This is why the rental doors no longer submit profile URLs either: they
+   * never owned them, and before the flag existed nothing said so.
+   */
+  includeDirectory?: boolean;
+  /**
    * The door this sitemap is for. Its `filters` narrow the published rows the
    * same way they narrow every page on that host — a sitemap that lists URLs
    * the host would render empty is the same Search Console error as listing
@@ -63,7 +78,18 @@ export interface SitemapOptions {
 export async function buildSitemapEntries(
   opts: SitemapOptions = {},
 ): Promise<SitemapEntry[]> {
-  const { includeListingDetail = true, vertical = null } = opts;
+  const {
+    includeListingDetail = true,
+    includeDirectory = true,
+    vertical = null,
+  } = opts;
+  // The directory door serves none of the marketplace's page types — it 301s
+  // every one of them (next.config.ts). Everything gated on this is a URL that
+  // would be a redirect, which is the same Search Console error as a URL the
+  // host canonicalises away, arrived at from a third direction.
+  const servesMarketplace = vertical
+    ? marketplacePagesEnabled(vertical.key)
+    : true;
   const locs = await db
     .select({
       id: locations.id,
@@ -106,20 +132,35 @@ export async function buildSitemapEntries(
   //    own pages (/servicios, /nosotros, /contacto) and none of the
   //    marketplace's. A door with no vertical (an unknown host) gets the
   //    marketplace list, the same default every other lookup falls back to.
+  //
+  //    The rental list is per-locale (R2): its own pages are English on
+  //    rentparaguay.com and Spanish on alquiler.com.py, and each door 301s the
+  //    other's — so each submits only the URLs it actually serves.
+  //
+  //    The directory door has a third list (DIRECTORY_SITEMAP_PATHS): it is a
+  //    realtor lead-gen door, so none of the marketplace's hand-authored pages
+  //    are its to submit.
   const staticPaths =
     vertical?.family === "rental"
-      ? RENTAL_SITEMAP_PATHS
-      : MARKETPLACE_SITEMAP_PATHS;
+      ? rentalSitemapPaths(vertical.locale)
+      : vertical?.family === "directory"
+        ? DIRECTORY_SITEMAP_PATHS
+        : MARKETPLACE_SITEMAP_PATHS;
   const venderAllowed = vertical ? sellerLandingEnabled(vertical.key) : false;
-  const entries: SitemapEntry[] = staticPaths.filter(
-    (path) => path !== "/vender" || venderAllowed,
-  ).map((path) => ({ path }));
+  // The two directory index pages follow their profile pages: a door that
+  // canonicalises /agente/* away has no business submitting the index of them
+  // either.
+  const DIRECTORY_INDEX_PATHS = ["/agentes", "/inmobiliarias"];
+  const entries: SitemapEntry[] = staticPaths
+    .filter((path) => path !== "/vender" || venderAllowed)
+    .filter((path) => includeDirectory || !DIRECTORY_INDEX_PATHS.includes(path))
+    .map((path) => ({ path }));
 
   // 1. Listing detail pages — always indexable when published, but only on a
   //    host that actually owns them. The published rows are still read either
   //    way: the category, agency and agent sections below count them to decide
   //    what IS indexable here, and those pages are this host's own.
-  if (includeListingDetail) {
+  if (includeListingDetail && servesMarketplace) {
     for (const l of pub) {
       entries.push({
         path: listingUrl({ slug: l.slug, publicId: l.publicId }),
@@ -166,7 +207,7 @@ export async function buildSitemapEntries(
     const [op, cityId] = key.split("|");
     const city = locById.get(Number(cityId));
     if (!city) continue;
-    if (getIndexability({ listingCount: n }).state === "index") {
+    if (servesMarketplace && getIndexability({ listingCount: n }).state === "index") {
       entries.push({
         path: categoryUrl({ operation: op as Operation, citySlug: city.slug }),
       });
@@ -180,6 +221,7 @@ export async function buildSitemapEntries(
     if (!city) continue;
     if (getIndexability({ listingCount: n }).state === "index") {
       cityTypeIndexable.add(key);
+      if (servesMarketplace)
       entries.push({
         path: categoryUrl({
           operation: op as Operation,
@@ -203,6 +245,7 @@ export async function buildSitemapEntries(
     // selected as canonical" (audit F8).
     const parentIndexable = cityTypeIndexable.has(`${op}|${city.id}|${type}`);
     if (
+      servesMarketplace &&
       getIndexability({ listingCount: n, parentIndexable }).state === "index"
     ) {
       entries.push({
@@ -218,7 +261,7 @@ export async function buildSitemapEntries(
 
   // 3. Price pages — only cities with a defensible sample, which is the same
   //    rule the page's own robots meta applies. Sitemap and page must agree.
-  const priceCities = await citiesWithPrices();
+  const priceCities = servesMarketplace ? await citiesWithPrices() : [];
   for (const city of priceCities) {
     entries.push({ path: `/precios/${city.slug}` });
   }
@@ -234,7 +277,7 @@ export async function buildSitemapEntries(
   const indexableAgencyIds = [...agencyCount.entries()]
     .filter(([, n]) => getIndexability({ listingCount: n }).state === "index")
     .map(([id]) => id);
-  if (indexableAgencyIds.length > 0) {
+  if (includeDirectory && indexableAgencyIds.length > 0) {
     const agencySlugs = await db
       .select({ slug: agencies.slug })
       .from(agencies)
@@ -254,7 +297,7 @@ export async function buildSitemapEntries(
   const indexableAgentIds = [...agentCount.entries()]
     .filter(([, n]) => getIndexability({ listingCount: n }).state === "index")
     .map(([id]) => id);
-  if (indexableAgentIds.length > 0) {
+  if (includeDirectory && indexableAgentIds.length > 0) {
     const agentSlugs = await db
       .select({ slug: agents.slug })
       .from(agents)
@@ -268,9 +311,11 @@ export async function buildSitemapEntries(
   //    thin-page risk to gate on — a project page carries its own units and a
   //    developer page its own projects — but a developer with no project at
   //    all is excluded, matching the noindex its page sets for that case.
-  const projectRows = await db
-    .select({ slug: projects.slug, developerId: projects.developerId })
-    .from(projects);
+  const projectRows = servesMarketplace
+    ? await db
+        .select({ slug: projects.slug, developerId: projects.developerId })
+        .from(projects)
+    : [];
   for (const p of projectRows) {
     entries.push({ path: `/proyecto/${p.slug}` });
   }
@@ -295,7 +340,7 @@ export async function buildSitemapEntries(
   // 7. Editorial posts. listPublishedPostSlugs() is fail-soft on a missing
   //    table, so a sitemap request between deploy and `db:migrate` returns the
   //    rest of the site rather than erroring.
-  for (const post of await listPublishedPostSlugs()) {
+  for (const post of servesMarketplace ? await listPublishedPostSlugs() : []) {
     entries.push({
       path: `/guias/${post.slug}`,
       lastmod: post.updatedAt ?? undefined,

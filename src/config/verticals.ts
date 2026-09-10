@@ -75,6 +75,26 @@ export interface VerticalConfig {
    * so their detail pages canonicalise away — see `listingCanonicalOrigin()`.
    */
   ownsListingDetail: boolean;
+  /**
+   * Whether the directory page type — `/agentes`, `/agente/{slug}`,
+   * `/inmobiliarias`, `/inmobiliaria/{slug}` — is canonical on THIS host.
+   * Exactly the `ownsListingDetail` pattern, for the page type the directory
+   * door exists to own (fable-plan-realtor-terreno-rental.md Stage 1 D item 6).
+   *
+   * Every marketplace door renders those pages, and until this flag existed
+   * each one self-canonicalised them: two Spanish doors publishing the same
+   * profile at two URLs. The flag names one owner **per locale** — the same
+   * per-locale rule `detailOwnerForLocale()` follows, and for the same reason:
+   * an English page whose canonical is a Spanish URL is a canonical Google
+   * ignores.
+   *
+   * It is deliberately NOT on `inmobiliarios.com.py` yet. The directory door's
+   * code ships before its DNS does (§1 item 6), and a canonical pointing at a
+   * host that does not resolve is worse than a duplicate — so the Spanish
+   * owner stays `inmobiliaria.com.py` and the flip is one line in the go-live
+   * PR, after DNS resolves.
+   */
+  ownsDirectory?: boolean;
 }
 
 export const VERTICALS: Record<string, VerticalConfig> = {
@@ -146,22 +166,29 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     ownsListingDetail: false,
   },
   /**
-   * Not a marketplace feeder and not the future agent-directory listing
-   * either — that idea is shelved. This door sells two things instead
-   * (owner decision): seller leads for property owners
-   * (`leadType: "seller"`, same pipeline `/vender` and `/contacto` use) and
-   * a marketing/exposure service pitch to realtors and agencies
-   * (`leadType: "agent_signup"`), distinct from `/para-inmobiliarias`'
-   * free "publish your own inventory" offer. Its home page is its own
-   * shell (`LeadsHome`, `src/design/sections.ts`'s `homeLayout() ===
-   * "leads"`) precisely so enabling it does not just mirror
-   * inmobiliaria.com.py's catalogue under a different domain.
+   * The realtor directory — a seller-first lead-gen door, not a second
+   * marketplace (fable-plan-realtor-terreno-rental.md Stage 1 D). It renders
+   * its own home, `/agentes`, `/inmobiliarias`, the two profile page types and
+   * `/para-inmobiliarios`; every marketplace-only route (`/venta`, `/propiedad`,
+   * `/publicar`, `/precios`, `/proyectos`, …) 301s to `https://inmobiliaria.com.py`
+   * from `next.config.ts`, absolutely rather than relatively — a relative
+   * redirect on this host would loop.
+   *
+   * `enabled: true` before DNS exists, the `alquiler.com.py` precedent (§1 item
+   * 6): `resolveVertical()` ignores a disabled host, so a disabled door cannot
+   * be previewed with a `Host` header and `verify:seo` would only ever check a
+   * synthetic copy of it. Nothing reaches a visitor until the domain's DNS
+   * points at Hostinger — that is the go-live switch, not this flag.
+   *
+   * `ownsDirectory` is deliberately absent: see the field's doc comment. It
+   * flips here, and off `inmobiliaria.com.py`, in the go-live PR.
    */
   "inmobiliarios.com.py": {
     key: "agents",
     brand: "Inmobiliarios Paraguay",
     locale: "es",
     family: "directory",
+    mode: "directory",
     copy: "directory",
     enabled: true,
     ownsListingDetail: false,
@@ -197,6 +224,10 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "foreign",
     enabled: true,
     ownsListingDetail: true,
+    // Owns the directory pages **in English**: no English directory door
+    // exists, and pointing this door's /agente/* canonicals at a Spanish URL
+    // is a canonical Google drops. Same per-locale rule as detail.
+    ownsDirectory: true,
   },
   /**
    * FLIPPED 2026-09-04 (PLAN.md D6): the Spanish marketplace primary. Same
@@ -218,6 +249,10 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "ownership",
     enabled: true,
     ownsListingDetail: true,
+    // The Spanish owner of /agentes, /inmobiliarias and the two profile page
+    // types — until inmobiliarios.com.py's DNS resolves and the go-live PR
+    // moves this one line (see `ownsDirectory` on VerticalConfig).
+    ownsDirectory: true,
   },
 } as const;
 
@@ -240,6 +275,20 @@ export const VERTICALS: Record<string, VerticalConfig> = {
  */
 export const CANONICAL_HOST =
   process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "inmobiliaria.com.py";
+
+/**
+ * Where a door that serves no marketplace page type sends those requests —
+ * the directory door's `/venta`, `/propiedad`, `/publicar`, … all 301 here
+ * (`middleware.ts`).
+ *
+ * A fixed host, deliberately, not `CANONICAL_HOST`: that constant comes from
+ * `NEXT_PUBLIC_CANONICAL_HOST` and is inlined at build time, so a mis-set
+ * hPanel value would turn every one of those redirects into a redirect to
+ * nowhere — on the one door whose entire marketplace surface depends on them.
+ * `npm run verify:seo` asserts this names a served Spanish marketplace door
+ * that owns its listing detail, so it cannot quietly drift out of the table.
+ */
+export const MARKETPLACE_PRIMARY_HOST = "inmobiliaria.com.py";
 
 // Fallback must be an OWNED host: if CANONICAL_HOST ever names a host with no
 // entry, every page would be branded with a domain the founder does not own

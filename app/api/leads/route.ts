@@ -8,7 +8,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { leads, listings } from "@/db/schema";
+import { agents, leads, listings } from "@/db/schema";
 import { alertOperator, getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
@@ -28,6 +28,20 @@ const bodySchema = z.object({
     "agent_signup",
   ]),
   listingPublicId: z.string().length(10).optional(),
+  /**
+   * A profile-originated lead: the visitor asked for THIS agent from
+   * `/agente/{slug}` on the directory door, with no listing in hand
+   * (fable-plan-realtor-terreno-rental.md Stage 1 D item 3).
+   *
+   * Bounded and shaped here rather than trusted: it is a slug, so it is
+   * lowercase letters, digits and hyphens, and it is only ever used as a
+   * parameterised lookup. An unknown slug is NOT a 400 — see `routedTo` below.
+   */
+  agentSlug: z
+    .string()
+    .max(190)
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
   name: z.string().max(140).optional(),
   whatsapp: z.string().min(6).max(30),
   email: z.string().email().max(190).optional(),
@@ -119,13 +133,57 @@ export async function POST(req: NextRequest) {
    * A lead with no listing at all stays `internal` — there is nobody else it
    * could belong to.
    */
-  const routedTo: LeadPayload["routedTo"] = listing?.agentId
+  /**
+   * A profile-originated lead names its agent explicitly, because there is no
+   * listing to infer one from. The slug is resolved to a real row before it
+   * routes anywhere — a lead addressed to an agent who does not exist would be
+   * a lead nobody is watching.
+   *
+   * An unknown slug falls through to the normal chain and lands `internal`; it
+   * is never a 400. A stale profile link — a renamed slug, an agent removed
+   * between page render and submit — must not lose the lead: the operator sees
+   * it in `/admin/leads` and forwards it by hand, which is the same manual lane
+   * v1 matching already runs on (§1 item 4).
+   */
+  let explicitAgent: { id: number; name: string; slug: string } | null = null;
+  if (parsed.agentSlug) {
+    const [row] = await db
+      .select({ id: agents.id, name: agents.name, slug: agents.slug })
+      .from(agents)
+      .where(eq(agents.slug, parsed.agentSlug))
+      .limit(1);
+    explicitAgent = row ?? null;
+  }
+
+  /**
+   * `leads` has no `agent_id` column and D1 adds no schema, so the resolved
+   * agent rides in `utm` — the same json field `/vender` already marks itself
+   * with, and the same reason there is no `leads.source` column. Written from
+   * the resolved ROW, never from the submitted slug: what the operator reads in
+   * `/admin/leads` is then a name that exists, not a string a client sent.
+   *
+   * This is the honest v1 (§1 item 4): the lane says "an agent owns this" and
+   * the marker says which one, and the founder forwards by hand. The real
+   * structure is `lead_matches` in D3, which is a migration and a founder
+   * decision — do not add a column here to get ahead of it.
+   */
+  const utm = explicitAgent
+    ? {
+        ...(parsed.utm ?? {}),
+        agent_slug: explicitAgent.slug,
+        agent_name: explicitAgent.name,
+      }
+    : parsed.utm;
+
+  const routedTo: LeadPayload["routedTo"] = explicitAgent
     ? "agent"
-    : listing?.agencyId
-      ? "agency"
-      : listing?.ownerUserId
-        ? "owner"
-        : "internal";
+    : listing?.agentId
+      ? "agent"
+      : listing?.agencyId
+        ? "agency"
+        : listing?.ownerUserId
+          ? "owner"
+          : "internal";
 
   // 1. Record in MySQL first.
   const [res] = await db.insert(leads).values({
@@ -137,7 +195,7 @@ export async function POST(req: NextRequest) {
     whatsapp: parsed.whatsapp,
     email: parsed.email,
     message: parsed.message,
-    utm: parsed.utm,
+    utm,
     routedTo,
   });
   const leadId = Number((res as unknown as { insertId: number }).insertId);
@@ -150,7 +208,7 @@ export async function POST(req: NextRequest) {
     whatsapp: parsed.whatsapp,
     email: parsed.email,
     message: parsed.message,
-    utm: parsed.utm,
+    utm,
     routedTo,
     listing: listing
       ? {

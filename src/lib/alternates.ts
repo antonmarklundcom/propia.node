@@ -49,8 +49,13 @@ import type { Locale } from "@/i18n";
  *   feeder canonicalises its detail pages back to the primary, so it is not a
  *   language version of anything and must not appear in the set. This mirrors
  *   `ownsListingDetail()` in `origin.ts`; the two read the same flag.
+ * - `"directory"` — `/agentes`, `/agente/{slug}`, `/inmobiliarias`,
+ *   `/inmobiliaria/{slug}`. Every marketplace door renders them, but only the
+ *   door named by `ownsDirectory` is canonical for them in its language; a door
+ *   that canonicalises them away is not a language version of anything. Mirrors
+ *   `hostOwnsDirectory()` in `origin.ts`; the two read the same flag.
  */
-export type AlternateScope = "site" | "listing";
+export type AlternateScope = "site" | "listing" | "directory";
 
 export interface AlternateInput {
   /** Path as served, with its leading slash: "/", "/venta/asuncion", … */
@@ -72,11 +77,20 @@ export interface AlternateInput {
   family: VerticalFamily;
   /**
    * Per-locale path overrides, for content whose URL is not the same string on
-   * every door. Nothing needs this today — every URL in this app is built from
-   * Spanish slugs plus an opaque `public_id` (`src/lib/urls.ts`), so the same
-   * path resolves to the same listing on every host. If the English door ever
-   * localises its slugs, this is the hook that keeps hreflang pointing at each
-   * version's own canonical URL instead of a redirect.
+   * every door. Omitted, every locale gets `path` — which is right for almost
+   * everything here, because every other URL in this app is built from Spanish
+   * slugs plus an opaque `public_id` (`src/lib/urls.ts`), so the same path
+   * resolves to the same listing on every host.
+   *
+   * **Used since R2** (the hook this comment used to describe as unused): the
+   * rental business's own pages are English on `rentparaguay.com` and Spanish
+   * on `alquiler.com.py` — `/services/airbnb-management` and
+   * `/servicios/administracion-airbnb` are the same page in two languages.
+   * Callers build the map with `rentalPathsByLocale()`
+   * (`src/design/sections.ts`) rather than typing the pair out, because the
+   * whole point of hreflang is that each URL it names is that version's own
+   * canonical: a map that points at a path the door 301s away from tells
+   * Google the alternate is a redirect, and it drops the pair.
    */
   pathByLocale?: Partial<Record<Locale, string>>;
 }
@@ -99,6 +113,8 @@ export function servedDoors(primaryHost: string): Door[] {
 
 function ownsScope(door: Door, primaryHost: string, scope: AlternateScope): boolean {
   if (scope === "site") return true;
+  if (scope === "directory")
+    return door.host === primaryHost || Boolean(door.config.ownsDirectory);
   return door.host === primaryHost || door.config.ownsListingDetail;
 }
 

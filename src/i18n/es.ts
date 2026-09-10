@@ -3,6 +3,9 @@
  * All local-facing copy is Paraguayan voseo. NEVER generate
  * neutral-Spanish variants of these.
  */
+// Pure (config + a lookup table, no `next/*`), so the client components that
+// read this dictionary are unaffected — the same rule `brand.ts` follows.
+import { rentalPath } from "@/design/sections";
 
 export const es = {
   searchPlaceholder: "¿Dónde querés vivir?",
@@ -1585,22 +1588,25 @@ export const esProject = {
  */
 export const esRental = {
   // ---- chrome (SiteHeader / SiteFooter / MobileMenu, chromeVariant "rental")
+  // Hrefs through `rentalPath()` (R2) — the Spanish door keeps the Spanish
+  // URLs it always had; the helper is what guarantees the English door's nav
+  // stays the mirror image of this one rather than a second hand-typed list.
   chromeNav: [
     { label: "Alquileres", href: "/alquiler" },
-    { label: "Servicios", href: "/servicios" },
-    { label: "Nosotros", href: "/nosotros" },
-    { label: "Contacto", href: "/contacto" },
+    { label: "Servicios", href: rentalPath("es", "services") },
+    { label: "Nosotros", href: rentalPath("es", "about") },
+    { label: "Contacto", href: rentalPath("es", "contact") },
   ],
   chromeCtaLabel: "Contactanos",
-  chromeCtaHref: "/contacto",
+  chromeCtaHref: rentalPath("es", "contact"),
   footerTagline:
     "Inmobiliaria y administración de propiedades en Asunción, para extranjeros, nómadas digitales e inversores. Buscamos, alquilamos y administramos, en tu idioma.",
   footerServicesTitle: "Servicios",
   footerCompanyTitle: "Empresa",
   footerLegalTitle: "Legal",
   footerCompanyLinks: [
-    { label: "Nosotros", href: "/nosotros" },
-    { label: "Contacto", href: "/contacto" },
+    { label: "Nosotros", href: rentalPath("es", "about") },
+    { label: "Contacto", href: rentalPath("es", "contact") },
     { label: "Alquileres", href: "/alquiler" },
   ],
   footerLegalLinks: [
@@ -2199,11 +2205,11 @@ export const esRentalServices = {
       },
       {
         q: "¿Cuáles son los costos de cierre al comprar en Asunción?",
-        a: "Por lo general, los costos de cierre (incluyendo honorarios de escribanía e impuestos) rondan entre el 2% y el 3% del valor de la transacción. Te damos una estimación detallada antes de cerrar cualquier operación.",
+        a: "Por lo general, los costos de cierre (honorarios de escribanía, inscripción registral e impuestos) rondan entre el 2% y el 3,5% del valor de la transacción. Te damos una estimación detallada antes de cerrar cualquier operación.",
       },
       {
         q: "¿Qué impuesto pago si vendo más adelante?",
-        a: "Paraguay tiene un régimen impositivo muy competitivo. Si vendés como persona física, el impuesto sobre la ganancia suele ser bajo, en muchos casos efectivamente entre el 2,4% y el 3%.",
+        a: "Paraguay tiene un régimen impositivo muy competitivo. Si vendés como persona física, el escribano retiene el impuesto al firmar la escritura, y en la práctica suele ser un 2,4% efectivo sobre el valor de venta (hay un método alternativo sobre la ganancia real, pero ese 2,4% presuntivo es el que se aplica por defecto).",
       },
     ],
     ctaTitle: "Comprá con alguien de tu lado",
@@ -2221,7 +2227,7 @@ export const esRentalServices = {
       "La residencia paraguaya es de las más accesibles del mundo, pero el trámite tiene pasos, sellos y turnos que conviene no descubrir sobre la marcha. Preparamos la carpeta antes de que viajes y te acompañamos mientras estás acá.",
     challengeTitle: "Por qué la gente la elige",
     challengeText:
-      "Paraguay se volvió un destino top para quien busca escapar de impuestos altos y regulación excesiva en otros países. Funciona con un sistema tributario territorial: el ingreso local paga un 10% fijo, y el ingreso de fuente extranjera en general no paga impuesto. La residencia permanente es además el primer paso formal hacia la ciudadanía y el pasaporte paraguayo, y el país tiene una ubicación estable y cómoda para moverte por la región.",
+      "Paraguay se volvió un destino top para quien busca escapar de impuestos altos y regulación excesiva en otros países. Funciona con un sistema tributario territorial: el ingreso de fuente extranjera en general no paga impuesto, y el ingreso local paga tasas bajas de renta personal. La residencia —primero temporaria y, después de dos años, permanente— es además el camino formal hacia la ciudadanía y el pasaporte paraguayo, y el país tiene una ubicación estable y cómoda para moverte por la región.",
     frameworkTitle: "El trámite, paso a paso",
     framework: [
       {
@@ -2294,7 +2300,11 @@ export const esRentalServices = {
       },
       {
         q: "¿Pago impuestos por ingresos de afuera de Paraguay?",
-        a: "Paraguay funciona con un sistema tributario territorial, así que el ingreso generado fuera del país en general no paga impuesto. El ingreso local paga un 10% fijo.",
+        a: "Paraguay funciona con un sistema tributario territorial, así que el ingreso generado fuera del país en general no paga impuesto. El ingreso local paga tasas bajas de renta personal, según el tipo de ingreso.",
+      },
+      {
+        q: "¿Puedo pedir la residencia permanente directamente?",
+        a: "Para la mayoría de las personas, no: primero se obtiene la residencia temporaria, y recién después de dos años con ese estatus se puede pedir la permanente. Quienes califican bajo alguna de las categorías de inversión pueden acceder a una vía más directa. Te decimos qué camino te conviene según tu situación.",
       },
     ],
     ctaTitle: "Empezá tu residencia",
@@ -2312,7 +2322,7 @@ export const esRentalServices = {
       "Invertir a distancia funciona cuando hay alguien de este lado que mira la obra, controla al inquilino y manda los números a tiempo. Buscamos el activo, ordenamos la estructura y después lo administramos.",
     challengeTitle: "Por qué Paraguay",
     challengeText:
-      "La economía paraguaya se apoya en disciplina fiscal: un sistema plano \"10-10-10\" (10% de impuesto corporativo, 10% de impuesto a la renta personal, 10% de IVA) y un régimen tributario territorial que solo grava lo que se genera dentro del país, así que tu patrimonio en el resto del mundo queda intacto, sin impuesto a la herencia, al patrimonio ni a las donaciones. La Ley N.º 7548/2025 suma incentivos para proyectos más grandes, incluidas exenciones sobre dividendos y remesas de utilidades. Las cifras concretas para tu caso —tasas, incentivos y rendimientos esperados— las repasamos caso por caso, porque dependen del activo y del año.",
+      "La economía paraguaya se apoya en disciplina fiscal: un Impuesto a la Renta Empresarial plano del 10% sobre las utilidades, un IVA general del 10% y un régimen tributario territorial que solo grava lo que se genera dentro del país, así que tu patrimonio en el resto del mundo queda intacto, sin impuesto a la herencia, al patrimonio ni a las donaciones. La distribución de dividendos tiene además su propia retención (más baja para residentes que para no residentes), así que la carga efectiva sobre lo que remitís al exterior no es igual a la que reinvertís acá. La Ley N.º 7548/2025 suma incentivos para proyectos más grandes, incluidas exenciones sobre dividendos y remesas de utilidades a partir de cierto monto de inversión. Las cifras concretas para tu caso —tasas, incentivos y rendimientos esperados— las repasamos caso por caso, porque dependen del activo, la estructura y el año.",
     frameworkTitle: "Cómo trabajamos una inversión",
     framework: [
       {
@@ -2365,15 +2375,15 @@ export const esRentalServices = {
     faq: [
       {
         q: "¿Los extranjeros pueden comprar propiedades o campo en Paraguay?",
-        a: "Sí. Los extranjeros tienen los mismos derechos de propiedad que los paraguayos y pueden ser dueños de inmuebles o campo a título propio, en su nombre o a través de una empresa local.",
+        a: "Sí. Los extranjeros tienen los mismos derechos de propiedad que los paraguayos y pueden ser dueños de inmuebles o campo a título propio, en su nombre o a través de una empresa local — con una excepción puntual: la compra de campo dentro de la franja de seguridad fronteriza está restringida para ciudadanos de países limítrofes. Fuera de esa franja, y en zonas urbanas como Asunción, no aplica ninguna restricción.",
       },
       {
         q: "¿Qué régimen tributario aplica a mi inversión?",
-        a: "Paraguay grava solo lo que se genera dentro del país, aplica una tasa plana del 10% a las ganancias corporativas, a la renta personal y al IVA, y no cobra impuesto a la herencia, al patrimonio ni a las donaciones. Los proyectos más grandes también pueden acceder a los incentivos de la Ley N.º 7548/2025.",
+        a: "Paraguay grava solo lo que se genera dentro del país. Las utilidades corporativas pagan un 10% de Impuesto a la Renta Empresarial y el IVA general es del 10%; la distribución de dividendos tiene además su propia retención, más baja para residentes que para no residentes. No hay impuesto a la herencia, al patrimonio ni a las donaciones. Los proyectos más grandes también pueden acceder a los incentivos de la Ley N.º 7548/2025.",
       },
       {
         q: "¿Hay un monto mínimo para acceder a los beneficios de la Ley 7548/2025?",
-        a: "Podés invertir cualquier monto, pero las exenciones impositivas más importantes de la ley aplican a proyectos desde USD 5 millones, con beneficios adicionales por encima de USD 13 millones.",
+        a: "Podés invertir cualquier monto. Proyectos desde unos USD 500.000 ya acceden a beneficios de base (importación de bienes de capital sin arancel, créditos fiscales), y las exenciones más importantes —la exención total sobre dividendos y sobre intereses de financiamiento externo, por 10 años— están reservadas a proyectos desde USD 13 millones.",
       },
       {
         q: "¿Puedo mover mi capital y mis utilidades libremente?",
@@ -2463,4 +2473,228 @@ export const esRentalServices = {
     ctaText: "Contanos para qué lo necesitás y te decimos qué requiere.",
     ctaButton: "Hablemos",
   },
+} as const;
+
+/**
+ * inmobiliarios.com.py — the realtor directory door
+ * (fable-plan-realtor-terreno-rental.md Stage 1 D).
+ *
+ * D1 landed every key a rendered surface reads, with a real sentence each;
+ * D2 (`sonnet-d2-directory-copy.md`) reviewed, extended the two FAQs (home +
+ * `/para-inmobiliarios`'s own `proFaq`) and fixed this comment, which is
+ * stale as of D1 — there was no bare-skeleton pass to redo. Nothing here may
+ * invent a figure — no review counts, no "X inmobiliarios registrados", no
+ * response-time promise — because there is no data behind any of them and
+ * the competitor's padded directory is exactly what this door is not
+ * (§1 item 7). Same reason there is no licence line: the founder's EAS/
+ * SERPLAID licence has not issued yet (§8), so it is omitted rather than
+ * stated as pending.
+ *
+ * Vos-form Spanish, like the rest of the Spanish dictionary. The brand is
+ * always an argument, never baked in: this namespace is read by one door
+ * today and the door IS the brand.
+ */
+export const esDirectory = {
+  metaTitle: "Encontrá tu inmobiliario en Paraguay",
+  metaDescription: (brand: string) =>
+    `${brand} te conecta con inmobiliarios que trabajan en tu zona. Contanos qué querés vender o alquilar y recibí propuestas, sin costo.`,
+
+  // Chrome — nav, CTA and footer. No login, no publicar, no newsletter.
+  chromeNav: [
+    { label: "Inicio", href: "/" },
+    { label: "Inmobiliarios", href: "/agentes" },
+    { label: "Inmobiliarias", href: "/inmobiliarias" },
+    { label: "Para inmobiliarios", href: "/para-inmobiliarios" },
+    { label: "Contacto", href: "/contacto" },
+  ],
+  chromeCtaLabel: "Encontrá tu inmobiliario",
+  chromeCtaHref: "/#form",
+  footerTagline: (brand: string) =>
+    `${brand} es el directorio de inmobiliarios de Paraguay: te ponemos en contacto con quien trabaja tu zona.`,
+  footerDirectoryTitle: "Directorio",
+  footerDirectoryLinks: [
+    { label: "Inmobiliarios", href: "/agentes" },
+    { label: "Inmobiliarias", href: "/inmobiliarias" },
+    { label: "Para inmobiliarios", href: "/para-inmobiliarios" },
+  ],
+  footerCompanyTitle: "La empresa",
+  footerCompanyLinks: [
+    { label: "Contacto", href: "/contacto" },
+    { label: "Términos y condiciones", href: "/terminos" },
+    { label: "Política de privacidad", href: "/privacidad" },
+  ],
+  footerContactUs: "Escribinos",
+  // No invented claim about how many professionals are listed: there is no
+  // number behind it, and this door's whole pitch is that its directory is
+  // real (§1 item 7).
+  footerLegalLine: (brand: string) =>
+    `${brand} pone en contacto a propietarios con inmobiliarios independientes. No intervenimos en la operación ni cobramos comisión al propietario.`,
+
+  // Hero + the one form this door exists for.
+  heroKicker: "Gratis y sin compromiso",
+  heroTitle: "Encontrá el inmobiliario indicado para tu propiedad",
+  heroSubtitle:
+    "Contanos qué querés vender o alquilar y te ponemos en contacto con hasta tres inmobiliarios que trabajan en tu zona.",
+  heroPoints: [
+    "Hablás con personas, no con un formulario perdido",
+    "Sin costo para vos: no cobramos comisión al propietario",
+    "Vos elegís con quién seguir",
+  ],
+
+  formTitle: "Contanos de tu propiedad",
+  formNameLabel: "Tu nombre",
+  formPhoneLabel: "WhatsApp",
+  formPhonePlaceholder: "+595 981 234 567",
+  formCityLabel: "Ciudad o zona",
+  formCityPlaceholder: "Elegí una ciudad",
+  formTypeLabel: "Tipo de propiedad",
+  formTypePlaceholder: "Elegí un tipo",
+  formOperationLabel: "Qué querés hacer",
+  formOperationOptions: [
+    { value: "venta", label: "Vender" },
+    { value: "alquiler", label: "Alquilar" },
+  ],
+  formMessageLabel: "Algo más que debamos saber",
+  formMessagePlaceholder: "Barrio, metros, estado, cuándo querés empezar…",
+  formSubmit: "Quiero recibir propuestas",
+  formSending: "Enviando…",
+  formPhoneError: "Escribí un número de WhatsApp válido.",
+  formError: "No pudimos enviar tu consulta. Probá de nuevo en un momento.",
+  formNote: "Te escribimos por WhatsApp. No publicamos tus datos en ningún lado.",
+  formFineprintPrefix: "Al enviar aceptás los",
+  formTerms: "términos",
+  formFineprintAnd: "y la",
+  formPrivacy: "política de privacidad",
+  formSuccessTitle: "Recibimos tu consulta",
+  formSuccessText:
+    "Te escribimos por WhatsApp con los inmobiliarios que trabajan tu zona.",
+
+  // The three-step explainer.
+  howTitle: "Cómo funciona",
+  howSteps: [
+    {
+      title: "Contanos",
+      text: "Un formulario corto: qué tenés, dónde y qué querés hacer con la propiedad.",
+    },
+    {
+      title: "Compará",
+      text: "Te presentamos inmobiliarios que trabajan esa zona, con su cartera publicada a la vista.",
+    },
+    {
+      title: "Elegí",
+      text: "Hablás con quien quieras y seguís sólo con el que te convenza. Sin exclusividad con nosotros.",
+    },
+  ],
+
+  // "Cómo elegimos" — the honesty section. Verification and real activity are
+  // the only two signals this door has today; it says so rather than implying
+  // a rating system that does not exist (CLAUDE.md backlog 4).
+  chooseTitle: "Cómo elegimos a quién te presentamos",
+  chooseSubtitle:
+    "No hay ranking pago ni estrellas. Estos son los criterios, tal cual son hoy.",
+  choosePoints: [
+    {
+      title: "Verificación",
+      text: "Confirmamos que la persona o la oficina existe y que la cartera que publica es suya.",
+    },
+    {
+      title: "Actividad real",
+      text: "Aparecen quienes tienen propiedades publicadas hoy, no perfiles vacíos.",
+    },
+    {
+      title: "Zona",
+      text: "Priorizamos a quien ya trabaja en la ciudad donde está tu propiedad.",
+    },
+  ],
+
+  // Directory teaser. Never padded: with fewer than the minimum verified
+  // agents the empty band renders instead (§1 item 7).
+  teaserTitle: "Inmobiliarios verificados",
+  teaserSubtitle: "Los que ya trabajan con nosotros y tienen cartera activa.",
+  teaserAllLink: "Ver todo el directorio",
+  teaserEmptyTitle: "Sé de los primeros",
+  teaserEmptyText:
+    "Estamos armando el directorio inmobiliario por inmobiliario. Si trabajás en el rubro, éste es el momento de entrar.",
+  teaserEmptyCta: "Quiero mi perfil",
+
+  // The "¿Sos inmobiliario?" band.
+  proKicker: "Para profesionales",
+  proTitle: "¿Sos inmobiliario?",
+  proText:
+    "Recibí consultas de propietarios de tu zona y mostrá tu cartera en un perfil propio. Gratis mientras armamos el directorio.",
+  proBullets: [
+    "Consultas de propietarios que ya decidieron vender o alquilar",
+    "Un perfil con tu cartera publicada y tu contacto directo",
+    "Sin costo en esta etapa",
+  ],
+  proCta: "Ver cómo funciona",
+
+  // Professional-facing FAQ, rendered only on /para-inmobiliarios — distinct
+  // questions from the owner-facing `faq` above (own JSON-LD there, per D2).
+  proFaqTitle: "Preguntas de inmobiliarios",
+  proFaq: [
+    {
+      q: "¿Cuánto cuesta aparecer en el directorio?",
+      a: "Nada por ahora: estamos armando el directorio y sumar tu perfil es gratis mientras dure esta etapa.",
+    },
+    {
+      q: "¿Necesito tener avisos publicados en otro lado?",
+      a: "Sí — mostramos la cartera que ya publicás en inmobiliaria.com.py, porque la actividad real es uno de los criterios con los que elegimos a quién presentar (junto con la zona y la verificación).",
+    },
+    {
+      q: "¿Cómo me verifican?",
+      a: "Confirmamos que la persona o la oficina existe y que la cartera que publica es suya, antes de activar el sello de verificado en tu perfil.",
+    },
+    {
+      q: "¿Cómo me llegan las consultas?",
+      a: "Por WhatsApp, con los datos que dejó el propietario. Vos decidís cómo seguir la conversación desde ahí.",
+    },
+  ],
+
+  // The two list pages, rendered by /agentes and /inmobiliarias when the door
+  // is the directory one. The city filter's options are DERIVED from published
+  // inventory (`listDirectoryZones`), so a city only appears when somebody
+  // actually works there.
+  listAgentsTitle: "Inmobiliarios en Paraguay",
+  listAgentsSubtitle:
+    "Cada perfil muestra la cartera que esa persona tiene publicada hoy y en qué ciudades trabaja.",
+  listAgenciesTitle: "Inmobiliarias en Paraguay",
+  listAgenciesSubtitle:
+    "Oficinas con cartera activa. Entrá al perfil para ver sus propiedades y su equipo.",
+  listFilterTitle: "Filtrar por ciudad",
+  listFilterAll: "Todas",
+  listVerified: "Verificado",
+  listListingCount: (n: number) =>
+    n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`,
+  listProfileCta: "Ver perfil",
+  listEmpty:
+    "Todavía no hay nadie publicado para ese filtro. Probá con otra ciudad o contanos qué necesitás y lo buscamos.",
+  listCtaTitle: "¿No sabés a quién elegir?",
+  listCtaText:
+    "Contanos de tu propiedad y te presentamos hasta tres inmobiliarios que trabajan tu zona.",
+  listCtaButton: "Recibir propuestas",
+
+  faqTitle: "Preguntas frecuentes",
+  faq: [
+    {
+      q: "¿Cuánto me cuesta?",
+      a: "Nada. No cobramos al propietario por presentarle inmobiliarios. Lo que acuerdes de comisión es entre vos y el inmobiliario que elijas.",
+    },
+    {
+      q: "¿Me quedo obligado con alguien?",
+      a: "No. Te presentamos contactos; la relación y cualquier contrato de exclusividad los arreglás directamente con el inmobiliario, no con nosotros.",
+    },
+    {
+      q: "¿Cómo eligen a los inmobiliarios que me presentan?",
+      a: "Priorizamos a quienes ya trabajan en tu ciudad y tienen cartera publicada hoy — no hay ranking pago ni estrellas. El detalle está en la sección \"Cómo elegimos\" de esta página.",
+    },
+    {
+      q: "¿Qué pasa si todavía no hay nadie verificado en mi zona?",
+      a: "Contanos igual: guardamos tu consulta y te avisamos apenas se sume un inmobiliario que trabaje ahí.",
+    },
+    {
+      q: "¿Tengo que vender o alquilar con inmobiliaria?",
+      a: "No. Podés seguir mostrando la propiedad por tu cuenta al mismo tiempo — no pedimos exclusividad para hacer la presentación.",
+    },
+  ],
 } as const;

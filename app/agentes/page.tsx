@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import {
+  directoryCanonicalOrigin,
+  hostOwnsDirectory,
+  siteOrigin,
+} from "@/lib/origin";
+import { languageAlternates } from "@/lib/alternates";
+import { currentVertical } from "@/lib/vertical-context";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { agentUrl } from "@/lib/urls";
-import { listAgentsForDirectory } from "@/lib/directory-queries";
+import {
+  listAgentsForDirectory,
+  listDirectoryZones,
+} from "@/lib/directory-queries";
+import { DirectoryList } from "@/components/DirectoryList";
+import { directoryPagesEnabled } from "@/design/sections";
+import { dict } from "@/i18n/server";
 import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 import { safeImageUrl } from "@/lib/external-image";
 
@@ -15,20 +27,86 @@ const TITLE = "Agentes inmobiliarios";
 const DESCRIPTION = (brand: string) => `Agentes inmobiliarios que publican en ${brand}: su cartera activa, las zonas donde trabajan y su contacto directo por WhatsApp.`;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const brand = await brandName();
+  const [brand, directoryOrigin, ownsDirectory, vertical] = await Promise.all([
+    brandName(),
+    // NOT siteOrigin(): every marketplace door renders this page, but only the
+    // door named by `ownsDirectory` is canonical for it in its language
+    // (src/config/verticals.ts). A door that self-canonicalised here would be
+    // the second Spanish host publishing the same directory.
+    directoryCanonicalOrigin(),
+    hostOwnsDirectory(),
+    currentVertical(),
+  ]);
   return {
     title: `${TITLE} en Paraguay`,
     description: DESCRIPTION(brand),
-    alternates: { canonical: `${await siteOrigin()}/agentes` },
+    alternates: {
+      canonical: `${directoryOrigin}/agentes`,
+      languages: languageAlternates({
+        path: "/agentes",
+        scope: "directory",
+        family: vertical.family,
+      }),
+    },
+    // A door that canonicalises this page away does not ask for it to be
+    // indexed either — the sitemap already drops it (`includeDirectory`), and
+    // these two answers must not disagree.
+    robots: { index: ownsDirectory, follow: true },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
   };
 }
 
-export default async function AgentesPage() {
-  const [origin, agents] = await Promise.all([
+export default async function AgentesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ciudad?: string }>;
+}) {
+  const [origin, agents, vertical, d, params] = await Promise.all([
     siteOrigin(),
     listAgentsForDirectory(),
+    currentVertical(),
+    dict(),
+    searchParams,
   ]);
+
+  /**
+   * The directory door renders this page as a directory: a derived-zone city
+   * filter, verified first, and its own CTAs. The marketplace rendering below
+   * is unchanged — the same route, two audiences, one fork, exactly like
+   * `app/page.tsx`.
+   *
+   * The filter is applied here rather than in the query on purpose: the cached
+   * `listAgentsForDirectory()` already carries each professional's city list,
+   * so filtering in memory keeps one cache entry for every filter state
+   * instead of one query per city.
+   */
+  if (directoryPagesEnabled(vertical.key)) {
+    const zones = await listDirectoryZones(vertical);
+    const cityName = zones.find((z) => z.slug === params.ciudad)?.name ?? null;
+    const rows = (cityName ? agents.filter((a) => a.cities.includes(cityName)) : agents)
+      .map((a) => ({
+        id: a.id,
+        name: a.name,
+        slug: a.slug,
+        imageUrl: a.photoUrl,
+        isVerified: a.isVerified,
+        affiliation: a.agencyName,
+        listingCount: a.listingCount,
+        cities: a.cities,
+        href: agentUrl(a.slug),
+      }));
+    return (
+      <DirectoryList
+        d={d}
+        title={d.directory.listAgentsTitle}
+        subtitle={d.directory.listAgentsSubtitle}
+        rows={rows}
+        zones={zones}
+        activeCity={cityName ? (params.ciudad ?? null) : null}
+        basePath="/agentes"
+      />
+    );
+  }
 
   return (
     <main>

@@ -3,7 +3,10 @@ import { brandName } from "@/lib/brand-server";
 import { dict } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
 import { rentalPagesEnabled } from "@/design/sections";
-import { languageAlternates } from "@/lib/alternates";
+import {
+  rentalAboutMetadata,
+  redirectRentalToEnglish,
+} from "@/lib/rental-routes";
 import { RentalAbout } from "@/components/RentalAbout";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
@@ -33,25 +36,9 @@ export async function generateMetadata(): Promise<Metadata> {
   ]);
   // The rental doors describe a services firm, not the portal — one fork, in
   // the page that already resolves the vertical (same rule as app/page.tsx).
-  if (rentalPagesEnabled(vertical.key)) {
-    const a = d.rental.about;
-    return {
-      title: a.metaTitle,
-      description: a.metaDescription(brand),
-      alternates: {
-        canonical: `${origin}/nosotros`,
-        languages: languageAlternates({
-          path: "/nosotros",
-          scope: "site",
-          family: vertical.family,
-        }),
-      },
-      openGraph: {
-        title: `${a.metaTitle} — ${brand}`,
-        description: a.metaDescription(brand),
-      },
-    };
-  }
+  // The metadata itself is shared with `/about`, the English door's URL for
+  // the same page (R2), so the two cannot disagree about the canonical.
+  if (rentalPagesEnabled(vertical.key)) return rentalAboutMetadata();
   return {
     title: `${TITLE}`,
     description: DESCRIPTION(brand),
@@ -85,6 +72,10 @@ const PRINCIPLES = [
 
 export default async function NosotrosPage() {
   const vertical = await currentVertical();
+  // The English rental door publishes this page at /about (R2); this URL is
+  // the Spanish one. Marketplace doors — realestateinparaguay.com included —
+  // are untouched: /nosotros is their own page in their own language.
+  redirectRentalToEnglish(vertical, "about");
   if (rentalPagesEnabled(vertical.key)) {
     // Before getPortalStats(): the rental doors have no use for the portal's
     // listing counts, and a page that redirects its own content should not
