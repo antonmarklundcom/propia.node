@@ -30,7 +30,6 @@ import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { ContactForm } from "@/components/ContactForm";
 import { safeImageUrl } from "@/lib/external-image";
-import { currentVertical } from "@/lib/vertical-context";
 
 // Mirrors app/inmobiliaria/[slug]/page.tsx: DB-backed profile, no static
 // caching — the founder's inventory changes, not slow-to-stale content.

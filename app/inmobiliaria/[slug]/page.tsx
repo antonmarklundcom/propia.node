@@ -25,7 +25,6 @@ import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { waLink } from "@/lib/wa";
 import { safeImageUrl } from "@/lib/external-image";
-import { currentVertical } from "@/lib/vertical-context";
 
 // Same shape as the listing detail page: DB-backed, so no static caching —
 // this is the founder's inventory changing, not content that goes stale slowly.
