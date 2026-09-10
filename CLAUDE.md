@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-09-10.
+Last verified against the code and the Hostinger env vars: 2026-09-11.
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -26,18 +26,13 @@ table.
 | `rentparaguay.com` | **The same rental business in English — code landed 2026-09-09 (O1). DNS live as of 2026-09-10** (Anton confirmed the domain points at Hostinger), so this door now reaches real visitors. Its own `VerticalKey` (`"rent"`), paired to `alquiler.com.py` by `family`, not by key. Brand "Rent Paraguay", `locale: "en"`, same filters, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com`, the door that owns detail **in its own language**. hreflang pairs it only with `alquiler.com.py`: a door is never a language version of a door in another family. **Its own pages are English URLs since R2 (2026-09-10)** — `/services/<slugEn>`, `/about`, `/contact` — and it 301s the Spanish ones. `/propiedad/*` is NOT localised: that is the marketplace's page type and stays Spanish-slugged on every door. **Still open, founder-only**: `NEXT_PUBLIC_CONTACT_WHATSAPP` is unset, so this door's WhatsApp CTA is hidden until it is set and the app rebuilt (see backlog item 10); the old `rentparaguay.com`'s WordPress redirects still need checking before that deployment is decommissioned. `alquiler.com.py`, its Spanish pair, is not reachable yet — see its own row. |
 | `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
 
-**Outstanding manual step:** `NEXT_PUBLIC_CANONICAL_HOST` on Hostinger must
-be moved to `inmobiliaria.com.py` (hPanel env var + rebuild — `NEXT_PUBLIC_*`
-is inlined at build time; this cannot be done from a code change). The code
-fallback in `src/config/verticals.ts` already defaults to
-`inmobiliaria.com.py`, so an unset env var now resolves correctly, but the
-live env var itself needs updating for the two live domains to actually
-render with their new roles — until then, whatever hPanel currently has
-still wins. Also outstanding: `npm run cron:translate` (needs
-`DEEPL_API_KEY` and/or `ANTHROPIC_API_KEY` + `DATABASE_URL` against the live
-database) has not been run yet, so `title_en`/`description_en` are still
-empty for every listing — the English site is live and correctly wired, but
-currently shows the Spanish-fallback text everywhere until that job runs.
+**Env var state (hPanel, checked 2026-09-11):** `NEXT_PUBLIC_CANONICAL_HOST`
+is `inmobiliaria.com.py` — the D6 flip is complete in production. `DEEPL_API_KEY`
+and `GEMINI_API_KEY` are set, but `npm run cron:translate` is a script nobody
+runs automatically: it has not been run against the live database yet, so
+`title_en`/`description_en` are still empty and the English site shows the
+Spanish fallback until it is run (with `--limit`, DeepL credit is one-time)
+and then scheduled. `NEXT_PUBLIC_CONTACT_WHATSAPP` is still unset.
 
 Consequences that bite:
 
@@ -179,16 +174,13 @@ default, `--dry` first). It records itself as a revertible import job.
 ## Backlog state (verified, not remembered)
 
 1. **R2 image storage** — code is complete (`src/lib/r2.ts`,
-   `src/lib/listing-images.ts`, both photo panels gate on `isR2Configured()`).
-   Blocked purely on the founder creating the Cloudflare account/bucket and
-   setting `R2_*` env vars. **Do not build around it or re-implement it.**
-2. **`NEXT_PUBLIC_CANONICAL_HOST`** — the code side of the D6 flip landed
-   2026-09-04 (see the domain table above), but this one item is a manual
-   hPanel env var change + rebuild that cannot ship in a commit. **Still
-   pending**: move it to `inmobiliaria.com.py` on Hostinger. Until it is,
-   production keeps resolving unknown-host requests from whatever hPanel
-   currently has, even though the code default and both live hosts' own
-   entries already reflect the new roles.
+   `src/lib/listing-images.ts`, both photo panels gate on `isR2Configured()`)
+   **and the `R2_*` env vars are set on Hostinger as of 2026-09-11** (bucket
+   `propia-images`, public base URL on `r2.dev`). Uploads through the photo
+   panels are live. What is still not built is the *import* image pipeline
+   (item 5). **Do not re-implement the R2 code.**
+2. **`NEXT_PUBLIC_CANONICAL_HOST`** — **done.** hPanel reads
+   `inmobiliaria.com.py` (verified 2026-09-11); code and env agree.
 3. **Individual agent profile pages** — done (`/agente/[slug]`, PR #32,
    2026-07-31). Mirrors `/inmobiliaria/[slug]` (PR #28): same indexability
    rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
@@ -197,8 +189,8 @@ default, `--dry` first). It records itself as a revertible import job.
 5. **Import image pipeline** — **not built, on purpose.** `syncImages()` writes
    the *remote source URL* into `listing_images.r2_key` as an interim, and
    `imageUrl()` passes it through while `R2_PUBLIC_BASE_URL` is unset. Fetching,
-   deduping, WebP-converting and resizing imported photos waits on backlog item
-   1 above. **Do not build a stub around it** — the R2 code is written.
+   deduping, WebP-converting and resizing imported photos is now unblocked
+   (R2 is configured, item 1) but still unbuilt — a real task, not a stub.
 6. **Financing rates** — `afd_primera_vivienda` (9.00%) in
    `scripts/seed-financing.ts` is a **placeholder**. It feeds
    `npm run cron:cuotas`, which caches `listings.cuota_gs`, which is printed on
@@ -250,16 +242,19 @@ default, `--dry` first). It records itself as a revertible import job.
     deployment is decommissioned, so the S1 301 map (plan §6.1) isn't
     replacing live traffic with 404s; (c) `NEXT_PUBLIC_CONTACT_WHATSAPP`
     (`.env.example`) is unset today, so the rental footer's WhatsApp CTA is
-    hidden on both doors until it is set and the app rebuilt — the old site's
-    `+595 995 628 862` is the candidate value (plan §7), never hard-code it
-    into a file. **Do not build a rental-specific WhatsApp env var** — the
+    hidden on both doors (and in the directory footer) until it is set and the
+    app rebuilt — the founder's `+595 995 628 862` is the confirmed value
+    (2026-09-11), never hard-code it into a file. **Do not build a rental-specific WhatsApp env var** — the
     doors share `NEXT_PUBLIC_CONTACT_WHATSAPP` with the marketplace doors.
 11. **The directory door's code is done; going live is manual.** D1 landed
     2026-09-10 (`docs/log/d1.md`): `inmobiliarios.com.py` is `enabled: true`,
     previewable with a `Host` header, and passes `verify:seo`. **Live as of
     2026-09-10**: DNS points at Hostinger and `ownsDirectory` was flipped onto
     it and off `inmobiliaria.com.py` the same day. D1b (#122) gave both profile
-    page types their directory body and D4 (#124) the "Paso a Paso" home.
+    page types their directory body and D4 (#124) the "Paso a Paso" home,
+    replaced by the seller-first two-door landing (Vender / Alquilar + the
+    three-portal network pitch, PR #133, 2026-09-11): top nav is Vender ·
+    Alquilar · Cómo funciona, the directory links are footer-only.
     Historical note on what D1 deferred: `/inmobiliaria/[slug]`'s directory *body* (its
     canonical/hreflang/robots already follow the flag) and the rest of
     `/agente/[slug]`'s. Real matching — `agents.bio/zones/license_no`, a
