@@ -8763,3 +8763,48 @@ summary.panel-btn::-webkit-details-marker {
     grid-template-columns: 1fr;
   }
 }
+
+/* == P2 == */
+
+/* Hero photography for the operation hubs.
+   Three background layers, top to bottom:
+     1. the dark overlay (translucent),
+     2. the photo,
+     3. an opaque copy of the hub's original flat gradient.
+   Layer 3 is what makes this rule harmless while the photo files are absent:
+   a missing url() renders nothing, the overlay sits on the opaque gradient,
+   and the hero degrades to (very nearly) the look it had before this block.
+   Contrast, read from the alpha rather than by eye: the worst case is a
+   pure-white photo pixel under the lightest stop (0.72) on the lightest door
+   primary in the token set (#182830, rental). Composited that is #58646A,
+   against which #fff measures 6.0:1 — comfortably over AA's 4.5:1, and every
+   other door's primary is darker still.
+   The temporary-rental hub deliberately reuses the alquiler photo. */
+.hub-hero[data-op="venta"],
+.hub-hero[data-op^="alquiler"] {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.hub-hero[data-op="venta"] {
+  background-image:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-primary) 72%, transparent),
+      color-mix(in srgb, var(--color-primary-dark) 80%, transparent)
+    ),
+    url("/img/hub-venta.webp"),
+    linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+}
+
+.hub-hero[data-op^="alquiler"] {
+  background-image:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-primary) 72%, transparent),
+      color-mix(in srgb, var(--color-primary-dark) 80%, transparent)
+    ),
+    url("/img/hub-alquiler.webp"),
+    linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+}
