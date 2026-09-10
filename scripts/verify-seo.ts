@@ -16,13 +16,17 @@
 import {
   VERTICALS,
   CANONICAL_HOST,
+  MARKETPLACE_PRIMARY_HOST,
   type VerticalConfig,
 } from "../src/config/verticals";
 import {
   detailOwnerForLocale,
   directoryOwnerForLocale,
 } from "../src/lib/origin";
-import { DIRECTORY_SITEMAP_PATHS } from "../src/config/site-nav";
+import {
+  DIRECTORY_SITEMAP_PATHS,
+  MARKETPLACE_PATH_ROOTS,
+} from "../src/config/site-nav";
 import {
   chromeShowLogin,
   chromeShowNewsletter,
@@ -680,6 +684,23 @@ check(
     marketplacePagesEnabled("inmobiliaria") &&
     marketplacePagesEnabled("en") &&
     marketplacePagesEnabled("alquiler"),
+);
+check(
+  "(j) the redirect target is a served Spanish marketplace door that owns detail",
+  Boolean(
+    VERTICALS[MARKETPLACE_PRIMARY_HOST]?.enabled &&
+      VERTICALS[MARKETPLACE_PRIMARY_HOST]?.locale === "es" &&
+      VERTICALS[MARKETPLACE_PRIMARY_HOST]?.family === "marketplace" &&
+      VERTICALS[MARKETPLACE_PRIMARY_HOST]?.ownsListingDetail,
+  ),
+  `${MARKETPLACE_PRIMARY_HOST} — every marketplace path on a directory door 308s here (middleware.ts); if it is not a served door that owns those pages, the redirect points at nothing`,
+);
+check(
+  "(j) no marketplace-redirected root is in the directory door's sitemap",
+  DIRECTORY_SITEMAP_PATHS.every(
+    (p) => !MARKETPLACE_PATH_ROOTS.includes(p.split("/")[1] ?? ""),
+  ),
+  "a sitemap that submits a path the same door 308s away is a redirect in a sitemap",
 );
 check(
   "(j) the directory door's chrome carries no login, publish CTA or newsletter",

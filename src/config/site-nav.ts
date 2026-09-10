@@ -310,6 +310,44 @@ export const MARKETPLACE_SITEMAP_PATHS: string[] = [
  * render, and R2 deliberately changed only the rental family's own pages.
  */
 /**
+ * The marketplace's own page types, by first path segment.
+ *
+ * A door where `marketplacePagesEnabled()` is false (the directory door)
+ * redirects every one of these to the Spanish marketplace primary — the
+ * redirect lives in `middleware.ts`, which already resolves the vertical from
+ * the Host header, so one predicate decides both what a visitor hits and what
+ * the sitemap submits.
+ *
+ * Not here on purpose: `admin`, `agencia`, `login`, `registro`, `contacto`,
+ * `terminos`, `privacidad`. The first four are staff and account surfaces every
+ * host serves (CLAUDE.md, domains) — they are simply absent from this door's
+ * chrome — and the last three are pages this door renders as its own.
+ */
+export const MARKETPLACE_PATH_ROOTS: readonly string[] = [
+  "venta",
+  "alquiler",
+  "alquiler-temporal",
+  "propiedad",
+  "publicar",
+  "precios",
+  "proyecto",
+  "proyectos",
+  "desarrolladora",
+  "desarrolladoras",
+  "tasacion",
+  "vender",
+  "planes",
+  "datos",
+  "guias",
+  "financiamiento",
+  "como-funciona",
+  "preguntas-frecuentes",
+  "para-inmobiliarias",
+  "mis-avisos",
+  "servicios",
+];
+
+/**
  * The directory door's static pages (inmobiliarios.com.py —
  * fable-plan-realtor-terreno-rental.md §5.2 (f)). A separate list for the same
  * reason the rental family has one: that door is a realtor lead-gen directory,

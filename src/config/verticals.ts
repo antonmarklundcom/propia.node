@@ -276,6 +276,20 @@ export const VERTICALS: Record<string, VerticalConfig> = {
 export const CANONICAL_HOST =
   process.env.NEXT_PUBLIC_CANONICAL_HOST ?? "inmobiliaria.com.py";
 
+/**
+ * Where a door that serves no marketplace page type sends those requests —
+ * the directory door's `/venta`, `/propiedad`, `/publicar`, … all 301 here
+ * (`middleware.ts`).
+ *
+ * A fixed host, deliberately, not `CANONICAL_HOST`: that constant comes from
+ * `NEXT_PUBLIC_CANONICAL_HOST` and is inlined at build time, so a mis-set
+ * hPanel value would turn every one of those redirects into a redirect to
+ * nowhere — on the one door whose entire marketplace surface depends on them.
+ * `npm run verify:seo` asserts this names a served Spanish marketplace door
+ * that owns its listing detail, so it cannot quietly drift out of the table.
+ */
+export const MARKETPLACE_PRIMARY_HOST = "inmobiliaria.com.py";
+
 // Fallback must be an OWNED host: if CANONICAL_HOST ever names a host with no
 // entry, every page would be branded with a domain the founder does not own
 // while canonicals still self-reference (audit F41).
