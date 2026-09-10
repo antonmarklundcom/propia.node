@@ -1849,6 +1849,25 @@ export const enDirectory = {
   ],
   proCta: "See how it works",
 
+  listAgentsTitle: "Real estate agents in Paraguay",
+  listAgentsSubtitle:
+    "Each profile shows the portfolio that person has published today and the cities they work in.",
+  listAgenciesTitle: "Real estate agencies in Paraguay",
+  listAgenciesSubtitle:
+    "Offices with an active portfolio. Open a profile to see their properties and their team.",
+  listFilterTitle: "Filter by city",
+  listFilterAll: "All",
+  listVerified: "Verified",
+  listListingCount: (n: number) =>
+    n === 1 ? "1 property published" : `${n} properties published`,
+  listProfileCta: "See profile",
+  listEmpty:
+    "Nobody is listed for that filter yet. Try another city, or tell us what you need and we will look.",
+  listCtaTitle: "Not sure who to choose?",
+  listCtaText:
+    "Tell us about your property and we will introduce up to three agents who work your area.",
+  listCtaButton: "Get proposals",
+
   faqTitle: "Frequent questions",
   faq: [
     {

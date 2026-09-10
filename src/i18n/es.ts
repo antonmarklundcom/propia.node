@@ -2625,6 +2625,29 @@ export const esDirectory = {
   ],
   proCta: "Ver cómo funciona",
 
+  // The two list pages, rendered by /agentes and /inmobiliarias when the door
+  // is the directory one. The city filter's options are DERIVED from published
+  // inventory (`listDirectoryZones`), so a city only appears when somebody
+  // actually works there.
+  listAgentsTitle: "Inmobiliarios en Paraguay",
+  listAgentsSubtitle:
+    "Cada perfil muestra la cartera que esa persona tiene publicada hoy y en qué ciudades trabaja.",
+  listAgenciesTitle: "Inmobiliarias en Paraguay",
+  listAgenciesSubtitle:
+    "Oficinas con cartera activa. Entrá al perfil para ver sus propiedades y su equipo.",
+  listFilterTitle: "Filtrar por ciudad",
+  listFilterAll: "Todas",
+  listVerified: "Verificado",
+  listListingCount: (n: number) =>
+    n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`,
+  listProfileCta: "Ver perfil",
+  listEmpty:
+    "Todavía no hay nadie publicado para ese filtro. Probá con otra ciudad o contanos qué necesitás y lo buscamos.",
+  listCtaTitle: "¿No sabés a quién elegir?",
+  listCtaText:
+    "Contanos de tu propiedad y te presentamos hasta tres inmobiliarios que trabajan tu zona.",
+  listCtaButton: "Recibir propuestas",
+
   faqTitle: "Preguntas frecuentes",
   faq: [
     {
