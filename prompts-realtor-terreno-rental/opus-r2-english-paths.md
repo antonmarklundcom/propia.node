@@ -1,4 +1,4 @@
-# Phase R2 — English URLs for the rental business's own pages on rentparaguay.com. OPUS session. Lane 1. GATED: run only after Anton answers plan question 5 with "go" and R1 is merged.
+# Phase R2 — English URLs for the rental business's own pages on rentparaguay.com. OPUS session. Lane 1. Anton said "go" (see plan.md "Decisions (2026-09-10)" §5) — the only remaining gate is R1 merged into main. Check that before starting; if R1 is not yet merged, stop and wait rather than branching off a main that lacks it.
 
 Read ONLY: this file, `fable-plan-realtor-terreno-rental.md` Stage 1 C2, §1,
 §2, §4, §5.1; `docs/log/r1.md`; `src/config/rental-services.ts`;
@@ -36,7 +36,9 @@ Exit: `verify:local` green; seven `/services/<en>` URLs 200 on
 `Host: rentparaguay.com`, their `/servicios/<es>` twins 301 there; the reverse
 on `alquiler.com.py`; `<head>` on both shows the es/en/x-default trio with
 the *different* paths; sitemap per host lists only its own language's
-paths; **PR open, not merged** — founder merges (canonical/hreflang contract).
+paths; **merge when green** — Anton authorized autonomous merge for every
+phase in this plan (2026-09-10, see plan.md "Decisions"), superseding this
+phase's earlier "founder merges" caution.
 
 ## After this phase
 `docs/log/r2.md`, plan §9 line. Stop with the report. Spawn nothing.

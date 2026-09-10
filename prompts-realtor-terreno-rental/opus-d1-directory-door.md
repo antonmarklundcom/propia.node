@@ -1,4 +1,4 @@
-# Phase D1 — inmobiliarios.com.py: the directory door (routing, shell, seller form, directory pages). OPUS session. Lane 1. GATED: run only after Anton answers plan questions 1, 2, 3 and 6.
+# Phase D1 — inmobiliarios.com.py: the directory door (routing, shell, seller form, directory pages). OPUS session. Lane 1. Anton has answered questions 1, 2, 3 and 6 (see plan.md "Decisions (2026-09-10)") — ready now, no remaining gate.
 
 Read ONLY: this file, `fable-plan-realtor-terreno-rental.md` Stage 1 D, §1,
 §2, §4, §5.2; `CLAUDE.md` (domains, i18n, caching, filters sections);
@@ -42,7 +42,10 @@ directory shell on `/`, `/agentes`, `/agente/<slug>`, `/inmobiliarias`,
 301 to inmobiliaria.com.py; sitemap on that host lists no marketplace paths;
 `verify:seo` "families" block still green with the new directory checks; a
 seller lead row inserts with the marker (localhost DB, else a PR note);
-**PR open, not merged** — founder merges (new served door + ownership flag).
+**merge when green** — Anton authorized autonomous merge for every phase in
+this plan (2026-09-10, see plan.md "Decisions"), superseding this phase's
+earlier "founder merges" caution. Still schema/auth/payments-free, so this
+stays inside the standing autonomous-merge agreement.
 
 ## After this phase
 `docs/log/d1.md`, plan §9 line, `CLAUDE.md` row. Stop with the report.

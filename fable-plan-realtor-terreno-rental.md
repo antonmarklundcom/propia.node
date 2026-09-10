@@ -356,6 +356,57 @@ full copy under the `Host` header, PR merged.
 
 ---
 
+## Decisions (Anton, 2026-09-10)
+
+Answers to the Stage 1 questions below, recorded here so a fresh phase
+session does not need chat context:
+
+1. **inmobiliarios.com.py is owned** (parked at Hostinger). `CLAUDE.md`'s
+   "Not owned" row is stale; D1 may proceed. `CLAUDE.md` gets a corrected row
+   in D1's own commit.
+2. **Directory shape approved as written** (Stage 1 D, seller-first home,
+   manual 3-agent forwarding in v1, derived zones, zero schema until D3). No
+   corrections given.
+3. **Profile-canonical move — no change needed now.** D1's own text already
+   keeps `ownsDirectory` on `inmobiliaria.com.py` until the go-live PR (§1.6);
+   that default stands. Revisit only at go-live.
+4. **C1 (Spanish rental host) — deferred, no code change.** Anton is holding
+   off buying/confirming `alquiler.com.py` for a few days. The two-domain
+   `alquiler.com.py`/`rentparaguay.com` split already in code (O1) stays
+   exactly as built — do not build the `es.rentparaguay.com` rename (A′) and
+   do not build `/es/` path-prefix i18n (B). No phase touches this.
+5. **R2 (English URLs on rentparaguay.com) — go.** Confirmed against
+   `fable/plan-rentparaguay.md` Appendix A: the original WordPress
+   rentparaguay.com already used English paths (`/rent-apartment-house/`,
+   `/airbnb-management/`, `/realtor-asuncion/`, `/residency-paraguay/`,
+   `/invest-in-paraguay/`, `/virtual-adress/`, `/about-us/`, `/contact/`,
+   `/services/`) — O1/S1 301'd them to the current Spanish slugs as an interim
+   step. R2 should point those same twelve old-WordPress redirects straight
+   at the new English slugs (avoid a double 301 hop) and add the new
+   Spanish→English redirects on the EN door per its own spec.
+6. **Brand string** — no correction given; "Inmobiliarios Paraguay" (D1's
+   default) stands.
+
+## Orchestration (2026-09-10) — Anton wants less manual handoff
+
+Anton asked to start Opus phases and have dependent Sonnet phases begin
+automatically rather than opening each window himself, and is fine with
+multiple PRs coming out of one review session. Revised from `_handoff.md`'s
+"Anton starts every phase by hand":
+
+- T1, R1, D1 have no unmet gates — started now, in parallel, each in its own
+  worktree/branch per its prompt's `Branch` line, each opening its own PR.
+  T1 and R1 self-merge when green (bugfix / UI, per their own Exit lines).
+  D1 opens its PR and stops — Anton merges.
+- R2 is gated on R1 merging (both touch the rental nav) — started
+  automatically once R1's PR is observed merged, not by Anton re-prompting.
+- D2 is gated on D1 merging — started automatically once D1's PR is observed
+  merged.
+- This session (not a Routine) is doing the watching this round, since it is
+  only two gated follow-ons; if either merge is delayed past this session's
+  lifetime, Anton starting the follow-on by hand with the `_handoff.md` start
+  line still works exactly as written.
+
 ## Questions for Anton (one line each)
 
 1. **inmobiliarios.com.py — do you own it today?** (CLAUDE.md says no;
