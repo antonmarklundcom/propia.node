@@ -2479,12 +2479,16 @@ export const esRentalServices = {
  * inmobiliarios.com.py — the realtor directory door
  * (fable-plan-realtor-terreno-rental.md Stage 1 D).
  *
- * D1 lands the **skeleton**: every key a rendered surface reads, with one
- * real exemplar sentence each. D2 (`sonnet-d2-directory-copy.md`) rewrites the
- * copy and fills the FAQ. Nothing here may invent a figure — no review counts,
- * no "X inmobiliarios registrados" — because there is no data behind either
- * and the competitor's padded directory is exactly what this door is not
- * (§1 item 7).
+ * D1 landed every key a rendered surface reads, with a real sentence each;
+ * D2 (`sonnet-d2-directory-copy.md`) reviewed, extended the two FAQs (home +
+ * `/para-inmobiliarios`'s own `proFaq`) and fixed this comment, which is
+ * stale as of D1 — there was no bare-skeleton pass to redo. Nothing here may
+ * invent a figure — no review counts, no "X inmobiliarios registrados", no
+ * response-time promise — because there is no data behind any of them and
+ * the competitor's padded directory is exactly what this door is not
+ * (§1 item 7). Same reason there is no licence line: the founder's EAS/
+ * SERPLAID licence has not issued yet (§8), so it is omitted rather than
+ * stated as pending.
  *
  * Vos-form Spanish, like the rest of the Spanish dictionary. The brand is
  * always an argument, never baked in: this namespace is read by one door
@@ -2625,6 +2629,28 @@ export const esDirectory = {
   ],
   proCta: "Ver cómo funciona",
 
+  // Professional-facing FAQ, rendered only on /para-inmobiliarios — distinct
+  // questions from the owner-facing `faq` above (own JSON-LD there, per D2).
+  proFaqTitle: "Preguntas de inmobiliarios",
+  proFaq: [
+    {
+      q: "¿Cuánto cuesta aparecer en el directorio?",
+      a: "Nada por ahora: estamos armando el directorio y sumar tu perfil es gratis mientras dure esta etapa.",
+    },
+    {
+      q: "¿Necesito tener avisos publicados en otro lado?",
+      a: "Sí — mostramos la cartera que ya publicás en inmobiliaria.com.py, porque la actividad real es uno de los criterios con los que elegimos a quién presentar (junto con la zona y la verificación).",
+    },
+    {
+      q: "¿Cómo me verifican?",
+      a: "Confirmamos que la persona o la oficina existe y que la cartera que publica es suya, antes de activar el sello de verificado en tu perfil.",
+    },
+    {
+      q: "¿Cómo me llegan las consultas?",
+      a: "Por WhatsApp, con los datos que dejó el propietario. Vos decidís cómo seguir la conversación desde ahí.",
+    },
+  ],
+
   // The two list pages, rendered by /agentes and /inmobiliarias when the door
   // is the directory one. The city filter's options are DERIVED from published
   // inventory (`listDirectoryZones`), so a city only appears when somebody
@@ -2657,6 +2683,18 @@ export const esDirectory = {
     {
       q: "¿Me quedo obligado con alguien?",
       a: "No. Te presentamos contactos; la relación y cualquier contrato de exclusividad los arreglás directamente con el inmobiliario, no con nosotros.",
+    },
+    {
+      q: "¿Cómo eligen a los inmobiliarios que me presentan?",
+      a: "Priorizamos a quienes ya trabajan en tu ciudad y tienen cartera publicada hoy — no hay ranking pago ni estrellas. El detalle está en la sección \"Cómo elegimos\" de esta página.",
+    },
+    {
+      q: "¿Qué pasa si todavía no hay nadie verificado en mi zona?",
+      a: "Contanos igual: guardamos tu consulta y te avisamos apenas se sume un inmobiliario que trabaje ahí.",
+    },
+    {
+      q: "¿Tengo que vender o alquilar con inmobiliaria?",
+      a: "No. Podés seguir mostrando la propiedad por tu cuenta al mismo tiempo — no pedimos exclusividad para hacer la presentación.",
     },
   ],
 } as const;

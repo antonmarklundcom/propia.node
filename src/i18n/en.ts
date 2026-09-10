@@ -1849,6 +1849,28 @@ export const enDirectory = {
   ],
   proCta: "See how it works",
 
+  // Professional-facing FAQ, rendered only on /para-inmobiliarios — distinct
+  // questions from the owner-facing `faq` below (own JSON-LD there, per D2).
+  proFaqTitle: "Questions from agents",
+  proFaq: [
+    {
+      q: "What does it cost to be listed in the directory?",
+      a: "Nothing for now: we are building the directory, and joining is free while this stage lasts.",
+    },
+    {
+      q: "Do I need listings published somewhere else already?",
+      a: "Yes — we show the portfolio you already publish on inmobiliaria.com.py, because real activity is one of the criteria we use to decide who to introduce (along with area and verification).",
+    },
+    {
+      q: "How do you verify me?",
+      a: "We confirm the person or the office is real and that the portfolio they publish is theirs before turning on the verified mark on your profile.",
+    },
+    {
+      q: "How do enquiries reach me?",
+      a: "On WhatsApp, with the details the owner left. You decide how to continue the conversation from there.",
+    },
+  ],
+
   listAgentsTitle: "Real estate agents in Paraguay",
   listAgentsSubtitle:
     "Each profile shows the portfolio that person has published today and the cities they work in.",
@@ -1877,6 +1899,18 @@ export const enDirectory = {
     {
       q: "Am I tied to anyone?",
       a: "No. We make introductions; the relationship and any exclusivity agreement are settled directly with the agent, not with us.",
+    },
+    {
+      q: "How do you decide which agents to introduce me to?",
+      a: "We prioritize whoever already works in your city and has a published portfolio today — no paid ranking and no star ratings. The detail is in this page's \"How we decide\" section.",
+    },
+    {
+      q: "What if there is nobody verified in my area yet?",
+      a: "Tell us anyway: we save your enquiry and let you know as soon as an agent who works there joins.",
+    },
+    {
+      q: "Do I have to sell or rent through an agent?",
+      a: "No. You can keep showing the property yourself at the same time — we do not ask for exclusivity to make the introduction.",
     },
   ],
 } as const;
