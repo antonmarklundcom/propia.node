@@ -27,3 +27,7 @@ surface, no legal exposure from publishing a stranger's opinion of another
 named person, and it can ship without touching `schema.ts`. (b) is the
 natural next step once there is enough lead volume per agent to make it real,
 and can reuse (c)'s rendering.
+
+**Decided 2026-09-11 (Fable, `fable-plan-quality.md` "Decided NOT to do"):
+(c), and parked** — there are no testimonials to curate yet, so no slot is
+built. Revisit when the first agency asks.
