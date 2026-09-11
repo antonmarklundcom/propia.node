@@ -6,8 +6,8 @@ written to be handed to a builder session as-is.
 
 | Domain | Guide | Status |
 | --- | --- | --- |
-| inmobiliaria.com.py | `inmobiliaria.com.py.md` | **locked: Nórdico** (2026-09-04), not built |
-| realestateinparaguay.com | `realestateinparaguay.com.md` | **locked: variant A, guide-first** (2026-09-04), not built |
+| inmobiliaria.com.py | `inmobiliaria.com.py.md` | **built: Premium Editorial** (2026-09-11, docs/prompts/premium-editorial.md) — supersedes Nórdico |
+| realestateinparaguay.com | `realestateinparaguay.com.md` | **built: Premium Editorial** (2026-09-11, docs/prompts/premium-editorial.md) — supersedes variant A |
 | rentparaguay.com | `rentparaguay.com.md` | **locked: rental** (2026-09-09), **built** (O1–O3, S1–S3), DNS pending |
 | alquiler.com.py | `rentparaguay.com.md` | same guide, same tokens — one business, two languages |
 | terreno.com.py | — | keeps the current green/gold editorial baseline |

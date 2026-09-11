@@ -6,11 +6,10 @@ import type { Dictionary } from "@/i18n";
 import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
 import { currentVertical } from "@/lib/vertical-context";
 import { homeSections, homeLayout } from "@/design/sections";
-import { NordicoHome } from "@/components/home/NordicoHome";
+import { PremiumHome, type PremiumZoneTile } from "@/components/home/PremiumHome";
 import { RentalHome } from "@/components/home/RentalHome";
 import { DirectoryHome } from "@/components/home/DirectoryHome";
 import { listAgentsForDirectory } from "@/lib/directory-queries";
-import { EnHome } from "@/components/home/EnHome";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import {
   getRecentListings,
@@ -55,6 +54,41 @@ const ZONE_CARDS = [
   { name: "Luque", slug: "luque", img: "/img/zona-luque.webp" },
   { name: "Encarnación", slug: "encarnacion", img: "/img/zona-encarnacion.webp" },
 ] as const;
+
+/**
+ * Zone tiles for the Premium Editorial home (docs/prompts/premium-editorial.md
+ * §2 "zonas"). Separate from ZONE_CARDS above because the two lists are not
+ * the same thing: these six carry a **webimg slug** under
+ * `public/img/premium/` rather than a path (see `src/components/Picture.tsx`),
+ * their strapline is one dictionary string rather than a per-slug map, and the
+ * default home's four tiles keep their own photographs. A tile is dropped when
+ * its slug is not among the DB's cities, so none ever links to an empty
+ * category page.
+ */
+const PREMIUM_ZONE_TILES: readonly PremiumZoneTile[] = [
+  { name: "Asunción", slug: "asuncion", img: "zona-asuncion-skyline-costanera" },
+  { name: "Luque", slug: "luque", img: "zona-luque-casas-modernas" },
+  {
+    name: "San Lorenzo",
+    slug: "san-lorenzo",
+    img: "zona-san-lorenzo-barrio-residencial",
+  },
+  {
+    name: "San Bernardino",
+    slug: "san-bernardino",
+    img: "zona-san-bernardino-lago-ypacarai",
+  },
+  {
+    name: "Encarnación",
+    slug: "encarnacion",
+    img: "zona-encarnacion-costanera-parana",
+  },
+  {
+    name: "Ciudad del Este",
+    slug: "ciudad-del-este",
+    img: "zona-ciudad-del-este-vista-aerea",
+  },
+];
 
 /** Curated, high-population cities — a fixed shortcut row (avoids querying
  * every seeded city, some of which have little to no live inventory yet). */
@@ -287,20 +321,25 @@ export default async function Home() {
   ).filter((c): c is (typeof cities)[number] => Boolean(c));
 
   // `app/page.tsx` is the one place allowed to fork on a registry return
-  // value (it already resolves `vertical`) — the Nórdico layout lives in its
-  // own component rather than a conditional inside this one (see the
-  // component's own header comment and src/design/sections.ts's
+  // value (it already resolves `vertical`) — the Premium Editorial layout
+  // lives in its own component rather than a conditional inside this one (see
+  // the component's own header comment and src/design/sections.ts's
   // homeLayout()).
-  if (homeLayout(vertical.key) === "nordico") {
+  if (homeLayout(vertical.key) === "premium") {
     return (
-      <NordicoHome
+      <PremiumHome
         vertical={vertical}
         d={d}
         brand={brand}
         recent={recent}
         cities={cities}
-        cityTiles={ZONE_CARDS}
-        faq={faq}
+        zoneTiles={PREMIUM_ZONE_TILES}
+        // `faqHome()` (src/config/faq.ts) is Spanish-only regardless of the
+        // request's locale, and the English door's FAQ is its own
+        // foreign-buyer one — the same split EnHome made before this layout
+        // replaced it.
+        faq={vertical.locale === "en" ? [...d.guideEn.faq] : faq}
+        total={total}
       />
     );
   }
@@ -311,18 +350,6 @@ export default async function Home() {
     // (faqHome is the portal's own FAQ, about buying and publishing here) or
     // the city tiles (marketplace category pages this door does not sell).
     return <RentalHome vertical={vertical} d={d} recent={recent} />;
-  }
-
-  if (homeLayout(vertical.key) === "guide-en") {
-    return (
-      <EnHome
-        vertical={vertical}
-        d={d}
-        brand={brand}
-        recent={recent}
-        cities={cities}
-      />
-    );
   }
 
   return (

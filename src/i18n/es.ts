@@ -991,9 +991,10 @@ export const esCard = {
 } as const;
 
 /**
- * Nórdico-only strings (docs/style/inmobiliaria.com.py.md), used only where
- * `homeLayout(vertical.key) === "nordico"` or `cardVariant`/`heroVariant`
- * select the Nórdico components — never on the default template.
+ * Nórdico leftovers (docs/style/inmobiliaria.com.py.md). The Nórdico home and
+ * its card/hero variants are gone (Premium Editorial, 2026-09-11); what still
+ * reads this namespace is `SiteHeader`'s extra "Vender" nav entry
+ * (`headerExtraNavHref()`) and `/vender`, the Spanish door's seller landing.
  */
 export const esNordico = {
   headerVender: "Vender",
@@ -1227,9 +1228,9 @@ export const esVender = {
 
 /**
  * "Variant A, guide-first" strings (docs/style/realestateinparaguay.com.md),
- * used only where `homeLayout(vertical.key) === "guide-en"` or
- * `cardVariant`/`heroVariant`/`chromeVariant` select its components — never
- * on the default template. This Spanish copy is never rendered (the English
+ * used where `chromeVariant(vertical.key) === "guide-en"` selects the English
+ * door's header/footer, and for that door's own foreign-buyer FAQ, which the
+ * Premium Editorial home renders in place of the Spanish `faqHome()`. This Spanish copy is never rendered (the English
  * door is the only one that reads `enGuideEn`); it exists purely so
  * `Dictionary`'s shape is derived from a real, non-empty namespace the way
  * every other one is (`npm run verify:i18n` walks both dictionaries and
@@ -2948,4 +2949,120 @@ export const esDirectory = {
       a: "No. Podés seguir mostrando la propiedad por tu cuenta al mismo tiempo — no pedimos exclusividad para hacer la presentación.",
     },
   ],
+} as const;
+
+/**
+ * Premium Editorial home (docs/prompts/premium-editorial.md §4) — the copy for
+ * the one home shell both marketplace doors render since 2026-09-11.
+ *
+ * Structure that is not copy stays in `PremiumHome.tsx`: which six type tiles
+ * there are, which icon each one draws, which zone tiles exist and what
+ * photograph they carry. What lives here is what a visitor reads, plus the
+ * hrefs that travel *with* a piece of copy (a translated card without its link
+ * is not a card — same rule as `esHome.discoverCards`).
+ *
+ * `aboutHref` / `contactHref` are dictionary values because the two doors do
+ * not share them in principle, even though both currently resolve to the
+ * Spanish URL: `/about` and `/contact` belong to the *rental* family (R2) and
+ * redirect to `/` on this door, so the English marketplace door's about and
+ * contact pages are `/nosotros` and `/contacto` served in English.
+ *
+ * `imgAlt` is keyed by the webimg slug and is the alt text of record for each
+ * photograph — the table in `docs/imagery-prompts.md` §2, verbatim.
+ */
+export const esPremium = {
+  heroKicker: "Asunción · Paraguay",
+  heroTitleLead: "Propiedades ",
+  heroTitleHighlight: "premium",
+  heroTitleTail: " en Paraguay",
+  heroSubtitle:
+    "Casas, departamentos y terrenos en venta y alquiler en Asunción y todo el país, con cuota estimada y financiamiento.",
+  heroBrowse: "Ver propiedades",
+  heroWhatsapp: "Hablar por WhatsApp",
+  waPrefill: (brand: string) => `Hola, vi ${brand} y quiero más información.`,
+  /** `\n` is rendered as a line break by the component, never as a literal. */
+  trust: [
+    { icon: "person", label: "Contacto directo\ncon quien publica" },
+    { icon: "check-square", label: "Avisos\nverificados" },
+    { icon: "people", label: "Inmobiliarias\nde todo el país" },
+    { icon: "clock", label: "Respuesta rápida\npor WhatsApp" },
+  ],
+  searchTitle: "Encontrá tu próxima propiedad",
+  featuredTitle: "Propiedades destacadas",
+  featuredMore: "Ver todas las propiedades →",
+  typesTitle: "Tipos de propiedades",
+  types: {
+    casas: "Casas",
+    departamentos: "Departamentos",
+    terrenos: "Terrenos",
+    alquileres: "Alquileres",
+    comercial: "Locales y oficinas",
+    proyectos: "Proyectos nuevos",
+  } as Record<string, string>,
+  aboutKicker: (brand: string) => `Somos ${brand}`,
+  aboutTitle: "Claridad. Confianza.\nResultados.",
+  aboutText: (brand: string) =>
+    `${brand} reúne casas, departamentos y terrenos de inmobiliarias y particulares de todo el país. Cada aviso muestra su precio, su cuota estimada y el contacto directo de quien lo publica, sin intermediarios ni comisión para vos.`,
+  aboutCta: "Conocé más sobre nosotros",
+  aboutHref: "/nosotros",
+  servicesTitle: "Qué podés hacer acá",
+  services: [
+    {
+      key: "buscar",
+      title: "Buscar propiedades",
+      text: "Filtrá por zona, tipo y presupuesto, en lista o sobre el mapa.",
+      href: "/venta/asuncion",
+    },
+    {
+      key: "vender",
+      title: "Vender o alquilar",
+      text: "Publicá gratis y recibí consultas directo en tu WhatsApp.",
+      href: "/publicar",
+    },
+    {
+      key: "tasacion",
+      title: "Tasación estimada",
+      text: "Un rango de precio con los avisos publicados de tu zona.",
+      href: "/tasacion",
+    },
+    {
+      key: "financiamiento",
+      title: "Financiamiento",
+      text: "Cuota estimada por aviso y las líneas de crédito vigentes.",
+      href: "/financiamiento",
+    },
+    {
+      key: "precios",
+      title: "Precios de mercado",
+      text: "Mediana de precio por m² en cada ciudad, actualizada.",
+      href: "/precios",
+    },
+  ],
+  zonesTitle: "Zonas destacadas",
+  zonesMore: "Ver todas las zonas →",
+  zoneSub: "Ver propiedades",
+  howTitle: "Cómo funciona",
+  contactTitle: "Contactanos",
+  contactWhatsapp: "Escribinos por WhatsApp",
+  contactLocation: "Asunción, Paraguay",
+  contactFormCta: "Enviar consulta",
+  contactHref: "/contacto",
+  imgAlt: {
+    "casa-premium-asuncion-atardecer":
+      "Casa moderna con piscina iluminada al atardecer en un barrio residencial de Asunción",
+    "living-moderno-vista-rio-asuncion":
+      "Sala de estar moderna con ventanales y vista al río Paraguay en un departamento de Asunción",
+    "zona-asuncion-skyline-costanera":
+      "Skyline de Asunción y la Costanera vistos desde la bahía al atardecer",
+    "zona-luque-casas-modernas":
+      "Calle arbolada con casas modernas de un barrio nuevo en Luque",
+    "zona-san-lorenzo-barrio-residencial":
+      "Barrio residencial de San Lorenzo con casas familiares y árboles altos",
+    "zona-san-bernardino-lago-ypacarai":
+      "Casa de fin de semana frente al lago Ypacaraí en San Bernardino",
+    "zona-encarnacion-costanera-parana":
+      "Costanera y playa de Encarnación sobre el río Paraná al atardecer",
+    "zona-ciudad-del-este-vista-aerea":
+      "Vista aérea de Ciudad del Este con edificios modernos y el río Paraná",
+  } as Record<string, string>,
 } as const;
