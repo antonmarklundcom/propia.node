@@ -91,6 +91,12 @@ domain**, declared as `brand` on the vertical:
 | `inmobiliaria.com.py` | Inmobiliaria Paraguay |
 | `realestateinparaguay.com` | Real Estate in Paraguay |
 
+Both marketplace doors render the editorial (green/gold/Cormorant) design
+system again as of 2026-09-11 — one shared "Premium Editorial" home
+(`src/components/home/PremiumHome.tsx`, `docs/prompts/premium-editorial.md`),
+each in its own language — and the per-door Nórdico and Petrol theme overrides
+they carried since 2026-09-04 are deleted from `src/design/themes.ts`.
+
 How to read it, and the one mistake to avoid:
 
 - `brandName()` / `brandMeta()` from **`src/lib/brand-server.ts`** — async,

@@ -6913,14 +6913,13 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink-secondary);
 }
 
-/* ---- Nórdico home layout (guide §6, inmobiliaria.com.py only) ------------ */
-/* Selected via homeLayout()/NordicoHome — a dedicated component, not a branch
-   inside the default home JSX. White ground, one dark section, everything
-   else reads var(--*) so it inherits OVERRIDES.inmobiliaria automatically. */
-
-.nordico-home {
-  background: var(--color-background);
-}
+/* ---- Nórdico leftovers, still in use ------------------------------------- */
+/* The Nórdico home itself is gone (Premium Editorial, 2026-09-11): the
+   marketplace doors now render PremiumHome on the editorial token set. What
+   survives here is the subset `/vender` (`.nh-hero*`) and its two shared
+   sections — <ProofRow> (`.nh-proof*`) and <SalesProcessSection>
+   (`.nh-process*`) — still reference. Everything else in this block was
+   deleted with NordicoHome.tsx / EnHome.tsx. */
 
 .nh-hero {
   background: var(--color-surface);
@@ -6953,41 +6952,6 @@ summary.panel-btn::-webkit-details-marker {
   letter-spacing: -0.02em;
   color: var(--color-ink);
   margin: 0 0 18px;
-}
-
-.nh-hero__subtitle {
-  font-size: 17px;
-  line-height: 1.55;
-  color: var(--color-ink-secondary);
-  max-width: 48ch;
-  margin: 0 0 28px;
-}
-
-.nh-hero__actions {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.nh-hero__photo-wrap {
-  position: relative;
-  border-radius: var(--radius-photo);
-  overflow: hidden;
-  aspect-ratio: 4 / 3.4;
-}
-
-.nh-hero__photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.nh-search {
-  margin-top: 40px;
-  background: var(--color-surface);
-  border-radius: var(--radius-control);
-  box-shadow: var(--shadow-float);
-  padding: 12px;
 }
 
 .nh-proof {
@@ -7080,92 +7044,6 @@ summary.panel-btn::-webkit-details-marker {
 
 .nh-process__cta {
   margin-top: 48px;
-}
-
-.nh-city-grid {
-  margin-top: 32px;
-}
-
-.nh-city-tile {
-  cursor: pointer;
-}
-
-.nh-why__title {
-  text-align: center;
-}
-
-.nh-why__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--grid-gap);
-  margin-top: 32px;
-}
-
-@media (max-width: 800px) {
-  .nh-why__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.nh-why__card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  padding: 28px;
-}
-
-.nh-why__card-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 10px;
-}
-
-.nh-why__card-text {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--color-ink-secondary);
-  margin: 0;
-}
-
-.nh-why__cta {
-  display: flex;
-  margin: 32px auto 0;
-  width: fit-content;
-}
-
-.nh-partners {
-  padding-block: 48px;
-}
-
-/* A light tinted panel, not a second dark section — guide §2 is explicit
-   that there is exactly ONE dark section per page (the sales-process band
-   above). Review finding: the first pass put this on --color-primary-soft
-   with an ink-outline button, which read as a second unreadable dark block. */
-.nh-partners__inner {
-  background: var(--color-accent-soft);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  padding: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-  color: var(--color-ink);
-}
-
-.nh-partners__title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 8px;
-  color: var(--color-ink);
-}
-
-.nh-partners__text {
-  font-size: 15px;
-  color: var(--color-ink-secondary);
-  margin: 0;
-  max-width: 50ch;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -7500,434 +7378,6 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink-secondary);
   margin: 10px 0 0;
   max-width: 46ch;
-}
-
-/* ---- "Variant A, guide-first" home (realestateinparaguay.com) ------------ */
-/* Selected via homeLayout()/EnHome — a dedicated component, not a branch
-   inside the default home JSX. Radius 0 everywhere (var(--radius-*) is 0 for
-   OVERRIDES.en), hairline borders draw the structure instead of shadows,
-   Newsreader for headings, IBM Plex Sans for everything else. */
-
-.eh-home {
-  background: var(--color-background);
-}
-
-.eh-serif-title {
-  font-family: var(--font-display);
-  font-size: clamp(26px, 3vw, 38px);
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  color: var(--color-ink);
-  margin: 0 0 8px;
-}
-
-.eh-centered {
-  text-align: center;
-}
-
-.eh-hero {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding-block: 76px;
-}
-
-.eh-hero__grid {
-  display: grid;
-  grid-template-columns: 55fr 45fr;
-  gap: var(--grid-gap);
-  align-items: stretch;
-}
-
-@media (max-width: 900px) {
-  .eh-hero__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.eh-hero__copy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.eh-hero__kicker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: var(--label-tracking);
-  text-transform: uppercase;
-  color: var(--color-link);
-  margin: 0 0 22px;
-}
-
-.eh-hero__kicker-rule {
-  display: inline-block;
-  width: 26px;
-  height: 1px;
-  background: var(--color-link);
-  flex: none;
-}
-
-.eh-hero__title {
-  font-family: var(--font-display);
-  font-size: clamp(34px, 4.9vw, 68px);
-  line-height: 1.02;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  color: var(--color-ink);
-  margin: 0 0 22px;
-}
-
-.eh-hero__title-accent {
-  font-style: italic;
-  color: var(--color-primary, var(--color-ink));
-}
-
-.eh-hero__strap {
-  font-size: 17px;
-  line-height: 1.7;
-  color: var(--color-ink-secondary);
-  max-width: 58ch;
-  margin: 0 0 28px;
-}
-
-.eh-hero__search {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-accent);
-  padding: 12px;
-}
-
-.eh-hero__guide-link {
-  display: inline-block;
-  margin-top: 18px;
-  font-size: 14px;
-  color: var(--color-link);
-  text-decoration: none;
-  border-bottom: 1px solid var(--color-border-accent);
-}
-
-.eh-hero__guide-link:hover {
-  color: var(--color-link-hover);
-  border-color: var(--color-link-hover);
-}
-
-.eh-hero__photo-wrap {
-  position: relative;
-  overflow: hidden;
-  min-height: 420px;
-  border: 1px solid var(--color-border-accent);
-}
-
-.eh-hero__photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Facts strip: accent-soft tint, hairline top/bottom, four bordered cells,
-   each with a line icon and a short gold rule under the numeral — same
-   hairline-only depth language as the rest of this domain, no shadows. */
-.eh-facts {
-  background: var(--color-accent-soft);
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  padding-block: 56px;
-}
-
-.eh-facts__row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-}
-
-@media (max-width: 700px) {
-  .eh-facts__row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 32px 20px;
-  }
-}
-
-.eh-facts__cell {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  text-align: left;
-  padding: 0 32px;
-  border-left: 1px solid var(--color-border);
-}
-
-.eh-facts__cell:first-child {
-  border-left: none;
-  padding-left: 0;
-}
-
-@media (max-width: 700px) {
-  .eh-facts__cell {
-    border-left: none;
-    padding-left: 0;
-  }
-}
-
-.eh-facts__icon {
-  display: inline-flex;
-  color: var(--color-link);
-}
-
-.eh-facts__numeral {
-  font-family: var(--font-display);
-  font-size: 34px;
-  font-weight: 400;
-  color: var(--color-ink);
-}
-
-.eh-facts__rule {
-  display: block;
-  width: 22px;
-  height: 1px;
-  background: var(--color-accent);
-}
-
-.eh-facts__label {
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-ink-secondary);
-  line-height: 1.4;
-}
-
-.eh-why__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--grid-gap);
-  margin-top: 32px;
-}
-
-@media (max-width: 800px) {
-  .eh-why__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.eh-why__card {
-  border: 1px solid var(--color-border);
-  padding: 28px;
-}
-
-.eh-why__card-title {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 500;
-  margin: 0 0 10px;
-  color: var(--color-ink);
-}
-
-.eh-why__card-text {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-ink-secondary);
-  margin: 0 0 12px;
-}
-
-.eh-why__card-link {
-  font-size: 13px;
-  color: var(--color-link);
-  text-decoration: none;
-}
-
-.eh-why__card-link:hover {
-  color: var(--color-link-hover);
-}
-
-.eh-where__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--grid-gap);
-  margin-top: 24px;
-}
-
-@media (max-width: 800px) {
-  .eh-where__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.eh-where__tile {
-  display: block;
-  border: 1px solid var(--color-border);
-  padding: 20px;
-  text-decoration: none;
-  transition: border-color 0.2s var(--ease);
-}
-
-.eh-where__tile:hover {
-  border-color: var(--color-accent);
-}
-
-.eh-where__name {
-  font-family: var(--font-display);
-  font-size: 18px;
-  color: var(--color-ink);
-  margin-bottom: 6px;
-}
-
-.eh-where__why {
-  font-size: 13px;
-  color: var(--color-ink-secondary);
-  line-height: 1.5;
-}
-
-.eh-how__steps {
-  list-style: none;
-  margin: 24px 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--grid-gap);
-}
-
-@media (max-width: 900px) {
-  .eh-how__steps {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.eh-how__step {
-  border-top: 2px solid var(--color-accent);
-  padding-top: 14px;
-}
-
-.eh-how__num {
-  display: block;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 13px;
-  /* var(--color-accent) is brass — guide §2 is explicit that on cream it is
-     decorative only (2.2:1) and must never be small text. --color-link is
-     the same hue family, darkened to pass (5.06:1 on this domain's palette,
-     tokens.ts / OVERRIDES.en). */
-  color: var(--color-link);
-  margin-bottom: 8px;
-}
-
-.eh-how__step-title {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 500;
-  margin: 0 0 6px;
-  color: var(--color-ink);
-}
-
-.eh-how__step-text {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--color-ink-secondary);
-  margin: 0 0 8px;
-}
-
-.eh-how__step-meta {
-  font-size: 11px;
-  /* ink-muted is 3.39:1 on this domain's background — below AA for small
-     text (computed). ink-secondary is 6.25:1 on the same background. */
-  color: var(--color-ink-secondary);
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.eh-how__costs-title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 500;
-  margin: 56px 0 16px;
-  color: var(--color-ink);
-}
-
-.eh-table-wrap {
-  overflow-x: auto;
-}
-
-.eh-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.eh-table th,
-.eh-table td {
-  text-align: left;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.eh-table th {
-  background: var(--color-accent-soft);
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--color-ink);
-}
-
-.eh-table tr:hover td {
-  background: var(--color-accent-soft);
-}
-
-.eh-relocation__grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--grid-gap);
-  margin-top: 24px;
-}
-
-@media (max-width: 800px) {
-  .eh-relocation__grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.eh-relocation__card {
-  display: block;
-  border: 1px solid var(--color-border);
-  padding: 20px;
-  text-decoration: none;
-  transition: border-color 0.2s var(--ease);
-}
-
-.eh-relocation__card:hover {
-  border-color: var(--color-accent);
-}
-
-.eh-relocation__title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  color: var(--color-ink);
-  margin: 0 0 6px;
-}
-
-.eh-relocation__text {
-  font-size: 13px;
-  color: var(--color-ink-secondary);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.eh-faq .home-faq__title {
-  text-align: left;
-}
-
-/* .home-section__more:hover reads var(--color-accent) globally, which is
-   brass here — 2.20:1 on this domain's paper background, the exact pairing
-   guide §2 forbids for text ("decorative only... never small text").
-   Scoped to .eh-home only: a global change to the shared selector would
-   also repaint inmobiliaria.com.py/terreno.com.py's hover state, breaking
-   their pixel-identical-to-main guarantee. --color-link-hover is the
-   correct high-contrast option this domain's own palette already defines
-   (7.59:1, computed). */
-.eh-home .home-section__more:hover {
-  color: var(--color-link-hover);
-  border-color: var(--color-link-hover);
 }
 
 /* ---- Detail page: "Buying this property as a foreigner" box -------------- */
@@ -9027,4 +8477,637 @@ summary.panel-btn::-webkit-details-marker {
     ),
     url("/img/hub-alquiler.webp"),
     linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+}
+
+/* ========================================================================== */
+/* Premium Editorial home (ph-*) — docs/prompts/premium-editorial.md          */
+/* ========================================================================== */
+/* The shell both marketplace doors render since 2026-09-11 (PremiumHome.tsx).
+   Everything below reads the EDITORIAL custom properties — deep green, gold,
+   Cormorant over Jost, zero radius — so there is no palette here, only
+   structure. The only literal colours are white-on-photograph alphas and the
+   one hero shadow, which are opacities rather than hues. */
+
+.premium-home {
+  background: var(--color-background);
+}
+
+/* ---- Hero ---------------------------------------------------------------- */
+
+.ph-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: clamp(640px, 82vh, 820px);
+  /* `.site-header` is sticky and in flow (it sits above this section rather
+     than over it), so this is breathing room at the top of the photograph,
+     not clearance for a fixed bar. */
+  padding-top: clamp(24px, 4vh, 56px);
+  background: var(--color-primary);
+  color: #fff;
+  /* No `overflow: hidden` here, ever: the search panel below deliberately
+     hangs 46px past the bottom edge, and clipping it is the one mistake this
+     section has. */
+}
+
+/* <Picture> wraps its <img> in a <picture>, which is inline by default — the
+   absolute positioning has to live on the wrapper or the photo has nothing to
+   fill. */
+.ph-hero > picture {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.ph-hero__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
+  display: block;
+}
+
+.ph-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-hero);
+  pointer-events: none;
+}
+
+.ph-hero__inner {
+  position: relative;
+  z-index: 1;
+  padding-top: clamp(32px, 5vh, 64px);
+}
+
+.ph-hero__copy {
+  max-width: 640px;
+}
+
+.ph-hero__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(44px, 6vw, 74px);
+  line-height: 1.06;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 18px 0 0;
+  color: #fff;
+}
+
+.ph-hero__gold {
+  color: var(--color-accent-hover);
+}
+
+.ph-hero__subtitle {
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 360px;
+  margin: 22px 0 0;
+}
+
+.ph-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.ph-hero__trust {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+}
+
+.ph-hero__trust-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-width: 0;
+}
+
+.ph-hero__trust-icon {
+  flex: 0 0 auto;
+  color: var(--color-accent-hover);
+  stroke-width: 1.1px;
+}
+
+.ph-hero__trust-label {
+  font-size: 10.5px;
+  letter-spacing: 1.5px;
+  line-height: 1.6;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ph-hero__search-wrap {
+  position: relative;
+  z-index: 2;
+  margin-top: clamp(32px, 5vh, 56px);
+  /* The overlap the next section pays for — see .ph-hero + * below. */
+  margin-bottom: -46px;
+}
+
+.ph-hero__search {
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-border-accent);
+  padding: 26px 30px 30px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+}
+
+.ph-hero__search-title {
+  margin: 0;
+}
+
+/* The shared SearchBar already renders a white field row; inside this panel it
+   only needs its own float removed so it reads as one inset, not two cards. */
+.ph-hero__search .search-bar {
+  margin-top: 14px;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.ph-hero__stat {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 14px 0 0;
+}
+
+/* Whatever section follows the hero clears the panel's overhang. Written as a
+   sibling rule rather than a class on the next section so it stays true when
+   an empty listing set drops "destacadas" and "tipos" lands here instead. */
+/* Scoped through .premium-home so it outranks `.ds-section`'s padding-block,
+   which the following section almost always carries. */
+.premium-home .ph-hero + * {
+  padding-top: calc(var(--section-y) + 46px);
+}
+
+/* ---- Shared section heading ---------------------------------------------- */
+/* `.home-section__head h2` is (0,1,1), so the class alone would lose to it. */
+
+.ph-h2,
+.home-section__head .ph-h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.ph-h2--centered {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.ph-h2--on-dark {
+  color: #fff;
+}
+
+.ph-h2--small {
+  font-size: 22px;
+  letter-spacing: 1.8px;
+}
+
+/* ---- destacadas ---------------------------------------------------------- */
+
+.ph-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+/* `.ds-photo-card` sets height: clamp(320px, 30vw, 400px), so a min-height
+   alone could never bring it down to the editorial row height. */
+.ph-grid-4 .ds-photo-card {
+  height: 290px;
+  min-height: 290px;
+}
+
+@media (max-width: 1024px) {
+  .ph-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .ph-grid-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- tipos --------------------------------------------------------------- */
+
+.ph-types {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ph-types__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 34px 10px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--color-ink);
+  border-right: 1px solid var(--color-border);
+  transition: background 0.2s var(--ease);
+}
+
+.ph-types__item:last-child {
+  border-right: 0;
+}
+
+.ph-types__item:hover {
+  background: var(--color-accent-soft);
+}
+
+.ph-types__icon {
+  color: var(--color-link);
+  stroke-width: 1px;
+}
+
+.ph-types__label {
+  font-size: 10.5px;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+/* Re-draw the hairlines for each wrapped shape: the last item in a row stops
+   being the last child. Both ranges are bounded — an unbounded `max-width:
+   900px` rule would keep matching at 400px and strip the right border from
+   tile 3, which is a middle tile in the two-column layout. */
+@media (min-width: 521px) and (max-width: 900px) {
+  .ph-types {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ph-types__item:nth-child(3n) {
+    border-right: 0;
+  }
+  .ph-types__item:nth-child(n + 4) {
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+@media (max-width: 520px) {
+  .ph-types {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ph-types__item {
+    padding: 26px 8px;
+  }
+  .ph-types__item:nth-child(2n) {
+    border-right: 0;
+  }
+  .ph-types__item:nth-child(n + 3) {
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+/* ---- nosotros ------------------------------------------------------------ */
+/* The one tint allowed to fill a block on cream (design system §2). */
+
+.ph-about {
+  background: var(--color-accent-soft);
+}
+
+/* `--color-accent` is 10px gold on a cream tint — below AA. This is exactly
+   what --site-notice-label-color exists for (the same label on the same
+   fill), so the label borrows it rather than inventing a hex. */
+.ph-about .ds-label {
+  color: var(--site-notice-label-color);
+}
+
+.ph-about__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: clamp(24px, 4vw, 64px);
+  align-items: center;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-left: var(--container-pad);
+}
+
+.ph-about__copy {
+  padding-block: var(--section-y);
+  max-width: 520px;
+}
+
+.ph-about__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(30px, 3.4vw, 40px);
+  line-height: 1.18;
+  color: var(--color-ink);
+  margin: 16px 0 0;
+}
+
+.ph-about__text {
+  font-size: 13.5px;
+  font-weight: 300;
+  line-height: 1.85;
+  color: var(--color-ink-secondary);
+  max-width: 400px;
+  margin: 20px 0 30px;
+}
+
+/* Bleeds to the container's right edge — not to the viewport's: a 100vw trick
+   here would add a horizontal scrollbar on every platform that reserves gutter
+   width, which §6 of the spec calls out as the thing to avoid. */
+.ph-about__media {
+  margin-right: calc(-1 * var(--container-pad));
+}
+
+.ph-about__media picture {
+  display: block;
+}
+
+.ph-about__photo {
+  display: block;
+  width: 100%;
+  height: 420px;
+  object-fit: cover;
+}
+
+@media (max-width: 900px) {
+  .ph-about__grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding-right: var(--container-pad);
+    gap: 0;
+  }
+  .ph-about__media {
+    order: -1;
+    margin-right: calc(-1 * var(--container-pad));
+    margin-left: calc(-1 * var(--container-pad));
+  }
+  .ph-about__photo {
+    height: 300px;
+  }
+}
+
+/* ---- servicios ----------------------------------------------------------- */
+
+.ph-services {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 34px;
+}
+
+.ph-services__item {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 14px;
+  align-items: start;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+
+.ph-services__icon {
+  color: var(--color-link);
+  stroke-width: 1px;
+}
+
+.ph-services__body {
+  min-width: 0;
+}
+
+.ph-services__title {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+.ph-services__text {
+  display: block;
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--color-ink-secondary);
+  margin-top: 10px;
+}
+
+.ph-services__item:hover .ph-services__title {
+  color: var(--color-link-hover);
+}
+
+@media (max-width: 900px) {
+  .ph-services {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .ph-services {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+  }
+}
+
+/* ---- zonas --------------------------------------------------------------- */
+
+.ph-zones {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+/* Overrides .ds-photo-card--zone's clamp(240px, 22vw, 300px). */
+.ph-zones__tile {
+  height: 150px;
+}
+
+.ph-zones__tile picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 1024px) {
+  .ph-zones {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .ph-zones {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ph-zones__tile {
+    height: 200px;
+  }
+}
+
+/* ---- cómo funciona (dark) ------------------------------------------------ */
+/* This is where the reference design puts its testimonial wall. There are no
+   reviews in this database and none may be invented (docs/decisions-needed.md),
+   so the three-step explainer takes the slot instead. */
+
+.ph-how__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(24px, 4vw, 56px);
+}
+
+.ph-how__num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 46px;
+  line-height: 1;
+  color: var(--color-accent-on-dark);
+}
+
+.ph-how__step-title {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+  margin: 20px 0 0;
+  color: #fff;
+}
+
+.ph-how__step-text {
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 12px 0 0;
+}
+
+.ph-how__more {
+  margin-top: 48px;
+  text-align: center;
+}
+
+@media (max-width: 800px) {
+  .ph-how__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- faq + contacto ------------------------------------------------------ */
+
+.ph-faqcontact {
+  display: grid;
+  grid-template-columns: 1.5fr 0.9fr;
+  gap: clamp(28px, 4vw, 64px);
+  align-items: start;
+}
+
+.ph-faq .home-faq__item {
+  margin-top: 10px;
+}
+
+.ph-contact__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.ph-contact > .ph-h2 + .ph-contact__row {
+  border-top: 1px solid var(--color-border);
+}
+
+.ph-contact__row--static {
+  cursor: default;
+}
+
+.ph-contact__icon {
+  flex: 0 0 auto;
+  color: var(--color-link);
+  stroke-width: 1.2px;
+}
+
+.ph-contact__label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
+.ph-contact__value {
+  display: block;
+  font-size: 14px;
+  font-weight: 300;
+  margin-top: 4px;
+}
+
+.ph-contact__cta {
+  display: flex;
+  width: 100%;
+  margin-top: 28px;
+}
+
+.ph-contact .ph-h2 {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .ph-faqcontact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- Floating WhatsApp --------------------------------------------------- */
+/* Rendered by PremiumHome only when CONTACT_WHATSAPP resolves to a real
+   wa.me link, and only on the home page — so it never has to fight the
+   detail page's sticky contact bar. z-index sits under the mobile drawer's
+   and above page content. */
+
+.ph-wa-float {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--color-whatsapp);
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+}
+
+.ph-wa-float svg {
+  width: 27px;
+  height: 27px;
+}
+
+/* ---- Narrow viewports ---------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .ph-hero__trust {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .ph-hero {
+    min-height: clamp(560px, 78vh, 700px);
+  }
+  .ph-hero__search {
+    padding: 20px 18px 24px;
+  }
+  .ph-hero__subtitle {
+    max-width: none;
+  }
 }

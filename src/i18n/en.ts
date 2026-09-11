@@ -1983,3 +1983,113 @@ export const enDirectory = {
     },
   ],
 } as const;
+
+/**
+ * Premium Editorial home — the English peer of `esPremium`
+ * (docs/prompts/premium-editorial.md §4). Pitched at a foreign buyer (PLAN.md
+ * D6), not translated sentence for sentence: *cuota* is "estimated monthly
+ * payment", the trust row says what a reader outside Paraguay actually needs
+ * to know, and nothing here states a fact the Spanish does not.
+ *
+ * `aboutHref` / `contactHref` are the **Spanish** URLs on this door too: the
+ * English `/about` and `/contact` belong to the rental family (R2) and
+ * redirect to `/` here, so this door's about and contact pages are
+ * `/nosotros` and `/contacto`, served in English. See the note on `esPremium`.
+ */
+export const enPremium = {
+  heroKicker: "Asunción · Paraguay",
+  heroTitleLead: "Premium property ",
+  heroTitleHighlight: "in",
+  heroTitleTail: " Paraguay",
+  heroSubtitle:
+    "Houses, apartments and land for sale and for rent in Asunción and across the country, with an estimated monthly payment and financing.",
+  heroBrowse: "Browse properties",
+  heroWhatsapp: "Message us on WhatsApp",
+  waPrefill: (brand: string) =>
+    `Hello, I found ${brand} and I would like more information.`,
+  /** `\n` is rendered as a line break by the component, never as a literal. */
+  trust: [
+    { icon: "person", label: "Talk directly\nto whoever listed it" },
+    { icon: "check-square", label: "Listings\nwe verify" },
+    { icon: "people", label: "Agencies from\nacross the country" },
+    { icon: "clock", label: "Fast replies\non WhatsApp" },
+  ],
+  searchTitle: "Find your next property",
+  featuredTitle: "Featured properties",
+  featuredMore: "See all properties →",
+  typesTitle: "Property types",
+  types: {
+    casas: "Houses",
+    departamentos: "Apartments",
+    terrenos: "Land",
+    alquileres: "Rentals",
+    comercial: "Retail and offices",
+    proyectos: "New developments",
+  } as Record<string, string>,
+  aboutKicker: (brand: string) => `We are ${brand}`,
+  aboutTitle: "Clarity. Trust.\nResults.",
+  aboutText: (brand: string) =>
+    `${brand} brings together houses, apartments and land from agencies and private owners across Paraguay. Every listing shows its price, its estimated monthly payment and direct contact details for whoever published it — no middleman, and no commission for you.`,
+  aboutCta: "More about us",
+  aboutHref: "/nosotros",
+  servicesTitle: "What you can do here",
+  services: [
+    {
+      key: "buscar",
+      title: "Search properties",
+      text: "Filter by area, type and budget, as a list or on the map.",
+      href: "/venta/asuncion",
+    },
+    {
+      key: "vender",
+      title: "Sell or rent out",
+      text: "List for free and get enquiries straight to your WhatsApp.",
+      href: "/publicar",
+    },
+    {
+      key: "tasacion",
+      title: "Estimated valuation",
+      text: "A price range built from the listings published in your area.",
+      href: "/tasacion",
+    },
+    {
+      key: "financiamiento",
+      title: "Financing",
+      text: "An estimated monthly payment per listing, and the credit lines available.",
+      href: "/financiamiento",
+    },
+    {
+      key: "precios",
+      title: "Market prices",
+      text: "The median price per m² in each city, kept up to date.",
+      href: "/precios",
+    },
+  ],
+  zonesTitle: "Featured areas",
+  zonesMore: "See all areas →",
+  zoneSub: "See properties",
+  howTitle: "How it works",
+  contactTitle: "Contact us",
+  contactWhatsapp: "Message us on WhatsApp",
+  contactLocation: "Asunción, Paraguay",
+  contactFormCta: "Send an enquiry",
+  contactHref: "/contacto",
+  imgAlt: {
+    "casa-premium-asuncion-atardecer":
+      "Modern house with a lit pool at dusk in a residential neighbourhood of Asunción",
+    "living-moderno-vista-rio-asuncion":
+      "Modern living room with floor-to-ceiling windows overlooking the Paraguay River in an Asunción apartment",
+    "zona-asuncion-skyline-costanera":
+      "Asunción skyline and the Costanera seen from the bay at sunset",
+    "zona-luque-casas-modernas":
+      "Tree-lined street with modern houses in a new neighbourhood of Luque",
+    "zona-san-lorenzo-barrio-residencial":
+      "Residential neighbourhood in San Lorenzo with family houses and tall trees",
+    "zona-san-bernardino-lago-ypacarai":
+      "Weekend house on the shore of Lake Ypacaraí in San Bernardino",
+    "zona-encarnacion-costanera-parana":
+      "Encarnación's riverfront promenade and beach on the Paraná River at sunset",
+    "zona-ciudad-del-este-vista-aerea":
+      "Aerial view of Ciudad del Este with modern buildings and the Paraná River",
+  } as Record<string, string>,
+} as const;

@@ -41,24 +41,15 @@ export type HomeSectionId =
   | "cta"
   | "newsletter"
   | "faq"
-  // Nórdico-only sections (docs/style/inmobiliaria.com.py.md §6). These only
-  // ever appear for a vertical whose homeLayout() is "nordico" — see the
-  // dedicated component note below.
-  | "proof-row"
   | "recientes"
-  | "proceso-venta"
-  | "buscar-ciudad"
-  | "por-que-vender"
-  | "para-inmobiliarias-row"
-  // "Variant A, guide-first" sections (docs/style/realestateinparaguay.com.md
-  // §6). These only ever appear for a vertical whose homeLayout() is
-  // "guide-en" — see EnHome.tsx.
-  | "facts-strip"
-  | "new-this-week"
-  | "why-paraguay"
-  | "where-to-buy"
-  | "how-buying-works"
-  | "relocation"
+  // Premium Editorial sections (docs/prompts/premium-editorial.md §2). These
+  // only ever appear for a vertical whose homeLayout() is "premium" — see
+  // PremiumHome.tsx. The Nórdico and "Variant A, guide-first" ids that lived
+  // here between 2026-09-04 and 2026-09-11 went with their components.
+  | "destacadas"
+  | "tipos"
+  | "nosotros"
+  | "faq-contacto"
   // Rental-family sections (docs/style/rentparaguay.com.md §home). These only
   // ever appear for a vertical whose homeLayout() is "rental" — see
   // RentalHome.tsx.
@@ -82,37 +73,27 @@ export type HomeSectionId =
  * `app/page.tsx` renders the default template (which still only reads
  * membership — its JSX order is hard-coded to the default list's order) or
  * a dedicated per-vertical component that renders from this array's actual
- * order (`src/components/home/NordicoHome.tsx` for "nordico"). A layout that
+ * order (`src/components/home/PremiumHome.tsx` for "premium"). A layout that
  * needs true reordering of the *default* template's own sections would need
  * to teach `app/page.tsx` to map over this list — not required yet because
  * every non-default layout so far uses its own component instead.
  */
 export function homeSections(key: VerticalKey): HomeSectionId[] {
-  if (key === "inmobiliaria") {
+  if (key === "inmobiliaria" || key === "en") {
+    // Premium Editorial §2, in order: photo hero with the trust row and the
+    // overlapping search panel · featured listings · property types · about ·
+    // what you can do here · zones · how it works · faq + contact. One list
+    // for both marketplace doors: they are the same page in two languages,
+    // and PremiumHome renders from this array rather than from the key.
     return [
       "hero",
-      "proof-row",
-      "recientes",
-      "proceso-venta",
-      "buscar-ciudad",
-      "por-que-vender",
-      "para-inmobiliarias-row",
-      "faq",
-    ];
-  }
-  if (key === "en") {
-    // Guide §6, in order: split hero with the three facts and search · facts
-    // strip · new this week · why Paraguay · where to buy · how buying works
-    // (with the costs table) · relocation · faq.
-    return [
-      "hero",
-      "facts-strip",
-      "new-this-week",
-      "why-paraguay",
-      "where-to-buy",
-      "how-buying-works",
-      "relocation",
-      "faq",
+      "destacadas",
+      "tipos",
+      "nosotros",
+      "servicios",
+      "zonas",
+      "como-funciona",
+      "faq-contacto",
     ];
   }
   if (familyOf(key) === "rental") {
@@ -171,23 +152,18 @@ export function homeSections(key: VerticalKey): HomeSectionId[] {
   ];
 }
 
-export type HomeLayout =
-  | "default"
-  | "nordico"
-  | "guide-en"
-  | "rental"
-  | "directory";
+export type HomeLayout = "default" | "premium" | "rental" | "directory";
 
 /**
  * Which component renders the home page. `app/page.tsx` is the one allowed
  * fork point (it already resolves `vertical` for the page); it renders
- * `NordicoHome` when this returns "nordico", `EnHome` when it returns
- * "guide-en", and its own default JSX otherwise. No other file branches on
- * this.
+ * `PremiumHome` when this returns "premium", and its own default JSX
+ * otherwise. No other file branches on this.
  */
 export function homeLayout(key: VerticalKey): HomeLayout {
-  if (key === "inmobiliaria") return "nordico";
-  if (key === "en") return "guide-en";
+  // Both marketplace doors: one shell, each in its own language
+  // (docs/prompts/premium-editorial.md). `terreno` keeps the default home.
+  if (key === "inmobiliaria" || key === "en") return "premium";
   // Both rental doors render `RentalHome` (docs/style/rentparaguay.com.md) —
   // one shell for the family, in each door's own language.
   if (familyOf(key) === "rental") return "rental";
@@ -197,25 +173,6 @@ export function homeLayout(key: VerticalKey): HomeLayout {
   // own branch here rather than inheriting this one.
   if (familyOf(key) === "directory") return "directory";
   return "default";
-}
-
-export type HeroVariant =
-  | "split-photo"
-  | "split-search-under"
-  | "split-fact-strap";
-
-/**
- * Home hero layout. "split-photo": today's full-bleed photo hero with the
- * search bar on the dark panel. "split-search-under" (Nórdico guide §5 "Hero
- * (home)"): 55/45 split, white ground, the search bar as its own white
- * rounded row underneath rather than layered on the photo. "split-fact-strap"
- * (realestateinparaguay.com guide §5 "Hero"): 55/45 split, left = H1 + the
- * three-fact strap paragraph + search, right = a place photograph.
- */
-export function heroVariant(key: VerticalKey): HeroVariant {
-  if (key === "inmobiliaria") return "split-search-under";
-  if (key === "en") return "split-fact-strap";
-  return "split-photo";
 }
 
 export type CardVariant = "photo-scrim" | "framed-pill" | "framed-fact";
@@ -230,8 +187,10 @@ export type CardVariant = "photo-scrim" | "framed-pill" | "framed-fact";
  * `US$/m²` and `sq ft`, and never a cuota line.
  */
 export function cardVariant(key: VerticalKey): CardVariant {
-  if (key === "inmobiliaria") return "framed-pill";
-  if (key === "en") return "framed-fact";
+  // The marketplace doors went back to the photo-as-the-card on 2026-09-11
+  // (docs/prompts/premium-editorial.md §1): the Premium Editorial home is
+  // carried by photography, and a white framed card inside it reads as a
+  // different site's component.
   // The rental doors show the same white framed card as the Spanish primary:
   // a renter compares price, rooms and area, and a photo-as-the-card hides
   // exactly those (fable/plan-rentparaguay.md §1 item 12).

@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
 // Self-hosted Manrope, unconditionally available (just makes the font files
-// downloadable — only inmobiliaria.com.py's theme override actually selects
-// it via --font-display/--font-sans; every other door keeps Cormorant/Jost).
+// downloadable — only the rental family's theme override (OVERRIDES.alquiler
+// / OVERRIDES.rent) actually selects it via --font-display/--font-sans; the
+// marketplace doors keep Cormorant/Jost).
+//
+// Newsreader and IBM Plex Sans were imported here for OVERRIDES.en (Petrol)
+// and Manrope also served OVERRIDES.inmobiliaria (Nórdico). Both overrides
+// were deleted on 2026-09-11 (docs/prompts/premium-editorial.md), so nothing
+// selects Newsreader or IBM Plex Sans any more and their imports are gone.
+// The packages stay in package.json — dropping them is a separate decision.
 import "@fontsource-variable/manrope";
-// Self-hosted Newsreader + IBM Plex Sans (400/500/600), unconditionally
-// available the same way — only realestateinparaguay.com's theme override
-// (OVERRIDES.en) actually selects them via --font-display/--font-sans.
-import "@fontsource-variable/newsreader";
-import "@fontsource/ibm-plex-sans/400.css";
-import "@fontsource/ibm-plex-sans/500.css";
-import "@fontsource/ibm-plex-sans/600.css";
 // Self-hosted Lora + Public Sans, unconditionally available the same way —
 // only inmobiliarios.com.py's theme override (OVERRIDES.agents) actually
 // selects them via --font-display/--font-sans (D4,
