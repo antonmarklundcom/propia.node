@@ -345,6 +345,9 @@ These files explain *why*, and are not a substitute for anything above.
   audit findings (F-numbers) many comments in the code cite.
 - **`fable-plan-ops.md`** — the operations plan: `src/lib/ops/`,
   `/admin/operaciones`, and the human-inputs checklist.
+- **`fable-plan-quality.md`** — the 2026-09-11 improvement report and its
+  seven phases (test/lint gate, lead loop, D10, known-issues sweep, D3b,
+  JSON-LD, docs index); prompts in `prompts-quality/`.
 - **`docs/log/`** — one file per shipped phase: what landed, what was not
   verified, the exact commands the founder still has to run.
 - **`fable/KNOWN-ISSUES.md`** — findings recorded rather than fixed.
