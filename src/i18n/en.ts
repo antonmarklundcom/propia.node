@@ -2072,6 +2072,10 @@ export const enPremium = {
   contactTitle: "Contact us",
   contactWhatsapp: "Message us on WhatsApp",
   contactLocation: "Asunción, Paraguay",
+  contactFormLabel: "Contact form",
+  contactPublishLabel: "List your property",
+  // Same hours as the Spanish marketplace /contacto page.
+  contactHours: "Monday to Friday, 8:00 to 18:00",
   contactFormCta: "Send an enquiry",
   contactHref: "/contacto",
   imgAlt: {

@@ -15,6 +15,39 @@ import { RENTAL_SERVICES } from "@/config/rental-services";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
 
+/** Same envelope/pin paths and stroke as the home's contact rows. */
+function FooterGlyph({ kind }: { kind: "mail" | "pin" | "chat" }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: "inline-block", verticalAlign: "middle" }}
+      aria-hidden
+      focusable="false"
+    >
+      {kind === "mail" ? (
+        <>
+          <rect x="3" y="5" width="18" height="14" rx="1" />
+          <path d="m3 6 9 7 9-7" />
+        </>
+      ) : kind === "pin" ? (
+        <>
+          <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" />
+          <circle cx="12" cy="10" r="2.6" />
+        </>
+      ) : (
+        <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H3l2-4a8.5 8.5 0 1 1 16-4.5Z" />
+      )}
+    </svg>
+  );
+}
+
 /**
  * Global footer (portal shell). Two jobs at once: it is the site's second
  * navigation (every hand-authored page is reachable from here, so nothing is
@@ -91,7 +124,7 @@ export async function SiteFooter() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    💬 WhatsApp {whatsapp}
+                    <FooterGlyph kind="chat" /> WhatsApp {whatsapp}
                   </a>
                 </li>
               )}
@@ -101,19 +134,19 @@ export async function SiteFooter() {
                     placeholder address). */}
                 {CONTACT_EMAIL ? (
                   <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
-                    ✉️ {CONTACT_EMAIL}
+                    <FooterGlyph kind="mail" /> {CONTACT_EMAIL}
                   </a>
                 ) : (
                   <Link
                     className="site-footer__link"
                     href={rentalPath(vertical.locale, "contact")}
                   >
-                    ✉️ {t.footerContactUs}
+                    <FooterGlyph kind="mail" /> {t.footerContactUs}
                   </Link>
                 )}
               </li>
               <li>
-                <span className="site-footer__muted">📍 {t.footerAddress}</span>
+                <span className="site-footer__muted"><FooterGlyph kind="pin" /> {t.footerAddress}</span>
               </li>
             </ul>
           </div>
@@ -164,7 +197,7 @@ export async function SiteFooter() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    💬 WhatsApp {whatsapp}
+                    <FooterGlyph kind="chat" /> WhatsApp {whatsapp}
                   </a>
                 </li>
               )}
@@ -173,11 +206,11 @@ export async function SiteFooter() {
                     one (CLAUDE.md: never a placeholder address). */}
                 {CONTACT_EMAIL ? (
                   <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
-                    ✉️ {CONTACT_EMAIL}
+                    <FooterGlyph kind="mail" /> {CONTACT_EMAIL}
                   </a>
                 ) : (
                   <Link className="site-footer__link" href="/contacto">
-                    ✉️ {t.footerContactUs}
+                    <FooterGlyph kind="mail" /> {t.footerContactUs}
                   </Link>
                 )}
               </li>
@@ -217,23 +250,23 @@ export async function SiteFooter() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    💬 WhatsApp {whatsapp}
+                    <FooterGlyph kind="chat" /> WhatsApp {whatsapp}
                   </a>
                 </li>
               )}
               <li>
                 {CONTACT_EMAIL ? (
                   <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
-                    ✉️ {CONTACT_EMAIL}
+                    <FooterGlyph kind="mail" /> {CONTACT_EMAIL}
                   </a>
                 ) : (
                   <Link className="site-footer__link" href="/contacto">
-                    ✉️ {t.footerContactUs}
+                    <FooterGlyph kind="mail" /> {t.footerContactUs}
                   </Link>
                 )}
               </li>
               <li>
-                <span className="site-footer__muted">📍 {t.footerAddress}</span>
+                <span className="site-footer__muted"><FooterGlyph kind="pin" /> {t.footerAddress}</span>
               </li>
             </ul>
           </div>
@@ -281,7 +314,7 @@ export async function SiteFooter() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  💬 WhatsApp {whatsapp}
+                  <FooterGlyph kind="chat" /> WhatsApp {whatsapp}
                 </a>
               </li>
             )}
@@ -291,16 +324,16 @@ export async function SiteFooter() {
             <li>
               {CONTACT_EMAIL ? (
                 <a className="site-footer__link" href={`mailto:${CONTACT_EMAIL}`}>
-                  ✉️ {CONTACT_EMAIL}
+                  <FooterGlyph kind="mail" /> {CONTACT_EMAIL}
                 </a>
               ) : (
                 <Link className="site-footer__link" href="/contacto">
-                  ✉️ Escribinos
+                  <FooterGlyph kind="mail" /> Escribinos
                 </Link>
               )}
             </li>
             <li>
-              <span className="site-footer__muted">📍 Asunción, Paraguay</span>
+              <span className="site-footer__muted"><FooterGlyph kind="pin" /> Asunción, Paraguay</span>
             </li>
           </ul>
         </div>

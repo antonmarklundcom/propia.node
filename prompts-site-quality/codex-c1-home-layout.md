@@ -4,7 +4,7 @@ Files to touch: app/globals.css (only the .site-header* rules, the .hub-hero* ru
 
 Do not touch: src/db/**, drizzle/**, drizzle.config.ts, src/config/verticals.ts, middleware.ts, next.config.ts, any auth code, any other i18n namespace, any page other than app/page.tsx, any CSS rule outside the three families named above. Never add a placeholder email or phone number. Never write the word propia anywhere visitor-facing.
 
-Fix these, one commit each, in this order:
+Fix these, in this order (do NOT run git add, git commit or git push: the sandbox cannot write .git; the director commits after auditing):
 
 1. F1 horizontal scroll on desktop. .ph-about__media uses a negative right margin that overflows the viewport once the container reaches its max width. Make the bleed stop at the viewport edge: either put overflow-x: clip on .ph-about, or restructure the grid so the photo column reaches the right edge without a negative margin. Document width must equal the viewport width at 1440 and 1920.
 
@@ -27,13 +27,13 @@ Fix these, one commit each, in this order:
 10. F10 and F11. On phone, the hero trust row becomes one horizontally scrolling line with scroll-snap and no visible scrollbar. The properties-published count line under the search panel becomes 11.5 px in the secondary ink colour.
 
 Definition of done:
-- All ten fixes present, each as its own commit with message C1 - F<n>: <what>.
-- npm run verify:local passes (it runs typecheck, build, verify:import, verify:facets, verify:i18n, verify:seo).
+- All ten fixes present.
+- npm run typecheck and npm run verify:i18n pass. (npm run build fails inside this sandbox with EPERM readlink on the user profile folder; that is the sandbox, not you. Do not try to work around it; the director runs verify:local and renders both doors.)
 - Every new es.ts key has its en.ts peer in the same commit; verify:i18n is green.
 - No file outside the Files to touch list is modified (check with git status before reporting).
 - docs/log/c1.md lists what landed, what was not verified in a browser (you have no browser; the director renders it), and every deviation from this prompt.
 
-Commands to run before reporting (working directory C:\Users\anton\propia.node): npm run verify:local ; git status --short
+Commands to run before reporting (working directory C:\Users\anton\propia.node): npm run typecheck ; npm run verify:i18n ; git status --short
 
 Run every command listed and report FAIL with the real output rather than skipping or substituting a different check. Do not push.
 

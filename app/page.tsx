@@ -326,12 +326,35 @@ export default async function Home() {
   // the component's own header comment and src/design/sections.ts's
   // homeLayout()).
   if (homeLayout(vertical.key) === "premium") {
+    // Reserve the mix before filling shortages, so recent rentals cannot
+    // displace a later bucket. Rotate houses/flats, then keep all sales first.
+    const featured: Card[] = [];
+    const seen = new Set<Card["id"]>();
+    const take = (bucket: Card[], count: number) => {
+      for (const card of bucket) {
+        if (count === 0 || featured.length === 8) break;
+        if (seen.has(card.id)) continue;
+        seen.add(card.id);
+        featured.push(card);
+        count--;
+      }
+    };
+    take(ventaCasas, 1);
+    take(ventaDeptos, 1);
+    take(ventaCasas, 1);
+    take(ventaDeptos, 1);
+    take(ventaCasas, 1);
+    take(terrenos, 1);
+    take(alquileres, 2);
+    take(recent, 8 - featured.length);
+    featured.sort((a, b) => Number(b.operation === "venta") - Number(a.operation === "venta"));
+
     return (
       <PremiumHome
         vertical={vertical}
         d={d}
         brand={brand}
-        recent={recent}
+        recent={featured}
         cities={cities}
         zoneTiles={PREMIUM_ZONE_TILES}
         // `faqHome()` (src/config/faq.ts) is Spanish-only regardless of the
