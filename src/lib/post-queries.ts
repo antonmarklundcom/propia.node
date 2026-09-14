@@ -3,7 +3,7 @@
  *
  * Public reads are FAIL-SOFT: Hostinger auto-deploys on a push to main but
  * migrations are run by hand, so between deploy and `npm run db:migrate` the
- * posts table may not exist yet. A missing table there must degrade to "no
+ * posts schema may lag behind the code. Schema drift must degrade to "no
  * posts" — an empty /guias is a non-event, a 500 on a page linked from the
  * main menu is not. Panel writes do NOT swallow anything: the author needs to
  * see a real error.
@@ -37,22 +37,34 @@ export const POST_CATEGORY_LABEL: Record<PostRow["category"], string> = {
 };
 
 /**
- * True when the failure is "the table isn't there yet", not a real fault.
+ * Recognises missing tables and columns, logging only a safe MySQL code.
  *
  * Drizzle wraps driver errors in its own `Failed query: …` Error and hangs the
  * mysql2 error off `cause`, so the code is never on the top-level object —
  * checking only there silently disabled the whole fail-soft path. Walk the
  * chain, and match on the message too: `ER_NO_SUCH_TABLE` is the code, but a
- * wrapper that only carries a message still has "doesn't exist" in it.
+ * message-only wrapper gets an inferred code. Prefer driver codes over messages.
  */
-function isMissingTable(err: unknown): boolean {
+function isSchemaDrift(err: unknown): boolean {
+  let messageCode: string | undefined;
   for (let e: unknown = err, hops = 0; e && hops < 5; hops++) {
     const node = e as { code?: string; message?: string; cause?: unknown };
-    if (node.code === "ER_NO_SUCH_TABLE") return true;
-    if (node.message && /doesn't exist|no such table/i.test(node.message)) {
+    if (node.code === "ER_NO_SUCH_TABLE" || node.code === "ER_BAD_FIELD_ERROR") {
+      console.warn(`[posts] schema drift, degrading to empty: ${node.code}`);
       return true;
     }
+    if (typeof node.message === "string") {
+      if (/unknown column|unknown field/i.test(node.message)) {
+        messageCode = "ER_BAD_FIELD_ERROR";
+      } else if (/doesn't exist|no such table/i.test(node.message)) {
+        messageCode ??= "ER_NO_SUCH_TABLE";
+      }
+    }
     e = node.cause;
+  }
+  if (messageCode) {
+    console.warn(`[posts] schema drift, degrading to empty: ${messageCode}`);
+    return true;
   }
   return false;
 }
@@ -81,7 +93,7 @@ async function listPublishedPostsUncached(limit = 60): Promise<PostCard[]> {
       .limit(limit);
     return rows.map(toCard);
   } catch (err) {
-    if (isMissingTable(err)) return [];
+    if (isSchemaDrift(err)) return [];
     throw err;
   }
 }
@@ -119,7 +131,7 @@ async function getPublishedPostUncached(
       related: related.map(toCard),
     };
   } catch (err) {
-    if (isMissingTable(err)) return null;
+    if (isSchemaDrift(err)) return null;
     throw err;
   }
 }
@@ -134,7 +146,7 @@ export async function listPublishedPostSlugs(): Promise<
       .from(posts)
       .where(eq(posts.status, "published"));
   } catch (err) {
-    if (isMissingTable(err)) return [];
+    if (isSchemaDrift(err)) return [];
     throw err;
   }
 }
@@ -154,7 +166,7 @@ export async function isPostsTableReady(): Promise<boolean> {
     await db.select({ id: posts.id }).from(posts).limit(1);
     return true;
   } catch (err) {
-    if (isMissingTable(err)) return false;
+    if (isSchemaDrift(err)) return false;
     throw err;
   }
 }
@@ -259,7 +271,7 @@ export async function countDraftPosts(): Promise<number> {
       .where(eq(posts.status, "draft"));
     return Number(row?.n ?? 0);
   } catch (err) {
-    if (isMissingTable(err)) return 0;
+    if (isSchemaDrift(err)) return 0;
     throw err;
   }
 }

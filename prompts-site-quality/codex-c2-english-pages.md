@@ -13,14 +13,14 @@ Method, per page:
 
 Definition of done:
 - grep -rln from @/i18n/es app src/components returns no public page or component (staff surfaces listed under Do not touch may still match).
-- On the English host, none of the pages listed above has a Spanish title, meta description, h1 or h2. You cannot run a browser; verify by starting the built app (see commands) and fetching each page with curl -s -H Host: realestateinparaguay.com http://localhost:3002/<path> and grepping the title, description, h1 and h2 tags; paste the extracted values into docs/log/c2.md for both hosts.
+- On the English host, none of the pages listed above may have a Spanish title, meta description, h1 or h2. You cannot run a browser or the Next build in this sandbox (npm run build fails there with EPERM readlink on the user profile folder; that is the sandbox, not you). Verify by reading: for each page list in docs/log/c2.md which dictionary keys its title, description, h1 and h2 now come from. The director builds, serves and fetches both hosts.
 - Spanish host output unchanged in copy for the same pages (same curl with Host: inmobiliaria.com.py).
 - Every new es.ts key has its en.ts peer in the same commit; npm run verify:i18n is green after every page.
-- npm run verify:local passes at the end. npm run verify:seo still passes (hreflang and canonicals untouched).
+- npm run typecheck, npm run verify:i18n and npm run verify:seo pass.
 - Do NOT run git add, git commit or git push: the sandbox cannot write .git; the director commits after auditing.
 - docs/log/c2.md: pages done, pages deliberately left with the reason, everything not verified.
 
-Commands to run before reporting (working directory C:\Users\anton\propia.node): npm run verify:i18n ; npm run verify:local ; git status --short. For the curl checks, start the app with the DATABASE_URL already present in the repo's .env (do not print it, do not copy it anywhere): npm run build then npx next start -p 3002, run the curls, then stop the server.
+Commands to run before reporting (working directory C:\Users\anton\propia.node): npm run typecheck ; npm run verify:i18n ; npm run verify:seo ; git status --short
 
 Run every command listed and report FAIL with the real output rather than skipping or substituting a different check. Do not push.
 
