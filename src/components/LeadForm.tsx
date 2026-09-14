@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Glyph } from "@/components/Glyph";
 import { getDictionary, type Locale } from "@/i18n";
 
 export type LeadFormType =
@@ -116,7 +117,7 @@ export function LeadForm({
     return (
       <div className="lead-form lead-form--done" role="status">
         <div className="lead-form__done-icon" aria-hidden>
-          ✅
+          <Glyph name="check" />
         </div>
         <h3 className="lead-form__done-title">{successTitle ?? t.successTitle}</h3>
         <p className="lead-form__done-text">{successText ?? t.successText}</p>

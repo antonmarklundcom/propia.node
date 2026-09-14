@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Glyph } from "@/components/Glyph";
 import { formatUsd } from "@/lib/format";
 import type { ProjectCard as Card } from "@/lib/queries";
 
@@ -35,7 +36,7 @@ export function ProjectCard({ card }: { card: Card }) {
         {delivery && <span className="project-card__delivery">{delivery}</span>}
         {!card.heroImageUrl && (
           <span className="project-card__placeholder" aria-hidden>
-            🏗️
+            <Glyph name="building" />
           </span>
         )}
       </div>
