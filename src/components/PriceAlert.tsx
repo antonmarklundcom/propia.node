@@ -1,5 +1,6 @@
 "use client";
 
+import { Glyph } from "@/components/Glyph";
 import { useState } from "react";
 import { getDictionary, type Locale } from "@/i18n";
 
@@ -59,7 +60,7 @@ export function PriceAlert({
   if (!open) {
     return (
       <button className="price-alert" onClick={() => setOpen(true)}>
-        🔔 {d.common.priceAlert}
+        <Glyph name="clock" /> {d.common.priceAlert}
       </button>
     );
   }

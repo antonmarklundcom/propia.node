@@ -63,11 +63,11 @@ export const esContactForm = {
   submitIdle: "Enviar Mensaje",
   submitSending: "Enviando…",
   submitSent: "¡Mensaje enviado!",
-  waContinue: "💬 Continuar en WhatsApp",
+  waContinue: "Continuar en WhatsApp",
   errorText: "No pudimos enviar tu consulta. Probá de nuevo en unos segundos.",
-  directNote: "✓ Tu consulta llega directamente al vendedor",
-  waLinkLabel: "💬 WhatsApp",
-  phoneLinkLabel: "📞 Ver teléfono",
+  directNote: "Tu consulta llega directamente al vendedor",
+  waLinkLabel: "WhatsApp",
+  phoneLinkLabel: "Ver teléfono",
 } as const;
 
 /** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
@@ -1667,7 +1667,7 @@ export const esListing = {
   priceRentLabel: "Alquiler",
   priceRentPeriod: "/mes",
 
-  financingHead: (program: string) => `💳 Con ${program}`,
+  financingHead: (program: string) => `Con ${program}`,
   financingStateProgram: " (programa estatal)",
   financingCuotaLabel: "Cuota estimada",
   financingTermsLabel: "Condiciones",
@@ -1675,7 +1675,7 @@ export const esListing = {
   financingFoot:
     "Estimación referencial para esta propiedad — la aprobación depende del banco y del programa.",
 
-  detailsTitle: "☰ Detalles de la propiedad",
+  detailsTitle: "Detalles de la propiedad",
   detailBarrio: "Barrio",
   detailCity: "Ciudad",
   detailType: "Tipo",
@@ -1684,9 +1684,9 @@ export const esListing = {
   detailLand: "Terreno",
   detailParking: "Cocheras",
 
-  amenitiesTitle: "✨ Comodidades de la propiedad",
-  descriptionTitle: "📄 Descripción",
-  locationTitle: "📍 Ubicación aproximada",
+  amenitiesTitle: "Comodidades de la propiedad",
+  descriptionTitle: "Descripción",
+  locationTitle: "Ubicación aproximada",
 
   sellerFallback: (brand: string) => `Publicado en ${brand}`,
   sellerVerified: "Verificado",
@@ -1702,8 +1702,8 @@ export const esListing = {
   fromAgencyTitleLead: "Más de",
   fromAgencyFallback: "esta inmobiliaria",
 
-  moreInBarrio: (barrio: string) => `📍 Más propiedades en ${barrio}`,
-  moreInCity: (city: string) => `🏙 Todas las propiedades en ${city}`,
+  moreInBarrio: (barrio: string) => `Más propiedades en ${barrio}`,
+  moreInCity: (city: string) => `Todas las propiedades en ${city}`,
 
   ctaBarWhatsapp: "Contactar por WhatsApp",
   ctaBarConsult: "Consultar",

@@ -1,5 +1,6 @@
 "use client";
 
+import { Glyph } from "@/components/Glyph";
 import { useState } from "react";
 import { getDictionary, type Locale } from "@/i18n";
 import { waLink, waPhone } from "@/lib/wa";
@@ -22,6 +23,7 @@ import { waLink, waPhone } from "@/lib/wa";
  * sidebar) and "panel" (two-column, for the full-width bottom section).
  */
 export function ContactForm({
+  id,
   listingPublicId,
   contactWhatsapp,
   leadType,
@@ -29,6 +31,7 @@ export function ContactForm({
   variant = "card",
   locale = "es",
 }: {
+  id?: string;
   /** Omit for non-listing inquiries (e.g. a project page). */
   listingPublicId?: string;
   contactWhatsapp: string | null;
@@ -117,14 +120,14 @@ export function ContactForm({
   );
 
   return (
-    <form className={`contact-form contact-form--${variant}`} onSubmit={onSubmit}>
+    <form id={id} className={`contact-form contact-form--${variant}`} onSubmit={onSubmit}>
       {fieldsRow}
 
       <label className="contact-form__field">
         <span className="contact-form__label">{t.phoneLabel}</span>
         <div className="contact-form__phone">
           <span className="contact-form__phone-prefix" aria-hidden>
-            🇵🇾 +595
+            <Glyph name="phone" /> +595
           </span>
           <input
             className="contact-form__input contact-form__input--phone"
@@ -180,7 +183,7 @@ export function ContactForm({
           target="_blank"
           rel="noopener noreferrer"
         >
-          {t.waContinue}
+          <Glyph name="whatsapp" /> {t.waContinue}
         </a>
       )}
       {state === "error" && (
@@ -195,7 +198,7 @@ export function ContactForm({
             operator's inbox instead, and promising otherwise is a lie the
             buyer can't check (audit F4). */}
         {waHref && (
-          <span className="contact-form__note">{t.directNote}</span>
+          <span className="contact-form__note"><Glyph name="check" /> {t.directNote}</span>
         )}
         {waHref && (
           <div className="contact-form__altlinks">
@@ -205,14 +208,14 @@ export function ContactForm({
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t.waLinkLabel}
+              <Glyph name="whatsapp" /> {t.waLinkLabel}
             </a>
             {waPhone(contactWhatsapp) && (
               <a
                 className="contact-form__altlink"
                 href={`tel:+${waPhone(contactWhatsapp)}`}
               >
-                {t.phoneLinkLabel}
+                <Glyph name="phone" /> {t.phoneLinkLabel}
               </a>
             )}
           </div>

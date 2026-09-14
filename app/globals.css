@@ -2259,26 +2259,15 @@ body {
 /* Rendered instead of .detail-gallery, not inside it, so it carries its own
    bottom margin (it used to sit flush against the facts strip). */
 .detail-gallery__empty {
+  position: relative;
+  width: 100%;
   margin-bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  aspect-ratio: 21 / 9;
+  aspect-ratio: 16 / 9;
   border-radius: 0;
-  background: linear-gradient(135deg, var(--color-accent-soft) 0%, var(--color-border) 100%);
-}
-
-.detail-gallery__empty-icon {
-  font-size: 48px;
-  filter: saturate(0.7) opacity(0.85);
-}
-
-.detail-gallery__empty-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(27, 31, 36, 0.5);
+  overflow: hidden;
+  background: var(--overlay-card),
+    url("/img/listing-fallback.webp") center / cover,
+    var(--color-primary);
 }
 
 @media (max-width: 640px) {
@@ -2292,7 +2281,7 @@ body {
   .detail-gallery__thumb {
     aspect-ratio: 4 / 3;
   }
-  /* 21:9 is a 100px-tall sliver on a phone. */
+  /* Keep the fallback photograph substantial on phones. */
   .detail-gallery__empty {
     aspect-ratio: 4 / 3;
   }
@@ -2310,24 +2299,29 @@ body {
 .listing-facts {
   list-style: none;
   margin: 0 0 14px;
-  padding: 0;
+  padding: 0 0 14px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px 20px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .listing-facts__item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 0;
+  border: 0;
   border-radius: 0;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  font-size: 14px;
-  font-weight: 600;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--color-ink);
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .listing-facts__item--muted {
@@ -2361,9 +2355,7 @@ body {
 }
 
 .listing-facts__item--stage {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-ink);
 }
 
 /* Financing / cuota module — the differentiator, so it gets a real box. */
@@ -2475,15 +2467,19 @@ body {
 }
 
 .listing-section__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 14px;
-  font-size: 18px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
 }
 
 .listing-details-grid {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 24px;
 }
 
@@ -2498,18 +2494,28 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px dashed var(--color-border);
-  font-size: 14px;
+  min-width: 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .listing-details-grid__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  text-transform: uppercase;
   color: var(--color-ink-secondary);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .listing-details-grid__value {
   margin: 0;
-  font-weight: 700;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
   color: var(--color-ink);
   text-align: right;
   overflow-wrap: anywhere;
@@ -2694,11 +2700,13 @@ body {
   justify-content: center;
   width: 44px;
   height: 44px;
+  border: 1px solid var(--color-border);
   border-radius: 0;
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--color-background);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 500;
   flex-shrink: 0;
 }
 
@@ -2715,10 +2723,8 @@ body {
   width: 16px;
   height: 16px;
   margin-left: 6px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 10px;
+  border-radius: 0;
+  color: var(--color-primary);
   vertical-align: middle;
 }
 
@@ -2894,19 +2900,23 @@ body {
 }
 
 .contact-form__label {
+  font-family: var(--font-sans);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--color-ink-secondary);
 }
 
 .contact-form__input,
 .contact-form__textarea {
   width: 100%;
+  min-width: 0;
   padding: 9px 11px;
   border: 1px solid var(--color-border);
   border-radius: 0;
-  font-size: 14px;
-  font-family: inherit;
+  font-size: 15px;
+  font-family: var(--font-sans);
   color: var(--color-ink);
   background: #fff;
   box-sizing: border-box;
@@ -2914,7 +2924,7 @@ body {
 
 .contact-form__input:focus,
 .contact-form__textarea:focus {
-  outline: 2px solid var(--color-primary);
+  outline: 1px solid var(--color-accent);
   outline-offset: 1px;
 }
 
@@ -2955,10 +2965,13 @@ body {
   padding: 6px 11px;
   border-radius: 0;
   border: 1px solid var(--color-border);
-  background: var(--color-background);
+  background: transparent;
   color: var(--color-ink);
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   cursor: pointer;
   transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
 }
@@ -2974,19 +2987,27 @@ body {
 }
 
 .contact-form__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
   padding: 0.9rem 1rem;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 0;
-  background: var(--color-ink);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   cursor: pointer;
-  transition: filter 0.14s ease;
+  transition: background 0.14s ease;
 }
 
 .contact-form__submit:hover {
-  filter: brightness(1.15);
+  background: var(--button-primary-bg-hover);
 }
 
 .contact-form__submit:disabled {
@@ -2998,10 +3019,11 @@ body {
    button (rendered link, not window.open: popup blockers eat post-await
    opens on iOS). */
 .contact-form__submit--wa {
-  display: block;
   text-align: center;
   text-decoration: none;
-  background: #1fa855;
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-ink);
 }
 
 .contact-form__error {
@@ -3045,12 +3067,9 @@ body {
   .contact-form__row--split {
     flex-direction: column;
   }
-  /* iOS Safari zooms the viewport whenever a focused control's text is under
-     16px, and never zooms back out — the form was 14px, so tapping "Nombre"
-     left the visitor on a sideways-scrolling page. */
   .contact-form__input,
   .contact-form__textarea {
-    font-size: 16px;
+    font-size: 15px;
     padding: 11px 12px;
   }
   /* 30px-tall chips are below any sane touch target. */
@@ -3069,12 +3088,11 @@ body {
 /* Full-width contact panel near the bottom of the listing page */
 .contact-panel {
   margin-top: 40px;
-  padding: 28px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  padding: 28px 0;
+  background: transparent;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   border-radius: 0;
-  /* Target of the mobile CTA bar's "Consultar" link — clear the sticky header. */
-  scroll-margin-top: 72px;
 }
 
 .contact-panel__title {
@@ -3150,14 +3168,14 @@ body {
    below is what that sticky slot is actually for. */
 .listing-detail__aside {
   position: static;
-  background: var(--color-surface);
+  background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 0;
   padding: 16px;
-  box-shadow: 0 2px 12px rgba(16, 24, 40, 0.06);
+  box-shadow: none;
 }
 
-@media (min-width: 860px) {
+@media (min-width: 901px) {
   .listing-detail__layout {
     grid-template-columns: 2fr 1fr;
     align-items: start;
@@ -3167,7 +3185,7 @@ body {
     top: 88px;
     max-height: calc(100vh - 104px);
     overflow-y: auto;
-    box-shadow: 0 4px 16px rgba(16, 24, 40, 0.08);
+    box-shadow: none;
   }
 }
 
@@ -3201,18 +3219,8 @@ body {
     padding-bottom: 84px;
   }
 
-  /* On one column the sidebar form landed directly above the identical
-     full-width .contact-panel form — ~450px of duplicate fields to scroll
-     past. Mobile keeps the seller identity here and contacts through the
-     panel (or the bar above). */
-  .listing-detail__aside .contact-form {
-    display: none;
-  }
   .listing-detail__aside {
     padding: 14px 16px;
-  }
-  .listing-detail__aside .seller-card__head {
-    margin-bottom: 0;
   }
 }
 
@@ -3277,14 +3285,16 @@ body {
 }
 
 .similar-listings__title {
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
   margin: 0 0 12px;
 }
 
 .similar-listings__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--grid-gap);
 }
 
 /* ---- Listing location map -------------------------------------------------- */
@@ -9236,5 +9246,103 @@ summary.panel-btn::-webkit-details-marker {
   }
   .ph-hero__subtitle {
     max-width: none;
+  }
+}
+
+/* == C3-a == */
+/* New rules stay scoped to the detail page or its shared contact form. */
+.listing-detail__layout svg,
+.contact-form svg {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.listing-detail__layout .listing-price__amount {
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 1.1;
+  font-weight: 500;
+  color: var(--color-accent);
+}
+.listing-detail__layout .cuota-chip,
+.listing-detail__layout .financing-box__value:not(.financing-box__value--muted) {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-ink-secondary);
+}
+.listing-detail__layout .cuota-chip {
+  display: block;
+  padding: 8px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.listing-detail__layout .listing-amenities__check {
+  border-radius: 0;
+  background: transparent;
+}
+.listing-detail__layout .price-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: normal;
+}
+.listing-detail__layout .price-alert:hover {
+  border-color: var(--color-ink);
+}
+.listing-detail__layout .price-alert__submit {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+  border-radius: 0;
+}
+.contact-form[id="contacto"] {
+  scroll-margin-top: 96px;
+}
+.contact-form__field,
+.seller-card__head > div {
+  min-width: 0;
+}
+.seller-card__name {
+  overflow-wrap: anywhere;
+}
+.seller-card__logo {
+  flex-shrink: 0;
+}
+.contact-form__phone-prefix,
+.contact-form__altlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.contact-form__altlinks {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.contact-form__submit--wa:hover {
+  background: var(--color-accent-soft);
+}
+.contact-panel__title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+}
+.contact-panel__subtitle {
+  font-family: var(--font-sans);
+}
+@media (max-width: 1024px) {
+  .similar-listings__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .contact-panel {
+    display: none;
   }
 }

@@ -180,11 +180,11 @@ export const enContactForm = {
   submitIdle: "Send Message",
   submitSending: "Sending…",
   submitSent: "Message sent!",
-  waContinue: "💬 Continue on WhatsApp",
+  waContinue: "Continue on WhatsApp",
   errorText: "We couldn't send your inquiry. Please try again in a moment.",
-  directNote: "✓ Your inquiry goes straight to the seller",
-  waLinkLabel: "💬 WhatsApp",
-  phoneLinkLabel: "📞 See phone number",
+  directNote: "Your inquiry goes straight to the seller",
+  waLinkLabel: "WhatsApp",
+  phoneLinkLabel: "See phone number",
 } as const;
 
 export const enSearchBar = {
@@ -869,7 +869,7 @@ export const enListing = {
   priceRentLabel: "Rent",
   priceRentPeriod: "/month",
 
-  financingHead: (program: string) => `💳 With ${program}`,
+  financingHead: (program: string) => `With ${program}`,
   financingStateProgram: " (government programme)",
   financingCuotaLabel: "Estimated monthly payment",
   financingTermsLabel: "Terms",
@@ -878,7 +878,7 @@ export const enListing = {
   financingFoot:
     "An indicative estimate for this property — approval depends on the bank and on the programme.",
 
-  detailsTitle: "☰ Property details",
+  detailsTitle: "Property details",
   detailBarrio: "Neighbourhood",
   detailCity: "City",
   detailType: "Type",
@@ -887,9 +887,9 @@ export const enListing = {
   detailLand: "Land",
   detailParking: "Parking",
 
-  amenitiesTitle: "✨ Property features",
-  descriptionTitle: "📄 Description",
-  locationTitle: "📍 Approximate location",
+  amenitiesTitle: "Property features",
+  descriptionTitle: "Description",
+  locationTitle: "Approximate location",
 
   sellerFallback: (brand: string) => `Listed on ${brand}`,
   sellerVerified: "Verified",
@@ -906,8 +906,8 @@ export const enListing = {
   fromAgencyTitleLead: "More from",
   fromAgencyFallback: "this agency",
 
-  moreInBarrio: (barrio: string) => `📍 More properties in ${barrio}`,
-  moreInCity: (city: string) => `🏙 All properties in ${city}`,
+  moreInBarrio: (barrio: string) => `More properties in ${barrio}`,
+  moreInCity: (city: string) => `All properties in ${city}`,
 
   ctaBarWhatsapp: "Contact on WhatsApp",
   ctaBarConsult: "Enquire",
