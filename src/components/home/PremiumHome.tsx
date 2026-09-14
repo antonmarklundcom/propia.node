@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { VerticalConfig } from "@/config/verticals";
 import type { Dictionary, Locale } from "@/i18n";
 import { numberLocaleFor } from "@/i18n";
@@ -42,7 +42,7 @@ import { waLink } from "@/lib/wa";
  *    quietly become something else.
  */
 
-/** `"a\nb"` → `a<br />b`. Used by the trust row and the about headline. */
+/** `"a\nb"` → `a<br />b`. Used by the about headline. */
 function lines(text: string): ReactNode[] {
   return text.split("\n").flatMap((part, i) =>
     i === 0 ? [part] : [<br key={i} />, part],
@@ -252,6 +252,7 @@ export function PremiumHome({
   const sellHref = sellerCtaHref(vertical.key);
   const heroWaHref = waLink(CONTACT_WHATSAPP, t.waPrefill(brand));
   const contactWaHref = waLink(CONTACT_WHATSAPP);
+  const trustItems = t.trust.filter((item) => item.icon !== "clock" || contactWaHref);
   const alt = (slug: string) => t.imgAlt[slug] ?? "";
   // Only the Spanish door has /preguntas-frecuentes; the English door's FAQ
   // lives on the home page and nowhere else, so it gets no "see all" link
@@ -260,7 +261,7 @@ export function PremiumHome({
   const zones = zoneTiles.filter((z) => cities.some((c) => c.slug === z.slug));
 
   return (
-    <main className="premium-home">
+    <main className="premium-home ph-home">
       {/* The default template renders this at the top level for every other
           door; a dedicated home component has to carry its own, or the door
           loses its FAQPage structured data entirely. */}
@@ -304,8 +305,8 @@ export function PremiumHome({
                   </Link>
                 )}
               </div>
-              <ul className="ph-hero__trust">
-                {t.trust.map((item) => (
+              <ul className="ph-hero__trust" data-count={trustItems.length} tabIndex={0}>
+                {trustItems.map((item) => (
                   <li key={item.icon} className="ph-hero__trust-item">
                     <LineIcon
                       glyph={TRUST_ICONS[item.icon]}
@@ -313,7 +314,7 @@ export function PremiumHome({
                       className="ph-hero__trust-icon"
                     />
                     <span className="ph-hero__trust-label">
-                      {lines(item.label)}
+                      {item.label}
                     </span>
                   </li>
                 ))}
@@ -324,25 +325,25 @@ export function PremiumHome({
             <div className="ph-hero__search">
               <p className="ds-label ph-hero__search-title">{t.searchTitle}</p>
               <SearchBar cities={cities} locale={locale} />
-              <p className="ph-hero__stat">
-                {total > 0
-                  ? d.home.heroStatCount(total.toLocaleString(numberLocale))
-                  : d.home.heroStatCountEmpty}
-              </p>
             </div>
+            <p className="ph-hero__stat">
+              {total > 0
+                ? d.home.heroStatCount(total.toLocaleString(numberLocale))
+                : d.home.heroStatCountEmpty}
+            </p>
           </div>
         </section>
       )}
 
       {sections.includes("destacadas") && recent.length > 0 && (
-        <section className="ds-section ds-container">
+        <section className="ds-section ds-container ph-section ph-section--cream">
           <div className="home-section__head">
             <h2 className="ph-h2">{t.featuredTitle}</h2>
             <Link className="ds-link-underline" href="/venta/asuncion">
               {t.featuredMore}
             </Link>
           </div>
-          <div className="ph-grid-4">
+          <div className="ph-grid-4 ph-featured">
             {recent.slice(0, 8).map((card) => (
               <ListingCard key={card.id} card={card} />
             ))}
@@ -351,7 +352,7 @@ export function PremiumHome({
       )}
 
       {sections.includes("tipos") && (
-        <section className="ds-section ds-container">
+        <section className="ds-section ds-container ph-section ph-section--cream ph-section--tight">
           <h2 className="ph-h2 ph-h2--centered">{t.typesTitle}</h2>
           <div className="ph-types">
             {TYPE_TILES.map((tile) => (
@@ -392,7 +393,7 @@ export function PremiumHome({
       )}
 
       {sections.includes("servicios") && (
-        <section className="ds-section ds-container">
+        <section className="ds-section ds-container ph-section ph-section--cream ph-section--tight">
           <h2 className="ph-h2 ph-h2--centered">{t.servicesTitle}</h2>
           <div className="ph-services">
             {t.services.map((s) => (
@@ -420,14 +421,17 @@ export function PremiumHome({
       )}
 
       {sections.includes("zonas") && zones.length > 0 && (
-        <section className="ds-section ds-container" id="zonas">
+        <section className="ds-section ds-container ph-section ph-section--cream" id="zonas">
           <div className="home-section__head">
             <h2 className="ph-h2">{t.zonesTitle}</h2>
             <Link className="ds-link-underline" href="/venta/asuncion">
               {t.zonesMore}
             </Link>
           </div>
-          <div className="ph-zones">
+          <div
+            className="ph-zones"
+            style={{ "--ph-zone-count": zones.length } as CSSProperties}
+          >
             {zones.map((z) => (
               <Link
                 key={z.slug}
@@ -452,7 +456,7 @@ export function PremiumHome({
       )}
 
       {sections.includes("como-funciona") && (
-        <section className="ds-section ds-section--dark ph-how">
+        <section className="ds-section ds-section--dark ph-section ph-how">
           <div className="ds-container">
             <h2 className="ph-h2 ph-h2--centered ph-h2--on-dark">
               {t.howTitle}
@@ -481,7 +485,7 @@ export function PremiumHome({
       )}
 
       {sections.includes("faq-contacto") && (
-        <section className="ds-section ds-container">
+        <section className="ds-section ds-container ph-section ph-section--cream">
           <div className="ph-faqcontact">
             <div className="ph-faq">
               <h2 className="ph-h2">{d.home.faqTitle}</h2>
@@ -517,6 +521,35 @@ export function PremiumHome({
                   </span>
                 </a>
               )}
+              <Link className="ph-contact__row" href="/contacto">
+                <LineIcon
+                  glyph={
+                    <>
+                      <rect x="3" y="5" width="18" height="14" rx="1" />
+                      <path d="m3 6 9 7 9-7" />
+                    </>
+                  }
+                  size={18}
+                  className="ph-contact__icon"
+                />
+                <span className="ph-contact__value">{t.contactFormLabel}</span>
+              </Link>
+              <Link className="ph-contact__row" href="/publicar">
+                <LineIcon
+                  glyph={SERVICE_ICONS.vender}
+                  size={18}
+                  className="ph-contact__icon"
+                />
+                <span className="ph-contact__value">{t.contactPublishLabel}</span>
+              </Link>
+              <div className="ph-contact__row ph-contact__row--static">
+                <LineIcon
+                  glyph={TRUST_ICONS.clock}
+                  size={18}
+                  className="ph-contact__icon"
+                />
+                <span className="ph-contact__value">{t.contactHours}</span>
+              </div>
               {/* Null today, on purpose (CLAUDE.md): never a placeholder. */}
               {CONTACT_EMAIL && (
                 <a className="ph-contact__row" href={`mailto:${CONTACT_EMAIL}`}>

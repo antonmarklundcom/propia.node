@@ -3045,6 +3045,10 @@ export const esPremium = {
   contactTitle: "Contactanos",
   contactWhatsapp: "Escribinos por WhatsApp",
   contactLocation: "Asunción, Paraguay",
+  contactFormLabel: "Formulario de contacto",
+  contactPublishLabel: "Publicá tu propiedad",
+  // Existing marketplace /contacto hours, currently hardcoded on that page.
+  contactHours: "Lunes a viernes, 8:00 a 18:00",
   contactFormCta: "Enviar consulta",
   contactHref: "/contacto",
   imgAlt: {
