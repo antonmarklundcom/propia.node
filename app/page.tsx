@@ -184,7 +184,7 @@ export async function generateMetadata(): Promise<Metadata> {
         ? `${d.directory.metaTitle} — ${brand}`
         : isRental
           ? `${brand} — ${d.rental.metaTagline}`
-          : `${brand} — ${brandTaglineFor("es")}`,
+          : `${brand} — ${brandTaglineFor(vertical.locale)}`,
     },
     description: isDirectory
       ? d.directory.metaDescription(brand)
