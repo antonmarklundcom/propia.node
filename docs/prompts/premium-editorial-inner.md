@@ -162,6 +162,8 @@ and new `.precios-*` rules only), `docs/log/c4b.md` (landed, not verified,
 deviations). Run typecheck, verify:i18n and a Unicode-aware emoji search
 over these four files; report failures. No git commands or build for this task.
 
+Follow-up C4c: `/precios/[ciudad]` follows the same light PageHero and narrow Section treatment, with a scoped editorial medians table and muted method / thin-sample notes.
+
 ## Definition of done (per group)
 
 - `npm run typecheck`, `npm run verify:i18n` green in the sandbox; the director

@@ -9895,3 +9895,65 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink-secondary);
   line-height: 1.7;
 }
+
+/* City price detail: editorial table and supporting notes. */
+.precios-city .precios-city__back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  margin-bottom: 24px;
+  font: 400 12px/1.5 var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.precios-city .precios-table__wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+}
+.precios-city .precios-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  border: 0;
+  border-radius: 0;
+}
+.precios-city .precios-table :is(th, td) {
+  padding: 16px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.precios-city .precios-table th {
+  font: 400 11px/1.5 var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+.precios-city .precios-table td {
+  font: 400 15px/1.6 var(--font-sans);
+  color: var(--color-ink);
+}
+.precios-city .precios-table .precios-table__num {
+  text-align: right;
+  white-space: nowrap;
+}
+.precios-city .precios-table td.precios-table__num {
+  font: 400 20px/1.4 var(--font-display);
+}
+.precios-city .precios-table__caveat {
+  color: var(--color-ink-secondary);
+}
+.precios-city :is(.precios-city__empty, .precios-city__method, .precios-city__thin-note) {
+  margin: 0;
+  font: 400 15px/1.8 var(--font-sans);
+  color: var(--color-ink-secondary);
+}
+.precios-city .precios-city__thin-note {
+  margin-bottom: 24px;
+}

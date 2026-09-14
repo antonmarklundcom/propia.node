@@ -11,6 +11,7 @@ import { categoryUrl } from "@/lib/urls";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
+import { PageHero, Section } from "@/components/MarketingUI";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,7 @@ export default async function CityPricesPage({ params }: Params) {
   const { city, cells, period } = prices;
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "1rem" }}>
+    <main className="precios-city">
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
@@ -72,29 +73,30 @@ export default async function CityPricesPage({ params }: Params) {
         ]}
       />
 
-      <p>
-        <Link className="panel-btn" href="/precios">
+      <PageHero
+        tone="light"
+        kicker={brand}
+        title={t.cityTitle(city.name)}
+        subtitle={t.citySubtitle(brand, city.name, period)}
+      />
+
+      <Section width="narrow">
+        <Link className="precios-city__back" href="/precios">
           {t.backToPrices}
         </Link>
-      </p>
-
-      <h1 style={{ fontSize: 24 }}>{t.cityTitle(city.name)}</h1>
-      <p style={{ color: "#55655F" }}>
-        {t.citySubtitle(brand, city.name, period)}
-      </p>
 
       {cells.length === 0 ? (
-        <p className="panel-empty">{t.emptyCity}</p>
+        <p className="precios-city__empty">{t.emptyCity}</p>
       ) : (
-        <div className="panel-table__wrap">
-          <table className="panel-table precios-table">
+        <div className="precios-table__wrap">
+          <table className="precios-table">
             <thead>
               <tr>
                 <th>{t.tableType}</th>
                 <th>{t.tableOperation}</th>
-                <th className="panel-table__num">{t.tableMedian}</th>
-                <th className="panel-table__num">{t.tableMedianM2}</th>
-                <th className="panel-table__num">{t.tableSample}</th>
+                <th className="precios-table__num">{t.tableMedian}</th>
+                <th className="precios-table__num">{t.tableMedianM2}</th>
+                <th className="precios-table__num">{t.tableSample}</th>
                 <th />
               </tr>
             </thead>
@@ -102,29 +104,29 @@ export default async function CityPricesPage({ params }: Params) {
               {cells.map((cell) => (
                 <tr
                   key={`${cell.propertyType}-${cell.operation}`}
-                  className={cell.reliable ? undefined : "precios-row--thin"}
+                  className={cell.reliable ? undefined : "precios-table__row--thin"}
                 >
                   <td>{d.publicUi.propertyTypes[cell.propertyType]}</td>
                   <td>{d.publicUi.operations[cell.operation]}</td>
-                  <td className="panel-table__num">
+                  <td className="precios-table__num">
                     {cell.medianPriceUsd != null
                       ? formatUsd(cell.medianPriceUsd, numberLocale)
                       : "—"}
                   </td>
-                  <td className="panel-table__num">
+                  <td className="precios-table__num">
                     {cell.medianPriceM2Usd != null
                       ? formatUsd(cell.medianPriceM2Usd, numberLocale)
                       : "—"}
                   </td>
-                  <td className="panel-table__num">
+                  <td className="precios-table__num">
                     {cell.sampleSize}
                     {!cell.reliable && (
                       <span
-                        className="precios-caveat"
+                        className="precios-table__caveat"
                         title={t.fewSamples}
                       >
                         {" "}
-                        ⚠
+                        †
                       </span>
                     )}
                   </td>
@@ -148,18 +150,17 @@ export default async function CityPricesPage({ params }: Params) {
         </div>
       )}
 
+      </Section>
+
+      <Section title={t.methodTitle} tone="muted" width="narrow">
       {cells.some((c) => !c.reliable) && (
-        <p className="precios-thin-note">
-          ⚠ {t.fewSamples} (&lt; {MIN_RELIABLE_SAMPLE})
+        <p className="precios-city__thin-note">
+          † {t.fewSamples} (&lt; {MIN_RELIABLE_SAMPLE})
         </p>
       )}
 
-      <section className="precios-method">
-        <h2 style={{ fontSize: 16, margin: "0 0 .5rem" }}>
-          {t.methodTitle}
-        </h2>
-        <p style={{ margin: 0 }}>{t.methodBody(brand)}</p>
-      </section>
+        <p className="precios-city__method">{t.methodBody(brand)}</p>
+      </Section>
     </main>
   );
 }
