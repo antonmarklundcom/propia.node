@@ -8,6 +8,7 @@ import { currentLocale, dict } from "@/i18n/server";
 import { numberLocaleFor, type Dictionary } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
 import { ContactForm } from "@/components/ContactForm";
+import { Glyph } from "@/components/Glyph";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
 import { siteOrigin } from "@/lib/origin";
@@ -66,7 +67,7 @@ export default async function ProjectPage({ params }: Params) {
   const waMessage = c.inquiry(brand, project.name, canonical);
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
+    <main className="mk-project-page">
       <nav className="breadcrumb-nav" aria-label={c.breadcrumbLabel}>
         <Link className="breadcrumb-nav__link" href="/">
           {c.home}</Link>
@@ -89,7 +90,7 @@ export default async function ProjectPage({ params }: Params) {
         </span>
       </nav>
 
-      <h1 className="listing-title">{project.name}</h1>
+      <h1 className="mk-hero__title">{project.name}</h1>
 
       {/* Hero */}
       <div
@@ -108,7 +109,7 @@ export default async function ProjectPage({ params }: Params) {
         {!project.heroImageUrl && (
           <>
             <span className="project-hero__icon" aria-hidden>
-              🏗️
+              <Glyph name="home" size={24} />
             </span>
             <span className="project-hero__label">{c.imagesSoon}</span>
           </>
@@ -123,13 +124,13 @@ export default async function ProjectPage({ params }: Params) {
                 {t.stageLabel[project.stage] ?? project.stage}
               </li>
             )}
-            {delivery && <li className="listing-facts__item">📅 {delivery}</li>}
+            {delivery && <li className="listing-facts__item"><Glyph name="clock" /> {delivery}</li>}
             <li className="listing-facts__item">
-              🏢 {t.typeLabel[project.projectType] ?? project.projectType}
+              <Glyph name="building" /> {t.typeLabel[project.projectType] ?? project.projectType}
             </li>
             {units.length > 0 && (
               <li className="listing-facts__item">
-                🔑 {units.length}{c.unitsSuffix}</li>
+                <Glyph name="key" /> {units.length}{c.unitsSuffix}</li>
             )}
           </ul>
 
@@ -144,7 +145,7 @@ export default async function ProjectPage({ params }: Params) {
 
           {project.descriptionEs && (
             <section className="listing-section">
-              <h2 className="listing-section__title">{c.aboutHeading}</h2>
+              <h2 className="mk-section__title"><Glyph name="building" /> {c.aboutHeading}</h2>
               <p
                 style={{
                   lineHeight: 1.6,
@@ -159,7 +160,7 @@ export default async function ProjectPage({ params }: Params) {
 
           {project.lat && project.lng && (
             <section className="listing-section">
-              <h2 className="listing-section__title">{c.locationHeading}</h2>
+              <h2 className="mk-section__title"><Glyph name="pin" /> {c.locationHeading}</h2>
               {location && (
                 <p className="listing-location__caption">{location.name}</p>
               )}
@@ -169,7 +170,7 @@ export default async function ProjectPage({ params }: Params) {
 
           {units.length > 0 && (
             <section className="listing-section">
-              <h2 className="listing-section__title">{c.unitsHeading}</h2>
+              <h2 className="mk-section__title"><Glyph name="key" /> {c.unitsHeading}</h2>
               <div className="units-table__wrap">
                 <table className="units-table">
                   <thead>
@@ -222,11 +223,7 @@ export default async function ProjectPage({ params }: Params) {
               />
             ) : (
               <div className="seller-card__avatar" aria-hidden>
-                {(developer?.name ?? "P")
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((w) => w[0]?.toUpperCase() ?? "")
-                  .join("")}
+                <Glyph name={developer ? "building" : "home"} size={24} />
               </div>
             )}
             <div>
@@ -250,19 +247,26 @@ export default async function ProjectPage({ params }: Params) {
 
       {otherProjects.length > 0 && (
         <section className="similar-listings">
-          <h2 className="similar-listings__title">
+          <h2 className="mk-section__title">
             {c.otherPrefix}{developer?.name ?? c.developerFallback}
           </h2>
-          <div className="home-row">
+          <div className="mk-project-grid">
             {otherProjects.map((p) => (
-              <ProjectCard key={p.id} card={p} />
+              <div className="mk-project-item" key={p.id}>
+                <ProjectCard card={p} />
+                {!p.heroImageUrl && (
+                  <div className="mk-project-fallback" aria-hidden>
+                    <span><Glyph name="home" size={24} /></span>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </section>
       )}
 
       <section className="contact-panel">
-        <h2 className="contact-panel__title">{c.contactHeading}</h2>
+        <h2 className="mk-section__title">{c.contactHeading}</h2>
         <p className="contact-panel__subtitle">
           {c.contactBody}</p>
         <ContactForm

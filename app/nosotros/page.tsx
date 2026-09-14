@@ -50,22 +50,22 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const principles = (c: Dictionary["aboutPage"]) => [
   {
-    icon: "🔍",
+    icon: "search",
     title: c.principleInformation,
     text: c.principleInformationBody,
   },
   {
-    icon: "🤝",
+    icon: "handshake",
     title: c.principleDirect,
     text: c.principleDirectBody,
   },
   {
-    icon: "🇵🇾",
+    icon: "pin",
     title: c.principleLocal,
     text: c.principleLocalBody,
   },
   {
-    icon: "📐",
+    icon: "area",
     title: c.principleNumbers,
     text: c.principleNumbersBody,
   },
@@ -106,6 +106,7 @@ export default async function NosotrosPage() {
       />
 
       <PageHero
+        tone="dark"
         kicker={c.kicker}
         title={c.heading}
         subtitle={c.intro(brand)}
@@ -117,18 +118,22 @@ export default async function NosotrosPage() {
             stats={[
               {
                 value: stats.listings.toLocaleString(numberLocale),
+                icon: "home",
                 label: c.listings,
               },
               {
                 value: stats.cities.toLocaleString(numberLocale),
+                icon: "pin",
                 label: c.cities,
               },
               {
                 value: stats.agencies.toLocaleString(numberLocale),
+                icon: "building",
                 label: c.agencies,
               },
               {
                 value: stats.projects.toLocaleString(numberLocale),
+                icon: "key",
                 label: c.projects,
               },
             ]}

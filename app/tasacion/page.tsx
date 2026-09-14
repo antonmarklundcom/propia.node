@@ -7,6 +7,7 @@ import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ValuationTool } from "@/components/ValuationTool";
+import { PageHero, Section } from "@/components/MarketingUI";
 import { estimateAction, requestValuationContactAction } from "./actions";
 
 // Reads the city list and (through the actions) live medians.
@@ -34,7 +35,7 @@ export default async function TasacionPage() {
   const [cities, origin] = await Promise.all([listCities(), siteOrigin()]);
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "1rem" }}>
+    <main className="mk-valuation">
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
@@ -44,15 +45,16 @@ export default async function TasacionPage() {
         ]}
       />
 
-      <h1 style={{ fontSize: 26 }}>{t.title}</h1>
-      <p style={{ color: "#55655F" }}>{t.subtitle(brand)}</p>
+      <PageHero title={t.title} subtitle={t.subtitle(brand)} />
 
+      <Section width="narrow">
       <ValuationTool
         locale={locale}
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
         estimate={estimateAction}
         requestContact={requestValuationContactAction}
       />
+      </Section>
     </main>
   );
 }

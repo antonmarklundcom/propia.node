@@ -5,6 +5,7 @@ import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { LeadForm } from "@/components/LeadForm";
+import { Glyph } from "@/components/Glyph";
 import { PageHero, Section } from "@/components/MarketingUI";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
@@ -77,6 +78,7 @@ export default async function ContactoPage() {
       />
 
       <PageHero
+        tone="dark"
         kicker={c.kicker}
         title={c.heading}
         subtitle={c.subtitle}
@@ -117,7 +119,7 @@ export default async function ContactoPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {c.whatsapp}{whatsapp}
+                      <Glyph name="whatsapp" /> <span>{c.whatsapp}{whatsapp}</span>
                     </a>
                   </li>
                 )}
@@ -125,12 +127,12 @@ export default async function ContactoPage() {
                     the left is the channel until then. */}
                 {CONTACT_EMAIL && (
                   <li>
-                    <a href={`mailto:${CONTACT_EMAIL}`}>✉️ {CONTACT_EMAIL}</a>
+                    <a href={`mailto:${CONTACT_EMAIL}`}><Glyph name="mail" /> <span>{CONTACT_EMAIL}</span></a>
                   </li>
                 )}
-                <li>{c.formChannel}</li>
-                <li>{c.location}</li>
-                <li>{c.hours}</li>
+                <li><Glyph name="doc" /> <span>{c.formChannel}</span></li>
+                <li><Glyph name="pin" /> <span>{c.location}</span></li>
+                <li><Glyph name="clock" /> <span>{c.hours}</span></li>
               </ul>
             </div>
 

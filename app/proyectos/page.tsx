@@ -8,6 +8,7 @@ import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ProjectCard } from "@/components/ProjectCard";
+import { Glyph } from "@/components/Glyph";
 import { listAllProjects } from "@/lib/directory-queries";
 import { getFeaturedDevelopers } from "@/lib/queries";
 import {
@@ -34,22 +35,22 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const reasons = (c: Dictionary["projectsPage"]) => [
   {
-    icon: "💸",
+    icon: "money",
     title: c.priceHeading,
     text: c.priceBody,
   },
   {
-    icon: "🗓",
+    icon: "clock",
     title: c.paymentsHeading,
     text: c.paymentsBody,
   },
   {
-    icon: "🎨",
+    icon: "palette",
     title: c.choiceHeading,
     text: c.choiceBody,
   },
   {
-    icon: "🔍",
+    icon: "search",
     title: c.checksHeading,
     text: c.checksBody,
   },
@@ -102,7 +103,14 @@ export default async function ProyectosPage() {
         ) : (
           <div className="mk-project-grid">
             {projects.map((p) => (
-              <ProjectCard key={p.id} card={p} />
+              <div className="mk-project-item" key={p.id}>
+                <ProjectCard card={p} />
+                {!p.heroImageUrl && (
+                  <div className="mk-project-fallback" aria-hidden>
+                    <span><Glyph name="home" size={24} /></span>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
@@ -129,7 +137,7 @@ export default async function ProyectosPage() {
                   />
                 ) : (
                   <div className="mk-dev__logo mk-dev__logo--fallback" aria-hidden>
-                    {d.name.charAt(0)}
+                    <Glyph name="building" size={24} />
                   </div>
                 )}
                 <div className="mk-dev__name">{d.name}</div>

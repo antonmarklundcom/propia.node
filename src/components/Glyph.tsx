@@ -25,6 +25,10 @@ const GLYPHS = {
 
 export type GlyphName = keyof typeof GLYPHS;
 
+export function isGlyphName(name: string): name is GlyphName {
+  return Object.prototype.hasOwnProperty.call(GLYPHS, name);
+}
+
 /** Shared decorative line family; safe in both server and client components. */
 export function Glyph({ name, size = 16, className }: {
   name: GlyphName;

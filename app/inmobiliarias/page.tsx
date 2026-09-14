@@ -11,6 +11,7 @@ import { languageAlternates } from "@/lib/alternates";
 import { currentVertical } from "@/lib/vertical-context";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
+import { Glyph } from "@/components/Glyph";
 import { agencyUrl } from "@/lib/urls";
 import {
   listAgenciesForDirectory,
@@ -157,7 +158,7 @@ export default async function InmobiliariasPage({
                       className="mk-agency__logo mk-agency__logo--fallback"
                       aria-hidden
                     >
-                      {a.name.charAt(0)}
+                      <Glyph name="building" size={24} />
                     </div>
                   )}
                   <div>
@@ -165,7 +166,7 @@ export default async function InmobiliariasPage({
                       {a.name}
                       {a.isVerified && (
                         <span className="mk-agency__verified" title={c.verified}>
-                          ✓
+                          <Glyph name="check" />
                         </span>
                       )}
                     </div>

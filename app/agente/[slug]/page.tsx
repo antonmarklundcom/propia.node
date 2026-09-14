@@ -1,3 +1,4 @@
+import { Glyph } from "@/components/Glyph";
 import { cache } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -128,7 +129,7 @@ export default async function AgentProfilePage({ params }: Params) {
   ];
 
   return (
-    <main className="listing-main">
+    <main className={`listing-main${isDirectory ? "" : " mk-profile"}`}>
       {ix.state === "index" && (
         <JsonLd
           data={[
@@ -247,7 +248,7 @@ export default async function AgentProfilePage({ params }: Params) {
             <img className="agent-profile__logo" src={safeImageUrl(agent.photoUrl) ?? undefined} alt={agent.name} referrerPolicy="no-referrer" />
           ) : (
             <div className="agent-profile__avatar" aria-hidden>
-              {initials || "A"}
+              <Glyph name="building" size={24} />
             </div>
           )}
           <div>
@@ -255,7 +256,7 @@ export default async function AgentProfilePage({ params }: Params) {
               {agent.name}
               {agent.isVerified && (
                 <span className="agent-profile__verified" title={d.agentProfile.verified}>
-                  ✓
+                  <Glyph name="check" />
                 </span>
               )}
             </h1>
@@ -274,7 +275,7 @@ export default async function AgentProfilePage({ params }: Params) {
             {agent.whatsapp && (
               <div className="agent-profile__contact">
                 <a className="contact-form__altlink" href="#contacto">
-                  {d.agentProfile.whatsappLink}
+                  <Glyph name="whatsapp" /> {d.agentProfile.whatsappLink}
                 </a>
               </div>
             )}

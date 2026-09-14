@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Glyph, isGlyphName, type GlyphName } from "./Glyph";
 
 /**
  * Shared building blocks for the hand-authored pages (/nosotros, /planes,
@@ -68,10 +69,9 @@ export function FeatureGrid({
   items,
   columns = 3,
 }: {
-  /** `icon` takes any node — a plain emoji string (every existing caller)
-   *  or an inline stroke SVG (docs/style/inmobiliaria.com.py.md §5 "Qué
-   *  hacemos distinto": "small stroke icon, an H3 and two lines"). */
-  items: { icon?: ReactNode; title: string; text: string }[];
+  /** Glyph names render the shared line family. Legacy nodes remain supported
+   *  for callers outside the editorial inner-page group. */
+  items: { icon?: GlyphName | ReactNode; title: string; text: string }[];
   columns?: 2 | 3 | 4;
 }) {
   return (
@@ -80,7 +80,9 @@ export function FeatureGrid({
         <div key={f.title} className="mk-feature">
           {f.icon && (
             <span className="mk-feature__icon" aria-hidden>
-              {f.icon}
+              {typeof f.icon === "string" && isGlyphName(f.icon)
+                ? <Glyph name={f.icon} size={24} />
+                : f.icon}
             </span>
           )}
           <h3 className="mk-feature__title">{f.title}</h3>
@@ -94,7 +96,7 @@ export function FeatureGrid({
 export function StepList({
   steps,
 }: {
-  steps: { title: string; text: string }[];
+  steps: { icon?: GlyphName; title: string; text: string }[];
 }) {
   return (
     <ol className="mk-steps">
@@ -104,6 +106,7 @@ export function StepList({
             {i + 1}
           </span>
           <div>
+            {s.icon && <Glyph name={s.icon} size={24} className="mk-feature__icon" />}
             <h3 className="mk-step__title">{s.title}</h3>
             <p className="mk-step__text">{s.text}</p>
           </div>
@@ -116,12 +119,13 @@ export function StepList({
 export function StatRow({
   stats,
 }: {
-  stats: { value: string; label: string }[];
+  stats: { icon?: GlyphName; value: string; label: string }[];
 }) {
   return (
     <div className="mk-stats">
       {stats.map((s) => (
         <div key={s.label} className="mk-stat">
+          {s.icon && <Glyph name={s.icon} size={24} className="mk-feature__icon" />}
           <div className="mk-stat__value">{s.value}</div>
           <div className="mk-stat__label">{s.label}</div>
         </div>
