@@ -35,15 +35,17 @@ import { themeFor } from "@/design/themes";
  * file. Do not put the brand back into a page's own title — it will double.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const { name, tagline } = await brandMeta();
+  const { dict } = await import("@/i18n/server");
+  const { name, locale } = await brandMeta();
+  const t = (await dict()).publicUi;
+  const tagline = t.tagline;
   return {
     // Without a metadataBase, Next resolves relative OG images against
     // http://localhost:3000 — an unfetchable og:image and a bare grey card
     // on WhatsApp, the primary share channel here (audit F6).
     metadataBase: new URL(await siteOrigin()),
     title: { default: `${name} — ${tagline}`, template: `%s — ${name}` },
-    description:
-      "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay.",
+    description: t.description,
     // Default Open Graph for every page that doesn't set its own: Next only
     // emits og:* when metadata.openGraph is truthy, so before this the whole
     // category tree, /precios, profiles and legal pages shared as bare links
@@ -52,7 +54,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       siteName: name,
-      locale: "es_PY",
+      locale: locale === "en" ? "en_US" : "es_PY",
       images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
     },
   };

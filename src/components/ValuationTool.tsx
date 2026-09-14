@@ -13,7 +13,7 @@
  */
 import { useState } from "react";
 import Link from "next/link";
-import { esTasacion } from "@/i18n/es";
+import { getDictionary, numberLocaleFor, type Locale } from "@/i18n";
 import { formatUsd } from "@/lib/format";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { ValuationResult } from "@/lib/valuation";
@@ -40,22 +40,28 @@ function publishHref(
   return `/publicar?${qs.toString()}`;
 }
 
-const ERROR_TEXT: Record<string, string> = {
-  bad_area: esTasacion.errorBadArea,
-  unknown_city: esTasacion.errorUnknownCity,
-  no_data: esTasacion.errorNoData,
-  thin_data: esTasacion.errorThinData,
-};
 
 export function ValuationTool({
+  locale,
   cities,
   estimate,
   requestContact,
 }: {
+  locale: Locale;
   cities: { slug: string; name: string }[];
   estimate: typeof estimateAction;
   requestContact: typeof requestValuationContactAction;
 }) {
+  const d = getDictionary(locale);
+  const t = d.tasacion;
+  const numberLocale = numberLocaleFor(locale);
+const ERROR_TEXT: Record<string, string> = {
+  bad_area: t.errorBadArea,
+  unknown_city: t.errorUnknownCity,
+  no_data: t.errorNoData,
+  thin_data: t.errorThinData,
+};
+
   const [citySlug, setCitySlug] = useState(cities[0]?.slug ?? "");
   const [propertyType, setPropertyType] = useState("casa");
   const [operation, setOperation] = useState("venta");
@@ -103,8 +109,8 @@ export function ValuationTool({
         // Plain-text context so /admin/leads is readable without a join.
         context:
           `Tasación: ${typeLabel} de ${area} m² en ${result.cityName} ` +
-          `(${operation}). Rango estimado ${formatUsd(result.lowUsd)}–${formatUsd(result.highUsd)}, ` +
-          `mediana ${formatUsd(result.pricePerM2Usd)}/m², ${result.sampleSize} comparables.`,
+          `(${operation}). Rango estimado ${formatUsd(result.lowUsd, numberLocale)}–${formatUsd(result.highUsd, numberLocale)}, ` +
+          `mediana ${formatUsd(result.pricePerM2Usd, numberLocale)}/m², ${result.sampleSize} comparables.`,
       });
       if (res.ok) setLeadSent(true);
       else setLeadError(true);
@@ -120,7 +126,7 @@ export function ValuationTool({
       <div className="tasacion-card">
         <div className="tasacion-grid">
           <label className="tasacion-field">
-            <span className="tasacion-label">{esTasacion.cityLabel}</span>
+            <span className="tasacion-label">{t.cityLabel}</span>
             <select
               className="panel-select"
               value={citySlug}
@@ -135,7 +141,7 @@ export function ValuationTool({
           </label>
 
           <label className="tasacion-field">
-            <span className="tasacion-label">{esTasacion.typeLabel}</span>
+            <span className="tasacion-label">{t.typeLabel}</span>
             <select
               className="panel-select"
               value={propertyType}
@@ -143,26 +149,26 @@ export function ValuationTool({
             >
               {PROPERTY_TYPE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {d.publicUi.propertyTypes[o.value]}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="tasacion-field">
-            <span className="tasacion-label">{esTasacion.operationLabel}</span>
+            <span className="tasacion-label">{t.operationLabel}</span>
             <select
               className="panel-select"
               value={operation}
               onChange={(e) => setOperation(e.target.value)}
             >
-              <option value="venta">{esTasacion.operationSale}</option>
-              <option value="alquiler">{esTasacion.operationRent}</option>
+              <option value="venta">{t.operationSale}</option>
+              <option value="alquiler">{t.operationRent}</option>
             </select>
           </label>
 
           <label className="tasacion-field">
-            <span className="tasacion-label">{esTasacion.areaLabel}</span>
+            <span className="tasacion-label">{t.areaLabel}</span>
             <input
               className="auth-field__input"
               type="number"
@@ -172,7 +178,7 @@ export function ValuationTool({
               value={area}
               onChange={(e) => setArea(e.target.value)}
             />
-            <span className="tasacion-hint">{esTasacion.areaHint}</span>
+            <span className="tasacion-hint">{t.areaHint}</span>
           </label>
         </div>
 
@@ -182,54 +188,54 @@ export function ValuationTool({
           onClick={() => void calculate()}
           disabled={busy || area.trim() === ""}
         >
-          {busy ? esTasacion.calculating : esTasacion.submit}
+          {busy ? t.calculating : t.submit}
         </button>
       </div>
 
       {result && !result.ok && (
         <div className="tasacion-card tasacion-card--muted">
           <p style={{ margin: 0 }}>
-            {ERROR_TEXT[result.reason] ?? esTasacion.errorGeneric}
+            {ERROR_TEXT[result.reason] ?? t.errorGeneric}
           </p>
         </div>
       )}
 
       {result?.ok && (
         <div className="tasacion-result">
-          <div className="tasacion-result__label">{esTasacion.resultTitle}</div>
+          <div className="tasacion-result__label">{t.resultTitle}</div>
           <div className="tasacion-result__range">
-            {esTasacion.resultRange(
-              formatUsd(result.lowUsd),
-              formatUsd(result.highUsd),
+            {t.resultRange(
+              formatUsd(result.lowUsd, numberLocale),
+              formatUsd(result.highUsd, numberLocale),
             )}
           </div>
           <p className="tasacion-result__basis">
-            {esTasacion.resultBasis(
+            {t.resultBasis(
               result.sampleSize,
-              formatUsd(result.pricePerM2Usd),
+              formatUsd(result.pricePerM2Usd, numberLocale),
               result.cityName,
               result.period,
             )}
           </p>
           <p className="tasacion-result__basis">
-            {esTasacion.resultBandNote(result.bandPct)}
+            {t.resultBandNote(result.bandPct)}
           </p>
-          <p className="tasacion-disclaimer">{esTasacion.disclaimer}</p>
+          <p className="tasacion-disclaimer">{t.disclaimer}</p>
 
           <div className="tasacion-next">
             <h2 style={{ fontSize: 17, margin: "0 0 .25rem" }}>
-              {esTasacion.nextTitle}
+              {t.nextTitle}
             </h2>
             <p className="tasacion-hint" style={{ marginTop: 0 }}>
-              {esTasacion.nextBody} {esTasacion.publishCtaHint}
+              {t.nextBody} {t.publishCtaHint}
             </p>
 
             {leadSent ? (
-              <p className="panel-flash">{esTasacion.contactSent}</p>
+              <p className="panel-flash">{t.contactSent}</p>
             ) : (
               <div className="tasacion-grid">
                 <label className="tasacion-field">
-                  <span className="tasacion-label">{esTasacion.nameLabel}</span>
+                  <span className="tasacion-label">{t.nameLabel}</span>
                   <input
                     className="auth-field__input"
                     value={name}
@@ -239,13 +245,13 @@ export function ValuationTool({
                 </label>
                 <label className="tasacion-field">
                   <span className="tasacion-label">
-                    {esTasacion.whatsappLabel}
+                    {t.whatsappLabel}
                   </span>
                   <input
                     className="auth-field__input"
                     type="tel"
                     inputMode="tel"
-                    placeholder="0981 123 456"
+                    placeholder={d.publicUi.phonePlaceholder}
                     value={whatsapp}
                     maxLength={30}
                     onChange={(e) => setWhatsapp(e.target.value)}
@@ -254,7 +260,7 @@ export function ValuationTool({
               </div>
             )}
 
-            {leadError && <p className="auth-error">{esTasacion.contactError}</p>}
+            {leadError && <p className="auth-error">{t.contactError}</p>}
 
             <div className="tasacion-actions">
               {!leadSent && (
@@ -264,7 +270,7 @@ export function ValuationTool({
                   onClick={() => void send()}
                   disabled={leadBusy || whatsapp.trim().length < 6}
                 >
-                  {esTasacion.contactSubmit}
+                  {t.contactSubmit}
                 </button>
               )}
               {/* Carry the four answers the valuation already collected into
@@ -279,10 +285,10 @@ export function ValuationTool({
                 className="panel-btn panel-btn--primary"
                 href={publishHref(citySlug, propertyType, operation, area)}
               >
-                {esTasacion.publishCta}
+                {t.publishCta}
               </Link>
               <Link className="panel-btn" href={`/precios/${citySlug}`}>
-                {esTasacion.seePrices}
+                {t.seePrices}
               </Link>
             </div>
           </div>

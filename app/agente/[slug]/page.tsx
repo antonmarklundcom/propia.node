@@ -1,3 +1,4 @@
+import { Glyph } from "@/components/Glyph";
 import { cache } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -25,7 +26,6 @@ import { currentVertical } from "@/lib/vertical-context";
 import { getIndexability } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
-import { esAgentProfile, agentInquiryPrefillFor } from "@/i18n/es";
 import { currentLocale, dict } from "@/i18n/server";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
@@ -47,9 +47,10 @@ const resolve = cache(async function resolve(slug: string) {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const brand = await brandName();
+  const d = await dict();
   const { slug } = await params;
   const r = await resolve(slug);
-  if (!r) return { title: esAgentProfile.notFoundTitle };
+  if (!r) return { title: d.agentProfile.notFoundTitle };
   const { agent, listingCount } = r;
   const ix = getIndexability({ listingCount });
   const [directoryOrigin, ownsDirectory, vertical] = await Promise.all([
@@ -62,8 +63,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   ]);
   const canonical = `${directoryOrigin}${agentUrl(agent.slug)}`;
   return {
-    title: esAgentProfile.metaTitle(agent.name),
-    description: esAgentProfile.metaDescription(brand, agent.name, listingCount),
+    title: d.agentProfile.metaTitle(agent.name),
+    description: d.agentProfile.metaDescription(brand, agent.name, listingCount),
     alternates: {
       canonical,
       languages: languageAlternates({
@@ -128,7 +129,7 @@ export default async function AgentProfilePage({ params }: Params) {
   ];
 
   return (
-    <main className="listing-main">
+    <main className={`listing-main${isDirectory ? "" : " mk-profile"}`}>
       {ix.state === "index" && (
         <JsonLd
           data={[
@@ -247,34 +248,34 @@ export default async function AgentProfilePage({ params }: Params) {
             <img className="agent-profile__logo" src={safeImageUrl(agent.photoUrl) ?? undefined} alt={agent.name} referrerPolicy="no-referrer" />
           ) : (
             <div className="agent-profile__avatar" aria-hidden>
-              {initials || "A"}
+              <Glyph name="building" size={24} />
             </div>
           )}
           <div>
             <h1 className="agent-profile__name">
               {agent.name}
               {agent.isVerified && (
-                <span className="agent-profile__verified" title={esAgentProfile.verified}>
-                  ✓
+                <span className="agent-profile__verified" title={d.agentProfile.verified}>
+                  <Glyph name="check" />
                 </span>
               )}
             </h1>
             <p className="agent-profile__meta">
-              {esAgentProfile.kind} ·{" "}
+              {d.agentProfile.kind} ·{" "}
               {listingCount > 0
-                ? esAgentProfile.listingCount(listingCount)
-                : esAgentProfile.noListings}
+                ? d.agentProfile.listingCount(listingCount)
+                : d.agentProfile.noListings}
             </p>
             {agency && (
               <p className="agent-profile__agency">
-                {esAgentProfile.agencyPrefix}{" "}
+                {d.agentProfile.agencyPrefix}{" "}
                 <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
               </p>
             )}
             {agent.whatsapp && (
               <div className="agent-profile__contact">
                 <a className="contact-form__altlink" href="#contacto">
-                  {esAgentProfile.whatsappLink}
+                  <Glyph name="whatsapp" /> {d.agentProfile.whatsappLink}
                 </a>
               </div>
             )}
@@ -283,7 +284,7 @@ export default async function AgentProfilePage({ params }: Params) {
 
         {listings.length > 0 ? (
           <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-            <h2 className="similar-listings__title">{esAgentProfile.listingsTitle}</h2>
+            <h2 className="similar-listings__title">{d.agentProfile.listingsTitle}</h2>
             <div className="similar-listings__grid">
               {listings.map((card) => (
                 <ListingCard key={card.id} card={card} />
@@ -291,7 +292,7 @@ export default async function AgentProfilePage({ params }: Params) {
             </div>
           </section>
         ) : (
-          <p className="agent-profile__empty">{esAgentProfile.empty}</p>
+          <p className="agent-profile__empty">{d.agentProfile.empty}</p>
         )}
 
         {/* The marketplace's contact block: a buyer enquiry handed off to the
@@ -299,12 +300,12 @@ export default async function AgentProfilePage({ params }: Params) {
             door's form is the branch above. */}
         {agent.whatsapp && (
           <section className="contact-panel" id="contacto">
-            <h2 className="contact-panel__title">{esAgentProfile.contactTitle}</h2>
-            <p className="contact-panel__subtitle">{esAgentProfile.contactSubtitle}</p>
+            <h2 className="contact-panel__title">{d.agentProfile.contactTitle}</h2>
+            <p className="contact-panel__subtitle">{d.agentProfile.contactSubtitle}</p>
             <ContactForm
               contactWhatsapp={agent.whatsapp}
               leadType="buyer"
-              prefillMessage={agentInquiryPrefillFor(brand, agent.name, canonical)}
+              prefillMessage={d.agentInquiryPrefillFor(brand, agent.name, canonical)}
               variant="panel"
               locale={locale}
             />

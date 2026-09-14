@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { esPanel } from "@/i18n/es";
+import { dict } from "@/i18n/server";
 import { brandName } from "@/lib/brand-server";
 import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
@@ -11,9 +11,10 @@ import { registerAction } from "./actions";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
+  const t = (await dict()).publicAuth;
   return {
-    title: `Creá tu cuenta`,
-    description: `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
+    title: t.registerMetaTitle,
+    description: t.registerDescription(brand),
     // Renders per ?invite= token — keep every variant out of the index (F40).
     robots: { index: false, follow: true },
   };
@@ -22,22 +23,24 @@ export async function generateMetadata(): Promise<Metadata> {
 // Session state is per-request; never statically cache the sign-up page.
 export const dynamic = "force-dynamic";
 
-const ERRORS: Record<string, string> = {
-  name: esPanel.registerErrorName,
-  email: esPanel.registerErrorEmail,
-  email_taken: esPanel.registerErrorEmailTaken,
-  password: esPanel.registerErrorPassword,
-  agency_name: esPanel.registerErrorAgencyName,
-  invite: esPanel.registerErrorInvite,
-  throttled: esPanel.registerErrorThrottled,
-  generic: esPanel.registerErrorGeneric,
-};
 
 export default async function RegisterPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string; kind?: string; invite?: string }>;
 }) {
+  const t = (await dict()).publicAuth;
+  const ERRORS: Record<string, string> = {
+  name: t.registerErrorName,
+  email: t.registerErrorEmail,
+  email_taken: t.registerErrorEmailTaken,
+  password: t.registerErrorPassword,
+  agency_name: t.registerErrorAgencyName,
+  invite: t.registerErrorInvite,
+  throttled: t.registerErrorThrottled,
+  generic: t.registerErrorGeneric,
+};
+
   const { error, kind, invite } = await searchParams;
 
   // Already signed in → straight to the right home, unless they arrived with an
@@ -64,24 +67,24 @@ export default async function RegisterPage({
     <main className="site-main">
       <div className="auth-wrap">
         <div className="auth-card">
-          <h1 className="auth-card__title">{esPanel.registerTitle}</h1>
-          <p className="auth-card__subtitle">{esPanel.registerSubtitle}</p>
+          <h1 className="auth-card__title">{t.registerTitle}</h1>
+          <p className="auth-card__subtitle">{t.registerSubtitle}</p>
 
           {error ? (
             <p className="auth-error">{ERRORS[error] ?? ERRORS.generic}</p>
           ) : null}
 
           {inviteFailed ? (
-            <p className="auth-error">{esPanel.registerErrorInvite}</p>
+            <p className="auth-error">{t.registerErrorInvite}</p>
           ) : null}
 
           {invitation ? (
             <p className="auth-note">
-              {esPanel.registerInviteNote(
+              {t.registerInviteNote(
                 invitation.agencyName,
                 invitation.role === "agency_admin"
-                  ? esPanel.teamRoleAdmin
-                  : esPanel.teamRoleAgent,
+                  ? t.teamRoleAdmin
+                  : t.teamRoleAgent,
               )}
             </p>
           ) : null}
@@ -95,7 +98,7 @@ export default async function RegisterPage({
 
             <fieldset className="auth-choice">
               <legend className="auth-field__label">
-                {esPanel.registerKindLabel}
+                {t.registerKindLabel}
               </legend>
               {invitation ? (
                 <label className="auth-choice__option">
@@ -105,7 +108,7 @@ export default async function RegisterPage({
                     value="invite"
                     defaultChecked={isInvite}
                   />
-                  <span>{esPanel.registerKindInvite(invitation.agencyName)}</span>
+                  <span>{t.registerKindInvite(invitation.agencyName)}</span>
                 </label>
               ) : null}
               <label className="auth-choice__option">
@@ -115,7 +118,7 @@ export default async function RegisterPage({
                   value="agency"
                   defaultChecked={isAgency}
                 />
-                <span>{esPanel.registerKindAgency}</span>
+                <span>{t.registerKindAgency}</span>
               </label>
               <label className="auth-choice__option">
                 <input
@@ -124,7 +127,7 @@ export default async function RegisterPage({
                   value="independent"
                   defaultChecked={!isAgency && !isInvite}
                 />
-                <span>{esPanel.registerKindIndependent}</span>
+                <span>{t.registerKindIndependent}</span>
               </label>
             </fieldset>
 
@@ -132,7 +135,7 @@ export default async function RegisterPage({
                 the server ignores it for that account type. */}
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="agencyName">
-                {esPanel.registerAgencyNameLabel}
+                {t.registerAgencyNameLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -146,7 +149,7 @@ export default async function RegisterPage({
 
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="name">
-                {esPanel.registerYourNameLabel}
+                {t.registerYourNameLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -161,7 +164,7 @@ export default async function RegisterPage({
 
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="email">
-                {esPanel.emailLabel}
+                {t.emailLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -176,7 +179,7 @@ export default async function RegisterPage({
 
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="whatsapp">
-                {esPanel.registerWhatsappLabel}
+                {t.registerWhatsappLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -184,7 +187,7 @@ export default async function RegisterPage({
                 name="whatsapp"
                 type="tel"
                 inputMode="tel"
-                placeholder="0981 123 456"
+                placeholder={t.phonePlaceholder}
                 maxLength={30}
                 autoComplete="tel"
               />
@@ -192,7 +195,7 @@ export default async function RegisterPage({
 
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="password">
-                {esPanel.registerPasswordLabel}
+                {t.registerPasswordLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -203,17 +206,17 @@ export default async function RegisterPage({
                 autoComplete="new-password"
                 required
               />
-              <p className="auth-field__hint">{esPanel.registerPasswordHint}</p>
+              <p className="auth-field__hint">{t.registerPasswordHint}</p>
             </div>
 
             <button className="auth-submit" type="submit">
-              {esPanel.registerSubmit}
+              {t.registerSubmit}
             </button>
           </form>
 
-          <p className="auth-note">{esPanel.registerPendingNote}</p>
+          <p className="auth-note">{t.registerPendingNote}</p>
           <p className="auth-alt">
-            <Link href="/login">{esPanel.registerToLogin}</Link>
+            <Link href="/login">{t.registerToLogin}</Link>
           </p>
         </div>
       </div>

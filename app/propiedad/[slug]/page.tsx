@@ -18,14 +18,13 @@ import {
   agencyUrl,
 } from "@/lib/urls";
 import { formatPrice, formatCuota, formatUsd, formatSqft, imageUrl, imageThumbUrl } from "@/lib/format";
-import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
+import { isPlaceholderPhoto } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import {
   listingJsonLd,
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
-import { esPrecios, inquiryPrefillFor } from "@/i18n/es";
 import { currentLocale, dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import {
@@ -41,6 +40,7 @@ import { showCuota, stickyMobileContactBar, secondaryAreaUnit, foreignerBox } fr
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink, waPhone } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
+import { Glyph, type GlyphName } from "@/components/Glyph";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
@@ -201,7 +201,7 @@ export default async function ListingPage({ params }: Params) {
   const origin = await listingCanonicalOrigin();
   const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
-  const waMessage = inquiryPrefillFor(brand, listing.title, canonical);
+  const waMessage = d.inquiryPrefillFor(brand, locale === "en" ? title : listing.title, canonical);
   const waHref = waLink(contactWhatsapp, waMessage);
 
   const city = chain.find((c) => c.level === "ciudad");
@@ -313,29 +313,35 @@ export default async function ListingPage({ params }: Params) {
     : null;
 
   // "Detalles de la propiedad" rows — only what we actually know.
-  const details: { icon: string; label: string; value: string }[] = [];
-  if (barrio) details.push({ icon: "📍", label: t.detailBarrio, value: barrio.name });
-  if (city) details.push({ icon: "🏙", label: t.detailCity, value: city.name });
-  details.push({ icon: TYPE_ICON[listing.propertyType], label: t.detailType, value: typeLabel });
+  const propertyGlyph: GlyphName =
+    listing.propertyType === "terreno" || listing.propertyType === "quinta"
+      ? "land"
+      : listing.propertyType === "casa" || listing.propertyType === "duplex"
+        ? "home"
+        : "building";
+  const details: { icon: GlyphName; label: string; value: string }[] = [];
+  if (barrio) details.push({ icon: "pin", label: t.detailBarrio, value: barrio.name });
+  if (city) details.push({ icon: "building", label: t.detailCity, value: city.name });
+  details.push({ icon: propertyGlyph, label: t.detailType, value: typeLabel });
   if (listing.propertyState)
     details.push({
-      icon: "🔨",
+      icon: "key",
       label: t.detailState,
       value: t.stateLabel[listing.propertyState] ?? listing.propertyState,
     });
   if (listing.areaM2)
-    details.push({ icon: "📐", label: t.detailArea, value: t.factArea(Math.round(Number(listing.areaM2))) });
+    details.push({ icon: "area", label: t.detailArea, value: t.factArea(Math.round(Number(listing.areaM2))) });
   if (listing.landM2)
-    details.push({ icon: "🌳", label: t.detailLand, value: t.factArea(Math.round(Number(listing.landM2))) });
+    details.push({ icon: "land", label: t.detailLand, value: t.factArea(Math.round(Number(listing.landM2))) });
   if (listing.parking != null)
-    details.push({ icon: "🚗", label: t.detailParking, value: String(listing.parking) });
+    details.push({ icon: "car", label: t.detailParking, value: String(listing.parking) });
 
   const sellerName =
     agency?.name ??
     agent?.name ??
     ownerUser?.name ??
     (ownerUser ? t.sellerKindOwner : t.sellerFallback(brand));
-  const sellerInitials = sellerName
+  const sellerInitials = (agency?.name ?? "")
     .split(/\s+/)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? "")
@@ -388,10 +394,7 @@ export default async function ListingPage({ params }: Params) {
       {/* Gallery */}
       {realImages.length === 0 ? (
         <div className="detail-gallery__empty">
-          <span className="detail-gallery__empty-icon" aria-hidden>
-            {TYPE_ICON[listing.propertyType]}
-          </span>
-          <span className="detail-gallery__empty-label">{t.galleryEmpty}</span>
+          <span className="listing-card__nophoto">{t.galleryEmpty}</span>
         </div>
       ) : (
         <div
@@ -440,28 +443,28 @@ export default async function ListingPage({ params }: Params) {
           {/* Facts strip: type · beds · baths · area · freshness */}
           <ul className="listing-facts">
             <li className="listing-facts__item">
-              <span aria-hidden>{TYPE_ICON[listing.propertyType]}</span> {typeLabel.replace(/s$/, "")}
+              <Glyph name={propertyGlyph} /> {typeLabel.replace(/s$/, "")}
             </li>
             {listing.bedrooms != null && (
-              <li className="listing-facts__item">🛏 {t.factBedrooms(listing.bedrooms)}</li>
+              <li className="listing-facts__item"><Glyph name="bed" /> {t.factBedrooms(listing.bedrooms)}</li>
             )}
             {listing.bathrooms != null && (
               <li className="listing-facts__item">
-                🚿 {t.factBathrooms(listing.bathrooms)}
+                <Glyph name="bath" /> {t.factBathrooms(listing.bathrooms)}
               </li>
             )}
             {listing.parking != null && (
-              <li className="listing-facts__item">🚗 {t.factParking(listing.parking)}</li>
+              <li className="listing-facts__item"><Glyph name="car" /> {t.factParking(listing.parking)}</li>
             )}
             {area && (
               <li className="listing-facts__item">
-                📐 {t.factArea(Math.round(Number(area)))}
+                <Glyph name="area" /> {t.factArea(Math.round(Number(area)))}
                 {areaSqft && <> ({areaSqft})</>}
               </li>
             )}
             {publishedAgo && (
               <li className="listing-facts__item listing-facts__item--muted">
-                🕓 {publishedAgo}
+                <Glyph name="clock" /> {publishedAgo}
               </li>
             )}
           </ul>
@@ -479,7 +482,7 @@ export default async function ListingPage({ params }: Params) {
             {pricePerM2 && (
               <span className="listing-price__perm2">{d.card.cardPerM2(pricePerM2)}</span>
             )}
-            <PriceAlert
+            <PriceAlert locale={locale}
               listingPublicId={listing.publicId}
               listingTitle={title}
               leadType={leadType}
@@ -518,7 +521,7 @@ export default async function ListingPage({ params }: Params) {
           {cuota && financingProgram && (
             <div className="financing-box">
               <div className="financing-box__head">
-                {t.financingHead(financingProgram.name)}
+                <Glyph name="money" /> {t.financingHead(financingProgram.name)}
                 {financingProgram.code === "che_roga_pora" &&
                   t.financingStateProgram}
               </div>
@@ -541,17 +544,17 @@ export default async function ListingPage({ params }: Params) {
             </div>
           )}
           {cuota && !financingProgram && (
-            <div className="cuota-chip">💳 {cuota}</div>
+            <div className="cuota-chip"><Glyph name="money" /> {cuota}</div>
           )}
 
           {details.length > 0 && (
             <section className="listing-section">
-              <h2 className="listing-section__title">{t.detailsTitle}</h2>
+              <h2 className="listing-section__title"><Glyph name="list" /> {t.detailsTitle}</h2>
               <dl className="listing-details-grid">
                 {details.map((d) => (
                   <div className="listing-details-grid__row" key={d.label}>
                     <dt className="listing-details-grid__label">
-                      <span aria-hidden>{d.icon}</span> {d.label}
+                      <Glyph name={d.icon} /> {d.label}
                     </dt>
                     <dd className="listing-details-grid__value">{d.value}</dd>
                   </div>
@@ -562,11 +565,11 @@ export default async function ListingPage({ params }: Params) {
 
           {amenities.length > 0 && (
             <section className="listing-section">
-              <h2 className="listing-section__title">{t.amenitiesTitle}</h2>
+              <h2 className="listing-section__title"><Glyph name="palette" /> {t.amenitiesTitle}</h2>
               <ul className="listing-amenities">
                 {amenities.map((a) => (
                   <li className="listing-amenities__item" key={a}>
-                    <span className="listing-amenities__check" aria-hidden>✓</span>
+                    <Glyph name="check" className="listing-amenities__check" />
                     {a}
                   </li>
                 ))}
@@ -576,14 +579,14 @@ export default async function ListingPage({ params }: Params) {
 
           {description && (
             <section className="listing-section">
-              <h2 className="listing-section__title">{t.descriptionTitle}</h2>
+              <h2 className="listing-section__title"><Glyph name="doc" /> {t.descriptionTitle}</h2>
               <p className="listing-description">{description}</p>
             </section>
           )}
 
           {approxLocation && (
             <section className="listing-section">
-              <h2 className="listing-section__title">{t.locationTitle}</h2>
+              <h2 className="listing-section__title"><Glyph name="pin" /> {t.locationTitle}</h2>
               <p className="listing-location__caption">{approxLocation.label}</p>
               <ListingMapLazy lat={approxLocation.lat} lng={approxLocation.lng} />
             </section>
@@ -598,7 +601,7 @@ export default async function ListingPage({ params }: Params) {
               <img className="seller-card__logo" src={safeImageUrl(agency?.logoUrl) ?? undefined} alt={sellerName} referrerPolicy="no-referrer" />
             ) : (
               <div className="seller-card__avatar" aria-hidden>
-                {sellerInitials || "P"}
+                {agency && sellerInitials ? sellerInitials : <Glyph name="home" size={24} />}
               </div>
             )}
             <div>
@@ -611,7 +614,7 @@ export default async function ListingPage({ params }: Params) {
                 {(agency?.isVerified ||
                   agent?.isVerified ||
                   (ownerUser != null && listing.isVerified)) && (
-                  <span className="seller-card__verified" title={t.sellerVerified}>✓</span>
+                  <span className="seller-card__verified" title={t.sellerVerified}><Glyph name="check" /></span>
                 )}
               </div>
               <div className="seller-card__kind">
@@ -626,6 +629,7 @@ export default async function ListingPage({ params }: Params) {
             </div>
           </div>
           <ContactForm
+            id="contacto"
             listingPublicId={listing.publicId}
             contactWhatsapp={contactWhatsapp}
             leadType={leadType}
@@ -643,19 +647,11 @@ export default async function ListingPage({ params }: Params) {
         </aside>
       </div>
 
-      {/* Full-width contact panel, mirrors the sticky card for visitors
-          who scrolled past it without noticing. */}
-      <section className="contact-panel" id="contacto">
+      {/* Desktop reminder links back to the single aside form. */}
+      <section className="contact-panel">
         <h2 className="contact-panel__title">{t.contactTitle}</h2>
         <p className="contact-panel__subtitle">{t.contactSubtitle}</p>
-        <ContactForm
-          listingPublicId={listing.publicId}
-          contactWhatsapp={contactWhatsapp}
-          leadType={leadType}
-          prefillMessage={waMessage}
-          variant="panel"
-          locale={locale}
-        />
+        <a className="ds-btn ds-btn--primary" href="#contacto">{d.contactForm.submitIdle}</a>
       </section>
 
       {/* Market context for this city — the internal link into /precios.
@@ -666,10 +662,10 @@ export default async function ListingPage({ params }: Params) {
           <span>
             {contextCell ? (
               <>
-                {esPrecios.contextMedian({
-                  typeLabel: PROPERTY_TYPE_LABELS[contextCell.propertyType],
+                {d.precios.contextMedian({
+                  typeLabel: locale === "en" ? d.category.typeLabel[contextCell.propertyType] : PROPERTY_TYPE_LABELS[contextCell.propertyType],
                   operationLabel:
-                    esPrecios.contextOperationLabel[contextCell.operation] ??
+                    d.precios.contextOperationLabel[contextCell.operation] ??
                     contextCell.operation,
                   city: city.name,
                   median:
@@ -685,16 +681,16 @@ export default async function ListingPage({ params }: Params) {
                 {listingPerM2 != null && (
                   <>
                     {" — "}
-                    {esPrecios.contextThisListing(formatUsd(listingPerM2))}
+                    {d.precios.contextThisListing(formatUsd(listingPerM2))}
                   </>
                 )}
               </>
             ) : (
-              esPrecios.relatedPrices(city.name)
+              d.precios.relatedPrices(city.name)
             )}
           </span>
           <Link className="panel-btn" href={`/precios/${city.slug}`}>
-            {esPrecios.relatedPricesCta}
+            {d.precios.relatedPricesCta}
           </Link>
         </aside>
       )}
@@ -702,7 +698,7 @@ export default async function ListingPage({ params }: Params) {
       {similar.length > 0 && (
         <section className="similar-listings">
           <h2 className="similar-listings__title">{t.similarTitle}</h2>
-          <div className="similar-listings__grid">
+          <div className="similar-listings__grid ph-grid-4">
             {similar.map((card) => (
               <ListingCard key={card.id} card={card} />
             ))}
@@ -720,7 +716,7 @@ export default async function ListingPage({ params }: Params) {
               t.fromAgencyFallback
             )}
           </h2>
-          <div className="similar-listings__grid">
+          <div className="similar-listings__grid ph-grid-4">
             {fromAgency.map((card) => (
               <ListingCard key={card.id} card={card} />
             ))}
@@ -741,14 +737,14 @@ export default async function ListingPage({ params }: Params) {
                 type: listing.propertyType,
               })}
             >
-              {t.moreInBarrio(barrio.name)}
+              <Glyph name="pin" /> {t.moreInBarrio(barrio.name)}
             </Link>
           )}
           <Link
             className="listing-morelinks__chip"
             href={categoryUrl({ operation: listing.operation, citySlug: city.slug })}
           >
-            {t.moreInCity(city.name)}
+            <Glyph name="building" /> {t.moreInCity(city.name)}
           </Link>
         </div>
       )}
@@ -762,7 +758,7 @@ export default async function ListingPage({ params }: Params) {
             {formatPrice(listing, numberLocale)}
             {listing.operation !== "venta" && t.priceRentPeriod}
           </span>
-          {cuota && <span className="listing-cta-bar__cuota">💳 {cuota}</span>}
+          {cuota && <span className="listing-cta-bar__cuota"><Glyph name="money" /> {cuota}</span>}
         </div>
         <div className="listing-cta-bar__actions">
           {waHref && (
@@ -773,7 +769,7 @@ export default async function ListingPage({ params }: Params) {
               rel="noopener noreferrer"
               aria-label={t.ctaBarWhatsapp}
             >
-              💬
+              <Glyph name="whatsapp" />
             </a>
           )}
           {/* Guide §5 "Detail page" (mobile): WhatsApp + Llamar for Nórdico —

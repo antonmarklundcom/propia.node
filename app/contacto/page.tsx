@@ -5,6 +5,7 @@ import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { LeadForm } from "@/components/LeadForm";
+import { Glyph } from "@/components/Glyph";
 import { PageHero, Section } from "@/components/MarketingUI";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
@@ -19,10 +20,9 @@ import { RentalContact } from "@/components/RentalContact";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Contacto";
-const DESCRIPTION = (brand: string) => `Escribinos por WhatsApp o dejanos tu consulta: publicación de propiedades, cuentas para inmobiliarias, proyectos y soporte de ${brand}.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const c = (await dict()).contactPage;
   const [brand, vertical, d, origin] = await Promise.all([
     brandName(),
     currentVertical(),
@@ -35,10 +35,10 @@ export async function generateMetadata(): Promise<Metadata> {
   // Shared with `/contact`, the English door's URL for this same page (R2).
   if (rentalPagesEnabled(vertical.key)) return rentalContactMetadata();
   return {
-    title: `${TITLE}`,
-    description: DESCRIPTION(brand),
+    title: `${c.title}`,
+    description: c.description(brand),
     alternates: { canonical: `${origin}/contacto` },
-    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand) },
   };
 }
 
@@ -49,6 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * queue we can't answer.
  */
 export default async function ContactoPage() {
+  const c = (await dict()).contactPage;
   const vertical = await currentVertical();
   // The English rental door publishes this page at /contact (R2).
   redirectRentalToEnglish(vertical, "contact");
@@ -65,8 +66,8 @@ export default async function ContactoPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: TITLE, url: "/contacto" },
+            { name: c.home, url: "/" },
+            { name: c.title, url: "/contacto" },
           ]),
           organizationJsonLd(origin, {
             name: brand,
@@ -77,30 +78,31 @@ export default async function ContactoPage() {
       />
 
       <PageHero
-        kicker="Contacto"
-        title="Hablemos"
-        subtitle="Respondemos consultas sobre publicación, cuentas de inmobiliaria, proyectos y todo lo que tenga que ver con el portal."
+        tone="dark"
+        kicker={c.kicker}
+        title={c.heading}
+        subtitle={c.subtitle}
       />
 
       <Section>
         <div className="mk-contact">
           <div className="mk-contact__form">
             <h2 className="mk-section__title mk-section__title--sub">
-              Dejanos tu consulta
-            </h2>
+              {c.formHeading}</h2>
             <LeadForm
+              locale={vertical.locale}
               leadType="seller"
               reasons={[
-                { value: "seller", label: "Quiero publicar una propiedad" },
+                { value: "seller", label: c.reasonSeller },
                 {
                   value: "agent_signup",
-                  label: "Soy inmobiliaria o agente",
+                  label: c.reasonAgent,
                 },
                 {
                   value: "developer",
-                  label: "Soy desarrolladora / tengo un proyecto",
+                  label: c.reasonDeveloper,
                 },
-                { value: "buyer", label: "Otra consulta" },
+                { value: "buyer", label: c.reasonOther },
               ]}
               companyField
             />
@@ -108,7 +110,7 @@ export default async function ContactoPage() {
 
           <aside className="mk-contact__aside">
             <div className="mk-card">
-              <h3 className="mk-card__title">Canales directos</h3>
+              <h3 className="mk-card__title">{c.channelsHeading}</h3>
               <ul className="mk-card__list">
                 {waHref && (
                   <li>
@@ -117,7 +119,7 @@ export default async function ContactoPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      💬 WhatsApp {whatsapp}
+                      <Glyph name="whatsapp" /> <span>{c.whatsapp}{whatsapp}</span>
                     </a>
                   </li>
                 )}
@@ -125,46 +127,39 @@ export default async function ContactoPage() {
                     the left is the channel until then. */}
                 {CONTACT_EMAIL && (
                   <li>
-                    <a href={`mailto:${CONTACT_EMAIL}`}>✉️ {CONTACT_EMAIL}</a>
+                    <a href={`mailto:${CONTACT_EMAIL}`}><Glyph name="mail" /> <span>{CONTACT_EMAIL}</span></a>
                   </li>
                 )}
-                <li>📝 Formulario de contacto (respondemos por acá)</li>
-                <li>📍 Asunción, Paraguay</li>
-                <li>🕘 Lunes a viernes, 8:00 a 18:00</li>
+                <li><Glyph name="doc" /> <span>{c.formChannel}</span></li>
+                <li><Glyph name="pin" /> <span>{c.location}</span></li>
+                <li><Glyph name="clock" /> <span>{c.hours}</span></li>
               </ul>
             </div>
 
             <div className="mk-card">
               <h3 className="mk-card__title">
-                ¿Consulta sobre una propiedad puntual?
-              </h3>
+                {c.propertyHeading}</h3>
               <p className="mk-card__text">
-                Las consultas sobre un aviso las responde quien lo publicó, no
-                nosotros. Entrá a la propiedad y usá el formulario o el botón de
-                WhatsApp que están en la ficha — así te contesta directamente el
-                vendedor o la inmobiliaria.
-              </p>
+                {c.propertyBody}</p>
               <Link className="mk-card__link" href="/venta/asuncion">
-                Ver propiedades →
-              </Link>
+                {c.browse}</Link>
             </div>
 
             <div className="mk-card">
-              <h3 className="mk-card__title">Atajos útiles</h3>
+              <h3 className="mk-card__title">{c.shortcutsHeading}</h3>
               <ul className="mk-card__list">
                 <li>
-                  <Link href="/publicar">Publicar una propiedad</Link>
+                  <Link href="/publicar">{c.publish}</Link>
                 </li>
                 <li>
                   <Link href="/para-inmobiliarias">
-                    Cuenta para inmobiliarias
-                  </Link>
+                    {c.agencyAccount}</Link>
                 </li>
                 <li>
-                  <Link href="/tasacion">Tasar mi propiedad gratis</Link>
+                  <Link href="/tasacion">{c.valuation}</Link>
                 </li>
                 <li>
-                  <Link href="/preguntas-frecuentes">Preguntas frecuentes</Link>
+                  <Link href="/preguntas-frecuentes">{c.faq}</Link>
                 </li>
               </ul>
             </div>

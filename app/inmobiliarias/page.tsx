@@ -1,3 +1,4 @@
+import { numberLocaleFor } from "@/i18n";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
@@ -10,6 +11,7 @@ import { languageAlternates } from "@/lib/alternates";
 import { currentVertical } from "@/lib/vertical-context";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
+import { Glyph } from "@/components/Glyph";
 import { agencyUrl } from "@/lib/urls";
 import {
   listAgenciesForDirectory,
@@ -17,16 +19,15 @@ import {
 } from "@/lib/directory-queries";
 import { DirectoryList } from "@/components/DirectoryList";
 import { directoryPagesEnabled } from "@/design/sections";
-import { dict } from "@/i18n/server";
+import { dict, currentLocale } from "@/i18n/server";
 import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Directorio de inmobiliarias";
-const DESCRIPTION = (brand: string) => `Inmobiliarias y agentes que publican su cartera en ${brand}. Mirá sus propiedades activas y contactalos directo por WhatsApp.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const c = (await dict()).agenciesPage;
   const [brand, directoryOrigin, ownsDirectory, vertical] = await Promise.all([
     brandName(),
     // See app/agentes/page.tsx: the directory page type has its own owner per
@@ -36,8 +37,8 @@ export async function generateMetadata(): Promise<Metadata> {
     currentVertical(),
   ]);
   return {
-    title: `${TITLE} de Paraguay`,
-    description: DESCRIPTION(brand),
+    title: c.metaTitle,
+    description: c.description(brand),
     alternates: {
       canonical: `${directoryOrigin}/inmobiliarias`,
       languages: languageAlternates({
@@ -47,7 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
       }),
     },
     robots: { index: ownsDirectory, follow: true },
-    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand) },
   };
 }
 
@@ -56,6 +57,8 @@ export default async function InmobiliariasPage({
 }: {
   searchParams: Promise<{ ciudad?: string }>;
 }) {
+  const numberLocale = numberLocaleFor(await currentLocale());
+  const c = (await dict()).agenciesPage;
   const [origin, agencies, vertical, d, params] = await Promise.all([
     siteOrigin(),
     listAgenciesForDirectory(),
@@ -100,8 +103,8 @@ export default async function InmobiliariasPage({
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: TITLE, url: "/inmobiliarias" },
+            { name: c.home, url: "/" },
+            { name: c.title, url: "/inmobiliarias" },
           ]),
           ...(agencies.length > 0
             ? [
@@ -118,21 +121,18 @@ export default async function InmobiliariasPage({
       />
 
       <PageHero
-        kicker="Directorio"
-        title="Inmobiliarias y agentes en Paraguay"
-        subtitle="Cada perfil muestra la cartera activa de la inmobiliaria y su contacto directo. El sello verificado indica que confirmamos los datos de la oficina."
+        kicker={c.kicker}
+        title={c.heading}
+        subtitle={c.subtitle}
       />
 
       <Section>
         {agencies.length === 0 ? (
           <div className="mk-empty">
             <p>
-              Todavía no hay inmobiliarias con cartera publicada en el
-              directorio.
-            </p>
+              {c.empty}</p>
             <Link className="mk-btn mk-btn--accent" href="/para-inmobiliarias">
-              Sumar mi inmobiliaria
-            </Link>
+              {c.join}</Link>
           </div>
         ) : (
           <div className="mk-agency-grid">
@@ -158,15 +158,15 @@ export default async function InmobiliariasPage({
                       className="mk-agency__logo mk-agency__logo--fallback"
                       aria-hidden
                     >
-                      {a.name.charAt(0)}
+                      <Glyph name="building" size={24} />
                     </div>
                   )}
                   <div>
                     <div className="mk-agency__name">
                       {a.name}
                       {a.isVerified && (
-                        <span className="mk-agency__verified" title="Verificada">
-                          ✓
+                        <span className="mk-agency__verified" title={c.verified}>
+                          <Glyph name="check" />
                         </span>
                       )}
                     </div>
@@ -180,17 +180,17 @@ export default async function InmobiliariasPage({
 
                 <div className="mk-agency__meta">
                   <span>
-                    {a.listingCount.toLocaleString("es-PY")}{" "}
-                    {a.listingCount === 1 ? "propiedad" : "propiedades"}
+                    {a.listingCount.toLocaleString(numberLocale)}{" "}
+                    {a.listingCount === 1 ? c.property : c.properties}
                   </span>
                   {a.agentCount > 0 && (
                     <span>
-                      {a.agentCount} {a.agentCount === 1 ? "agente" : "agentes"}
+                      {a.agentCount} {a.agentCount === 1 ? c.agent : c.agents}
                     </span>
                   )}
                 </div>
 
-                <span className="mk-agency__cta">Ver cartera →</span>
+                <span className="mk-agency__cta">{c.portfolio}</span>
               </Link>
             ))}
           </div>
@@ -198,10 +198,10 @@ export default async function InmobiliariasPage({
       </Section>
 
       <CtaBand
-        title="¿Tenés una inmobiliaria?"
-        text="Publicá tu cartera completa, obtené tu perfil verificado y recibí las consultas directo en tu WhatsApp."
-        primary={{ label: "Sumar mi inmobiliaria", href: "/para-inmobiliarias" }}
-        secondary={{ label: "Ver planes", href: "/planes" }}
+        title={c.ctaHeading}
+        text={c.ctaBody}
+        primary={{ label: c.joinCta, href: "/para-inmobiliarias" }}
+        secondary={{ label: c.plans, href: "/planes" }}
       />
     </main>
   );

@@ -1,6 +1,8 @@
+import { numberLocaleFor } from "@/i18n";
+import type { Dictionary } from "@/i18n";
 import type { Metadata } from "next";
 import { brandName } from "@/lib/brand-server";
-import { dict } from "@/i18n/server";
+import { dict, currentLocale } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
 import { rentalPagesEnabled } from "@/design/sections";
 import {
@@ -24,10 +26,9 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Sobre nosotros";
-const DESCRIPTION = (brand: string) => `${brand} es el portal inmobiliario de Paraguay: buscar es gratis, publicar también, y cada aviso muestra precio de referencia de la zona y cuota estimada.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const c = (await dict()).aboutPage;
   const [brand, vertical, d, origin] = await Promise.all([
     brandName(),
     currentVertical(),
@@ -40,37 +41,39 @@ export async function generateMetadata(): Promise<Metadata> {
   // the same page (R2), so the two cannot disagree about the canonical.
   if (rentalPagesEnabled(vertical.key)) return rentalAboutMetadata();
   return {
-    title: `${TITLE}`,
-    description: DESCRIPTION(brand),
+    title: `${c.title}`,
+    description: c.description(brand),
     alternates: { canonical: `${origin}/nosotros` },
-    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand) },
   };
 }
 
-const PRINCIPLES = [
+const principles = (c: Dictionary["aboutPage"]) => [
   {
-    icon: "🔍",
-    title: "Información antes que avisos",
-    text: "Un portal no debería ser solo un tablón. Publicamos medianas de precio por ciudad y por m², cuota estimada en cada propiedad en venta y tasación online gratuita, para que quien busca pueda comparar y no solo mirar.",
+    icon: "search",
+    title: c.principleInformation,
+    text: c.principleInformationBody,
   },
   {
-    icon: "🤝",
-    title: "Contacto directo, sin peaje",
-    text: "Las consultas van directo de quien busca a quien publica. No cobramos por lead, no revendemos contactos y no nos metemos en la negociación.",
+    icon: "handshake",
+    title: c.principleDirect,
+    text: c.principleDirectBody,
   },
   {
-    icon: "🇵🇾",
-    title: "Hecho para Paraguay",
-    text: "Precios en guaraníes y dólares, barrios reales, WhatsApp como canal principal y programas de financiamiento locales — no un portal extranjero traducido.",
+    icon: "pin",
+    title: c.principleLocal,
+    text: c.principleLocalBody,
   },
   {
-    icon: "📐",
-    title: "Números que se pueden auditar",
-    text: "Nuestras estimaciones salen de avisos publicados y de condiciones vigentes de financiamiento, y decimos siempre sobre qué muestra están calculadas. Si el dato es flojo, lo decimos en vez de inventarlo.",
+    icon: "area",
+    title: c.principleNumbers,
+    text: c.principleNumbersBody,
   },
 ];
 
 export default async function NosotrosPage() {
+  const numberLocale = numberLocaleFor(await currentLocale());
+  const c = (await dict()).aboutPage;
   const vertical = await currentVertical();
   // The English rental door publishes this page at /about (R2); this URL is
   // the Spanish one. Marketplace doors — realestateinparaguay.com included —
@@ -91,8 +94,8 @@ export default async function NosotrosPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: TITLE, url: "/nosotros" },
+            { name: c.home, url: "/" },
+            { name: c.title, url: "/nosotros" },
           ]),
           organizationJsonLd(origin, {
             name: brand,
@@ -103,9 +106,10 @@ export default async function NosotrosPage() {
       />
 
       <PageHero
-        kicker="Quiénes somos"
-        title="Buscar propiedad en Paraguay debería ser transparente"
-        subtitle={`${brand} nació de una molestia concreta: buscar casa en Paraguay significa recorrer avisos repetidos, sin precio de referencia, sin saber si el número cierra con lo que uno puede pagar por mes. Armamos el portal que nos hubiera gustado usar.`}
+        tone="dark"
+        kicker={c.kicker}
+        title={c.heading}
+        subtitle={c.intro(brand)}
       />
 
       {stats.listings > 0 && (
@@ -113,73 +117,54 @@ export default async function NosotrosPage() {
           <StatRow
             stats={[
               {
-                value: stats.listings.toLocaleString("es-PY"),
-                label: "Propiedades publicadas",
+                value: stats.listings.toLocaleString(numberLocale),
+                icon: "home",
+                label: c.listings,
               },
               {
-                value: stats.cities.toLocaleString("es-PY"),
-                label: "Zonas con inventario",
+                value: stats.cities.toLocaleString(numberLocale),
+                icon: "pin",
+                label: c.cities,
               },
               {
-                value: stats.agencies.toLocaleString("es-PY"),
-                label: "Inmobiliarias publicando",
+                value: stats.agencies.toLocaleString(numberLocale),
+                icon: "building",
+                label: c.agencies,
               },
               {
-                value: stats.projects.toLocaleString("es-PY"),
-                label: "Proyectos en desarrollo",
+                value: stats.projects.toLocaleString(numberLocale),
+                icon: "key",
+                label: c.projects,
               },
             ]}
           />
         </Section>
       )}
 
-      <Section title="En qué creemos" tone="muted">
-        <FeatureGrid items={PRINCIPLES} columns={2} />
+      <Section title={c.principlesHeading} tone="muted">
+        <FeatureGrid items={principles(c)} columns={2} />
       </Section>
 
-      <Section title="Cómo ganamos plata" width="narrow">
+      <Section title={c.revenueHeading} width="narrow">
         <Prose>
           <p>
-            Preferimos decirlo de entrada, porque define cómo funciona todo lo
-            demás. Buscar es gratis para quien busca y publicar es gratis para
-            quien vende o alquila, incluidas las inmobiliarias. No cobramos
-            comisión sobre las operaciones ni cobramos por consulta recibida.
-          </p>
+            {c.revenueIntro}</p>
           <p>
-            Nuestros ingresos vienen de la visibilidad preferente que contratan
-            algunas inmobiliarias y desarrolladoras — avisos destacados,
-            posiciones en la portada y en las páginas de ciudad. Eso significa
-            que un aviso puede aparecer más arriba porque su publicante contrató
-            destaque, y cuando pasa se muestra identificado como tal. Lo que
-            nunca cambia por pagar es el precio, la superficie ni ningún otro
-            dato de la propiedad.
-          </p>
-          <h2>Qué no hacemos</h2>
+            {c.revenueBody}</p>
+          <h2>{c.limitsHeading}</h2>
           <p>
-            No somos una inmobiliaria y no representamos a ninguna de las
-            partes. No participamos de las negociaciones, no intervenimos en las
-            señas ni en los contratos y no verificamos de forma independiente la
-            titularidad de cada inmueble publicado. Antes de cualquier pago o
-            firma, verificá la documentación con un escribano.
-          </p>
-          <h2>De dónde salen los datos</h2>
+            {c.limitsBody}</p>
+          <h2>{c.dataHeading}</h2>
           <p>
-            Los avisos los cargan sus dueños, inmobiliarias y agentes desde el
-            panel del portal. Las medianas de precio se calculan sobre los
-            avisos publicados de cada ciudad y tipo de propiedad, y solo
-            publicamos la cifra cuando la muestra alcanza un mínimo razonable.
-            Las cuotas estimadas usan las condiciones de programas de
-            financiamiento vigentes en Paraguay y son orientativas: la cuota
-            real depende de la entidad, del plazo y de tu perfil crediticio.
-          </p>
+            {c.dataBody}</p>
         </Prose>
       </Section>
 
       <CtaBand
-        title="¿Querés publicar tu propiedad?"
-        text="Cargala en minutos y llegá a quienes están buscando en tu zona."
-        primary={{ label: "Publicar gratis", href: "/publicar" }}
-        secondary={{ label: "Contactarnos", href: "/contacto" }}
+        title={c.ctaHeading}
+        text={c.ctaBody}
+        primary={{ label: c.publish, href: "/publicar" }}
+        secondary={{ label: c.contact, href: "/contacto" }}
       />
     </main>
   );

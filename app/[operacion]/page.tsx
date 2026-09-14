@@ -83,7 +83,7 @@ export default async function OperationHubPage({ params }: Params) {
   const topCity = hub.cities[0]?.slug ?? "asuncion";
 
   return (
-    <main>
+    <main className={vertical.key === "inmobiliaria" || vertical.key === "en" ? "c3b-marketplace c3b-hub" : undefined}>
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
@@ -113,7 +113,7 @@ export default async function OperationHubPage({ params }: Params) {
         <Section
           title={t.latestTitle(hub.total.toLocaleString(numberLocale))}
         >
-          <div className="mk-project-grid">
+          <div className={vertical.key === "inmobiliaria" || vertical.key === "en" ? "ph-grid-4" : "mk-project-grid"}>
             {recent.map((card) => (
               <ListingCard key={card.id} card={card} />
             ))}
