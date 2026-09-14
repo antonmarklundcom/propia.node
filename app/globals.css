@@ -1960,15 +1960,15 @@ body {
    what stops it reading as a photo of the property. */
 .listing-card__nophoto {
   position: absolute;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 16px;
+  top: 52px;
+  transform: none;
   font-size: 10px;
   letter-spacing: 2.2px;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.86);
-  /* Sits at mid-card, the one place the bottom-up scrim is still light, and
-     the fallback image is deliberately pale right there. */
+  /* Below the operation chip, clear of the bottom title/body block.
+     The shadow keeps the label readable over the fallback image. */
   text-shadow: 0 1px 14px rgba(7, 15, 11, 0.75);
 }
 
@@ -8798,9 +8798,9 @@ summary.panel-btn::-webkit-details-marker {
     padding: 3px;
   }
   .ph-featured .listing-card__nophoto {
-    top: 58px;
-    left: 10px;
-    right: 10px;
+    top: 52px;
+    left: 16px;
+    right: 16px;
     transform: none;
     font-size: 8px;
     letter-spacing: 0.5px;
@@ -9345,4 +9345,263 @@ summary.panel-btn::-webkit-details-marker {
   .contact-panel {
     display: none;
   }
+}
+
+/* == C3-b == */
+/* Page-scoped additions keep the home panel, other doors and staff controls intact. */
+
+/* 1. Search and filters: open rows with hairline-separated fields. */
+.c3b-marketplace .search-bar,
+.c3b-marketplace .filter-bar {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+  padding: 16px 0;
+  gap: 16px;
+  text-align: left;
+}
+
+.c3b-marketplace .filter-bar {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.c3b-marketplace .search-bar__field,
+.c3b-marketplace .filter-bar__field {
+  flex: 1 1 140px;
+  min-width: 0;
+  padding-right: 16px;
+  border-right: 1px solid var(--color-border);
+}
+
+.c3b-marketplace .search-bar__field--grow {
+  flex-basis: 180px;
+}
+
+.c3b-marketplace .search-bar__label,
+.c3b-marketplace .filter-bar__label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-secondary);
+}
+
+.c3b-marketplace .search-bar__select,
+.c3b-marketplace .filter-bar__input,
+.c3b-marketplace .filter-bar__select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--color-ink);
+}
+
+.c3b-marketplace .search-bar__select {
+  appearance: auto;
+}
+
+.c3b-marketplace .search-bar__submit,
+.c3b-marketplace .filter-bar__submit {
+  min-height: 48px;
+  padding: 14px 24px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: var(--button-case);
+  cursor: pointer;
+}
+
+.c3b-marketplace .search-bar__submit {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+}
+
+.c3b-marketplace .search-bar__submit:hover {
+  background: var(--button-primary-bg-hover);
+  filter: none;
+  transform: none;
+}
+
+.c3b-marketplace .filter-bar__submit {
+  border-color: var(--color-ink);
+  background: transparent;
+  color: var(--color-ink);
+}
+
+.c3b-marketplace .filter-bar__submit:hover {
+  background: var(--color-primary);
+  color: var(--color-background);
+}
+
+.c3b-marketplace .search-bar__select:focus-visible,
+.c3b-marketplace .filter-bar__input:focus-visible,
+.c3b-marketplace .filter-bar__select:focus-visible,
+.c3b-marketplace .search-bar__submit:focus-visible,
+.c3b-marketplace .filter-bar__submit:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* The hub search sits directly on C1's dark photograph. Use existing on-dark ink. */
+.c3b-hub .search-bar__label {
+  color: var(--color-background);
+  opacity: 0.8;
+}
+
+.c3b-hub .search-bar__select {
+  color: var(--color-background);
+  color-scheme: dark;
+}
+
+.c3b-hub .search-bar__select option {
+  background: var(--color-primary);
+  color: var(--color-background);
+}
+
+@media (max-width: 640px) {
+  .c3b-marketplace .search-bar__field,
+  .c3b-marketplace .filter-bar__field {
+    flex: none;
+    padding-right: 0;
+    border-right: 0;
+  }
+}
+
+/* 2. View switch: one outline with a single shared divider. */
+.c3b-marketplace .view-switch {
+  gap: 0;
+  padding: 0;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.c3b-marketplace .view-switch__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 10px 20px;
+  border-radius: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.c3b-marketplace .view-switch__option + .view-switch__option {
+  border-left: 1px solid var(--color-border);
+}
+
+.c3b-marketplace .view-switch__option--active {
+  background: var(--color-primary);
+  color: var(--color-background);
+  box-shadow: none;
+}
+
+/* 3. Preserve other doors' former inline layout; marketplace cards reuse ph-grid-4. */
+.category-title {
+  font-size: 24px;
+}
+
+.category-count {
+  margin-top: 4px;
+}
+
+.category-results {
+  margin-top: 16px;
+}
+
+.category-results--default {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.c3b-category .category-title {
+  margin-bottom: 0;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.c3b-category .category-count {
+  margin-top: 16px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+}
+
+.c3b-marketplace .pagination {
+  flex-wrap: wrap;
+}
+
+.c3b-marketplace .pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid var(--color-ink);
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: var(--button-case);
+}
+
+.c3b-marketplace .pagination__link:hover {
+  background: var(--color-primary);
+  color: var(--color-background);
+  text-decoration: none;
+}
+
+/* 4. Public panel actions use the same outlined secondary treatment. */
+.c3b-marketplace .panel-btn {
+  justify-content: center;
+  min-height: 48px;
+  padding: 14px 24px;
+  border: 1px solid var(--color-ink);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: var(--button-case);
+}
+
+.c3b-marketplace .panel-btn:hover {
+  background: var(--color-primary);
+  color: var(--color-background);
+}
+
+.c3b-marketplace .view-switch__option:focus-visible,
+.c3b-marketplace .pagination__link:focus-visible,
+.c3b-marketplace .panel-btn:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 3px;
 }

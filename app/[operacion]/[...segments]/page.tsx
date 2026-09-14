@@ -428,7 +428,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   };
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
+    <main className={vertical.key === "inmobiliaria" || vertical.key === "en" ? "c3b-marketplace c3b-category" : undefined} style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
       {ix.state === "index" && (
         <JsonLd
           data={[
@@ -441,8 +441,8 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         />
       )}
 
-      <h1 style={{ fontSize: 24 }}>{r.title}</h1>
-      <p style={{ color: tokens.color.inkSecondary, marginTop: 4 }}>
+      <h1 className="category-title">{r.title}</h1>
+      <p className="category-count" style={{ color: tokens.color.inkSecondary }}>
         {count > 0 ? t.count(count) : d.common.emptyState}
       </p>
 
@@ -494,14 +494,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           </a>
         </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-            gap: 16,
-            marginTop: 16,
-          }}
-        >
+        <div className={vertical.key === "inmobiliaria" || vertical.key === "en" ? "ph-grid-4 category-results" : "category-results category-results--default"}>
           {listings.map((card) => (
             <ListingCard key={card.id} card={card} />
           ))}
