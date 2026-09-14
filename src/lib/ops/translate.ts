@@ -9,8 +9,8 @@
  *
  * **Always pass a `limit`.** Every row is a paid API call against a credit that
  * does not refill on its own, which is why `/admin/operaciones` makes the field
- * mandatory (§1.8 of `fable-plan-ops.md`) even though the CLI allows an unbounded
- * run.
+ * mandatory (§1.8 of `fable-plan-ops.md`). The CLI defaults to 50 attempted
+ * rows; raise the cap explicitly with `--limit`.
  *
  * **What needs translating** is decided by `translation_hash`: the sha256 of the
  * title and Spanish description the stored English was made from. A row needs
@@ -117,28 +117,30 @@ export async function runTranslate(opts: TranslateOptions): Promise<OpsResult> {
     }
 
     const onlyId = opts.id ?? null;
-    const limit = opts.limit && opts.limit > 0 ? opts.limit : Infinity;
-    if (limit === Infinity) {
+    const limit = opts.limit && Number.isFinite(opts.limit) && opts.limit > 0
+      ? opts.limit
+      : 50;
+    if (limit !== opts.limit) {
       out.note(
-        "No limit given — every candidate is translated. DeepL's Developer credit is " +
-          "one-time; prefer a bounded run.",
+        "Using the default cap of 50 attempted rows. Raise it with --limit <number>. " +
+          "DeepL's Developer credit is one-time.",
       );
     }
 
-    out.track("pendientes", "traducidos", "fallaron", "postergados");
+    out.track("pendientes", "traducidos", "fallaron");
 
-    let done = 0;
+    let attempted = 0;
     for await (const row of candidates(onlyId, opts.force ?? false)) {
       out.count("pendientes");
-      if (done >= limit) {
-        out.count("postergados"); // keep counting so the tail is reported
-        continue;
-      }
+      attempted++;
 
       if (opts.dry) {
         out.note(`  would translate #${row.id}  ${row.title.slice(0, 60)}`);
-        done++;
         out.count("traducidos");
+        if (attempted >= limit) {
+          out.note(`Attempt cap reached (${limit}); further candidates were not scanned.`);
+          break;
+        }
         continue;
       }
 
@@ -160,12 +162,15 @@ export async function runTranslate(opts: TranslateOptions): Promise<OpsResult> {
             translationHash: translationSourceHash(row),
           })
           .where(eq(listings.id, row.id));
-        done++;
         out.count("traducidos");
         out.note(`  #${row.id}  ${t.titleEn.slice(0, 60)}`);
       } catch (err) {
         out.count("fallaron");
         out.note(`  #${row.id} FAILED: ${(err as Error).message}`);
+      }
+      if (attempted >= limit) {
+        out.note(`Attempt cap reached (${limit}); further candidates were not scanned.`);
+        break;
       }
     }
 
