@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { tokens } from "@/design/tokens";
 import Link from "next/link";
-import { esPrecios } from "@/i18n/es";
 import { currentLocale, dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
@@ -538,10 +537,10 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         <aside className="precios-cta">
           <span>
             {contextCell
-              ? esPrecios.contextMedian({
+              ? d.precios.contextMedian({
                   typeLabel: t.typeLabel[contextCell.propertyType],
                   operationLabel:
-                    esPrecios.contextOperationLabel[contextCell.operation] ??
+                    d.precios.contextOperationLabel[contextCell.operation] ??
                     contextCell.operation,
                   city: r.city.name,
                   median:
@@ -554,10 +553,10 @@ export default async function CategoryPage({ params, searchParams }: Params) {
                       : null,
                   sample: contextCell.sampleSize,
                 })
-              : esPrecios.relatedPrices(r.city.name)}
+              : d.precios.relatedPrices(r.city.name)}
           </span>
           <Link className="panel-btn" href={`/precios/${r.city.slug}`}>
-            {esPrecios.relatedPricesCta}
+            {d.precios.relatedPricesCta}
           </Link>
         </aside>
       )}

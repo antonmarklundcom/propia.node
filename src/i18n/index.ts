@@ -19,6 +19,11 @@
  *   their locale as a prop) and for callers that already hold a locale.
  */
 import {
+  esAgentProfile,
+  esSiteNotice,
+  esPriceAlert,
+  inquiryPrefillFor as esInquiryPrefillFor,
+  agentInquiryPrefillFor as esAgentInquiryPrefillFor,
   esAboutPage,
   esContactPage,
   esAgentsPage,
@@ -52,6 +57,11 @@ import {
   esVender,
 } from "./es";
 import {
+  enAgentProfile,
+  enSiteNotice,
+  enPriceAlert,
+  inquiryPrefillFor as enInquiryPrefillFor,
+  agentInquiryPrefillFor as enAgentInquiryPrefillFor,
   enAboutPage,
   enContactPage,
   enAgentsPage,
@@ -95,6 +105,11 @@ export type Locale = "es" | "en";
 export const DEFAULT_LOCALE: Locale = "es";
 
 const esDictionary = {
+  agentProfile: esAgentProfile,
+  siteNotice: esSiteNotice,
+  priceAlert: esPriceAlert,
+  inquiryPrefillFor: esInquiryPrefillFor,
+  agentInquiryPrefillFor: esAgentInquiryPrefillFor,
   aboutPage: esAboutPage,
   contactPage: esContactPage,
   agentsPage: esAgentsPage,
@@ -164,6 +179,11 @@ export type Dictionary = Widen<typeof esDictionary>;
  * widening what callers see.
  */
 const enDictionary = {
+  agentProfile: enAgentProfile,
+  siteNotice: enSiteNotice,
+  priceAlert: enPriceAlert,
+  inquiryPrefillFor: enInquiryPrefillFor,
+  agentInquiryPrefillFor: enAgentInquiryPrefillFor,
   aboutPage: enAboutPage,
   contactPage: enContactPage,
   agentsPage: enAgentsPage,

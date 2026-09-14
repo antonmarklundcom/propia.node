@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { es } from "@/i18n/es";
+import { getDictionary, type Locale } from "@/i18n";
 
 /**
  * "Avisame si baja" price alert. There's no alerting engine yet, so this is
@@ -11,14 +11,18 @@ import { es } from "@/i18n/es";
  * engine ships it reads these same leads.
  */
 export function PriceAlert({
+  locale,
   listingPublicId,
   listingTitle,
   leadType,
 }: {
+  locale: Locale;
   listingPublicId: string;
   listingTitle: string;
   leadType: "buyer" | "renter";
 }) {
+  const d = getDictionary(locale);
+  const t = d.priceAlert;
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
@@ -35,7 +39,7 @@ export function PriceAlert({
           leadType,
           listingPublicId,
           whatsapp: phone.trim(),
-          message: `[Alerta de precio] Avisame si baja: ${listingTitle}`,
+          message: t.message(listingTitle),
         }),
       });
       setState("done");
@@ -47,7 +51,7 @@ export function PriceAlert({
   if (state === "done") {
     return (
       <span className="price-alert price-alert--done">
-        ✓ Listo, te avisamos si baja
+        {t.done}
       </span>
     );
   }
@@ -55,7 +59,7 @@ export function PriceAlert({
   if (!open) {
     return (
       <button className="price-alert" onClick={() => setOpen(true)}>
-        🔔 {es.priceAlert}
+        🔔 {d.common.priceAlert}
       </button>
     );
   }
@@ -68,15 +72,15 @@ export function PriceAlert({
         autoFocus
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        placeholder="Tu WhatsApp (+595 …)"
-        aria-label="Tu número de WhatsApp"
+        placeholder={t.phonePlaceholder}
+        aria-label={t.phoneLabel}
       />
       <button
         className="price-alert__submit"
         type="submit"
         disabled={state === "sending"}
       >
-        {state === "sending" ? "…" : "Avisame"}
+        {state === "sending" ? t.sending : t.submit}
       </button>
     </form>
   );

@@ -142,10 +142,7 @@ export const enPublish = {
 } as const;
 
 /**
- * English peer of `esSiteNotice` (es.ts). Not part of the `Dictionary` shape
- * (same as `esSiteNotice` itself) — `SiteNotice` reads whichever one matches
- * the request locale directly, the same pattern `esPrecios`/`inquiryPrefillFor`
- * already use outside the dictionary.
+ * English peer of `esSiteNotice`, exposed through the request dictionary.
  */
 export const enSiteNotice = {
   label: "Site under construction",
@@ -2389,4 +2386,38 @@ export const enProjectPage = {
   seller: (brand: string) => `Listed on ${brand}`,
   developerFallback: "this developer",
   inquiry: (brand: string, title: string, url: string) => `Hello, I saw "${title}" on ${brand} and would like more information. ${url}`,
+} as const;
+
+export const enAgentProfile = {
+  notFoundTitle: "Agent not found",
+  kind: "Agent",
+  verified: "Verified",
+  listingsTitle: "Published properties",
+  listingCount: (n: number) => n === 1 ? "1 published property" : `${n} published properties`,
+  noListings: "No published properties at the moment",
+  empty: "This agent has no published properties yet.",
+  contactTitle: "Want to contact this agent?",
+  contactSubtitle: "Leave a message and they will reply directly on WhatsApp.",
+  whatsappLink: "💬 WhatsApp",
+  agencyPrefix: "Works at",
+  metaTitle: (agentName: string) => `${agentName} — Properties for sale and rent`,
+  metaDescription: (brand: string, agentName: string, n: number) =>
+    `${n === 1 ? "1 published property" : `${n} published properties`} by ${agentName} on ${brand}.`,
+} as const;
+
+export function inquiryPrefillFor(brand: string, title: string, url: string): string {
+  return `Hello, I saw this property on ${brand} and I am interested: ${title}\n${url}`;
+}
+
+export function agentInquiryPrefillFor(brand: string, agentName: string, url: string): string {
+  return `Hello, I saw your profile on ${brand} and would like to contact you: ${agentName}\n${url}`;
+}
+
+export const enPriceAlert = {
+  message: (title: string) => `[Price alert] Let me know if the price drops: ${title}`,
+  done: "✓ Done, we will let you know if the price drops",
+  phonePlaceholder: "Your WhatsApp (+595 …)",
+  phoneLabel: "Your WhatsApp number",
+  sending: "…",
+  submit: "Notify me",
 } as const;

@@ -3304,3 +3304,12 @@ export const esPublicAuth = {
   registerDescription: (brand: string) => `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
   phonePlaceholder: "0981 123 456",
 } as const;
+
+export const esPriceAlert = {
+  message: (title: string) => `[Alerta de precio] Avisame si baja: ${title}`,
+  done: "✓ Listo, te avisamos si baja",
+  phonePlaceholder: "Tu WhatsApp (+595 …)",
+  phoneLabel: "Tu número de WhatsApp",
+  sending: "…",
+  submit: "Avisame",
+} as const;

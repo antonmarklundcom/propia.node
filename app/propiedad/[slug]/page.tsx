@@ -25,7 +25,6 @@ import {
   listingJsonLd,
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
-import { esPrecios, inquiryPrefillFor } from "@/i18n/es";
 import { currentLocale, dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import {
@@ -201,7 +200,7 @@ export default async function ListingPage({ params }: Params) {
   const origin = await listingCanonicalOrigin();
   const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
-  const waMessage = inquiryPrefillFor(brand, listing.title, canonical);
+  const waMessage = d.inquiryPrefillFor(brand, locale === "en" ? title : listing.title, canonical);
   const waHref = waLink(contactWhatsapp, waMessage);
 
   const city = chain.find((c) => c.level === "ciudad");
@@ -479,7 +478,7 @@ export default async function ListingPage({ params }: Params) {
             {pricePerM2 && (
               <span className="listing-price__perm2">{d.card.cardPerM2(pricePerM2)}</span>
             )}
-            <PriceAlert
+            <PriceAlert locale={locale}
               listingPublicId={listing.publicId}
               listingTitle={title}
               leadType={leadType}
@@ -666,10 +665,10 @@ export default async function ListingPage({ params }: Params) {
           <span>
             {contextCell ? (
               <>
-                {esPrecios.contextMedian({
-                  typeLabel: PROPERTY_TYPE_LABELS[contextCell.propertyType],
+                {d.precios.contextMedian({
+                  typeLabel: locale === "en" ? d.category.typeLabel[contextCell.propertyType] : PROPERTY_TYPE_LABELS[contextCell.propertyType],
                   operationLabel:
-                    esPrecios.contextOperationLabel[contextCell.operation] ??
+                    d.precios.contextOperationLabel[contextCell.operation] ??
                     contextCell.operation,
                   city: city.name,
                   median:
@@ -685,16 +684,16 @@ export default async function ListingPage({ params }: Params) {
                 {listingPerM2 != null && (
                   <>
                     {" — "}
-                    {esPrecios.contextThisListing(formatUsd(listingPerM2))}
+                    {d.precios.contextThisListing(formatUsd(listingPerM2))}
                   </>
                 )}
               </>
             ) : (
-              esPrecios.relatedPrices(city.name)
+              d.precios.relatedPrices(city.name)
             )}
           </span>
           <Link className="panel-btn" href={`/precios/${city.slug}`}>
-            {esPrecios.relatedPricesCta}
+            {d.precios.relatedPricesCta}
           </Link>
         </aside>
       )}
