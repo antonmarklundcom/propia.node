@@ -129,6 +129,39 @@ Change:
    separate styling; `mk-contact__aside` rows carry glyphs (`pin`, `clock`,
    `mail`, `whatsapp`) and hairlines.
 
+## Group (d): hub chips and /precios
+
+Keep: the hub markup and editorial Por ciudad `.hub-tile` grid, all price
+queries, JsonLd, metadata, dictionary strings and empty state text. Leave
+`app/precios/[ciudad]/page.tsx` and `MarketingUI.tsx` unchanged.
+
+Change:
+
+1. **Por tipo chips.** Edit `.hub-chip*` rules in place: inline-flex links,
+   full 1 px `--color-border` hairline, radius 0, padding 10px 16px, Jost
+   12 px uppercase tracking 0.1em primary ink. Count: Cormorant 16 px gold
+   (`--color-accent`), no background pill or padding. Hover changes the
+   border to `--color-primary`, with no transform. Leave `.mk-chip` shared
+   styling alone when the hub rule can supply the override.
+2. **Price index hero.** `app/precios/page.tsx` uses `PageHero` from
+   `MarketingUI`, `tone="light"`, the request-scoped brand as eyebrow,
+   `t.indexTitle` as h1 and `t.indexSubtitle(brand)` as lead.
+3. **City list.** Wrap the existing list / empty state in a narrow `Section`.
+   Each row is a hairline-separated link, city name Cormorant 24 px, sample
+   count Jost 12 px uppercase secondary ink on the right. New `.precios-*`
+   rules are scoped to the index so the city detail page is unaffected.
+4. **Method.** A narrow muted `Section` uses `t.methodTitle` with the shared
+   Section title treatment and the unchanged `t.methodBody(brand)` paragraph.
+
+Delete: every inline style object in the price index, the hub count's gold
+pill and hover movement. Keep unused `numberLocale` variables unless a
+typecheck or lint diagnostic requires their removal.
+
+Files: this spec, `app/precios/page.tsx`, `app/globals.css` (hub chip rules
+and new `.precios-*` rules only), `docs/log/c4b.md` (landed, not verified,
+deviations). Run typecheck, verify:i18n and a Unicode-aware emoji search
+over these four files; report failures. No git commands or build for this task.
+
 ## Definition of done (per group)
 
 - `npm run typecheck`, `npm run verify:i18n` green in the sandbox; the director

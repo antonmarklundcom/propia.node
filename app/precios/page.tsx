@@ -7,6 +7,7 @@ import { citiesWithPrices } from "@/lib/precios-queries";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
+import { PageHero, Section } from "@/components/MarketingUI";
 
 // Depends on the medians job's output; render per request (cheap, two queries).
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export default async function PreciosIndexPage() {
   const [cities, origin] = await Promise.all([citiesWithPrices(), siteOrigin()]);
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "1rem" }}>
+    <main className="precios-index">
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
@@ -43,9 +44,14 @@ export default async function PreciosIndexPage() {
         ]}
       />
 
-      <h1 style={{ fontSize: 24 }}>{t.indexTitle}</h1>
-      <p style={{ color: "#55655F" }}>{t.indexSubtitle(brand)}</p>
+      <PageHero
+        tone="light"
+        kicker={brand}
+        title={t.indexTitle}
+        subtitle={t.indexSubtitle(brand)}
+      />
 
+      <Section width="narrow">
       {cities.length === 0 ? (
         <p className="panel-empty">{t.indexEmpty}</p>
       ) : (
@@ -63,12 +69,11 @@ export default async function PreciosIndexPage() {
         </ul>
       )}
 
-      <section className="precios-method">
-        <h2 style={{ fontSize: 16, margin: "0 0 .5rem" }}>
-          {t.methodTitle}
-        </h2>
-        <p style={{ margin: 0 }}>{t.methodBody(brand)}</p>
-      </section>
+      </Section>
+
+      <Section title={t.methodTitle} tone="muted" width="narrow">
+        <p className="precios-index__method">{t.methodBody(brand)}</p>
+      </Section>
     </main>
   );
 }
