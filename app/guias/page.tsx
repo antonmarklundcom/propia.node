@@ -1,3 +1,4 @@
+import { Glyph } from "@/components/Glyph";
 import { numberLocaleFor } from "@/i18n";
 import { dict, currentLocale } from "@/i18n/server";
 import type { Metadata } from "next";
@@ -61,7 +62,7 @@ async function PostTile({ post, featured }: { post: PostCard; featured?: boolean
           />
         ) : (
           <span className="post-card__placeholder" aria-hidden>
-            📄
+            <Glyph name="doc" size={16} />
           </span>
         )}
         <span className="post-card__category">

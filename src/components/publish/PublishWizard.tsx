@@ -1,4 +1,6 @@
 "use client";
+import { Glyph } from "@/components/Glyph";
+
 
 /**
  * 3-step publish wizard (ARCHITECTURE.md §3, M5). Detalles → Ubicación →
@@ -635,7 +637,7 @@ export function PublishWizard({
             </div>
             {cuotaPreview && (
               <p className="wizard-cuota">
-                🏦 {cuotaPreview.text} {t.cuotaWith} {cuotaPreview.programName}
+                <Glyph name="bank" size={16} className="glyph--inline" />{cuotaPreview.text} {t.cuotaWith} {cuotaPreview.programName}
               </p>
             )}
           </div>

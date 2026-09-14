@@ -1,3 +1,4 @@
+import { Glyph, isGlyphName } from "@/components/Glyph";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
@@ -490,7 +491,7 @@ export default async function Home() {
                   {i + 1}
                 </span>
                 <span className="home-how__icon" aria-hidden>
-                  {s.icon}
+                  {isGlyphName(s.icon) ? <Glyph name={s.icon} /> : s.icon}
                 </span>
                 <h3 className="home-how__step-title">{s.title}</h3>
                 <p className="home-how__step-text">{s.text}</p>
@@ -566,7 +567,7 @@ export default async function Home() {
         <section className="home-projects" id="proyectos">
           <div className="home-projects__inner">
             <div className="home-section__head">
-              <h2 className="home-section__title">{t.projectsTitle}</h2>
+              <h2 className="home-section__title"><Glyph name="building" className="glyph--inline" />{t.projectsTitle}</h2>
             </div>
             <p className="home-projects__subtitle">{t.projectsSubtitle}</p>
             <div className="home-row home-row--projects">
@@ -590,7 +591,7 @@ export default async function Home() {
                   className="home-cities__chip"
                   href={categoryUrl({ operation: "venta", citySlug: c.slug })}
                 >
-                  📍 {c.name}
+                  <Glyph name="pin" size={14} className="glyph--inline" />{c.name}
                 </Link>
               ))}
             </div>
@@ -671,7 +672,7 @@ export default async function Home() {
         <section className="home-prices">
           <div className="home-prices__inner">
             <div className="home-section__head">
-              <h2 className="home-section__title">{t.pricesTitle}</h2>
+              <h2 className="home-section__title"><Glyph name="chart" className="glyph--inline" />{t.pricesTitle}</h2>
               <Link className="home-section__more" href="/precios">
                 {t.pricesMore}
               </Link>
@@ -702,7 +703,7 @@ export default async function Home() {
           {t.values.map((v) => (
             <div key={v.title} className="home-values__item">
               <span className="home-values__icon" aria-hidden>
-                {v.icon}
+                {isGlyphName(v.icon) ? <Glyph name={v.icon} /> : v.icon}
               </span>
               <div>
                 <div className="home-values__title">{v.title}</div>
@@ -723,7 +724,7 @@ export default async function Home() {
             {t.discoverCards.map((c) => (
               <a key={c.title} className="home-discover__card" href={c.href}>
                 <span className="home-discover__icon" aria-hidden>
-                  {c.icon}
+                  {isGlyphName(c.icon) ? <Glyph name={c.icon} /> : c.icon}
                 </span>
                 <h3 className="home-discover__card-title">{c.title}</h3>
                 <p className="home-discover__card-text">{c.text}</p>
@@ -761,14 +762,14 @@ export default async function Home() {
           <div className="home-pro__aside">
             <Link className="home-pro__card" href="/inmobiliarias">
               <span className="home-pro__card-icon" aria-hidden>
-                🏢
+                <Glyph name="building" size={28} />
               </span>
               <span className="home-pro__card-title">{t.proAgencyCardTitle}</span>
               <span className="home-pro__card-text">{t.proAgencyCardText}</span>
             </Link>
             <Link className="home-pro__card" href="/proyectos">
               <span className="home-pro__card-icon" aria-hidden>
-                🏗
+                <Glyph name="land" size={28} />
               </span>
               <span className="home-pro__card-title">{t.proProjectsCardTitle}</span>
               <span className="home-pro__card-text">{t.proProjectsCardText}</span>

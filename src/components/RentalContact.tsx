@@ -1,3 +1,4 @@
+import { Glyph } from "@/components/Glyph";
 import type { Dictionary, Locale } from "@/i18n";
 import { LeadForm } from "@/components/LeadForm";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
@@ -42,21 +43,21 @@ export function RentalContact({ d, locale }: { d: Dictionary; locale: Locale }) 
               {waHref && (
                 <li>
                   <a href={waHref} target="_blank" rel="noopener noreferrer">
-                    💬 WhatsApp {whatsapp}
+                    <Glyph name="chat" size={16} className="glyph--inline" />WhatsApp {whatsapp}
                   </a>
                 </li>
               )}
               {CONTACT_EMAIL && (
                 <li>
-                  <a href={`mailto:${CONTACT_EMAIL}`}>✉️ {CONTACT_EMAIL}</a>
+                  <a href={`mailto:${CONTACT_EMAIL}`}><Glyph name="mail" size={16} className="glyph--inline" />{CONTACT_EMAIL}</a>
                 </li>
               )}
-              <li>📝 {c.formNote}</li>
+              <li><Glyph name="doc" size={16} className="glyph--inline" />{c.formNote}</li>
             </ul>
           </div>
           <div className="rh-why__card">
             <h3 className="rh-why__card-title">{c.officeTitle}</h3>
-            <p className="rh-why__card-text">📍 {c.officeText}</p>
+            <p className="rh-why__card-text"><Glyph name="pin" size={16} className="glyph--inline" />{c.officeText}</p>
           </div>
         </div>
         <div className="rp-form__form">

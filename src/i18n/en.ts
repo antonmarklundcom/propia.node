@@ -163,7 +163,7 @@ export const en = {
   rentalsHero: "Your next place is waiting.",
   foreignToggle: "Show your property to the world",
   foreignToggleDetail:
-    "🌎 Your property will also be shown to overseas buyers on our English site — at no extra cost.",
+    "Your property will also be shown to overseas buyers on our English site — at no extra cost.",
   inquiryPrefill: "Hi, I am interested in this property.",
   quickQuestions: ["Still available?", "Can I visit?", "What is required?"],
 } as const;
@@ -613,17 +613,17 @@ export const enHome = {
   howMore: "Read the full guide →",
   howSteps: [
     {
-      icon: "🔎",
+      icon: "search",
       title: "Search by area and budget",
       text: "Filter by city, neighbourhood, property type and price range. See the results as a list or on the map.",
     },
     {
-      icon: "📊",
+      icon: "chart",
       title: "Compare against the market",
       text: "Every property for sale shows its estimated monthly payment, and we publish the median price per m² for each city.",
     },
     {
-      icon: "💬",
+      icon: "chat",
       title: "Contact directly",
       text: "Message whoever listed the property on WhatsApp, straight from the listing — no middleman, no fee.",
     },
@@ -645,7 +645,7 @@ export const enHome = {
   investPricesCta: "See prices by area",
   investFinancingCta: "How financing works →",
 
-  projectsTitle: "🏗 New developments in Paraguay",
+  projectsTitle: "New developments in Paraguay",
   projectsSubtitle:
     "Verified new-build — apartments pre-construction, under construction and ready to move in.",
 
@@ -663,7 +663,7 @@ export const enHome = {
   developerProjectCount: (n: number) =>
     `${n} ${n === 1 ? "development" : "developments"}`,
 
-  pricesTitle: "📊 Reference prices by city",
+  pricesTitle: "Reference prices by city",
   pricesMore: "See all →",
   pricesSubtitle:
     "Median price per m², calculated from published listings. So you can tell whether a listing is in line with its area before you negotiate.",
@@ -671,17 +671,17 @@ export const enHome = {
 
   values: [
     {
-      icon: "✅",
+      icon: "check",
       title: "Direct contact",
       text: "You speak to the seller or the agency directly, with no middleman.",
     },
     {
-      icon: "💳",
+      icon: "card",
       title: "Estimated monthly payment",
       text: "Every property for sale shows its monthly payment under current financing.",
     },
     {
-      icon: "🇵🇾",
+      icon: "pin",
       title: "Built for Paraguay",
       text: "Prices in guaraníes and dollars, real neighbourhoods, and WhatsApp first.",
     },
@@ -690,28 +690,28 @@ export const enHome = {
   discoverTitle: (brand: string) => `Discover more on ${brand}`,
   discoverCards: [
     {
-      icon: "🏡",
+      icon: "home",
       title: "List your property for free",
       text: "Add photos, price and location in minutes. No commission, no listing fee.",
       cta: "List now",
       href: "/publicar",
     },
     {
-      icon: "💰",
+      icon: "money",
       title: en.valuationMagnet,
       text: "We give you an estimated range from the prices published in the area. Free, and no sign-up.",
       cta: "Calculate free",
       href: "/tasacion",
     },
     {
-      icon: "📊",
+      icon: "chart",
       title: "Market prices",
       text: "Median price per m² in each city, calculated from the portal's published listings.",
       cta: "See prices",
       href: "/precios",
     },
     {
-      icon: "🏦",
+      icon: "percent",
       title: "Financing and monthly payments",
       text: "Which programmes exist in Paraguay, what they ask for, and how we estimate each listing's monthly payment.",
       cta: "Read the guide",

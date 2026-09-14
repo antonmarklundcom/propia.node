@@ -57,22 +57,22 @@ const STEPS = [
 
 const CONCEPTS = [
   {
-    icon: "💵",
+    icon: "money",
     title: "Entrega inicial",
     text: "El porcentaje que ponés de tu bolsillo. Cuanto mayor sea, menor es la cuota y mejores las condiciones que conseguís.",
   },
   {
-    icon: "📈",
+    icon: "chart",
     title: "Tasa anual",
     text: "El costo del dinero por año. Puede ser fija o variable; una diferencia de un punto sobre 20 años es mucha plata, así que compará.",
   },
   {
-    icon: "🗓",
+    icon: "calendar",
     title: "Plazo",
     text: "A más años, cuota más baja pero más intereses totales. Elegí el plazo más corto que te permita dormir tranquilo.",
   },
   {
-    icon: "🏦",
+    icon: "bank",
     title: "Gastos administrativos",
     text: "Tasación, seguro de vida, seguro del inmueble y gastos de escrituración. No están en la cuota que mostramos y conviene presupuestarlos aparte.",
   },

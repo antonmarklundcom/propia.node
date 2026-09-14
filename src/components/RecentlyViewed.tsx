@@ -1,4 +1,6 @@
 "use client";
+import { Glyph } from "@/components/Glyph";
+
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -64,7 +66,7 @@ export function RecentlyViewed() {
   return (
     <section className="home-section">
       <div className="home-section__head">
-        <h2 className="home-section__title">🕓 Vistos recientemente</h2>
+        <h2 className="home-section__title"><Glyph name="history" size={18} className="glyph--inline" />Vistos recientemente</h2>
       </div>
       <div className="home-row">
         {entries.map((e) => (

@@ -36,17 +36,17 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const TOOLS = [
   {
-    icon: "📊",
+    icon: "chart",
     title: "Precios por ciudad",
     text: "Mediana de precio por m² en venta y en alquiler, por ciudad y tipo de propiedad. Solo publicamos la cifra cuando la muestra alcanza un mínimo razonable.",
   },
   {
-    icon: "💰",
+    icon: "money",
     title: "Tasación online gratis",
     text: "Un rango estimado para tu propiedad a partir de los avisos comparables de tu zona. Sin registro y en menos de un minuto.",
   },
   {
-    icon: "🏦",
+    icon: "bank",
     title: "Financiamiento y cuotas",
     text: "Las condiciones de los programas vigentes y cómo se convierte un precio de venta en una cuota mensual estimada.",
   },

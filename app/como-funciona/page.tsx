@@ -70,17 +70,17 @@ const SELL_STEPS = [
 
 const RENT_TIPS = [
   {
-    icon: "📄",
+    icon: "doc",
     title: "Qué suelen pedir",
     text: "En Paraguay lo habitual es un depósito de garantía, uno o dos meses adelantados y un garante propietario o seguro de caución. Confirmalo con el propietario antes de reservar.",
   },
   {
-    icon: "🧾",
+    icon: "receipt",
     title: "Qué mirar en el contrato",
     text: "Plazo, ajuste anual, quién paga expensas y servicios, y en qué estado se entrega y se devuelve el inmueble. Pedí inventario con fotos al recibir.",
   },
   {
-    icon: "🏢",
+    icon: "building",
     title: "Costos que se olvidan",
     text: "Expensas del edificio, IVA si el propietario factura, y en departamentos la cochera y el baulera pueden cobrarse aparte.",
   },

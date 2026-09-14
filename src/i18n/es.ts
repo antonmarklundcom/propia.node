@@ -31,7 +31,7 @@ export const es = {
   rentalsHero: "Tu próximo lugar te está esperando.", // alquiler vertical: never ownership language
   foreignToggle: "Mostrale tu propiedad al mundo",
   foreignToggleDetail:
-    "🌎 Tu propiedad también se mostrará a compradores extranjeros en realestateinparaguay.com — sin costo adicional.",
+    "Tu propiedad también se mostrará a compradores extranjeros en realestateinparaguay.com — sin costo adicional.",
   inquiryPrefill: "Hola, estoy interesado en esta propiedad.",
   quickQuestions: ["¿Disponible?", "¿Puedo visitar?", "¿Requisitos?"],
 } as const;
@@ -303,7 +303,7 @@ export const esPanel = {
 
   // Admin
   adminReviewTitle: "Cola de revisión",
-  adminReviewEmpty: "No hay avisos esperando revisión. 🎉",
+  adminReviewEmpty: "No hay avisos esperando revisión.",
   approve: "Aprobar",
   reject: "Rechazar",
   rejectReasonLabel: "Motivo del rechazo",
@@ -1422,17 +1422,17 @@ export const esHome = {
   howMore: "Ver la guía completa →",
   howSteps: [
     {
-      icon: "🔎",
+      icon: "search",
       title: "Buscá por zona y presupuesto",
       text: "Filtrá por ciudad, barrio, tipo de propiedad y rango de precio. Mirá los resultados en lista o sobre el mapa.",
     },
     {
-      icon: "📊",
+      icon: "chart",
       title: "Compará con el mercado",
       text: "Cada propiedad en venta muestra su cuota estimada, y publicamos la mediana de precio por m² de cada ciudad.",
     },
     {
-      icon: "💬",
+      icon: "chat",
       title: "Contactá directo",
       text: "Escribile por WhatsApp a quien publicó, desde la misma ficha y sin intermediarios ni costo.",
     },
@@ -1454,7 +1454,7 @@ export const esHome = {
   investPricesCta: "Ver precios por zona",
   investFinancingCta: "Cómo funciona el financiamiento →",
 
-  projectsTitle: "🏗 Nuevos proyectos en Paraguay",
+  projectsTitle: "Nuevos proyectos en Paraguay",
   projectsSubtitle:
     "Obra nueva verificada — departamentos en pozo, en construcción y entrega inmediata.",
 
@@ -1471,7 +1471,7 @@ export const esHome = {
   developersSubtitle: "Conocé quién construye los proyectos del país.",
   developerProjectCount: (n: number) => `${n} ${n === 1 ? "proyecto" : "proyectos"}`,
 
-  pricesTitle: "📊 Precios de referencia por ciudad",
+  pricesTitle: "Precios de referencia por ciudad",
   pricesMore: "Ver todos →",
   pricesSubtitle:
     "Medianas de precio por m² calculadas sobre los avisos publicados. Para saber si un aviso está en línea con su zona antes de negociar.",
@@ -1479,17 +1479,17 @@ export const esHome = {
 
   values: [
     {
-      icon: "✅",
+      icon: "check",
       title: "Contacto directo",
       text: "Hablás directo con el vendedor o la inmobiliaria, sin intermediarios.",
     },
     {
-      icon: "💳",
+      icon: "card",
       title: "Cuota estimada",
       text: "Cada propiedad en venta muestra su cuota mensual con financiamiento vigente.",
     },
     {
-      icon: "🇵🇾",
+      icon: "pin",
       title: "Hecho para Paraguay",
       text: "Precios en guaraníes y dólares, barrios reales y WhatsApp primero.",
     },
@@ -1498,28 +1498,28 @@ export const esHome = {
   discoverTitle: (brand: string) => `Descubre más en ${brand}`,
   discoverCards: [
     {
-      icon: "🏡",
+      icon: "home",
       title: "Publicá tu propiedad gratis",
       text: "Cargá fotos, precio y ubicación en minutos. Sin comisión, sin costo de publicación.",
       cta: "Publicar ahora",
       href: "/publicar",
     },
     {
-      icon: "💰",
+      icon: "money",
       title: es.valuationMagnet,
       text: "Te damos un rango estimado con los precios publicados en la zona. Gratis y sin registrarte.",
       cta: "Calcular gratis",
       href: "/tasacion",
     },
     {
-      icon: "📊",
+      icon: "chart",
       title: "Precios del mercado",
       text: "Mediana de precio por m² en cada ciudad, calculada sobre los avisos publicados del portal.",
       cta: "Ver precios",
       href: "/precios",
     },
     {
-      icon: "🏦",
+      icon: "percent",
       title: "Financiamiento y cuotas",
       text: "Qué programas existen en Paraguay, qué piden y cómo calculamos la cuota estimada de cada aviso.",
       cta: "Leer la guía",

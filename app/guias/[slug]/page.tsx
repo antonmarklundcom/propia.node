@@ -1,3 +1,4 @@
+import { Glyph } from "@/components/Glyph";
 import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -161,7 +162,7 @@ export default async function GuiaPage({ params }: Params) {
                     />
                   ) : (
                     <span className="post-card__placeholder" aria-hidden>
-                      📄
+                      <Glyph name="doc" size={16} />
                     </span>
                   )}
                 </div>

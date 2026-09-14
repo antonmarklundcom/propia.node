@@ -1,3 +1,4 @@
+import { Glyph } from "@/components/Glyph";
 import Link from "next/link";
 import { tokens } from "@/design/tokens";
 import { listCities } from "@/lib/queries";
@@ -37,7 +38,7 @@ export default async function NotFound() {
       }}
     >
       <div style={{ fontSize: 48 }} aria-hidden>
-        🏡
+        <Glyph name="home" size={40} />
       </div>
       <h1 style={{ fontSize: 26, margin: "16px 0 8px", color: tokens.color.primary }}>
         No encontramos propiedades para esa búsqueda

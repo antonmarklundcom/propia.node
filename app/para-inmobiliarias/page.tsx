@@ -33,32 +33,32 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const BENEFITS = [
   {
-    icon: "📇",
+    icon: "list",
     title: "Tu cartera completa, en un solo lugar",
     text: "Cargá propiedad por propiedad o importá tu cartera entera desde una planilla o desde el enlace de tu aviso. Sin límite de avisos en el plan gratuito.",
   },
   {
-    icon: "💬",
+    icon: "chat",
     title: "Las consultas llegan directo a vos",
     text: "Cada aviso lleva tu WhatsApp. No intermediamos la conversación, no te cobramos por contacto y no revendemos tus leads a la competencia.",
   },
   {
-    icon: "🏢",
+    icon: "building",
     title: "Perfil público de tu inmobiliaria",
     text: "Tu página con logo, equipo de agentes y todos tus avisos activos — un enlace que podés compartir y que además posiciona en Google.",
   },
   {
-    icon: "📊",
+    icon: "chart",
     title: "Datos reales del mercado",
     text: "Medianas de precio por ciudad y por m² calculadas sobre avisos publicados. Argumentos concretos para la próxima captación.",
   },
   {
-    icon: "💳",
+    icon: "card",
     title: "Cuota estimada en cada aviso",
     text: "Mostramos automáticamente la cuota mensual aproximada con financiamiento vigente. El comprador entiende de entrada si le cierra el número.",
   },
   {
-    icon: "👥",
+    icon: "users",
     title: "Cuentas para tu equipo",
     text: "Cada agente con su usuario y su perfil público, todo bajo la cuenta de la inmobiliaria. Vos ves la actividad de toda la oficina.",
   },

@@ -20,6 +20,15 @@ const GLYPHS = {
   phone: <path d="m5 3 4 1 1 5-3 2a14 14 0 0 0 6 6l2-3 5 1 1 4-3 2C10 21 3 14 3 6l2-3Z" />,
   whatsapp: <><path d="M20.5 11.5a8.5 8.5 0 0 1-12.7 7.4L3 21l1.5-5A8.5 8.5 0 1 1 20.5 11.5Z" /><path d="m8 7 2 3-1 1a8 8 0 0 0 4 4l1-1 3 1c-1 4-10-1-10-6l1-2Z" /></>,
   building: <path d="M4 20V4h10v16M14 20V9h6v11M7 7.5h1.5M10.5 7.5H12M7 11h1.5M10.5 11H12M7 14.5h1.5M10.5 14.5H12M16.5 12.5H18M16.5 16H18" />,
+  chart: <path d="M4 20V12h4v8M10 20V8h4v12M16 20V4h4v16M3 20h18" />,
+  calendar: <><rect x="3" y="5" width="18" height="16" /><path d="M7 3v4m10-4v4M3 10h18" /></>,
+  users: <><circle cx="9" cy="7" r="3" /><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v3" /></>,
+  card: <><rect x="3" y="5" width="18" height="14" /><path d="M3 10h18M6 15h4" /></>,
+  bank: <path d="m3 8 9-5 9 5H3ZM5 8v11m7-11v11m7-11v11M3 21h18M3 19h18" />,
+  chat: <path d="M3 4h18v13H9l-6 4V4Z" />,
+  receipt: <path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3ZM8 8h8M8 12h8" />,
+  percent: <><path d="m5 19 14-14" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></>,
+  history: <><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6M12 7v5l4 2" /></>,
   key: <><circle cx="8" cy="8" r="5" /><path d="m11.5 11.5 9 9m-3-3 3-3m-6 0 3-3" /></>,
 } satisfies Record<string, ReactNode>;
 
