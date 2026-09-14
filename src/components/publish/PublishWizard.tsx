@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { bestCuota, type FinancingProgram } from "@/lib/cuota";
 import { formatCuota } from "@/lib/format";
-import { esPublish } from "@/i18n/es";
+import { getDictionary, numberLocaleFor, type Locale } from "@/i18n";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { NearbyProject, PublishLocation } from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
@@ -30,11 +30,6 @@ import {
 import { imageThumbUrl } from "@/lib/format";
 import type { ListingImageRow } from "@/lib/listing-images";
 
-const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
-  { value: "venta", label: "Venta" },
-  { value: "alquiler", label: "Alquiler" },
-  { value: "alquiler_temporal", label: "Alquiler temporal" },
-];
 
 /** Terrenos have no rooms; every other type does. */
 function hasRooms(t: PropertyType | ""): boolean {
@@ -112,6 +107,7 @@ function formatCooldown(seconds: number): string {
 }
 
 export function PublishWizard({
+  locale,
   locations,
   projects,
   programs,
@@ -122,6 +118,7 @@ export function PublishWizard({
   otpEnabled,
   homeHref,
 }: {
+  locale: Locale;
   locations: PublishLocation[];
   projects: NearbyProject[];
   programs: FinancingProgram[];
@@ -137,6 +134,9 @@ export function PublishWizard({
   otpEnabled: boolean;
   homeHref: string;
 }) {
+  const d = getDictionary(locale);
+  const t = d.publish;
+  const numberLocale = numberLocaleFor(locale);
   const [state, setState] = useState<WizardState>(() => ({
     ...EMPTY,
     ...initialDraft,
@@ -227,8 +227,8 @@ export function PublishWizard({
     const priceGs = state.priceCurrency === "PYG" ? amount : amount * usdToPyg;
     const best = bestCuota(priceGs, programs);
     if (!best) return null;
-    return { text: formatCuota(best.monthlyGs), programName: best.programName };
-  }, [state.operation, state.priceAmount, state.priceCurrency, usdToPyg, programs]);
+    return { text: locale === "es" ? formatCuota(best.monthlyGs) : `Gs ${Math.round(best.monthlyGs).toLocaleString(numberLocale)}${d.publicUi.perMonth}`, programName: best.programName };
+  }, [state.operation, state.priceAmount, state.priceCurrency, usdToPyg, programs, locale, numberLocale, d.publicUi.perMonth]);
 
   const payload = useCallback(
     (): DraftPayload => ({
@@ -272,17 +272,17 @@ export function PublishWizard({
         if (!res.ok) {
           setPhotoError(
             res.error === "not_configured"
-              ? esPublish.photosStorageOff
+              ? t.photosStorageOff
               : res.error === "too_many"
-                ? esPublish.photosTooMany
-                : esPublish.photosFailed,
+                ? t.photosTooMany
+                : t.photosFailed,
           );
           return;
         }
         setPhotos(res.images);
-        if (res.rejected.length > 0) setPhotoError(esPublish.photosFailed);
+        if (res.rejected.length > 0) setPhotoError(t.photosFailed);
       } catch {
-        setPhotoError(esPublish.photosFailed);
+        setPhotoError(t.photosFailed);
       } finally {
         setPhotoBusy(false);
       }
@@ -298,7 +298,7 @@ export function PublishWizard({
         const res = await deleteDraftPhotoAction(state.draftId, imageId);
         if (res.ok) setPhotos(res.images);
       } catch {
-        setPhotoError(esPublish.photosFailed);
+        setPhotoError(t.photosFailed);
       } finally {
         setPhotoBusy(false);
       }
@@ -313,13 +313,13 @@ export function PublishWizard({
     try {
       const res = await saveDraftAction(payload());
       if (!res.ok) {
-        setStepError(esPublish.errors[res.error] ?? esPublish.errors.generic);
+        setStepError(t.errors[res.error] ?? t.errors.generic);
         return null;
       }
       if (res.draftId !== state.draftId) set("draftId", res.draftId);
       return res.draftId;
     } catch {
-      setStepError(esPublish.errors.generic);
+      setStepError(t.errors.generic);
       return null;
     } finally {
       setSaving(false);
@@ -329,12 +329,12 @@ export function PublishWizard({
   const validateStep = useCallback(
     (i: number): string | null => {
       if (i === 0) {
-        if (!state.operation) return esPublish.errors.operation;
-        if (!state.propertyType) return esPublish.errors.propertyType;
-        if (state.title.trim().length < 8) return esPublish.errors.title;
+        if (!state.operation) return t.errors.operation;
+        if (!state.propertyType) return t.errors.propertyType;
+        if (state.title.trim().length < 8) return t.errors.title;
       }
-      if (i === 1 && !state.locationId) return esPublish.errors.location;
-      if (i === 2 && !(Number(state.priceAmount) > 0)) return esPublish.errors.price;
+      if (i === 1 && !state.locationId) return t.errors.location;
+      if (i === 2 && !(Number(state.priceAmount) > 0)) return t.errors.price;
       return null;
     },
     [state],
@@ -370,14 +370,14 @@ export function PublishWizard({
           setCooldown(Math.ceil((res.cooldownMs ?? 60000) / 1000));
           setOtpSent(true);
         } else {
-          setOtpError(esPublish.errors.invalidNumber);
+          setOtpError(t.errors.invalidNumber);
         }
         return;
       }
       setOtpSent(true);
       setCooldown(60);
     } catch {
-      setOtpError(esPublish.errors.generic);
+      setOtpError(t.errors.generic);
     } finally {
       setOtpBusy(false);
     }
@@ -392,7 +392,7 @@ export function PublishWizard({
       if (saved === null) return;
       const res = await publishDraftAction({ draftId: saved, whatsapp });
       if (!res.ok) {
-        setOtpError(esPublish.errors.generic);
+        setOtpError(t.errors.generic);
         return;
       }
       try {
@@ -402,7 +402,7 @@ export function PublishWizard({
       }
       setDone(true);
     } catch {
-      setOtpError(esPublish.errors.generic);
+      setOtpError(t.errors.generic);
     } finally {
       setOtpBusy(false);
     }
@@ -421,10 +421,10 @@ export function PublishWizard({
       if (!res.ok) {
         setOtpError(
           res.error === "too_many"
-            ? esPublish.errors.otpTooMany
+            ? t.errors.otpTooMany
             : res.error === "otp"
-              ? esPublish.errors.otpMismatch
-              : esPublish.errors.generic,
+              ? t.errors.otpMismatch
+              : t.errors.generic,
         );
         return;
       }
@@ -435,7 +435,7 @@ export function PublishWizard({
       }
       setDone(true);
     } catch {
-      setOtpError(esPublish.errors.generic);
+      setOtpError(t.errors.generic);
     } finally {
       setOtpBusy(false);
     }
@@ -445,10 +445,10 @@ export function PublishWizard({
     return (
       <div className="wizard-done">
         <div className="wizard-done__check">✓</div>
-        <h2 className="wizard-done__title">{esPublish.doneTitle}</h2>
-        <p className="wizard-done__body">{esPublish.doneBody}</p>
+        <h2 className="wizard-done__title">{t.doneTitle}</h2>
+        <p className="wizard-done__body">{t.doneBody}</p>
         <a className="panel-btn panel-btn--primary" href={homeHref}>
-          {esPublish.doneCta}
+          {t.doneCta}
         </a>
       </div>
     );
@@ -459,7 +459,7 @@ export function PublishWizard({
   return (
     <div className="wizard">
       <ol className="wizard-steps" aria-label="Pasos">
-        {esPublish.stepLabels.map((label, i) => (
+        {t.stepLabels.map((label, i) => (
           <li
             key={label}
             className={`wizard-step${i === step ? " wizard-step--active" : ""}${
@@ -475,16 +475,16 @@ export function PublishWizard({
       {/* Say why fields arrived filled in — an unexplained pre-filled form
           reads as someone else's data, not as a shortcut. */}
       {prefilled && step === 0 && (
-        <p className="wizard-prefill">{esPublish.prefillNote}</p>
+        <p className="wizard-prefill">{t.prefillNote}</p>
       )}
 
       {/* Step 1 — Detalles */}
       {step === 0 && (
         <div className="wizard-panel">
           <div className="wizard-field">
-            <label className="wizard-label">{esPublish.operationLabel}</label>
+            <label className="wizard-label">{t.operationLabel}</label>
             <div className="wizard-chips">
-              {OPERATION_OPTIONS.map((o) => (
+              {Object.entries(d.publicUi.operations).map(([value, label]) => ({ value: value as Operation, label })).map((o) => (
                 <button
                   key={o.value}
                   type="button"
@@ -499,7 +499,7 @@ export function PublishWizard({
 
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="ptype">
-              {esPublish.propertyTypeLabel}
+              {t.propertyTypeLabel}
             </label>
             <select
               id="ptype"
@@ -510,7 +510,7 @@ export function PublishWizard({
               <option value="">—</option>
               {PROPERTY_TYPE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {d.publicUi.propertyTypes[o.value]}
                 </option>
               ))}
             </select>
@@ -518,28 +518,28 @@ export function PublishWizard({
 
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="title">
-              {esPublish.titleLabel}
+              {t.titleLabel}
             </label>
             <input
               id="title"
               className="wizard-input"
               value={state.title}
               maxLength={180}
-              placeholder={esPublish.titlePlaceholder}
+              placeholder={t.titlePlaceholder}
               onChange={(e) => set("title", e.target.value)}
             />
           </div>
 
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="desc">
-              {esPublish.descriptionLabel}
+              {t.descriptionLabel}
             </label>
             <textarea
               id="desc"
               className="wizard-input wizard-textarea"
               value={state.descriptionEs}
               rows={5}
-              placeholder={esPublish.descriptionPlaceholder}
+              placeholder={t.descriptionPlaceholder}
               onChange={(e) => set("descriptionEs", e.target.value)}
             />
           </div>
@@ -547,13 +547,13 @@ export function PublishWizard({
           <div className="wizard-grid">
             {rooms && (
               <>
-                <NumField label={esPublish.bedroomsLabel} value={state.bedrooms} onChange={(v) => set("bedrooms", v)} />
-                <NumField label={esPublish.bathroomsLabel} value={state.bathrooms} onChange={(v) => set("bathrooms", v)} />
-                <NumField label={esPublish.parkingLabel} value={state.parking} onChange={(v) => set("parking", v)} />
-                <NumField label={esPublish.areaLabel} value={state.areaM2} onChange={(v) => set("areaM2", v)} />
+                <NumField label={t.bedroomsLabel} value={state.bedrooms} onChange={(v) => set("bedrooms", v)} />
+                <NumField label={t.bathroomsLabel} value={state.bathrooms} onChange={(v) => set("bathrooms", v)} />
+                <NumField label={t.parkingLabel} value={state.parking} onChange={(v) => set("parking", v)} />
+                <NumField label={t.areaLabel} value={state.areaM2} onChange={(v) => set("areaM2", v)} />
               </>
             )}
-            <NumField label={esPublish.landLabel} value={state.landM2} onChange={(v) => set("landM2", v)} />
+            <NumField label={t.landLabel} value={state.landM2} onChange={(v) => set("landM2", v)} />
           </div>
         </div>
       )}
@@ -563,14 +563,14 @@ export function PublishWizard({
         <div className="wizard-panel">
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="loc">
-              {esPublish.locationLabel}
+              {t.locationLabel}
             </label>
             <input
               id="loc"
               className="wizard-input"
               list="loc-list"
               defaultValue={locationLabel}
-              placeholder={esPublish.locationPlaceholder}
+              placeholder={t.locationPlaceholder}
               onChange={(e) => {
                 const hit = locations.find((l) => l.label === e.target.value);
                 set("locationId", hit ? hit.id : 0);
@@ -581,20 +581,20 @@ export function PublishWizard({
                 <option key={l.id} value={l.label} />
               ))}
             </datalist>
-            <p className="wizard-hint">{esPublish.locationHint}</p>
+            <p className="wizard-hint">{t.locationHint}</p>
           </div>
 
           {projects.length > 0 && (
             <div className="wizard-field">
               <label className="wizard-label" htmlFor="proj">
-                {esPublish.projectLabel}
+                {t.projectLabel}
               </label>
               <input
                 id="proj"
                 className="wizard-input"
                 list="proj-list"
                 defaultValue={projectName}
-                placeholder={esPublish.projectPlaceholder}
+                placeholder={t.projectPlaceholder}
                 onChange={(e) => {
                   const hit = projects.find((p) => p.name === e.target.value);
                   set("projectId", hit ? hit.id : null);
@@ -605,7 +605,7 @@ export function PublishWizard({
                   <option key={p.id} value={p.name} />
                 ))}
               </datalist>
-              <p className="wizard-hint">{esPublish.projectHint}</p>
+              <p className="wizard-hint">{t.projectHint}</p>
             </div>
           )}
         </div>
@@ -615,7 +615,7 @@ export function PublishWizard({
       {step === 2 && (
         <div className="wizard-panel">
           <div className="wizard-field">
-            <label className="wizard-label">{esPublish.priceLabel}</label>
+            <label className="wizard-label">{t.priceLabel}</label>
             <div className="wizard-price">
               <select
                 className="wizard-input wizard-currency"
@@ -635,14 +635,14 @@ export function PublishWizard({
             </div>
             {cuotaPreview && (
               <p className="wizard-cuota">
-                🏦 {cuotaPreview.text} {esPublish.cuotaWith} {cuotaPreview.programName}
+                🏦 {cuotaPreview.text} {t.cuotaWith} {cuotaPreview.programName}
               </p>
             )}
           </div>
 
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="video">
-              {esPublish.videoLabel}
+              {t.videoLabel}
             </label>
             <input
               id="video"
@@ -654,11 +654,11 @@ export function PublishWizard({
           </div>
 
           <div className="wizard-field">
-            <span className="wizard-label">{esPublish.photosTitle}</span>
-            <p className="wizard-hint">{esPublish.photosHint}</p>
+            <span className="wizard-label">{t.photosTitle}</span>
+            <p className="wizard-hint">{t.photosHint}</p>
 
             {state.draftId == null ? (
-              <p className="wizard-hint">{esPublish.photosDraftFirst}</p>
+              <p className="wizard-hint">{t.photosDraftFirst}</p>
             ) : (
               <>
                 <input
@@ -672,10 +672,10 @@ export function PublishWizard({
                     // Let the same file be picked again after a failure.
                     e.target.value = "";
                   }}
-                  aria-label={esPublish.photosPickLabel}
+                  aria-label={t.photosPickLabel}
                 />
                 {photoBusy && (
-                  <p className="wizard-hint">{esPublish.photosUploading}</p>
+                  <p className="wizard-hint">{t.photosUploading}</p>
                 )}
                 {photoError && <p className="auth-error">{photoError}</p>}
 
@@ -696,7 +696,7 @@ export function PublishWizard({
                           onClick={() => void removePhoto(photo.id)}
                           disabled={photoBusy}
                         >
-                          {esPublish.photosDelete}
+                          {t.photosDelete}
                         </button>
                       </li>
                     ))}
@@ -712,27 +712,27 @@ export function PublishWizard({
               checked={state.foreignExposure}
               onChange={(e) => set("foreignExposure", e.target.checked)}
             />
-            <span>{esPublish.foreignExposureLabel}</span>
+            <span>{t.foreignExposureLabel}</span>
           </label>
 
           {/* OTP-at-publish — only when a code can actually reach them. */}
           <div className="wizard-otp">
             <h3 className="wizard-otp__title">
-              {otpEnabled ? esPublish.otpTitle : esPublish.publishTitle}
+              {otpEnabled ? t.otpTitle : t.publishTitle}
             </h3>
             <p className="wizard-hint">
-              {otpEnabled ? esPublish.otpSubtitle : esPublish.publishSubtitle}
+              {otpEnabled ? t.otpSubtitle : t.publishSubtitle}
             </p>
             <div className="wizard-field">
               <label className="wizard-label" htmlFor="wa">
-                {esPublish.whatsappLabel}
+                {t.whatsappLabel}
               </label>
               <input
                 id="wa"
                 className="wizard-input"
                 inputMode="tel"
                 value={whatsapp}
-                placeholder="0981 123 456"
+                placeholder={d.publicUi.phonePlaceholder}
                 onChange={(e) => setWhatsapp(e.target.value)}
                 disabled={otpEnabled && otpSent}
               />
@@ -741,7 +741,7 @@ export function PublishWizard({
             {otpEnabled && otpSent && (
               <div className="wizard-field">
                 <label className="wizard-label" htmlFor="code">
-                  {esPublish.codeLabel}
+                  {t.codeLabel}
                 </label>
                 <input
                   id="code"
@@ -765,7 +765,7 @@ export function PublishWizard({
                   onClick={publishDirect}
                   disabled={otpBusy || Number(state.priceAmount) <= 0}
                 >
-                  {otpBusy ? esPublish.publishing : esPublish.publish}
+                  {otpBusy ? t.publishing : t.publish}
                 </button>
               ) : !otpSent ? (
                 <button
@@ -774,7 +774,7 @@ export function PublishWizard({
                   onClick={sendCode}
                   disabled={otpBusy || Number(state.priceAmount) <= 0}
                 >
-                  {otpBusy ? esPublish.sending : esPublish.sendCode}
+                  {otpBusy ? t.sending : t.sendCode}
                 </button>
               ) : (
                 <>
@@ -784,7 +784,7 @@ export function PublishWizard({
                     onClick={verifyAndPublish}
                     disabled={otpBusy || code.length !== 6}
                   >
-                    {otpBusy ? esPublish.publishing : esPublish.publish}
+                    {otpBusy ? t.publishing : t.publish}
                   </button>
                   <button
                     type="button"
@@ -793,8 +793,8 @@ export function PublishWizard({
                     disabled={otpBusy || cooldown > 0}
                   >
                     {cooldown > 0
-                      ? `${esPublish.resendIn} ${formatCooldown(cooldown)}`
-                      : esPublish.resend}
+                      ? `${t.resendIn} ${formatCooldown(cooldown)}`
+                      : t.resend}
                   </button>
                 </>
               )}
@@ -810,7 +810,7 @@ export function PublishWizard({
         <div className="wizard-nav">
           {step > 0 ? (
             <button type="button" className="panel-btn" onClick={goBack}>
-              {esPublish.back}
+              {t.back}
             </button>
           ) : (
             <span />
@@ -821,16 +821,16 @@ export function PublishWizard({
             onClick={goNext}
             disabled={saving}
           >
-            {saving ? esPublish.saving : esPublish.next}
+            {saving ? t.saving : t.next}
           </button>
         </div>
       )}
       {step === 2 && (
         <div className="wizard-nav">
           <button type="button" className="panel-btn" onClick={goBack}>
-            {esPublish.back}
+            {t.back}
           </button>
-          <span className="wizard-hint">{saving ? esPublish.saving : ""}</span>
+          <span className="wizard-hint">{saving ? t.saving : ""}</span>
         </div>
       )}
     </div>

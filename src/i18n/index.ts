@@ -19,6 +19,18 @@
  *   their locale as a prop) and for callers that already hold a locale.
  */
 import {
+  esAboutPage,
+  esContactPage,
+  esAgentsPage,
+  esAgenciesPage,
+  esProjectsPage,
+  esGuidesPage,
+  esProjectPage,
+  esPrecios,
+  esTasacion,
+  esPublish,
+  esPublicAuth,
+  esPublicUi,
   es,
   esCard,
   esCategory,
@@ -40,6 +52,18 @@ import {
   esVender,
 } from "./es";
 import {
+  enAboutPage,
+  enContactPage,
+  enAgentsPage,
+  enAgenciesPage,
+  enProjectsPage,
+  enGuidesPage,
+  enProjectPage,
+  enPrecios,
+  enTasacion,
+  enPublish,
+  enPublicAuth,
+  enPublicUi,
   en,
   enCard,
   enCategory,
@@ -71,6 +95,18 @@ export type Locale = "es" | "en";
 export const DEFAULT_LOCALE: Locale = "es";
 
 const esDictionary = {
+  aboutPage: esAboutPage,
+  contactPage: esContactPage,
+  agentsPage: esAgentsPage,
+  agenciesPage: esAgenciesPage,
+  projectsPage: esProjectsPage,
+  guidesPage: esGuidesPage,
+  projectPage: esProjectPage,
+  precios: esPrecios,
+  tasacion: esTasacion,
+  publish: esPublish,
+  publicAuth: esPublicAuth,
+  publicUi: esPublicUi,
   common: es,
   searchBar: esSearchBar,
   filters: esFilters,
@@ -128,6 +164,18 @@ export type Dictionary = Widen<typeof esDictionary>;
  * widening what callers see.
  */
 const enDictionary = {
+  aboutPage: enAboutPage,
+  contactPage: enContactPage,
+  agentsPage: enAgentsPage,
+  agenciesPage: enAgenciesPage,
+  projectsPage: enProjectsPage,
+  guidesPage: enGuidesPage,
+  projectPage: enProjectPage,
+  precios: enPrecios,
+  tasacion: enTasacion,
+  publish: enPublish,
+  publicAuth: enPublicAuth,
+  publicUi: enPublicUi,
   common: en,
   searchBar: enSearchBar,
   filters: enFilters,

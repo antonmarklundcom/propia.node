@@ -1,3 +1,6 @@
+import { numberLocaleFor } from "@/i18n";
+import type { Dictionary } from "@/i18n";
+import { dict, currentLocale } from "@/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
@@ -17,44 +20,44 @@ import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Proyectos y obra nueva";
-const DESCRIPTION =
-  "Edificios, condominios, barrios cerrados y loteamientos en desarrollo en Paraguay: en pozo, en construcción y con entrega inmediata.";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const c = (await dict()).projectsPage;
   const brand = await brandName();
   return {
-    title: `${TITLE} en Paraguay`,
-    description: DESCRIPTION,
+    title: c.metaTitle,
+    description: c.description,
     alternates: { canonical: `${await siteOrigin()}/proyectos` },
-    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description },
   };
 }
 
-const WHY = [
+const reasons = (c: Dictionary["projectsPage"]) => [
   {
     icon: "💸",
-    title: "Precio de preventa",
-    text: "Comprar en pozo suele costar bastante menos que la unidad terminada, y la diferencia se capitaliza a medida que avanza la obra.",
+    title: c.priceHeading,
+    text: c.priceBody,
   },
   {
     icon: "🗓",
-    title: "Plan de pagos de la desarrolladora",
-    text: "Muchos proyectos financian la etapa de construcción en cuotas, sin banco de por medio hasta la entrega.",
+    title: c.paymentsHeading,
+    text: c.paymentsBody,
   },
   {
     icon: "🎨",
-    title: "Elegís la unidad",
-    text: "Cuanto antes entrás, más opciones de piso, orientación y terminaciones quedan disponibles.",
+    title: c.choiceHeading,
+    text: c.choiceBody,
   },
   {
     icon: "🔍",
-    title: "Qué verificar",
-    text: "Trayectoria de la desarrolladora, permiso de construcción, fecha de entrega contractual y qué pasa si se atrasa. Pedí siempre el contrato antes de reservar.",
+    title: c.checksHeading,
+    text: c.checksBody,
   },
 ];
 
 export default async function ProyectosPage() {
+  const numberLocale = numberLocaleFor(await currentLocale());
+  const c = (await dict()).projectsPage;
   const [origin, projects, developers] = await Promise.all([
     siteOrigin(),
     listAllProjects(),
@@ -66,8 +69,8 @@ export default async function ProyectosPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: TITLE, url: "/proyectos" },
+            { name: c.home, url: "/" },
+            { name: c.title, url: "/proyectos" },
           ]),
           ...(projects.length > 0
             ? [
@@ -84,18 +87,17 @@ export default async function ProyectosPage() {
       />
 
       <PageHero
-        kicker="Obra nueva"
-        title="Proyectos en desarrollo en Paraguay"
-        subtitle="Departamentos en pozo, condominios, barrios cerrados y loteamientos — con la etapa de obra, la fecha de entrega y el precio desde el que arrancan las unidades."
+        kicker={c.kicker}
+        title={c.heading}
+        subtitle={c.subtitle}
       />
 
       <Section>
         {projects.length === 0 ? (
           <div className="mk-empty">
-            <p>Todavía no hay proyectos publicados en el portal.</p>
+            <p>{c.empty}</p>
             <Link className="mk-btn mk-btn--accent" href="/contacto">
-              Publicar mi proyecto
-            </Link>
+              {c.publish}</Link>
           </div>
         ) : (
           <div className="mk-project-grid">
@@ -109,8 +111,8 @@ export default async function ProyectosPage() {
       {developers.length > 0 && (
         <Section
           tone="muted"
-          title="Desarrolladoras"
-          subtitle="Quiénes están construyendo los proyectos publicados."
+          title={c.developersHeading}
+          subtitle={c.developersSubtitle}
         >
           <div className="mk-devs">
             {developers.map((d) => (
@@ -133,7 +135,7 @@ export default async function ProyectosPage() {
                 <div className="mk-dev__name">{d.name}</div>
                 <div className="mk-dev__count">
                   {d.projectCount}{" "}
-                  {d.projectCount === 1 ? "proyecto" : "proyectos"}
+                  {d.projectCount === 1 ? c.project : c.projects}
                 </div>
               </div>
             ))}
@@ -141,15 +143,15 @@ export default async function ProyectosPage() {
         </Section>
       )}
 
-      <Section title="Comprar en pozo: lo que conviene saber">
-        <FeatureGrid items={WHY} columns={4} />
+      <Section title={c.adviceHeading}>
+        <FeatureGrid items={reasons(c)} columns={4} />
       </Section>
 
       <CtaBand
-        title="¿Desarrollás proyectos?"
-        text="Publicá tu emprendimiento con todas sus unidades, plan de pagos y avance de obra."
-        primary={{ label: "Publicar mi proyecto", href: "/contacto" }}
-        secondary={{ label: "Ver planes", href: "/planes" }}
+        title={c.ctaHeading}
+        text={c.ctaBody}
+        primary={{ label: c.publishCta, href: "/contacto" }}
+        secondary={{ label: c.plans, href: "/planes" }}
       />
     </main>
   );

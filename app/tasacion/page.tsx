@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { esTasacion } from "@/i18n/es";
+import { dict, currentLocale } from "@/i18n/server";
+import { numberLocaleFor } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
 import { listCities } from "@/lib/queries";
 import { siteOrigin } from "@/lib/origin";
@@ -13,15 +14,23 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
+  const d = await dict();
+  const t = d.tasacion;
+  const locale = await currentLocale();
+  const numberLocale = numberLocaleFor(locale);
   return {
-    title: `${esTasacion.title}`,
-    description: esTasacion.subtitle(brand),
+    title: `${t.title}`,
+    description: t.subtitle(brand),
     alternates: { canonical: `${await siteOrigin()}/tasacion` },
   };
 }
 
 export default async function TasacionPage() {
   const brand = await brandName();
+  const d = await dict();
+  const t = d.tasacion;
+  const locale = await currentLocale();
+  const numberLocale = numberLocaleFor(locale);
   const [cities, origin] = await Promise.all([listCities(), siteOrigin()]);
 
   return (
@@ -29,16 +38,17 @@ export default async function TasacionPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: esTasacion.title, url: "/tasacion" },
+            { name: d.publicUi.home, url: "/" },
+            { name: t.title, url: "/tasacion" },
           ]),
         ]}
       />
 
-      <h1 style={{ fontSize: 26 }}>{esTasacion.title}</h1>
-      <p style={{ color: "#55655F" }}>{esTasacion.subtitle(brand)}</p>
+      <h1 style={{ fontSize: 26 }}>{t.title}</h1>
+      <p style={{ color: "#55655F" }}>{t.subtitle(brand)}</p>
 
       <ValuationTool
+        locale={locale}
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
         estimate={estimateAction}
         requestContact={requestValuationContactAction}

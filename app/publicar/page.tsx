@@ -7,7 +7,7 @@ import {
   listPublishLocations,
   getUsdToPygRate,
 } from "@/lib/publish-queries";
-import { esPublish } from "@/i18n/es";
+import { dict, currentLocale } from "@/i18n/server";
 import { brandName } from "@/lib/brand-server";
 import { isMessagingConfigured } from "@/lib/crm";
 import {
@@ -19,10 +19,10 @@ import { resolveCity } from "@/lib/queries";
 import { OPERATIONS, PROPERTY_TYPES } from "@/lib/import/types";
 import { listListingImages, type ListingImageRow } from "@/lib/listing-images";
 
-export const metadata: Metadata = {
-  title: `Publicá tu propiedad`,
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = (await dict()).publish;
+  return { title: t.pageTitle, robots: { index: false, follow: false } };
+}
 
 // Draft state is per-user; never statically cache the wizard.
 export const dynamic = "force-dynamic";
@@ -75,6 +75,8 @@ export default async function PublishPage({
     m2?: string;
   }>;
 }) {
+  const t = (await dict()).publish;
+  const locale = await currentLocale();
   const params = await searchParams;
   const { draft } = params;
 
@@ -134,10 +136,11 @@ export default async function PublishPage({
   return (
     <main className="site-main wizard-wrap">
       <header className="wizard-head">
-        <h1 className="wizard-head__title">{esPublish.pageTitle}</h1>
-        <p className="wizard-head__subtitle">{esPublish.pageSubtitle}</p>
+        <h1 className="wizard-head__title">{t.pageTitle}</h1>
+        <p className="wizard-head__subtitle">{t.pageSubtitle}</p>
       </header>
       <PublishWizard
+        locale={locale}
         locations={locations}
         projects={projects}
         programs={programs}

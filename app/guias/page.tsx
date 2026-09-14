@@ -1,3 +1,5 @@
+import { numberLocaleFor } from "@/i18n";
+import { dict, currentLocale } from "@/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
@@ -15,31 +17,31 @@ import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 // Editorial content changes when the founder publishes, not on a schedule.
 export const dynamic = "force-dynamic";
 
-const TITLE = "Guías y notas";
-const DESCRIPTION = (brand: string) => `Guías prácticas para comprar, vender y alquilar en Paraguay, y análisis del mercado inmobiliario — escritas por el equipo de ${brand}.`;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const c = (await dict()).guidesPage;
   const brand = await brandName();
   return {
-    title: `${TITLE} sobre el mercado inmobiliario paraguayo`,
-    description: DESCRIPTION(brand),
+    title: c.metaTitle,
+    description: c.description(brand),
     alternates: { canonical: `${await siteOrigin()}/guias` },
-    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand) },
   };
 }
 
-function formatDate(d: Date | null): string | null {
+function formatDate(d: Date | null, numberLocale: string): string | null {
   if (!d) return null;
-  return new Date(d).toLocaleDateString("es-PY", {
+  return new Date(d).toLocaleDateString(numberLocale, {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-function PostTile({ post, featured }: { post: PostCard; featured?: boolean }) {
+async function PostTile({ post, featured }: { post: PostCard; featured?: boolean }) {
+  const c = (await dict()).guidesPage;
   const cover = imageThumbUrl(post.coverR2Key);
-  const date = formatDate(post.publishedAt);
+  const date = formatDate(post.publishedAt, numberLocaleFor(await currentLocale()));
   return (
     <Link
       className={`post-card${featured ? " post-card--featured" : ""}`}
@@ -63,7 +65,7 @@ function PostTile({ post, featured }: { post: PostCard; featured?: boolean }) {
           </span>
         )}
         <span className="post-card__category">
-          {POST_CATEGORY_LABEL[post.category]}
+          {c.categories[post.category]}
         </span>
       </div>
       <div className="post-card__body">
@@ -71,7 +73,7 @@ function PostTile({ post, featured }: { post: PostCard; featured?: boolean }) {
         <p className="post-card__excerpt">{post.excerpt}</p>
         <div className="post-card__meta">
           {date && <span>{date}</span>}
-          <span>{post.readingMinutes} min de lectura</span>
+          <span>{post.readingMinutes}{c.readingSuffix}</span>
         </div>
       </div>
     </Link>
@@ -79,6 +81,7 @@ function PostTile({ post, featured }: { post: PostCard; featured?: boolean }) {
 }
 
 export default async function GuiasPage() {
+  const c = (await dict()).guidesPage;
   const [origin, posts] = await Promise.all([
     siteOrigin(),
     listPublishedPosts(),
@@ -91,8 +94,8 @@ export default async function GuiasPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: TITLE, url: "/guias" },
+            { name: c.home, url: "/" },
+            { name: c.title, url: "/guias" },
           ]),
           ...(posts.length > 0
             ? [
@@ -109,28 +112,23 @@ export default async function GuiasPage() {
       />
 
       <PageHero
-        kicker="Guías"
-        title="Comprar, vender y alquilar en Paraguay, explicado"
-        subtitle="Lo que conviene saber antes de firmar: documentos, financiamiento, precios de referencia y los errores que salen caros."
+        kicker={c.kicker}
+        title={c.heading}
+        subtitle={c.subtitle}
       />
 
       <Section>
         {posts.length === 0 ? (
           <div className="mk-empty">
             <p>
-              Todavía no publicamos ninguna guía. Mientras tanto, estas páginas
-              responden lo más consultado:
-            </p>
+              {c.empty}</p>
             <div className="mk-cta__actions" style={{ marginTop: 16 }}>
               <Link className="mk-btn mk-btn--outline" href="/como-funciona">
-                Cómo funciona
-              </Link>
+                {c.howItWorks}</Link>
               <Link className="mk-btn mk-btn--outline" href="/financiamiento">
-                Financiamiento y cuotas
-              </Link>
+                {c.financing}</Link>
               <Link className="mk-btn mk-btn--outline" href="/preguntas-frecuentes">
-                Preguntas frecuentes
-              </Link>
+                {c.faq}</Link>
             </div>
           </div>
         ) : (
@@ -148,10 +146,10 @@ export default async function GuiasPage() {
       </Section>
 
       <CtaBand
-        title="¿Ya sabés cuánto vale tu propiedad?"
-        text="Tasación online gratuita, con los precios publicados de tu zona."
-        primary={{ label: "Tasar gratis", href: "/tasacion" }}
-        secondary={{ label: "Ver datos del mercado", href: "/datos" }}
+        title={c.ctaHeading}
+        text={c.ctaBody}
+        primary={{ label: c.valuation, href: "/tasacion" }}
+        secondary={{ label: c.marketData, href: "/datos" }}
       />
     </main>
   );
