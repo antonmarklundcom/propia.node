@@ -725,6 +725,10 @@ export function PublishWizard({
             <p className="wizard-hint">
               {otpEnabled ? t.otpSubtitle : t.publishSubtitle}
             </p>
+            <p className="panel-note">
+              {otpEnabled ? t.messagingRequired : t.messagingUnavailable}{" "}
+              {t.reviewAndProfessionalStatus}
+            </p>
             <div className="wizard-field">
               <label className="wizard-label" htmlFor="wa">
                 {t.whatsappLabel}
