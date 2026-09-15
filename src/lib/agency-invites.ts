@@ -9,17 +9,20 @@
  * data is scoped on `agents.agency_id` (auth/guards.ts) — the only thing that
  * has to hold.
  *
- * Redemption is single-use and race-safe without a transaction: `consumeInvite`
+ * Redemption is single-use and race-safe: `consumeInvite`
  * is an UPDATE whose WHERE clause carries the precondition (`used_at IS NULL`)
  * and whose affectedRows tells the caller whether it won — the same pattern
  * `updateListing()` uses to prove a scoped row was hit (lib/listing-edit.ts).
- * Two people opening the same link at once means one insert, not two.
+ * Registration passes its transaction to every redemption helper so later
+ * account/profile failures also roll back the claim.
  */
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies, agencyInvites, users } from "@/db/schema";
+
+type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** Roles an invite may grant. Deliberately a subset of users.role. */
 export type InviteRole = "agent" | "agency_admin";
@@ -77,11 +80,12 @@ export async function createAgencyInvite(params: {
  */
 export async function getUsableInvite(
   token: string,
+  conn: DbConn = db,
 ): Promise<AgencyInvite | null> {
   // A malformed token can never match; skip the round trip.
   if (!/^[0-9a-f]{64}$/.test(token)) return null;
 
-  const [row] = await db
+  const [row] = await conn
     .select({
       id: agencyInvites.id,
       token: agencyInvites.token,
@@ -114,24 +118,31 @@ export async function getUsableInvite(
  * Call this *before* creating anything the invite pays for, and treat false as
  * a hard stop.
  */
-export async function consumeInvite(inviteId: number): Promise<boolean> {
-  const [res] = await db
+export async function consumeInvite(
+  inviteId: number,
+  conn: DbConn = db,
+): Promise<boolean> {
+  const [res] = await conn
     .update(agencyInvites)
     .set({ usedAt: new Date() })
-    .where(and(eq(agencyInvites.id, inviteId), isNull(agencyInvites.usedAt)));
+    .where(and(
+      eq(agencyInvites.id, inviteId),
+      isNull(agencyInvites.usedAt),
+      gt(agencyInvites.expiresAt, new Date()),
+    ));
   return res.affectedRows === 1;
 }
 
 /**
- * Record who redeemed an invite, once their user row exists. Best-effort
- * bookkeeping: the invite is already spent by consumeInvite(), so a failure
- * here cannot let it be used again.
+ * Record who redeemed an invite, once their user row exists. Registration
+ * includes this bookkeeping in its transaction alongside the claim.
  */
 export async function stampInviteUser(
   inviteId: number,
   userId: number,
+  conn: DbConn = db,
 ): Promise<void> {
-  await db
+  await conn
     .update(agencyInvites)
     .set({ usedByUserId: userId })
     .where(eq(agencyInvites.id, inviteId));

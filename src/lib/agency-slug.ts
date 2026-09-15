@@ -14,11 +14,16 @@ import { agencies } from "@/db/schema";
 import { slugify } from "@/lib/slug";
 import { startsWithPattern } from "@/lib/sql-like";
 
-export async function uniqueAgencySlug(name: string): Promise<string> {
+type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export async function uniqueAgencySlug(
+  name: string,
+  conn: DbConn = db,
+): Promise<string> {
   const base = slugify(name) || "inmobiliaria";
   const taken = new Set(
     (
-      await db
+      await conn
         .select({ slug: agencies.slug })
         .from(agencies)
         .where(like(agencies.slug, startsWithPattern(base)))

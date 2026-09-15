@@ -34,6 +34,7 @@ export default async function RegisterPage({
   name: t.registerErrorName,
   email: t.registerErrorEmail,
   email_taken: t.registerErrorEmailTaken,
+  whatsapp_taken: t.registerErrorWhatsappTaken,
   password: t.registerErrorPassword,
   agency_name: t.registerErrorAgencyName,
   invite: t.registerErrorInvite,
@@ -183,6 +184,8 @@ export default async function RegisterPage({
               </label>
               <input
                 className="auth-field__input"
+                aria-invalid={error === "whatsapp_taken"}
+                aria-describedby={error === "whatsapp_taken" ? "whatsapp-error" : undefined}
                 id="whatsapp"
                 name="whatsapp"
                 type="tel"
@@ -191,6 +194,9 @@ export default async function RegisterPage({
                 maxLength={30}
                 autoComplete="tel"
               />
+              {error === "whatsapp_taken" && (
+                <p id="whatsapp-error" className="auth-error">{t.registerErrorWhatsappTaken}</p>
+              )}
             </div>
 
             <div className="auth-field">

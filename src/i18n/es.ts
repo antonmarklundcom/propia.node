@@ -838,6 +838,11 @@ export const esPublish = {
     "Mostrar también a compradores del exterior (realestateinparaguay.com) — próximamente",
 
   // Publicación sin verificación (no hay proveedor de mensajería configurado)
+  professionalPublishSubtitle: "Revisamos el aviso antes de que salga publicado. El contacto público es el que se muestra abajo.",
+  publicWhatsappPreview: (number: string) => `WhatsApp público del aviso: ${number}`,
+  publicWhatsappMissing: "Tu perfil profesional y tu inmobiliaria todavía no tienen un WhatsApp público válido.",
+  publicWhatsappHint: "El aviso usa el WhatsApp de tu perfil de agente y, si no tiene uno, el de tu inmobiliaria. El número que ingresás abajo se guarda en tu cuenta; no cambia ese contacto público.",
+  publicWhatsappEdit: "Editar mi contacto profesional",
   publishTitle: "Publicá tu aviso",
   publishSubtitle:
     "Dejanos tu WhatsApp para que te contacten los interesados. Revisamos el aviso antes de que salga publicado.",
@@ -867,6 +872,7 @@ export const esPublish = {
   doneCta: "Ir a mi panel",
 
   errors: {
+    public_contact: "Revisá el WhatsApp público en tu perfil y recargá el borrador antes de enviarlo. Falta un número válido o cambió desde la vista previa.",
     operation: "Elegí si es venta o alquiler.",
     propertyType: "Elegí el tipo de propiedad.",
     title: "Poné un título de al menos 8 caracteres.",
@@ -3275,6 +3281,7 @@ export const esPublicAuth = {
   loginToRegister: "¿Todavía no tenés cuenta? Registrate",
   registerErrorName: "Escribí tu nombre completo.",
   registerErrorEmail: "Revisá el email.",
+  registerErrorWhatsappTaken: "Este número de WhatsApp ya está registrado.",
   registerErrorEmailTaken: "Ya existe una cuenta con ese email. Probá ingresando.",
   registerErrorPassword: "La contraseña necesita al menos 8 caracteres.",
   registerErrorAgencyName: "Escribí el nombre de la inmobiliaria.",
