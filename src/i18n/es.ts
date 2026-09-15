@@ -1310,7 +1310,7 @@ export const esGuideEn = {
     { numeral: "≈ 3–5 %", label: "Costos totales de compra (verificar)" },
     { numeral: "Escritura pública", label: "Escriturado e inscripto" },
   ],
-  newWeekTitle: "Nuevo esta semana",
+  newWeekTitle: "Últimas publicaciones",
   newWeekMore: "Ver todas →",
   whyTitle: "Por qué Paraguay",
   whyReadGuide: "Leer la guía →",
@@ -2999,7 +2999,8 @@ export const esPremium = {
     { icon: "clock", label: "Respuesta rápida\npor WhatsApp" },
   ],
   searchTitle: "Encontrá tu próxima propiedad",
-  featuredTitle: "Propiedades destacadas",
+  featuredTitle: "Últimas publicaciones",
+  featuredEmpty: "Todavía no hay propiedades publicadas aquí. Si sos agente o representás a una inmobiliaria, podés publicar tu primera propiedad.",
   featuredMore: "Ver todas las propiedades →",
   typesTitle: "Tipos de propiedades",
   types: {
@@ -3372,4 +3373,17 @@ export const esParaInmobiliarias = {
   createAccount: "Crear cuenta gratis",
   viewPlans: "Ver planes",
   contact: "Hablar con nosotros",
+} as const;
+
+export const esNotFound = {
+  "title": "No encontramos propiedades para esa búsqueda",
+  "explanation": "Puede que no haya publicaciones disponibles en esa zona o combinación todavía. Probá con otra ciudad o tipo de propiedad.",
+  "popularSearches": "BÚSQUEDAS POPULARES",
+  "home": "Volver al inicio",
+  "suggestions": [
+    "Casas en Asunción",
+    "Departamentos en Asunción",
+    "Terrenos en Luque",
+    "Alquileres en Asunción"
+  ]
 } as const;

@@ -500,7 +500,7 @@ export const enGuideEn = {
     { numeral: "≈ 3–5%", label: "Total purchase costs (verify before launch)" },
     { numeral: "Public deed", label: "Notarised and registered" },
   ],
-  newWeekTitle: "New this week",
+  newWeekTitle: "Latest listings",
   newWeekMore: "See all →",
   whyTitle: "Why Paraguay",
   whyReadGuide: "Read the guide →",
@@ -2123,7 +2123,8 @@ export const enPremium = {
     { icon: "clock", label: "Fast replies\non WhatsApp" },
   ],
   searchTitle: "Find your next property",
-  featuredTitle: "Featured properties",
+  featuredTitle: "Latest listings",
+  featuredEmpty: "There are no properties listed here yet. Agents and agencies can submit their first property.",
   featuredMore: "See all properties →",
   typesTitle: "Property types",
   types: {
@@ -2480,4 +2481,17 @@ export const enParaInmobiliarias = {
   createAccount: "Create a free account",
   viewPlans: "View plans",
   contact: "Talk to us",
+} as const;
+
+export const enNotFound = {
+  "title": "We couldn't find properties for that search",
+  "explanation": "There may not be listings in that area or category yet. Try another city or property type.",
+  "popularSearches": "POPULAR SEARCHES",
+  "home": "Back to home",
+  "suggestions": [
+    "Houses in Asunción",
+    "Apartments in Asunción",
+    "Land in Luque",
+    "Rentals in Asunción"
+  ]
 } as const;

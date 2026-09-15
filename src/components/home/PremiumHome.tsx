@@ -294,19 +294,30 @@ export function PremiumHome({
         </section>
       )}
 
-      {sections.includes("destacadas") && recent.length > 0 && (
+      {sections.includes("destacadas") && (
         <section className="ds-section ds-container ph-section ph-section--cream">
           <div className="home-section__head">
             <h2 className="ph-h2">{t.featuredTitle}</h2>
-            <Link className="ds-link-underline" href="/venta/asuncion">
-              {t.featuredMore}
-            </Link>
+            {recent.length > 0 && (
+              <Link className="ds-link-underline" href="/venta/asuncion">
+                {t.featuredMore}
+              </Link>
+            )}
           </div>
-          <div className="ph-grid-4 ph-featured">
-            {recent.slice(0, 8).map((card) => (
-              <ListingCard key={card.id} card={card} />
-            ))}
-          </div>
+          {recent.length > 0 ? (
+            <div className="ph-grid-4 ph-featured">
+              {recent.slice(0, 8).map((card) => (
+                <ListingCard key={card.id} card={card} />
+              ))}
+            </div>
+          ) : (
+            <div className="ph-featured-empty">
+              <p>{t.featuredEmpty}</p>
+              <Link className="ds-btn ds-btn--primary" href="/publicar">
+                {d.common.publishCta}
+              </Link>
+            </div>
+          )}
         </section>
       )}
 
