@@ -1,9 +1,10 @@
 import { Glyph } from "@/components/Glyph";
 import Link from "next/link";
 import { tokens } from "@/design/tokens";
-import { listCities } from "@/lib/queries";
+import { listCities, listNavigationInventory, stockedNavigationPaths } from "@/lib/queries";
+import { currentVertical } from "@/lib/vertical-context";
 import { SearchBar } from "@/components/SearchBar";
-import { currentLocale } from "@/i18n/server";
+import { currentLocale, dict } from "@/i18n/server";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
 
 // Renders per-request rather than at build time — the root layout reads the
@@ -23,10 +24,17 @@ export default async function NotFound() {
   // "category URL with zero matches", so it renders during exactly the kind
   // of incident where MySQL may be the thing that is unwell — a dead search
   // bar is a worse-but-usable page, a stack trace is not.
-  const [cities, locale] = await Promise.all([
+  const [cities, locale, d, inventory] = await Promise.all([
     listCities().catch(() => []),
     currentLocale(),
+    dict(),
+    currentVertical().then(listNavigationInventory).catch(() => []),
   ]);
+  const stockedPaths = stockedNavigationPaths(inventory);
+  // Attach localized labels before filtering so dictionary indexes stay aligned.
+  const suggestions = POPULAR_SEARCHES.map((s, index) => ({
+    ...s, label: d.notFound.suggestions[index],
+  })).filter((s) => stockedPaths.has(s.href));
 
   return (
     <main
@@ -41,48 +49,51 @@ export default async function NotFound() {
         <Glyph name="home" size={40} />
       </div>
       <h1 style={{ fontSize: 26, margin: "16px 0 8px", color: tokens.color.primary }}>
-        No encontramos propiedades para esa búsqueda
+        {d.notFound.title}
       </h1>
       <p style={{ fontSize: 16, color: tokens.color.inkSecondary, lineHeight: 1.6 }}>
-        Puede que no haya publicaciones disponibles en esa zona o combinación
-        todavía. Probá con otra ciudad o tipo de propiedad.
+        {d.notFound.explanation}
       </p>
 
       <div style={{ textAlign: "left" }}>
         <SearchBar cities={cities} locale={locale} />
       </div>
 
-      <p
-        style={{
-          marginTop: 28,
-          fontSize: 13,
-          fontWeight: 700,
-          letterSpacing: "0.02em",
-          color: tokens.color.inkSecondary,
-        }}
-      >
-        BÚSQUEDAS POPULARES
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
-        {POPULAR_SEARCHES.map((s) => (
-          <Link
-            key={s.href}
-            href={s.href}
+      {suggestions.length > 0 && (
+        <>
+          <p
             style={{
-              padding: "8px 14px",
-              borderRadius: tokens.radius.chip,
-              background: tokens.color.surface,
-              border: "1px solid #E1E5E0",
-              color: tokens.color.ink,
-              textDecoration: "none",
-              fontSize: 14,
-              fontWeight: 600,
+              marginTop: 28,
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: "0.02em",
+              color: tokens.color.inkSecondary,
             }}
           >
-            {s.label}
-          </Link>
-        ))}
-      </div>
+            {d.notFound.popularSearches}
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
+            {suggestions.map((s) => (
+              <Link
+                key={s.href}
+                href={s.href}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: tokens.radius.chip,
+                  background: tokens.color.surface,
+                  border: "1px solid #E1E5E0",
+                  color: tokens.color.ink,
+                  textDecoration: "none",
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
 
       <Link
         href="/"
@@ -94,7 +105,7 @@ export default async function NotFound() {
           color: tokens.color.primary,
         }}
       >
-        Volver al inicio
+        {d.notFound.home}
       </Link>
     </main>
   );

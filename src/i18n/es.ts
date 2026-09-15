@@ -1319,7 +1319,7 @@ export const esGuideEn = {
     { numeral: "≈ 3–5 %", label: "Costos totales de compra (verificar)" },
     { numeral: "Escritura pública", label: "Escriturado e inscripto" },
   ],
-  newWeekTitle: "Nuevo esta semana",
+  newWeekTitle: "Últimas publicaciones",
   newWeekMore: "Ver todas →",
   whyTitle: "Por qué Paraguay",
   whyReadGuide: "Leer la guía →",
@@ -3008,7 +3008,8 @@ export const esPremium = {
     { icon: "clock", label: "Respuesta rápida\npor WhatsApp" },
   ],
   searchTitle: "Encontrá tu próxima propiedad",
-  featuredTitle: "Propiedades destacadas",
+  featuredTitle: "Últimas publicaciones",
+  featuredEmpty: "Todavía no hay propiedades publicadas aquí. Si sos agente o representás a una inmobiliaria, podés publicar tu primera propiedad.",
   featuredMore: "Ver todas las propiedades →",
   typesTitle: "Tipos de propiedades",
   types: {
@@ -3402,4 +3403,17 @@ export const esTranslationStatus = {
   fallback: "Publicar no ejecuta la traducción. El contenido sin versión en inglés se muestra en español; los cambios posteriores necesitan otra ejecución del trabajo.",
   next: "Usá Simular en la tarjeta cron:translate para ver candidatos pendientes dentro del límite elegido y la cobertura de títulos en inglés. Una simulación no traduce; una ejecución limitada no garantiza que todo esté actualizado.",
   history: "El historial registra ejecuciones desde este panel, no confirma ejecuciones por terminal ni la programación del cron.",
+} as const;
+
+export const esNotFound = {
+  "title": "No encontramos propiedades para esa búsqueda",
+  "explanation": "Puede que no haya publicaciones disponibles en esa zona o combinación todavía. Probá con otra ciudad o tipo de propiedad.",
+  "popularSearches": "BÚSQUEDAS POPULARES",
+  "home": "Volver al inicio",
+  "suggestions": [
+    "Casas en Asunción",
+    "Departamentos en Asunción",
+    "Terrenos en Luque",
+    "Alquileres en Asunción"
+  ]
 } as const;
