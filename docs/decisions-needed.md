@@ -31,3 +31,22 @@ and can reuse (c)'s rendering.
 **Decided 2026-09-11 (Fable, `fable-plan-quality.md` "Decided NOT to do"):
 (c), and parked** — there are no testimonials to curate yet, so no slot is
 built. Revisit when the first agency asks.
+
+## Deprioritized 2026-09-15 (founder) — not urgent, revisit later
+
+Anton confirmed these are not current-business priorities. Leave as-is; no
+code work against them until he asks again.
+
+- **Per-project financing opt-in** (CLAUDE.md backlog #7). Che Róga Porã stays
+  `active: false` sitewide.
+- **Reviews/ratings system** (see above). Stays parked at option (c)/nothing
+  built.
+- **`afd_primera_vivienda` rate research** (CLAUDE.md backlog #6, currently a
+  9.00% placeholder in `scripts/seed-financing.ts`). Not a code task and not
+  urgent — do not touch the seeded rate without a researched figure.
+
+Current priority instead: get `npm run cron:translate` run against
+production (English listing text is still Spanish-fallback everywhere), and
+make sure the self-service agency/agent registration + listing-upload +
+admin-approval path is solid, since the founder is about to onboard other
+realtors' listings ahead of his own EAS/SERPLAID registration going through.
