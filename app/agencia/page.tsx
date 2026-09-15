@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
+import { OnboardingPanel } from "@/components/panel/OnboardingPanel";
+import { dict } from "@/i18n/server";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   AGENCY_LOCKED_STATUSES,
@@ -85,7 +87,12 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
     getPanelListingStats(scope),
   ]);
   if (rows.length === 0) {
-    return <p className="panel-empty">{esPanel.agencyListingsEmpty}</p>;
+    return (
+      <>
+        <OnboardingPanel t={(await dict()).onboarding} />
+        <p className="panel-empty">{esPanel.agencyListingsEmpty}</p>
+      </>
+    );
   }
 
   const totals = totalsFrom(stats);

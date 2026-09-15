@@ -50,3 +50,26 @@ production (English listing text is still Spanish-fallback everywhere), and
 make sure the self-service agency/agent registration + listing-upload +
 admin-approval path is solid, since the founder is about to onboard other
 realtors' listings ahead of his own EAS/SERPLAID registration going through.
+
+## Forgotten-password recovery — onboarding audit, 2026-09-15
+
+**Stop and ask; not implemented.** There is no self-service forgotten-password
+flow in `app/login` or `src/lib/auth`. The signed-in password change in
+`app/agencia/perfil/actions.ts` requires the current password. The super-admin
+can replace a user's password in `app/admin/usuarios/actions.ts`, but that is
+not a public recovery flow or an agreed identity-check procedure.
+
+**Founder decision:** What identity checks and recovery channel should a realtor
+who has forgotten their password use, and should recovery be operator-assisted
+or self-service with a configured delivery provider?
+
+AGENTS.md §6 requires a decision before extending auth/account-data flows.
+Password-reset infrastructure and public recovery promises are deliberately
+deferred; this does not block the separately authorized onboarding panel and
+photo-readiness copy.
+
+Implementation choices for this audit unit: reuse the existing zero-listings
+result (including drafts) without changing panel queries; dismiss the checklist
+for the current page visit without storing account data; show R2 readiness copy
+before upload using the existing server predicate, retaining all upload gates.
+Messaging/OTP readiness indicators and translation-status UI are out of scope.

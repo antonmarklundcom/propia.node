@@ -19,6 +19,7 @@
  *   their locale as a prop) and for callers that already hold a locale.
  */
 import {
+  esOnboarding,
   esAgentProfile,
   esSiteNotice,
   esPriceAlert,
@@ -58,6 +59,7 @@ import {
   esVender,
 } from "./es";
 import {
+  enOnboarding,
   enAgentProfile,
   enSiteNotice,
   enPriceAlert,
@@ -107,6 +109,7 @@ export type Locale = "es" | "en";
 export const DEFAULT_LOCALE: Locale = "es";
 
 const esDictionary = {
+  onboarding: esOnboarding,
   agentProfile: esAgentProfile,
   siteNotice: esSiteNotice,
   priceAlert: esPriceAlert,
@@ -182,6 +185,7 @@ export type Dictionary = Widen<typeof esDictionary>;
  * widening what callers see.
  */
 const enDictionary = {
+  onboarding: enOnboarding,
   agentProfile: enAgentProfile,
   siteNotice: enSiteNotice,
   priceAlert: enPriceAlert,

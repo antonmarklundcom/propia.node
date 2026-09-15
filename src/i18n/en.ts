@@ -127,7 +127,7 @@ export const enPublish = {
   photosHint: "The first photo is the cover. Add photos now or later from your dashboard.",
   photosPickLabel: "Choose photos", photosUploading: "Uploading…", photosDelete: "Delete",
   photosDraftFirst: "Complete the property details and continue: you can upload photos once the draft is saved.",
-  photosStorageOff: "Photo storage is not available yet. You can still publish and add photos later.",
+  photosStorageOff: "The portal team still needs to enable photo uploads. You can submit your listing for review without photos and add them once uploads are available.",
   photosFailed: "We could not upload some photos. Please try again.", photosTooMany: "Too many photos at once. Upload up to 20 per batch.",
   foreignExposureLabel: "Also show to overseas buyers (realestateinparaguay.com) — coming soon",
   professionalPublishSubtitle: "We review the listing before it goes live. Its public contact is shown below.",
@@ -2486,4 +2486,15 @@ export const enParaInmobiliarias = {
   createAccount: "Create a free account",
   viewPlans: "View plans",
   contact: "Talk to us",
+} as const;
+
+export const enOnboarding = {
+  title: "Your first steps",
+  dismiss: "Dismiss for now",
+  contact: "Complete the WhatsApp number on your public profile",
+  photo: "Add a profile photo or your agency logo",
+  publish: "Publish your first listing",
+  profileHint: "In My profile, edit your contact details and paste the URL of an image already hosted online. Only the agency administrator can edit the agency's details.",
+  review: "When you submit a listing, a WhatsApp code (OTP), if requested, confirms your phone number. The team then reviews the listing and decides whether to publish it. The verified professional badge is awarded separately: neither the code nor listing approval grants it.",
+  visibility: "Your public agent profile appears once at least one published listing is attributed to you; your agency profile appears once at least one is attributed to the agency. Drafts and listings awaiting review do not count yet.",
 } as const;

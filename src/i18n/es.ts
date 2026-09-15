@@ -830,7 +830,7 @@ export const esPublish = {
   photosDraftFirst:
     "Completá los datos de la propiedad y seguí adelante: apenas se guarda el borrador vas a poder subir fotos.",
   photosStorageOff:
-    "El almacenamiento de fotos todavía no está disponible. Podés publicar igual y agregarlas después.",
+    "La carga de fotos está pendiente de habilitación por el equipo del portal. Podés enviar tu propiedad a revisión sin fotos y agregarlas cuando esté disponible.",
   photosFailed: "No pudimos subir algunas fotos. Probá de nuevo.",
   photosTooMany:
     "Son demasiadas fotos de una vez. Subí hasta 20 por tanda.",
@@ -3379,4 +3379,15 @@ export const esParaInmobiliarias = {
   createAccount: "Crear cuenta gratis",
   viewPlans: "Ver planes",
   contact: "Hablar con nosotros",
+} as const;
+
+export const esOnboarding = {
+  title: "Tus primeros pasos",
+  dismiss: "Ocultar por ahora",
+  contact: "Completá el WhatsApp de tu perfil público",
+  photo: "Agregá una foto de perfil o el logo de tu inmobiliaria",
+  publish: "Publicá tu primera propiedad",
+  profileHint: "En Mi perfil podés editar tu contacto y pegar el enlace (URL) de una imagen ya alojada en internet. Los datos de la inmobiliaria los edita su administrador.",
+  review: "Al enviar tu propiedad, si se solicita un código por WhatsApp (OTP), ese código confirma tu número. Después, el equipo revisa el aviso y decide su publicación. La insignia de profesional verificado se otorga por separado: ni el código ni la aprobación del aviso la conceden.",
+  visibility: "Tu perfil público de agente aparece cuando tiene al menos una propiedad publicada a tu nombre; el de tu inmobiliaria, cuando tiene al menos una publicada a nombre de la inmobiliaria. Un borrador o un aviso pendiente de revisión todavía no cuenta.",
 } as const;
