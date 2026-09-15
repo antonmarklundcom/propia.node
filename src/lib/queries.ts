@@ -13,9 +13,11 @@ import {
   eq,
   inArray,
   ne,
+  or,
   sql,
   type SQL,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/mysql-core";
 import { db } from "../db";
 import {
   agencies,
@@ -31,7 +33,8 @@ import {
 import type { Operation, PropertyType } from "./import/types";
 import { CACHE_TAGS, CACHE_TTL } from "./cache";
 import type { VerticalConfig } from "@/config/verticals";
-import { facetConds, verticalConds } from "./facet-sql";
+import { facetConds, verticalConds, publishedFacetWhere } from "./facet-sql";
+import { categoryUrl } from "./urls";
 import type { ListingFacets, SortOption } from "./facets";
 
 export type { SortOption } from "./facets";
@@ -63,6 +66,47 @@ export async function listCities(): Promise<
   Pick<LocationRow, "id" | "name" | "slug">[]
 > {
   return cachedCities();
+}
+
+/** One grouped read for navigation, including the same direct children as
+ * citySubtreeIds(). Counts are separate from SEO's indexability threshold.
+ * The vertical object (including its key and filters) enters the cache key.
+ * Existing listing writers invalidate this tag; ten minutes is the backstop.
+ */
+export const listNavigationInventory = unstable_cache(
+  async (vertical: VerticalConfig) => {
+    const city = alias(locations, "navigation_city");
+    return db
+      .select({
+        citySlug: city.slug,
+        operation: listings.operation,
+        propertyType: listings.propertyType,
+        count: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(listings)
+      .innerJoin(locations, eq(listings.locationId, locations.id))
+      .innerJoin(city, and(
+        eq(city.level, "ciudad"),
+        or(eq(locations.id, city.id), eq(locations.parentId, city.id)),
+      ))
+      .where(publishedFacetWhere({}, vertical))
+      .groupBy(city.slug, listings.operation, listings.propertyType);
+  },
+  ["queries:listNavigationInventory"],
+  { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings, CACHE_TAGS.locations] },
+);
+
+/** City and city/type destinations with real stock; no query per tile. */
+export function stockedNavigationPaths(
+  inventory: Awaited<ReturnType<typeof listNavigationInventory>>,
+): Set<string> {
+  const paths = new Set<string>();
+  for (const row of inventory) {
+    if (row.count <= 0) continue;
+    paths.add(categoryUrl({ operation: row.operation, citySlug: row.citySlug }));
+    paths.add(categoryUrl({ operation: row.operation, citySlug: row.citySlug, type: row.propertyType }));
+  }
+  return paths;
 }
 
 /** A ciudad by slug (slugs are unique per level in our seed). */

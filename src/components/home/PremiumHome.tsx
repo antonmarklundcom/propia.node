@@ -4,6 +4,7 @@ import type { VerticalConfig } from "@/config/verticals";
 import type { Dictionary, Locale } from "@/i18n";
 import { numberLocaleFor } from "@/i18n";
 import type { ListingCard as Card, LocationRow } from "@/lib/queries";
+import { listNavigationInventory, stockedNavigationPaths } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { LineIcon, WhatsappGlyph } from "@/components/Glyph";
 import { Picture } from "@/components/Picture";
@@ -185,7 +186,7 @@ export interface PremiumZoneTile {
   img: string;
 }
 
-export function PremiumHome({
+export async function PremiumHome({
   vertical,
   d,
   brand,
@@ -217,7 +218,11 @@ export function PremiumHome({
   // lives on the home page and nowhere else, so it gets no "see all" link
   // rather than a link into a 404.
   const faqMoreHref = locale === "es" ? "/preguntas-frecuentes" : null;
-  const zones = zoneTiles.filter((z) => cities.some((c) => c.slug === z.slug));
+  const stockedPaths = stockedNavigationPaths(await listNavigationInventory(vertical));
+  // Filter rather than reorder: keep the curated order without empty categories.
+  const zones = zoneTiles.filter((z) => stockedPaths.has(`/venta/${z.slug}`));
+  // Projects is a separate directory, not a listing category.
+  const typeTiles = TYPE_TILES.filter((tile) => tile.key === "proyectos" || stockedPaths.has(tile.href));
 
   return (
     <main className="premium-home ph-home">
@@ -325,7 +330,7 @@ export function PremiumHome({
         <section className="ds-section ds-container ph-section ph-section--cream ph-section--tight">
           <h2 className="ph-h2 ph-h2--centered">{t.typesTitle}</h2>
           <div className="ph-types">
-            {TYPE_TILES.map((tile) => (
+            {typeTiles.map((tile) => (
               <Link key={tile.key} className="ph-types__item" href={tile.href}>
                 <LineIcon
                   glyph={TYPE_ICONS[tile.key]}
@@ -394,7 +399,7 @@ export function PremiumHome({
         <section className="ds-section ds-container ph-section ph-section--cream" id="zonas">
           <div className="home-section__head">
             <h2 className="ph-h2">{t.zonesTitle}</h2>
-            <Link className="ds-link-underline" href="/venta/asuncion">
+            <Link className="ds-link-underline" href={`/venta/${zones[0].slug}`}>
               {t.zonesMore}
             </Link>
           </div>
