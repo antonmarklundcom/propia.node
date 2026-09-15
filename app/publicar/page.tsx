@@ -10,6 +10,7 @@ import {
 import { dict, currentLocale } from "@/i18n/server";
 import { brandName } from "@/lib/brand-server";
 import { isMessagingConfigured } from "@/lib/crm";
+import { isR2Configured } from "@/lib/r2";
 import {
   PublishWizard,
   type InitialDraft,
@@ -149,6 +150,7 @@ export default async function PublishPage({
         initialPhotos={initialPhotos}
         prefill={prefill}
         otpEnabled={isMessagingConfigured()}
+        photosEnabled={isR2Configured()}
         homeHref={homeForRole(user)}
       />
     </main>

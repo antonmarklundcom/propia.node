@@ -118,6 +118,7 @@ export function PublishWizard({
   initialPhotos,
   prefill,
   otpEnabled,
+  photosEnabled,
   homeHref,
 }: {
   locale: Locale;
@@ -134,6 +135,8 @@ export function PublishWizard({
    * directly; the server enforces the same rule, this only shapes the UI.
    */
   otpEnabled: boolean;
+  /** Readiness copy only; upload authorization and storage gates stay server-side. */
+  photosEnabled: boolean;
   homeHref: string;
 }) {
   const d = getDictionary(locale);
@@ -657,10 +660,14 @@ export function PublishWizard({
 
           <div className="wizard-field">
             <span className="wizard-label">{t.photosTitle}</span>
-            <p className="wizard-hint">{t.photosHint}</p>
+            {photosEnabled ? (
+              <p className="wizard-hint">{t.photosHint}</p>
+            ) : (
+              <p className="panel-note" role="status">{t.photosStorageOff}</p>
+            )}
 
             {state.draftId == null ? (
-              <p className="wizard-hint">{t.photosDraftFirst}</p>
+              photosEnabled ? <p className="wizard-hint">{t.photosDraftFirst}</p> : null
             ) : (
               <>
                 <input
