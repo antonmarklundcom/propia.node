@@ -752,6 +752,10 @@ export function PublishWizard({
                 <a href="/agencia/perfil">{t.publicWhatsappEdit}</a>
               </div>
             )}
+            <p className="panel-note">
+              {otpEnabled ? t.messagingRequired : t.messagingUnavailable}{" "}
+              {t.reviewAndProfessionalStatus}
+            </p>
             <div className="wizard-field">
               <label className="wizard-label" htmlFor="wa">
                 {t.whatsappLabel}

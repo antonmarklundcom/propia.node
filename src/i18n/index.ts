@@ -20,6 +20,7 @@
  */
 import {
   esOnboarding,
+  esTranslationStatus,
   esAgentProfile,
   esSiteNotice,
   esPriceAlert,
@@ -60,6 +61,7 @@ import {
 } from "./es";
 import {
   enOnboarding,
+  enTranslationStatus,
   enAgentProfile,
   enSiteNotice,
   enPriceAlert,
@@ -110,6 +112,7 @@ export const DEFAULT_LOCALE: Locale = "es";
 
 const esDictionary = {
   onboarding: esOnboarding,
+  translationStatus: esTranslationStatus,
   agentProfile: esAgentProfile,
   siteNotice: esSiteNotice,
   priceAlert: esPriceAlert,
@@ -186,6 +189,7 @@ export type Dictionary = Widen<typeof esDictionary>;
  */
 const enDictionary = {
   onboarding: enOnboarding,
+  translationStatus: enTranslationStatus,
   agentProfile: enAgentProfile,
   siteNotice: enSiteNotice,
   priceAlert: enPriceAlert,

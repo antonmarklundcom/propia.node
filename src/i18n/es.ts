@@ -849,6 +849,9 @@ export const esPublish = {
 
   // OTP
   otpTitle: "Verificá tu WhatsApp para publicar",
+  messagingRequired: "Se requiere un código de WhatsApp para enviar este aviso a revisión.",
+  messagingUnavailable: "La verificación por WhatsApp no está habilitada. Podés enviar este aviso a revisión sin código.",
+  reviewAndProfessionalStatus: "El aviso se publica solo después de la aprobación del equipo. Verificar el teléfono no otorga la insignia de profesional verificado.",
   otpSubtitle:
     "Te mandamos un código por WhatsApp. Los avisos verificados muestran el sello ✓ y generan más confianza.",
   whatsappLabel: "Número de WhatsApp",
@@ -3390,4 +3393,13 @@ export const esOnboarding = {
   profileHint: "En Mi perfil podés editar tu contacto y pegar el enlace (URL) de una imagen ya alojada en internet. Los datos de la inmobiliaria los edita su administrador.",
   review: "Al enviar tu propiedad, si se solicita un código por WhatsApp (OTP), ese código confirma tu número. Después, el equipo revisa el aviso y decide su publicación. La insignia de profesional verificado se otorga por separado: ni el código ni la aprobación del aviso la conceden.",
   visibility: "Tu perfil público de agente aparece cuando tiene al menos una propiedad publicada a tu nombre; el de tu inmobiliaria, cuando tiene al menos una publicada a nombre de la inmobiliaria. Un borrador o un aviso pendiente de revisión todavía no cuenta.",
+} as const;
+
+export const esTranslationStatus = {
+  title: "Estado de traducción al inglés",
+  configured: "Hay una clave de proveedor configurada. Esto no confirma que el servicio responda ni que cron:translate esté programado.",
+  unavailable: "No hay un proveedor de traducción configurado. cron:translate no puede traducir avisos hasta que se configure una clave.",
+  fallback: "Publicar no ejecuta la traducción. El contenido sin versión en inglés se muestra en español; los cambios posteriores necesitan otra ejecución del trabajo.",
+  next: "Usá Simular en la tarjeta cron:translate para ver candidatos pendientes dentro del límite elegido y la cobertura de títulos en inglés. Una simulación no traduce; una ejecución limitada no garantiza que todo esté actualizado.",
+  history: "El historial registra ejecuciones desde este panel, no confirma ejecuciones por terminal ni la programación del cron.",
 } as const;

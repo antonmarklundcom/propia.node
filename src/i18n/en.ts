@@ -138,6 +138,9 @@ export const enPublish = {
   publishTitle: "Publish your listing",
   publishSubtitle: "Leave your WhatsApp number so interested people can contact you. We review the listing before it goes live.",
   otpTitle: "Verify your WhatsApp to publish",
+  messagingRequired: "A WhatsApp code is required to submit this listing for review.",
+  messagingUnavailable: "WhatsApp verification is not enabled. You can submit this listing for review without a code.",
+  reviewAndProfessionalStatus: "The listing goes live only after team approval. Verifying your phone does not grant the verified professional badge.",
   otpSubtitle: "We send a code via WhatsApp. Verified listings display the ✓ badge and build more trust.",
   whatsappLabel: "WhatsApp number", codeLabel: "6-digit code", sendCode: "Send code", sending: "Sending…", resend: "Resend code", resendIn: "Resend in",
   publish: "Publish listing", publishing: "Publishing…", back: "Back", next: "Next", saving: "Saving…",
@@ -2497,4 +2500,13 @@ export const enOnboarding = {
   profileHint: "In My profile, edit your contact details and paste the URL of an image already hosted online. Only the agency administrator can edit the agency's details.",
   review: "When you submit a listing, a WhatsApp code (OTP), if requested, confirms your phone number. The team then reviews the listing and decides whether to publish it. The verified professional badge is awarded separately: neither the code nor listing approval grants it.",
   visibility: "Your public agent profile appears once at least one published listing is attributed to you; your agency profile appears once at least one is attributed to the agency. Drafts and listings awaiting review do not count yet.",
+} as const;
+
+export const enTranslationStatus = {
+  title: "English translation status",
+  configured: "A provider key is configured. This does not confirm that the service responds or that cron:translate is scheduled.",
+  unavailable: "No translation provider is configured. cron:translate cannot translate listings until a key is configured.",
+  fallback: "Publishing does not run translation. Content without an English version appears in Spanish; later edits need another job run.",
+  next: "Use Simulate on the cron:translate card to see pending candidates within the chosen limit and English title coverage. A simulation does not translate; a limited run does not guarantee everything is up to date.",
+  history: "History records runs from this panel; it does not confirm terminal runs or cron scheduling.",
 } as const;
