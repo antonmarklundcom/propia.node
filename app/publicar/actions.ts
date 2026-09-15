@@ -9,7 +9,7 @@
  */
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { agents, listings, users } from "@/db/schema";
+import { listings, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth/guards";
 import { alertOperator, getCrm, isMessagingConfigured } from "@/lib/crm";
 import { canonPhone } from "@/lib/import/normalize";
@@ -23,17 +23,12 @@ import { esPanel } from "@/i18n/es";
 import { siteOrigin } from "@/lib/origin";
 import { createOtp, verifyOtp } from "@/lib/otp";
 import { allowRequest } from "@/lib/rate-limit";
-import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
-
-/** Which agency (if any) a publisher belongs to — never read from the client. */
-async function resolveAgencyId(userId: number): Promise<number | null> {
-  const [row] = await db
-    .select({ agencyId: agents.agencyId })
-    .from(agents)
-    .where(eq(agents.userId, userId))
-    .limit(1);
-  return row?.agencyId ?? null;
-}
+import {
+  getPublishContact,
+  saveDraft,
+  submitDraftForReview,
+  type PublishContact,
+} from "@/lib/publish-queries";
 
 /** Raw wizard payload from the client — every field re-validated below. */
 export interface DraftPayload {
@@ -61,7 +56,7 @@ function posIntOrNull(v: unknown): number | null {
 }
 
 export type SaveDraftResult =
-  | { ok: true; draftId: number }
+  | { ok: true; draftId: number; contact: PublishContact }
   | { ok: false; error: string };
 
 /**
@@ -90,10 +85,8 @@ export async function saveDraftAction(
   if (!Number.isInteger(locationId) || locationId <= 0)
     return { ok: false, error: "location" };
 
-  const agencyId = await resolveAgencyId(user.id);
   const draftId = await saveDraft({
     userId: user.id,
-    agencyId,
     draftId: payload.draftId ?? null,
     input: {
       operation,
@@ -121,7 +114,9 @@ export async function saveDraftAction(
   });
 
   if (draftId === 0) return { ok: false, error: "not_found" };
-  return { ok: true, draftId };
+  const contact = await getPublishContact(user.id, draftId);
+  if (!contact) return { ok: false, error: "not_found" };
+  return { ok: true, draftId, contact };
 }
 
 export type RequestOtpResult =
@@ -214,8 +209,25 @@ export type PublishResult =
   | { ok: true }
   | {
       ok: false;
-      error: "invalid_number" | "otp" | "too_many" | "not_found" | "otp_required";
+      error: "invalid_number" | "otp" | "too_many" | "not_found" | "otp_required" | "public_contact";
     };
+
+async function validatePublicContact(
+  userId: number,
+  draftId: number,
+  expected: string | null | undefined,
+): Promise<"not_found" | "public_contact" | null> {
+  const contact = await getPublishContact(userId, draftId);
+  if (!contact) return "not_found";
+  if (contact.professional && (
+    !contact.whatsapp ||
+    canonPhone(contact.whatsapp).length < 9 ||
+    contact.whatsapp !== expected
+  )) {
+    return "public_contact";
+  }
+  return null;
+}
 
 /**
  * Verify the OTP and submit the draft for review (draft → pending_review). On
@@ -229,12 +241,16 @@ export async function verifyAndPublishAction(params: {
   draftId: number;
   whatsapp: string;
   code: string;
+  publicWhatsapp?: string | null;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
   if (!isMessagingConfigured()) return { ok: false, error: "otp_required" };
 
   const whatsapp = canonPhone(params.whatsapp);
   if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
+
+  const contactError = await validatePublicContact(user.id, params.draftId, params.publicWhatsapp);
+  if (contactError) return { ok: false, error: contactError };
 
   const verified = await verifyOtp(whatsapp, params.code);
   if (!verified.ok) {
@@ -274,12 +290,16 @@ export async function verifyAndPublishAction(params: {
 export async function publishDraftAction(params: {
   draftId: number;
   whatsapp?: string;
+  publicWhatsapp?: string | null;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
   if (isMessagingConfigured()) return { ok: false, error: "otp_required" };
 
-  // Keep the number if given — the agency still needs to be reachable — but
-  // record it as unverified.
+  const contactError = await validatePublicContact(user.id, params.draftId, params.publicWhatsapp);
+  if (contactError) return { ok: false, error: contactError };
+
+  // This updates the account only. Professional public contacts are previewed
+  // and validated separately; the owner fallback uses this number for FSBO.
   const whatsapp = params.whatsapp ? canonPhone(params.whatsapp) : "";
   if (whatsapp.length >= 9) {
     await db.update(users).set({ whatsapp }).where(eq(users.id, user.id));

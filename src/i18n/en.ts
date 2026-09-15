@@ -96,6 +96,7 @@ export const enPublicAuth = {
   registerToLogin: "Already have an account? Sign in",
   registerPendingNote: "Your account is active immediately. We approve verification (the ✓ on your profile) manually after reviewing your details.",
   registerErrorName: "Enter your full name.", registerErrorEmail: "Check your email address.",
+  registerErrorWhatsappTaken: "This WhatsApp number is already registered.",
   registerErrorEmailTaken: "An account with that email already exists. Try signing in.",
   registerErrorPassword: "Your password needs at least 8 characters.", registerErrorAgencyName: "Enter the agency name.",
   registerErrorGeneric: "We could not create your account. Please try again.",
@@ -129,6 +130,11 @@ export const enPublish = {
   photosStorageOff: "Photo storage is not available yet. You can still publish and add photos later.",
   photosFailed: "We could not upload some photos. Please try again.", photosTooMany: "Too many photos at once. Upload up to 20 per batch.",
   foreignExposureLabel: "Also show to overseas buyers (realestateinparaguay.com) — coming soon",
+  professionalPublishSubtitle: "We review the listing before it goes live. Its public contact is shown below.",
+  publicWhatsappPreview: (number: string) => `Public WhatsApp for this listing: ${number}`,
+  publicWhatsappMissing: "Your professional profile and agency do not yet have a valid public WhatsApp number.",
+  publicWhatsappHint: "The listing uses your agent profile's WhatsApp, or your agency's if your profile has none. The number entered below is saved to your account; it does not change that public contact.",
+  publicWhatsappEdit: "Edit my professional contact",
   publishTitle: "Publish your listing",
   publishSubtitle: "Leave your WhatsApp number so interested people can contact you. We review the listing before it goes live.",
   otpTitle: "Verify your WhatsApp to publish",
@@ -138,7 +144,7 @@ export const enPublish = {
   doneTitle: "Your listing has been submitted!",
   doneBody: "We are reviewing it. Once approved, it will appear on the site. You can track its status and add photos from your dashboard.",
   doneCta: "Go to my dashboard",
-  errors: { operation: "Choose sale or rental.", propertyType: "Choose the property type.", title: "Enter a title with at least 8 characters.", price: "Enter a valid price.", location: "Choose a location from the list.", invalidNumber: "Check the WhatsApp number.", otpMismatch: "The code does not match. Please try again.", otpTooMany: "Too many attempts. Request a new code.", not_found: "We could not find your draft. Reload the page.", generic: "Something went wrong. Please try again." } as Record<string, string>,
+  errors: { public_contact: "Check the public WhatsApp in your profile and reload the draft before submitting. A valid number is missing or has changed since the preview.", operation: "Choose sale or rental.", propertyType: "Choose the property type.", title: "Enter a title with at least 8 characters.", price: "Enter a valid price.", location: "Choose a location from the list.", invalidNumber: "Check the WhatsApp number.", otpMismatch: "The code does not match. Please try again.", otpTooMany: "Too many attempts. Request a new code.", not_found: "We could not find your draft. Reload the page.", generic: "Something went wrong. Please try again." } as Record<string, string>,
 } as const;
 
 /**
