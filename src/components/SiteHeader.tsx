@@ -47,12 +47,15 @@ export async function SiteHeader() {
   const showLogin = chromeShowLogin(vertical.key);
   const showPublishCta = chromeShowPublishCta(vertical.key);
   // realestateinparaguay.com guide §5 "Header": Buy · Rent · Land · New
-  // developments · How it works · Guides — a flat nav with no dropdown
-  // panels, sourced from the i18n dictionary rather than HEADER_NAV (which
-  // is Spanish-only and shaped for the Spanish door's dropdowns). No login,
-  // newsletter or publicar entry point on this domain's chrome (guide §8 /
-  // build-prompt.md PR3 — see chromeShowLogin/chromeShowPublishCta).
-  const guideEnNav = d.guideEn.chromeNav.map((l) => ({ ...l, links: [] as never[] }));
+  // developments · How it works · Guides, sourced from the i18n dictionary
+  // rather than HEADER_NAV (which is Spanish-only and has its own dropdown
+  // panels). Buy and Rent carry their own dropdown of property-type links
+  // (English labels, Spanish-segmented URLs — marketplace category paths
+  // stay Spanish-slugged on every door, same as HEADER_NAV's own links);
+  // the rest stay flat. No login, newsletter or publicar entry point on
+  // this domain's chrome (guide §8 / build-prompt.md PR3 — see
+  // chromeShowLogin/chromeShowPublishCta).
+  const guideEnNav = d.guideEn.chromeNav.map((l) => ({ ...l, links: [...l.links] }));
   // The rental doors (docs/style/rentparaguay.com.md §chrome): Alquileres ·
   // Servicios · Nosotros · Contacto, flat, from the `rental` namespace in the
   // door's own language — never HEADER_NAV, which is the Spanish
