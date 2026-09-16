@@ -1612,6 +1612,37 @@ export const esHub = {
   ctaText: "Publicala gratis y llegá a quienes están buscando en tu zona.",
   ctaPrimary: "Publicar gratis",
   ctaSecondary: "¿Cuánto vale?",
+  /**
+   * SEO body copy below the hub's listing grid. Only rendered on the two
+   * primary marketplace doors (inmobiliaria, en) — terreno.com.py's hard
+   * property_type filter makes this generic copy about houses and
+   * apartments wrong for that door, and it has no English peer need since
+   * it never renders there.
+   */
+  seo: {
+    venta: {
+      title: "Comprar una propiedad en Paraguay: qué mirar antes de decidir",
+      paragraphs: [
+        "Asunción concentra la mayor parte de la oferta en venta, con barrios muy distintos entre sí: zonas residenciales tranquilas como Carmelitas o Villa Morra, sectores en plena renovación como la Costanera, y áreas más accesibles hacia el sur y el oeste de la capital. Fuera de la capital, ciudades como Luque, San Lorenzo, Lambaré y Fernando de la Mora ofrecen opciones más económicas sin alejarse demasiado del centro urbano, mientras que Encarnación y Ciudad del Este concentran buena parte de la demanda del interior y la zona fronteriza.",
+        "Antes de avanzar con una visita conviene tener claros algunos puntos: el tipo de propiedad que buscás (casa, departamento, terreno, dúplex, local u oficina), tu presupuesto en dólares —la moneda de referencia del mercado inmobiliario paraguayo, aunque los avisos también pueden publicarse en guaraníes— y si el precio incluye o no los gastos de escrituración, que en Paraguay suele afrontar el comprador.",
+        "La financiación es otro punto a considerar: varios avisos ya muestran una cuota mensual estimada, calculada con líneas de crédito hipotecario disponibles en el mercado, como referencia rápida de qué tan accesible es una propiedad más allá de su precio de venta. Esa cuota es una estimación y no reemplaza la evaluación crediticia real de cada banco o financiera.",
+        "Al comparar propiedades, prestá atención a los metros cuadrados totales y cubiertos, la cantidad de dormitorios y baños, y si el terreno o el edificio tienen su documentación en regla (título de propiedad, planos aprobados, impuesto inmobiliario al día). Un aviso serio suele incluir esta información o compartirla ante una consulta directa.",
+        "Trabajar con un agente o una inmobiliaria no es obligatorio, pero puede simplificar el proceso: alguien que conoce bien la zona ayuda a acotar las opciones según tu presupuesto real, coordina las visitas y suele conocer el historial de precios del barrio. En este portal los profesionales verificados llevan una insignia en su perfil, así que podés confirmar de entrada con quién estás tratando antes de avanzar con una consulta.",
+        "Contactar directamente con quien publica —sea el propietario, un agente o una inmobiliaria— es la forma más rápida de confirmar disponibilidad, coordinar una visita y resolver dudas puntuales. En este portal cada aviso tiene un canal de contacto directo por WhatsApp, sin intermediarios ni comisión de por medio para quien busca.",
+      ],
+    },
+    alquiler: {
+      title: "Alquilar en Paraguay: cómo funciona el mercado y qué tener en cuenta",
+      paragraphs: [
+        "El alquiler en Paraguay se concentra fuertemente en departamentos, sobre todo en Asunción y sus alrededores: Villa Morra, Recoleta, Sajonia y el microcentro son algunas de las zonas con mayor movimiento, con opciones que van desde monoambientes hasta departamentos de dos o tres dormitorios. En ciudades como Luque, San Lorenzo, Fernando de la Mora y Lambaré la oferta suma también casas y dúplex a precios más accesibles.",
+        "Los alquileres se publican tanto en guaraníes como en dólares según el propietario o la inmobiliaria que administra la propiedad; conviene confirmar la moneda y si el monto incluye expensas, agua, luz o internet, ya que estos gastos no siempre están incluidos en el precio publicado.",
+        "En la mayoría de los contratos de alquiler en Paraguay se solicita un depósito de garantía, y según el propietario puede pedirse también un garante o un seguro de caución como respaldo. Es un punto para conversar directamente con quien publica el aviso antes de avanzar, ya que las condiciones varían caso por caso y no las fija el portal.",
+        "Al visitar una propiedad en alquiler conviene revisar el estado general de las instalaciones eléctricas y sanitarias, si cuenta con medidores propios de luz y agua —algo común pero no universal en edificios más antiguos— y las condiciones de convivencia si se trata de un departamento en un edificio con más unidades.",
+        "La duración habitual de un contrato de alquiler en Paraguay suele rondar el año, con la posibilidad de renovarlo por acuerdo entre las partes; algunos propietarios también ofrecen contratos más cortos, especialmente para departamentos amoblados o estadías de mediano plazo. Antes de firmar conviene leer con atención las cláusulas sobre aumentos anuales, responsabilidad por reparaciones y condiciones para rescindir el contrato antes de tiempo, ya que estos puntos varían de un propietario a otro y no están estandarizados de la misma forma en todos los casos. Si el alquiler lo administra una inmobiliaria en lugar del propietario directamente, suele ser ella quien gestiona estos detalles y también los reclamos de mantenimiento durante la estadía.",
+        "Este portal conecta directamente al interesado con el propietario, agente o inmobiliaria a cargo de cada aviso, sin comisión para quien alquila. La comunicación inicial suele hacerse por WhatsApp, lo que permite coordinar una visita o resolver dudas puntuales de forma rápida.",
+      ],
+    },
+  } as Record<string, { title: string; paragraphs: readonly string[] }>,
 } as const;
 
 /** Category grid: /[operacion]/[...segments]. */
