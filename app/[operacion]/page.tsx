@@ -179,6 +179,20 @@ export default async function OperationHubPage({ params }: Params) {
         </Section>
       )}
 
+      {/* SEO body copy — only the two doors this generic houses/apartments
+          copy actually fits. terreno.com.py's hard property_type filter
+          means this text would be wrong there. */}
+      {(vertical.key === "inmobiliaria" || vertical.key === "en") &&
+        t.seo[op] && (
+          <Section title={t.seo[op].title}>
+            <div className="mk-prose">
+              {t.seo[op].paragraphs.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
+          </Section>
+        )}
+
       {hub.total === 0 && (
         <Section>
           <div className="mk-empty">

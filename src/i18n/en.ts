@@ -807,6 +807,31 @@ export const enHub = {
   ctaText: "List it free and reach the people searching in your area.",
   ctaPrimary: "List for free",
   ctaSecondary: "What is it worth?",
+  /** Peer of esHub.seo — see that namespace's comment. */
+  seo: {
+    venta: {
+      title: "Buying property in Paraguay: what to know before you start",
+      paragraphs: [
+        "Asuncion holds most of the country's for-sale inventory, with very different neighbourhoods to choose from: quiet, established areas like Carmelitas and Villa Morra, redeveloping riverside districts along the Costanera, and more affordable options toward the south and west of the capital. Just outside the capital, cities such as Luque, San Lorenzo, Lambare and Fernando de la Mora offer lower prices without moving far from the centre, while Encarnacion and Ciudad del Este serve much of the demand from the interior and the border region.",
+        "Foreign buyers can own property in Paraguay under the same terms as Paraguayan citizens for most residential real estate. Before you go further, it helps to be clear on the property type you are after (house, apartment, land, duplex, commercial unit or office), your budget in US dollars — the currency most listings are priced in, even though the local currency is the Guarani — and whether the listed price already covers closing and registration costs, which in Paraguay are typically paid by the buyer. As with any purchase abroad, working with a local professional — a real estate agent, a notary (escribano), or both — is worth it to confirm the property's paperwork before committing.",
+        "Financing is worth thinking through too: many listings already show an estimated monthly payment, calculated against mortgage terms available in the Paraguayan market, as a quick reference for how a property compares beyond its sale price. That figure is an estimate, not a substitute for an actual bank or lender's credit assessment.",
+        "When comparing properties, check the total and covered square metres, the number of bedrooms and bathrooms, and whether the land or building has its paperwork in order (title deed, approved building plans, property tax up to date). A serious listing will usually include this information, or share it readily on request.",
+        "Working with an agent or agency is not required, but it can make the process easier: someone who knows the area well can help narrow down options that fit your actual budget, arrange viewings, and often has a sense of recent price history in the neighbourhood. On this site, verified professionals carry a badge on their profile, so you can confirm who you are dealing with before reaching out.",
+        "Contacting whoever posted the listing directly — owner, agent or agency — is the fastest way to confirm availability, arrange a viewing and settle specific questions about the property. Every listing on this site has a direct WhatsApp contact, with no intermediary and no fee for the buyer.",
+      ],
+    },
+    alquiler: {
+      title: "Renting in Paraguay: how it works and what to check",
+      paragraphs: [
+        "Rentals in Paraguay are concentrated in apartments, especially in Asuncion and its surrounding areas: Villa Morra, Recoleta, Sajonia and the city centre see the most activity, with options ranging from studios to two- or three-bedroom apartments. In cities like Luque, San Lorenzo, Fernando de la Mora and Lambare, the mix also includes houses and duplexes at more accessible prices.",
+        "Listings are priced in both Guaranies and US dollars depending on the owner or the agency managing the property, so it is worth confirming the currency and whether the monthly amount already includes building fees, water, electricity or internet — these are not always bundled into the advertised price.",
+        "Most rental agreements in Paraguay ask for a security deposit, and depending on the owner you may also be asked for a local guarantor or a rental guarantee bond (seguro de caucion) instead. These terms vary from one listing to another and are set by the owner or agency, not by this site, so they are worth discussing directly before moving forward.",
+        "When you visit a property, it is useful to check the condition of the electrical and plumbing installations, whether the unit has its own separate water and electricity meters — common but not universal in older buildings — and, for an apartment, what the building's day-to-day rules and shared costs look like.",
+        "Lease terms in Paraguay typically run around a year, with the option to renew by agreement between both parties; some owners also offer shorter terms, especially for furnished apartments or medium-term stays. Before signing, it is worth reading the clauses on annual increases, responsibility for repairs, and the conditions for ending the lease early, since these points vary from one owner to another and are not standardised the same way in every case. When an agency manages the rental rather than the owner directly, it is usually the agency that handles these details as well as maintenance requests during the stay.",
+        "This site connects you directly with the owner, agent or agency behind each listing, with no commission charged to the renter. Initial contact usually happens over WhatsApp, which makes it quick to arrange a viewing or ask about anything specific to the property.",
+      ],
+    },
+  } as Record<string, { title: string; paragraphs: readonly string[] }>,
 } as const;
 
 /** Category grid: /[operacion]/[...segments]. */
