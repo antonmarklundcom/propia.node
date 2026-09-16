@@ -319,7 +319,9 @@ export function PublishWizard({
   );
 
   /** Persist the server draft; returns the (possibly new) draft id or null. */
-  const persist = useCallback(async (): Promise<number | null> => {
+  const persist = useCallback(async (): Promise<
+    { draftId: number; contact: PublishContact } | null
+  > => {
     setSaving(true);
     setStepError(null);
     try {
@@ -328,9 +330,12 @@ export function PublishWizard({
         setStepError(t.errors[res.error] ?? t.errors.generic);
         return null;
       }
+      // Also returned directly: a caller that uses the persisted contact in
+      // the same tick (publishDirect) would otherwise read `contact` from its
+      // own closure, captured before this setContact's render committed.
       setContact(res.contact);
       if (res.draftId !== state.draftId) set("draftId", res.draftId);
-      return res.draftId;
+      return { draftId: res.draftId, contact: res.contact };
     } catch {
       setStepError(t.errors.generic);
       return null;
@@ -404,9 +409,12 @@ export function PublishWizard({
       const saved = await persist();
       if (saved === null) return;
       const res = await publishDraftAction({
-        draftId: saved,
+        draftId: saved.draftId,
         whatsapp,
-        publicWhatsapp: contact.whatsapp,
+        // The freshly-returned contact, not the `contact` state variable --
+        // this closure was created before persist()'s setContact() committed,
+        // so `contact` here can still be one render behind.
+        publicWhatsapp: saved.contact.whatsapp,
       });
       if (!res.ok) {
         setOtpError(t.errors[res.error] ?? t.errors.generic);
@@ -423,7 +431,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [persist, whatsapp, contact.whatsapp]);
+  }, [persist, whatsapp]);
 
   const verifyAndPublish = useCallback(async () => {
     if (!state.draftId) return;

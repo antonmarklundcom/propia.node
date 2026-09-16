@@ -31,10 +31,14 @@ export default async function NotFound() {
     currentVertical().then(listNavigationInventory).catch(() => []),
   ]);
   const stockedPaths = stockedNavigationPaths(inventory);
-  // Attach localized labels before filtering so dictionary indexes stay aligned.
-  const suggestions = POPULAR_SEARCHES.map((s, index) => ({
-    ...s, label: d.notFound.suggestions[index],
-  })).filter((s) => stockedPaths.has(s.href));
+  // Keyed by href, not array position: POPULAR_SEARCHES and the dictionary
+  // can drift in length or order without silently misaligning a label to the
+  // wrong link. A config entry missing its translation is dropped rather
+  // than rendered blank.
+  const suggestions = POPULAR_SEARCHES.map((s) => ({
+    ...s,
+    label: (d.notFound.suggestions as Record<string, string | undefined>)[s.href],
+  })).filter((s) => Boolean(s.label) && stockedPaths.has(s.href));
 
   return (
     <main

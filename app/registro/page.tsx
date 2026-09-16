@@ -33,9 +33,7 @@ export default async function RegisterPage({
     invite?: string;
     next?: string;
     name?: string;
-    email?: string;
     agencyName?: string;
-    whatsapp?: string;
   }>;
 }) {
   const t = (await dict()).publicAuth;
@@ -51,7 +49,7 @@ export default async function RegisterPage({
   generic: t.registerErrorGeneric,
 };
 
-  const { error, kind, invite, next, name, email, agencyName, whatsapp } = await searchParams;
+  const { error, kind, invite, next, name, agencyName } = await searchParams;
 
   // Already signed in → straight to the right home, unless they arrived with an
   // invitation: an existing account should be able to *join* that agency rather
@@ -183,7 +181,6 @@ export default async function RegisterPage({
                 className="auth-field__input"
                 id="email"
                 name="email"
-                defaultValue={email}
                 type="email"
                 maxLength={190}
                 autoComplete="email"
@@ -201,7 +198,6 @@ export default async function RegisterPage({
                 aria-describedby={error === "whatsapp_taken" ? "whatsapp-error" : undefined}
                 id="whatsapp"
                 name="whatsapp"
-                defaultValue={whatsapp}
                 type="tel"
                 inputMode="tel"
                 placeholder={t.phonePlaceholder}

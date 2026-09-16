@@ -2517,10 +2517,10 @@ export const enNotFound = {
   "explanation": "There may not be listings in that area or category yet. Try another city or property type.",
   "popularSearches": "POPULAR SEARCHES",
   "home": "Back to home",
-  "suggestions": [
-    "Houses in Asunción",
-    "Apartments in Asunción",
-    "Land in Luque",
-    "Rentals in Asunción"
-  ]
+  "suggestions": {
+    "/venta/asuncion/casas": "Houses in Asunción",
+    "/venta/asuncion/departamentos": "Apartments in Asunción",
+    "/venta/luque/terrenos": "Land in Luque",
+    "/alquiler/asuncion": "Rentals in Asunción"
+  }
 } as const;

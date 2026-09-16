@@ -3410,10 +3410,10 @@ export const esNotFound = {
   "explanation": "Puede que no haya publicaciones disponibles en esa zona o combinación todavía. Probá con otra ciudad o tipo de propiedad.",
   "popularSearches": "BÚSQUEDAS POPULARES",
   "home": "Volver al inicio",
-  "suggestions": [
-    "Casas en Asunción",
-    "Departamentos en Asunción",
-    "Terrenos en Luque",
-    "Alquileres en Asunción"
-  ]
+  "suggestions": {
+    "/venta/asuncion/casas": "Casas en Asunción",
+    "/venta/asuncion/departamentos": "Departamentos en Asunción",
+    "/venta/luque/terrenos": "Terrenos en Luque",
+    "/alquiler/asuncion": "Alquileres en Asunción"
+  }
 } as const;

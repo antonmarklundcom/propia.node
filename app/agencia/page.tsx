@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { OnboardingPanel } from "@/components/panel/OnboardingPanel";
-import { dict } from "@/i18n/server";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   AGENCY_LOCKED_STATUSES,
@@ -15,7 +14,7 @@ import {
   STATS_WINDOW_DAYS,
   totalsFrom,
 } from "@/lib/stats-queries";
-import { esPanel, listingStatusLabel } from "@/i18n/es";
+import { esOnboarding, esPanel, listingStatusLabel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
@@ -90,7 +89,10 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
   if (rows.length === 0) {
     return (
       <>
-        <OnboardingPanel t={(await dict()).onboarding} />
+        {/* /agencia is a Spanish-only staff surface (BRAND_NAME/i18n rule
+            in CLAUDE.md) -- esOnboarding directly, not dict(), which would
+            render English here for a visitor on an English-locale host. */}
+        <OnboardingPanel t={esOnboarding} />
         <p className="panel-empty">{esPanel.agencyListingsEmpty}</p>
       </>
     );

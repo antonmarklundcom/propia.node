@@ -21,8 +21,13 @@ import type { Operation, PropertyType } from "@/lib/import/types";
 
 export { getUsdToPygRate };
 
-/** A missing professional row is intentional for private sellers. */
-async function resolvePublisher(userId: number) {
+/**
+ * A missing professional row is intentional for private sellers. Exported so
+ * every draft-creating path (the wizard, and /agencia/importar's claim flow)
+ * resolves agent/agency attribution the same way -- a second, drifting
+ * implementation is how a listing ends up attributed to nobody.
+ */
+export async function resolvePublisher(userId: number) {
   const [agent] = await db
     .select({ agentId: agents.id, agencyId: agents.agencyId })
     .from(agents)
@@ -256,7 +261,7 @@ export async function saveDraft(params: {
   if (draftId) {
     const [res] = await db
       .update(listings)
-      .set(fields)
+      .set({ ...fields, agentId })
       .where(
         and(
           eq(listings.id, draftId),

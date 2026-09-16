@@ -42,9 +42,15 @@ function bounce(
   kind: string,
   invite: string,
   next: string | null,
-  values: { name: string; email: string; agencyName: string; whatsapp: string },
+  /**
+   * Only non-sensitive display fields survive a failed submit. `email` and
+   * `whatsapp` are deliberately excluded: they'd otherwise sit in the URL on
+   * every retry -- browser history, access logs, `Referer` headers -- and an
+   * `error=email_taken` bounce would double as a silent account-existence
+   * check. The visitor retypes those two; that's a smaller cost than the leak.
+   */
+  values: { name: string; agencyName: string },
 ): never {
-  // Explicit non-password fields only; URLSearchParams preserves their text.
   const q = new URLSearchParams({ error, kind, ...values });
   // Keep the invitation across a failed submit, or the second attempt would
   // quietly create an unaffiliated account instead of joining the agency.
@@ -82,20 +88,31 @@ export async function registerAction(formData: FormData): Promise<void> {
   // cannot be rotated by a spoofed x-forwarded-for.
   const ip = clientIpFrom(await headers());
   if (!allowRequest(`register|${ip}`, REGISTER_MAX, REGISTER_WINDOW_MS)) {
-    bounce("throttled", kind, invite, next, values);
+    bounce("throttled", kind, invite, next, { name: values.name, agencyName: values.agencyName });
   }
 
-  const result = await registerAccount({
-    kind,
-    name: values.name,
-    email: values.email,
-    password: String(formData.get("password") ?? ""),
-    whatsapp: values.whatsapp || null,
-    agencyName: values.agencyName || null,
-    inviteToken: invite || null,
-  });
+  let result;
+  try {
+    result = await registerAccount({
+      kind,
+      name: values.name,
+      email: values.email,
+      password: String(formData.get("password") ?? ""),
+      whatsapp: values.whatsapp || null,
+      agencyName: values.agencyName || null,
+      inviteToken: invite || null,
+    });
+  } catch {
+    // registerAccount only throws for a conflict its own duplicate-field
+    // detection didn't recognize -- e.g. two agencies racing onto the same
+    // slug inside uniqueAgencySlug()'s own transaction. A form error beats an
+    // unhandled crash on the one unauthenticated action anyone can hit.
+    bounce("generic", kind, invite, next, { name: values.name, agencyName: values.agencyName });
+  }
 
-  if (!result.ok) bounce(result.error, kind, invite, next, values);
+  if (!result.ok) {
+    bounce(result.error, kind, invite, next, { name: values.name, agencyName: values.agencyName });
+  }
 
   await createSession(result.userId);
   redirect(next ?? "/agencia?msg=welcome");

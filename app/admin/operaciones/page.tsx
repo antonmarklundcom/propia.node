@@ -4,8 +4,7 @@ import { OpsJobCard, type LastRunView } from "@/components/panel/OpsJobCard";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { lastRunByJob } from "@/lib/ops/runs";
-import { esPanel } from "@/i18n/es";
-import { dict } from "@/i18n/server";
+import { esPanel, esTranslationStatus } from "@/i18n/es";
 import { adminTabs } from "../tabs";
 import { runOpsJob } from "./actions";
 import { FOLLOW_UP_JOB, opsJobMeta, opsJobs } from "./jobs";
@@ -58,7 +57,10 @@ export default async function AdminOperacionesPage() {
   ]);
 
   const metas = opsJobMeta();
-  const { translationStatus: translation } = await dict();
+  // /admin is a Spanish-only staff surface (BRAND_NAME/i18n rule in
+  // CLAUDE.md) -- esTranslationStatus directly, not dict(), which would
+  // render English here for an admin reached on an English-locale host.
+  const translation = esTranslationStatus;
   const translationConfigured = metas.find((meta) => meta.job === "cron:translate")?.disabledReason === null;
   /** Labels by job id, so a follow-up hint can name the other card. */
   const labels = new Map(opsJobs().map((j) => [j.job, j.label]));

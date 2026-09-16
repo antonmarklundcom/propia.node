@@ -19,6 +19,7 @@ import { makePublicId, contentHash, dedupKey, toPriceUsd } from "./normalize";
 import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
 import { getUsdToPygRate } from "@/lib/fx";
+import { resolvePublisher } from "@/lib/publish-queries";
 import type { ParsedListing } from "./from-url";
 import type { Operation, PropertyType, RawListing } from "./types";
 
@@ -107,6 +108,10 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
     await getUsdToPygRate(),
   );
   const publicId = makePublicId();
+  // Same resolution saveDraft() uses -- a claimed listing is exactly as
+  // "the caller's own draft" as one typed by hand, and must attribute the
+  // same way or it silently falls back to the private-owner path.
+  const { agentId } = await resolvePublisher(input.userId);
 
   /**
    * One transaction, the same shape `upsert.ts` uses for the same reason
@@ -134,6 +139,7 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
       landM2: input.landM2 != null ? String(input.landM2) : null,
       locationId: input.locationId,
       agencyId: input.agencyId,
+      agentId,
       ownerUserId: input.userId,
       isVerified: false,
       // What the reviewer needs to know, on the row itself.
