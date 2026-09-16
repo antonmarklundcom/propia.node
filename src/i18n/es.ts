@@ -34,6 +34,10 @@ export const es = {
     "Tu propiedad también se mostrará a compradores extranjeros en realestateinparaguay.com — sin costo adicional.",
   inquiryPrefill: "Hola, estoy interesado en esta propiedad.",
   quickQuestions: ["¿Disponible?", "¿Puedo visitar?", "¿Requisitos?"],
+  login: "Ingresar",
+  menuOpen: "Abrir menú",
+  menuClose: "Cerrar menú",
+  menuLabel: "Menú principal",
 } as const;
 
 /**

@@ -23,6 +23,9 @@ export function MobileMenu({
   nav,
   ctaHref,
   ctaLabel,
+  menuOpenLabel,
+  menuCloseLabel,
+  menuLabel,
   companyGroup,
 }: {
   nav: NavGroup[];
@@ -33,6 +36,11 @@ export function MobileMenu({
    *  one of the three forbidden entry points. */
   ctaHref: string | null;
   ctaLabel: string;
+  /** Burger button's aria-label when the drawer is closed / open. */
+  menuOpenLabel: string;
+  menuCloseLabel: string;
+  /** The drawer dialog's own aria-label. */
+  menuLabel: string;
   /**
    * Overrides the "Sobre nosotros" group below. The default is the Spanish
    * marketplace's own company links, which is right for the marketplace doors
@@ -76,7 +84,7 @@ export function MobileMenu({
         ref={buttonRef}
         type="button"
         className="site-header__burger"
-        aria-label={open ? "Cerrar menú" : "Abrir menú"}
+        aria-label={open ? menuCloseLabel : menuOpenLabel}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
@@ -92,7 +100,7 @@ export function MobileMenu({
           <div
             className="mobile-menu"
             role="dialog"
-            aria-label="Menú principal"
+            aria-label={menuLabel}
             style={{ top }}
           >
             <div className="mobile-menu__inner">
