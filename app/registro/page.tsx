@@ -27,13 +27,23 @@ export const dynamic = "force-dynamic";
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; kind?: string; invite?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    kind?: string;
+    invite?: string;
+    next?: string;
+    name?: string;
+    email?: string;
+    agencyName?: string;
+    whatsapp?: string;
+  }>;
 }) {
   const t = (await dict()).publicAuth;
   const ERRORS: Record<string, string> = {
   name: t.registerErrorName,
   email: t.registerErrorEmail,
   email_taken: t.registerErrorEmailTaken,
+  whatsapp_taken: t.registerErrorWhatsappTaken,
   password: t.registerErrorPassword,
   agency_name: t.registerErrorAgencyName,
   invite: t.registerErrorInvite,
@@ -41,7 +51,7 @@ export default async function RegisterPage({
   generic: t.registerErrorGeneric,
 };
 
-  const { error, kind, invite } = await searchParams;
+  const { error, kind, invite, next, name, email, agencyName, whatsapp } = await searchParams;
 
   // Already signed in → straight to the right home, unless they arrived with an
   // invitation: an existing account should be able to *join* that agency rather
@@ -90,6 +100,7 @@ export default async function RegisterPage({
           ) : null}
 
           <form action={registerAction}>
+            {next ? <input type="hidden" name="next" value={next} /> : null}
             {/* The token carries the agency and the role. The form asks for
                 neither — same rule as the missing `role` field. */}
             {invitation ? (
@@ -141,6 +152,7 @@ export default async function RegisterPage({
                 className="auth-field__input"
                 id="agencyName"
                 name="agencyName"
+                defaultValue={agencyName}
                 type="text"
                 maxLength={160}
                 autoComplete="organization"
@@ -155,6 +167,7 @@ export default async function RegisterPage({
                 className="auth-field__input"
                 id="name"
                 name="name"
+                defaultValue={name}
                 type="text"
                 maxLength={140}
                 autoComplete="name"
@@ -170,6 +183,7 @@ export default async function RegisterPage({
                 className="auth-field__input"
                 id="email"
                 name="email"
+                defaultValue={email}
                 type="email"
                 maxLength={190}
                 autoComplete="email"
@@ -183,14 +197,20 @@ export default async function RegisterPage({
               </label>
               <input
                 className="auth-field__input"
+                aria-invalid={error === "whatsapp_taken"}
+                aria-describedby={error === "whatsapp_taken" ? "whatsapp-error" : undefined}
                 id="whatsapp"
                 name="whatsapp"
+                defaultValue={whatsapp}
                 type="tel"
                 inputMode="tel"
                 placeholder={t.phonePlaceholder}
                 maxLength={30}
                 autoComplete="tel"
               />
+              {error === "whatsapp_taken" && (
+                <p id="whatsapp-error" className="auth-error">{t.registerErrorWhatsappTaken}</p>
+              )}
             </div>
 
             <div className="auth-field">

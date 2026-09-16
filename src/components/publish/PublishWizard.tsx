@@ -16,7 +16,9 @@ import { bestCuota, type FinancingProgram } from "@/lib/cuota";
 import { formatCuota } from "@/lib/format";
 import { getDictionary, numberLocaleFor, type Locale } from "@/i18n";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
-import type { NearbyProject, PublishLocation } from "@/lib/publish-queries";
+import type {
+  NearbyProject, PublishLocation, PublishContact,
+} from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
 import {
   publishDraftAction,
@@ -116,8 +118,10 @@ export function PublishWizard({
   usdToPyg,
   initialDraft,
   initialPhotos,
+  initialContact,
   prefill,
   otpEnabled,
+  photosEnabled,
   homeHref,
 }: {
   locale: Locale;
@@ -127,6 +131,7 @@ export function PublishWizard({
   usdToPyg: number;
   initialDraft: InitialDraft | null;
   initialPhotos?: ListingImageRow[];
+  initialContact: PublishContact;
   /** Seed values from /tasacion. See PublishPrefill. */
   prefill?: PublishPrefill | null;
   /**
@@ -134,6 +139,8 @@ export function PublishWizard({
    * directly; the server enforces the same rule, this only shapes the UI.
    */
   otpEnabled: boolean;
+  /** Readiness copy only; upload authorization and storage gates stay server-side. */
+  photosEnabled: boolean;
   homeHref: string;
 }) {
   const d = getDictionary(locale);
@@ -158,6 +165,9 @@ export function PublishWizard({
 
   // OTP sub-state (step 3 → publish).
   const [otpSent, setOtpSent] = useState(false);
+  const [contact, setContact] = useState(initialContact);
+  const publicContactMissing = contact.professional &&
+    (contact.whatsapp ?? "").replace(/\D/g, "").length < 9;
   const [whatsapp, setWhatsapp] = useState("");
   const [code, setCode] = useState("");
   const [otpBusy, setOtpBusy] = useState(false);
@@ -318,6 +328,7 @@ export function PublishWizard({
         setStepError(t.errors[res.error] ?? t.errors.generic);
         return null;
       }
+      setContact(res.contact);
       if (res.draftId !== state.draftId) set("draftId", res.draftId);
       return res.draftId;
     } catch {
@@ -392,9 +403,13 @@ export function PublishWizard({
     try {
       const saved = await persist();
       if (saved === null) return;
-      const res = await publishDraftAction({ draftId: saved, whatsapp });
+      const res = await publishDraftAction({
+        draftId: saved,
+        whatsapp,
+        publicWhatsapp: contact.whatsapp,
+      });
       if (!res.ok) {
-        setOtpError(t.errors.generic);
+        setOtpError(t.errors[res.error] ?? t.errors.generic);
         return;
       }
       try {
@@ -408,7 +423,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [persist, whatsapp]);
+  }, [persist, whatsapp, contact.whatsapp]);
 
   const verifyAndPublish = useCallback(async () => {
     if (!state.draftId) return;
@@ -419,6 +434,7 @@ export function PublishWizard({
         draftId: state.draftId,
         whatsapp,
         code,
+        publicWhatsapp: contact.whatsapp,
       });
       if (!res.ok) {
         setOtpError(
@@ -426,7 +442,7 @@ export function PublishWizard({
             ? t.errors.otpTooMany
             : res.error === "otp"
               ? t.errors.otpMismatch
-              : t.errors.generic,
+              : (t.errors[res.error] ?? t.errors.generic),
         );
         return;
       }
@@ -441,7 +457,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [state.draftId, whatsapp, code]);
+  }, [state.draftId, whatsapp, code, contact.whatsapp]);
 
   if (done) {
     return (
@@ -657,10 +673,14 @@ export function PublishWizard({
 
           <div className="wizard-field">
             <span className="wizard-label">{t.photosTitle}</span>
-            <p className="wizard-hint">{t.photosHint}</p>
+            {photosEnabled ? (
+              <p className="wizard-hint">{t.photosHint}</p>
+            ) : (
+              <p className="panel-note" role="status">{t.photosStorageOff}</p>
+            )}
 
             {state.draftId == null ? (
-              <p className="wizard-hint">{t.photosDraftFirst}</p>
+              photosEnabled ? <p className="wizard-hint">{t.photosDraftFirst}</p> : null
             ) : (
               <>
                 <input
@@ -723,7 +743,18 @@ export function PublishWizard({
               {otpEnabled ? t.otpTitle : t.publishTitle}
             </h3>
             <p className="wizard-hint">
-              {otpEnabled ? t.otpSubtitle : t.publishSubtitle}
+              {otpEnabled ? t.otpSubtitle : contact.professional ? t.professionalPublishSubtitle : t.publishSubtitle}
+            </p>
+            {contact.professional && (
+              <div className="wizard-hint" aria-live="polite">
+                <p>{publicContactMissing ? t.publicWhatsappMissing : t.publicWhatsappPreview(contact.whatsapp!)}</p>
+                <p>{t.publicWhatsappHint}</p>
+                <a href="/agencia/perfil">{t.publicWhatsappEdit}</a>
+              </div>
+            )}
+            <p className="panel-note">
+              {otpEnabled ? t.messagingRequired : t.messagingUnavailable}{" "}
+              {t.reviewAndProfessionalStatus}
             </p>
             <div className="wizard-field">
               <label className="wizard-label" htmlFor="wa">
@@ -765,7 +796,7 @@ export function PublishWizard({
                   type="button"
                   className="panel-btn panel-btn--primary"
                   onClick={publishDirect}
-                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || publicContactMissing || Number(state.priceAmount) <= 0}
                 >
                   {otpBusy ? t.publishing : t.publish}
                 </button>
@@ -774,7 +805,7 @@ export function PublishWizard({
                   type="button"
                   className="panel-btn panel-btn--whatsapp"
                   onClick={sendCode}
-                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || publicContactMissing || Number(state.priceAmount) <= 0}
                 >
                   {otpBusy ? t.sending : t.sendCode}
                 </button>
@@ -784,7 +815,7 @@ export function PublishWizard({
                     type="button"
                     className="panel-btn panel-btn--primary"
                     onClick={verifyAndPublish}
-                    disabled={otpBusy || code.length !== 6}
+                    disabled={otpBusy || publicContactMissing || code.length !== 6}
                   >
                     {otpBusy ? t.publishing : t.publish}
                   </button>

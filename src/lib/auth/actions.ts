@@ -13,28 +13,13 @@ import { users } from "@/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
+import { safeNext } from "@/lib/auth/safe-next";
 import { clientIpFrom } from "@/lib/client-ip";
 import {
   clearLoginAttempts,
   isLoginLocked,
   recordLoginFailure,
 } from "@/lib/auth/rate-limit";
-
-/**
- * Only same-origin relative paths are honored as post-login targets.
- *
- * `//evil.com` is the obvious protocol-relative case; `/\evil.com` is the one
- * that used to get through (audit F35), because browsers normalise a backslash
- * to a forward slash in the authority position and follow it off-site. Control
- * characters are rejected for the same reason — a stripped newline or tab can
- * re-form into `//` after the check has already passed.
- */
-function safeNext(next: string): string | null {
-  if (!next.startsWith("/")) return null;
-  if (/^\/[/\\]/.test(next)) return null;
-  if (/[\u0000-\u001f\u007f]/.test(next)) return null;
-  return next;
-}
 
 /**
  * A fixed, valid `scrypt$salt$hash` record verified against when no user

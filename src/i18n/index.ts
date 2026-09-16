@@ -19,6 +19,8 @@
  *   their locale as a prop) and for callers that already hold a locale.
  */
 import {
+  esOnboarding,
+  esTranslationStatus,
   esAgentProfile,
   esSiteNotice,
   esPriceAlert,
@@ -50,6 +52,7 @@ import {
   esListing,
   esNordico,
   esPremium,
+  esNotFound,
   esProfile,
   esProject,
   esRental,
@@ -58,6 +61,8 @@ import {
   esVender,
 } from "./es";
 import {
+  enOnboarding,
+  enTranslationStatus,
   enAgentProfile,
   enSiteNotice,
   enPriceAlert,
@@ -89,6 +94,7 @@ import {
   enListing,
   enNordico,
   enPremium,
+  enNotFound,
   enProfile,
   enProject,
   enRental,
@@ -107,6 +113,8 @@ export type Locale = "es" | "en";
 export const DEFAULT_LOCALE: Locale = "es";
 
 const esDictionary = {
+  onboarding: esOnboarding,
+  translationStatus: esTranslationStatus,
   agentProfile: esAgentProfile,
   siteNotice: esSiteNotice,
   priceAlert: esPriceAlert,
@@ -137,6 +145,7 @@ const esDictionary = {
   project: esProject,
   nordico: esNordico,
   premium: esPremium,
+  notFound: esNotFound,
   guideEn: esGuideEn,
   rental: esRental,
   directory: esDirectory,
@@ -182,6 +191,8 @@ export type Dictionary = Widen<typeof esDictionary>;
  * widening what callers see.
  */
 const enDictionary = {
+  onboarding: enOnboarding,
+  translationStatus: enTranslationStatus,
   agentProfile: enAgentProfile,
   siteNotice: enSiteNotice,
   priceAlert: enPriceAlert,
@@ -212,6 +223,7 @@ const enDictionary = {
   project: enProject,
   nordico: enNordico,
   premium: enPremium,
+  notFound: enNotFound,
   guideEn: enGuideEn,
   rental: enRental,
   directory: enDirectory,

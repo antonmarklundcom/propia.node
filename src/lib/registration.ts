@@ -2,7 +2,7 @@
  * Self-service sign-up for agencies and independent agents (ARCHITECTURE.md
  * M5). Until now every account was founder-created — a `users` row typed into
  * phpMyAdmin, then an `agents` row to link it. This is that sequence, done
- * safely and in one transaction-shaped call.
+ * atomically in one database transaction.
  *
  * What a new account may and may not do is deliberately unchanged from a
  * hand-made one: `is_verified` starts false on both the agency and the agent
@@ -46,6 +46,7 @@ export type RegistrationError =
   | "name"
   | "email"
   | "email_taken"
+  | "whatsapp_taken"
   | "password"
   | "agency_name"
   | "invite";
@@ -61,11 +62,17 @@ function looksLikeEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
 }
 
+type RegistrationTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /** Same idea for agents.slug, which is also unique. */
-async function uniqueAgentSlug(name: string, userId: number): Promise<string> {
+async function uniqueAgentSlug(
+  name: string,
+  userId: number,
+  tx: RegistrationTx,
+): Promise<string> {
   const base = slugify(name) || "agente";
   const withId = `${base}-${userId}`;
-  const [clash] = await db
+  const [clash] = await tx
     .select({ id: agents.id })
     .from(agents)
     .where(eq(agents.slug, withId))
@@ -104,81 +111,97 @@ export async function registerAccount(
     .limit(1);
   if (existing) return { ok: false, error: "email_taken" };
 
-  // An agency owner administers the company; an independent agent is an agent.
-  // Both are agency roles, so both land in /agencia (see auth/roles.ts).
-  let role: "agency_admin" | "agent" =
-    input.kind === "agency" ? "agency_admin" : "agent";
+  // Hash before acquiring a transaction connection or locking an invitation.
+  const passwordHash = await hashPassword(input.password);
+  const whatsapp = input.whatsapp?.trim() || null;
 
-  /**
-   * Joining an existing agency. The token decides the agency *and* the role —
-   * the form carries neither — and it is claimed before anything is written:
-   * consumeInvite() is a WHERE-guarded UPDATE, so of two people submitting the
-   * same link at the same moment exactly one gets past this line. Everything
-   * that could still fail (a bad email, a short password) was already rejected
-   * above, so a claimed invite is not burned on an invalid form.
-   */
-  let invitedAgencyId: number | null = null;
-  let inviteId: number | null = null;
-  if (input.kind === "invite") {
-    const invite = await getUsableInvite(input.inviteToken?.trim() ?? "");
-    if (!invite) return { ok: false, error: "invite" };
-    if (!(await consumeInvite(invite.id))) return { ok: false, error: "invite" };
-    invitedAgencyId = invite.agencyId;
-    inviteId = invite.id;
-    role = invite.role;
-  }
+  try {
+    return await db.transaction(async (tx): Promise<RegistrationResult> => {
+      let role: "agency_admin" | "agent" =
+        input.kind === "agency" ? "agency_admin" : "agent";
+      let agencyId: number | null = null;
+      let inviteId: number | null = null;
+      if (input.kind === "invite") {
+        const invite = await getUsableInvite(input.inviteToken?.trim() ?? "", tx);
+        if (!invite || !(await consumeInvite(invite.id, tx))) {
+          return { ok: false, error: "invite" };
+        }
+        agencyId = invite.agencyId;
+        inviteId = invite.id;
+        role = invite.role;
+      }
 
-  await db.insert(users).values({
-    name,
-    email,
-    role,
-    locale: "es",
-    passwordHash: await hashPassword(input.password),
-    // whatsapp is unique in the schema; a blank string would collide on the
-    // second signup, so an absent number stays NULL.
-    whatsapp: input.whatsapp?.trim() || null,
-  });
+      // Catch only this insert's unique constraints, never a profile slug error.
+      let userId: number;
+      try {
+        const [created] = await tx
+          .insert(users)
+          .values({ name, email, role, locale: "es", passwordHash, whatsapp })
+          .$returningId();
+        if (!created) throw new Error("User insert did not produce a row");
+        userId = created.id;
+      } catch (error) {
+        const field = duplicateUserField(error);
+        // Throw through the transaction boundary so a claimed invite rolls back.
+        if (field) throw new RegistrationConflict(field);
+        throw error;
+      }
 
-  const [created] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-  if (!created) return { ok: false, error: "email" };
+      if (input.kind === "agency") {
+        const [agency] = await tx
+          .insert(agencies)
+          .values({
+            name: agencyName,
+            slug: await uniqueAgencySlug(agencyName, tx),
+            email,
+            whatsapp,
+            isVerified: false,
+          })
+          .$returningId();
+        if (!agency) throw new Error("Agency insert did not produce a row");
+        agencyId = agency.id;
+      }
 
-  let agencyId: number | null = invitedAgencyId;
-  if (input.kind === "agency") {
-    const slug = await uniqueAgencySlug(agencyName);
-    await db.insert(agencies).values({
-      name: agencyName,
-      slug,
-      email,
-      whatsapp: input.whatsapp?.trim() || null,
-      // Pending your approval — this is the ✓ badge, and it starts off.
-      isVerified: false,
+      await tx.insert(agents).values({
+        agencyId,
+        userId,
+        name,
+        slug: await uniqueAgentSlug(name, userId, tx),
+        whatsapp,
+        isVerified: false,
+      });
+      if (inviteId != null) await stampInviteUser(inviteId, userId, tx);
+      return { ok: true, userId };
     });
-    const [agency] = await db
-      .select({ id: agencies.id })
-      .from(agencies)
-      .where(eq(agencies.slug, slug))
-      .limit(1);
-    agencyId = agency?.id ?? null;
+  } catch (error) {
+    if (error instanceof RegistrationConflict) {
+      return { ok: false, error: error.field };
+    }
+    throw error;
   }
+}
 
-  // The agents row is the join requireAgencyContext() reads — without it the
-  // new account would log in to an /agencia panel that resolves no agency.
-  await db.insert(agents).values({
-    agencyId,
-    userId: created.id,
-    name,
-    slug: await uniqueAgentSlug(name, created.id),
-    whatsapp: input.whatsapp?.trim() || null,
-    isVerified: false,
-  });
+class RegistrationConflict extends Error {
+  constructor(readonly field: "email_taken" | "whatsapp_taken") {
+    super(field);
+  }
+}
 
-  // Bookkeeping only — the invite was already spent above, so this cannot
-  // decide whether the link is still usable.
-  if (inviteId != null) await stampInviteUser(inviteId, created.id);
-
-  return { ok: true, userId: created.id };
+/** mysql2 errors may be wrapped in DrizzleQueryError.cause. */
+function duplicateUserField(error: unknown): "email_taken" | "whatsapp_taken" | null {
+  if (!error || typeof error !== "object") return null;
+  const e = error as {
+    code?: string;
+    sqlMessage?: string;
+    message?: string;
+    cause?: unknown;
+  };
+  if (e.code === "ER_DUP_ENTRY") {
+    // Inspect the key name, not the duplicate value (which is user-controlled).
+    const key = /for key ['"`]([^'"`]+)['"`]$/i
+      .exec(e.sqlMessage ?? e.message ?? "")?.[1]?.split(".").pop();
+    if (key === "users_whatsapp_unique") return "whatsapp_taken";
+    if (key === "users_email_unique") return "email_taken";
+  }
+  return e.cause === error ? null : duplicateUserField(e.cause);
 }

@@ -13,6 +13,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSession, getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
+import { safeNext } from "@/lib/auth/safe-next";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
 import {
@@ -40,11 +41,15 @@ function bounce(
   error: RegistrationError | "generic" | "throttled",
   kind: string,
   invite: string,
+  next: string | null,
+  values: { name: string; email: string; agencyName: string; whatsapp: string },
 ): never {
-  const q = new URLSearchParams({ error, kind });
+  // Explicit non-password fields only; URLSearchParams preserves their text.
+  const q = new URLSearchParams({ error, kind, ...values });
   // Keep the invitation across a failed submit, or the second attempt would
   // quietly create an unaffiliated account instead of joining the agency.
   if (invite) q.set("invite", invite);
+  if (next) q.set("next", next);
   redirect(`/registro?${q.toString()}`);
 }
 
@@ -56,6 +61,13 @@ export async function registerAction(formData: FormData): Promise<void> {
 
   const rawKind = String(formData.get("kind") ?? "");
   const invite = String(formData.get("invite") ?? "").trim();
+  const next = safeNext(String(formData.get("next") ?? ""));
+  const values = {
+    name: String(formData.get("name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    agencyName: String(formData.get("agencyName") ?? ""),
+    whatsapp: String(formData.get("whatsapp") ?? ""),
+  };
   // "invite" only counts with a token to back it; registerAccount re-validates
   // that token and refuses the sign-up if it is spent, expired or forged.
   const kind: AccountKind =
@@ -70,21 +82,21 @@ export async function registerAction(formData: FormData): Promise<void> {
   // cannot be rotated by a spoofed x-forwarded-for.
   const ip = clientIpFrom(await headers());
   if (!allowRequest(`register|${ip}`, REGISTER_MAX, REGISTER_WINDOW_MS)) {
-    bounce("throttled", kind, invite);
+    bounce("throttled", kind, invite, next, values);
   }
 
   const result = await registerAccount({
     kind,
-    name: String(formData.get("name") ?? ""),
-    email: String(formData.get("email") ?? ""),
+    name: values.name,
+    email: values.email,
     password: String(formData.get("password") ?? ""),
-    whatsapp: String(formData.get("whatsapp") ?? "") || null,
-    agencyName: String(formData.get("agencyName") ?? "") || null,
+    whatsapp: values.whatsapp || null,
+    agencyName: values.agencyName || null,
     inviteToken: invite || null,
   });
 
-  if (!result.ok) bounce(result.error, kind, invite);
+  if (!result.ok) bounce(result.error, kind, invite, next, values);
 
   await createSession(result.userId);
-  redirect("/agencia?msg=welcome");
+  redirect(next ?? "/agencia?msg=welcome");
 }

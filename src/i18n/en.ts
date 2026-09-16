@@ -96,6 +96,7 @@ export const enPublicAuth = {
   registerToLogin: "Already have an account? Sign in",
   registerPendingNote: "Your account is active immediately. We approve verification (the ✓ on your profile) manually after reviewing your details.",
   registerErrorName: "Enter your full name.", registerErrorEmail: "Check your email address.",
+  registerErrorWhatsappTaken: "This WhatsApp number is already registered.",
   registerErrorEmailTaken: "An account with that email already exists. Try signing in.",
   registerErrorPassword: "Your password needs at least 8 characters.", registerErrorAgencyName: "Enter the agency name.",
   registerErrorGeneric: "We could not create your account. Please try again.",
@@ -126,19 +127,27 @@ export const enPublish = {
   photosHint: "The first photo is the cover. Add photos now or later from your dashboard.",
   photosPickLabel: "Choose photos", photosUploading: "Uploading…", photosDelete: "Delete",
   photosDraftFirst: "Complete the property details and continue: you can upload photos once the draft is saved.",
-  photosStorageOff: "Photo storage is not available yet. You can still publish and add photos later.",
+  photosStorageOff: "The portal team still needs to enable photo uploads. You can submit your listing for review without photos and add them once uploads are available.",
   photosFailed: "We could not upload some photos. Please try again.", photosTooMany: "Too many photos at once. Upload up to 20 per batch.",
   foreignExposureLabel: "Also show to overseas buyers (realestateinparaguay.com) — coming soon",
+  professionalPublishSubtitle: "We review the listing before it goes live. Its public contact is shown below.",
+  publicWhatsappPreview: (number: string) => `Public WhatsApp for this listing: ${number}`,
+  publicWhatsappMissing: "Your professional profile and agency do not yet have a valid public WhatsApp number.",
+  publicWhatsappHint: "The listing uses your agent profile's WhatsApp, or your agency's if your profile has none. The number entered below is saved to your account; it does not change that public contact.",
+  publicWhatsappEdit: "Edit my professional contact",
   publishTitle: "Publish your listing",
   publishSubtitle: "Leave your WhatsApp number so interested people can contact you. We review the listing before it goes live.",
   otpTitle: "Verify your WhatsApp to publish",
+  messagingRequired: "A WhatsApp code is required to submit this listing for review.",
+  messagingUnavailable: "WhatsApp verification is not enabled. You can submit this listing for review without a code.",
+  reviewAndProfessionalStatus: "The listing goes live only after team approval. Verifying your phone does not grant the verified professional badge.",
   otpSubtitle: "We send a code via WhatsApp. Verified listings display the ✓ badge and build more trust.",
   whatsappLabel: "WhatsApp number", codeLabel: "6-digit code", sendCode: "Send code", sending: "Sending…", resend: "Resend code", resendIn: "Resend in",
   publish: "Publish listing", publishing: "Publishing…", back: "Back", next: "Next", saving: "Saving…",
   doneTitle: "Your listing has been submitted!",
   doneBody: "We are reviewing it. Once approved, it will appear on the site. You can track its status and add photos from your dashboard.",
   doneCta: "Go to my dashboard",
-  errors: { operation: "Choose sale or rental.", propertyType: "Choose the property type.", title: "Enter a title with at least 8 characters.", price: "Enter a valid price.", location: "Choose a location from the list.", invalidNumber: "Check the WhatsApp number.", otpMismatch: "The code does not match. Please try again.", otpTooMany: "Too many attempts. Request a new code.", not_found: "We could not find your draft. Reload the page.", generic: "Something went wrong. Please try again." } as Record<string, string>,
+  errors: { public_contact: "Check the public WhatsApp in your profile and reload the draft before submitting. A valid number is missing or has changed since the preview.", operation: "Choose sale or rental.", propertyType: "Choose the property type.", title: "Enter a title with at least 8 characters.", price: "Enter a valid price.", location: "Choose a location from the list.", invalidNumber: "Check the WhatsApp number.", otpMismatch: "The code does not match. Please try again.", otpTooMany: "Too many attempts. Request a new code.", not_found: "We could not find your draft. Reload the page.", generic: "Something went wrong. Please try again." } as Record<string, string>,
 } as const;
 
 /**
@@ -500,7 +509,7 @@ export const enGuideEn = {
     { numeral: "≈ 3–5%", label: "Total purchase costs (verify before launch)" },
     { numeral: "Public deed", label: "Notarised and registered" },
   ],
-  newWeekTitle: "New this week",
+  newWeekTitle: "Latest listings",
   newWeekMore: "See all →",
   whyTitle: "Why Paraguay",
   whyReadGuide: "Read the guide →",
@@ -726,7 +735,7 @@ export const enHome = {
   proBullets: [
     "✓ Unlimited listings on the free plan",
     "✓ A public profile for the agency and for each agent",
-    "✓ Portfolio import from a spreadsheet or a link",
+    "✓ Import your own listing by link; get help with your full portfolio",
     "✓ A dashboard with the enquiries on every property",
   ],
   proMore: "Learn more",
@@ -2123,7 +2132,8 @@ export const enPremium = {
     { icon: "clock", label: "Fast replies\non WhatsApp" },
   ],
   searchTitle: "Find your next property",
-  featuredTitle: "Featured properties",
+  featuredTitle: "Latest listings",
+  featuredEmpty: "There are no properties listed here yet. Agents and agencies can submit their first property.",
   featuredMore: "See all properties →",
   typesTitle: "Property types",
   types: {
@@ -2426,7 +2436,7 @@ export const enParaInmobiliarias = {
   title: "For agencies and agents",
   description: (brand: string) => `List your entire portfolio on ${brand}, receive inquiries through WhatsApp and showcase your agency in the directory. Getting started is free.`,
   benefitPortfolio: "Your entire portfolio in one place",
-  benefitPortfolioBody: "Add properties individually or import your entire portfolio from a spreadsheet or a listing link. The free plan has no listing limit.",
+  benefitPortfolioBody: "Add properties individually from your dashboard or import one of your own listings by pasting its link. We can help import your full portfolio when you get started. The free plan has no listing limit.",
   benefitDirect: "Inquiries go straight to you",
   benefitDirectBody: "Every listing includes your WhatsApp. We do not mediate conversations, charge per contact or resell your leads to competitors.",
   benefitProfile: "A public profile for your agency",
@@ -2440,7 +2450,7 @@ export const enParaInmobiliarias = {
   stepAccount: "Create your account",
   stepAccountBody: "Sign up with your WhatsApp in under two minutes. No card required.",
   stepPortfolio: "Add your portfolio",
-  stepPortfolioBody: "Publish properties individually from your dashboard or import several at once. We can help with your first upload if you would like.",
+  stepPortfolioBody: "Add properties one by one from your dashboard or import one of your own listings by pasting its link. If you want to start with your full portfolio, we can help import it for you.",
   stepVerification: "We verify your agency",
   stepVerificationBody: "We review your details and activate the verified badge on your profile and all your listings.",
   stepInquiries: "Receive and manage inquiries",
@@ -2449,8 +2459,8 @@ export const enParaInmobiliarias = {
   faqCostBody: "The Professional plan is free and includes unlimited listings, a public profile and an inquiry dashboard. Paid plans add featured placement in search results and fixed positions on the homepage; see the plans page for details.",
   faqCommission: "Do you charge commission on my transactions?",
   faqCommissionBody: "No. We do not take part in negotiations or charge a percentage of any sale or rental you close. Agreements between you and your client stay between you.",
-  faqImport: "Can I import my portfolio from another portal or a spreadsheet?",
-  faqImportBody: "Yes. From your dashboard, you can import listings from a spreadsheet or paste a link to an existing listing, then make any adjustments before publishing.",
+  faqImport: "How do I import my own listing or get help adding my full portfolio?",
+  faqImportBody: "From your dashboard, you can paste a link to one of your own listings to create a draft and make any adjustments before submitting it for review. If your portfolio is in a spreadsheet, contact us: our team can import it for you to help you get started. Spreadsheet uploads are not available in your dashboard.",
   faqLeads: "What happens to my leads?",
   faqLeadsBody: "They are yours. Inquiries about your listings go straight to your WhatsApp and are saved in your dashboard. We do not sell them or share them with other agencies.",
   faqIndependent: "What if I am an independent agent without an agency?",
@@ -2480,4 +2490,37 @@ export const enParaInmobiliarias = {
   createAccount: "Create a free account",
   viewPlans: "View plans",
   contact: "Talk to us",
+} as const;
+
+export const enOnboarding = {
+  title: "Your first steps",
+  dismiss: "Dismiss for now",
+  contact: "Complete the WhatsApp number on your public profile",
+  photo: "Add a profile photo or your agency logo",
+  publish: "Publish your first listing",
+  profileHint: "In My profile, edit your contact details and paste the URL of an image already hosted online. Only the agency administrator can edit the agency's details.",
+  review: "When you submit a listing, a WhatsApp code (OTP), if requested, confirms your phone number. The team then reviews the listing and decides whether to publish it. The verified professional badge is awarded separately: neither the code nor listing approval grants it.",
+  visibility: "Your public agent profile appears once at least one published listing is attributed to you; your agency profile appears once at least one is attributed to the agency. Drafts and listings awaiting review do not count yet.",
+} as const;
+
+export const enTranslationStatus = {
+  title: "English translation status",
+  configured: "A provider key is configured. This does not confirm that the service responds or that cron:translate is scheduled.",
+  unavailable: "No translation provider is configured. cron:translate cannot translate listings until a key is configured.",
+  fallback: "Publishing does not run translation. Content without an English version appears in Spanish; later edits need another job run.",
+  next: "Use Simulate on the cron:translate card to see pending candidates within the chosen limit and English title coverage. A simulation does not translate; a limited run does not guarantee everything is up to date.",
+  history: "History records runs from this panel; it does not confirm terminal runs or cron scheduling.",
+} as const;
+
+export const enNotFound = {
+  "title": "We couldn't find properties for that search",
+  "explanation": "There may not be listings in that area or category yet. Try another city or property type.",
+  "popularSearches": "POPULAR SEARCHES",
+  "home": "Back to home",
+  "suggestions": [
+    "Houses in Asunción",
+    "Apartments in Asunción",
+    "Land in Luque",
+    "Rentals in Asunción"
+  ]
 } as const;

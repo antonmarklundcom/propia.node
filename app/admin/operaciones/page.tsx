@@ -5,6 +5,7 @@ import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { lastRunByJob } from "@/lib/ops/runs";
 import { esPanel } from "@/i18n/es";
+import { dict } from "@/i18n/server";
 import { adminTabs } from "../tabs";
 import { runOpsJob } from "./actions";
 import { FOLLOW_UP_JOB, opsJobMeta, opsJobs } from "./jobs";
@@ -57,6 +58,8 @@ export default async function AdminOperacionesPage() {
   ]);
 
   const metas = opsJobMeta();
+  const { translationStatus: translation } = await dict();
+  const translationConfigured = metas.find((meta) => meta.job === "cron:translate")?.disabledReason === null;
   /** Labels by job id, so a follow-up hint can name the other card. */
   const labels = new Map(opsJobs().map((j) => [j.job, j.label]));
 
@@ -74,6 +77,14 @@ export default async function AdminOperacionesPage() {
           {esPanel.opsSubtitle}
         </p>
         <p className="panel-card__meta">{esPanel.opsHistoryHint}</p>
+
+        <section className="panel-note" aria-labelledby="translation-status-title">
+          <h3 id="translation-status-title">{translation.title}</h3>
+          <p>{translationConfigured ? translation.configured : translation.unavailable}</p>
+          <p>{translation.fallback}</p>
+          <p>{translation.next}</p>
+          <p>{translation.history}</p>
+        </section>
 
         {metas.map((meta) => {
           const row = lastRuns.get(meta.job);

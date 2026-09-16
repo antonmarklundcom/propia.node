@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { homeForRole, requireUser } from "@/lib/auth/guards";
 import {
   getUserDraft,
+  getPublishContact,
   listActiveFinancingPrograms,
   listNearbyProjects,
   listPublishLocations,
@@ -10,6 +11,7 @@ import {
 import { dict, currentLocale } from "@/i18n/server";
 import { brandName } from "@/lib/brand-server";
 import { isMessagingConfigured } from "@/lib/crm";
+import { isR2Configured } from "@/lib/r2";
 import {
   PublishWizard,
   type InitialDraft,
@@ -105,7 +107,7 @@ export default async function PublishPage({
   const draftId = Number(draft);
   if (Number.isInteger(draftId) && draftId > 0) {
     const row = await getUserDraft(user.id, draftId);
-    if (row) {
+    if (row && row.status === "draft") {
       initialDraft = {
         draftId: row.id,
         operation: row.operation,
@@ -133,6 +135,8 @@ export default async function PublishPage({
     }
   }
 
+  const initialContact = await getPublishContact(user.id, initialDraft?.draftId ?? null);
+
   return (
     <main className="site-main wizard-wrap">
       <header className="wizard-head">
@@ -146,9 +150,11 @@ export default async function PublishPage({
         programs={programs}
         usdToPyg={usdToPyg}
         initialDraft={initialDraft}
+        initialContact={initialContact ?? { professional: true, whatsapp: null }}
         initialPhotos={initialPhotos}
         prefill={prefill}
         otpEnabled={isMessagingConfigured()}
+        photosEnabled={isR2Configured()}
         homeHref={homeForRole(user)}
       />
     </main>

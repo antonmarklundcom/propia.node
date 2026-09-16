@@ -9,7 +9,9 @@
 import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { financingPrograms, listings, locations, projects } from "@/db/schema";
+import {
+  agencies, agents, financingPrograms, listings, locations, projects,
+} from "@/db/schema";
 import type { FinancingProgram } from "@/lib/cuota";
 import { makePublicId, toPriceUsd } from "@/lib/import/normalize";
 import { syncDisplayCoords } from "@/lib/geo";
@@ -18,6 +20,56 @@ import { getUsdToPygRate } from "@/lib/fx";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
 export { getUsdToPygRate };
+
+/** A missing professional row is intentional for private sellers. */
+async function resolvePublisher(userId: number) {
+  const [agent] = await db
+    .select({ agentId: agents.id, agencyId: agents.agencyId })
+    .from(agents)
+    .where(eq(agents.userId, userId))
+    .limit(1);
+  return agent ?? { agentId: null, agencyId: null };
+}
+
+export interface PublishContact {
+  professional: boolean;
+  whatsapp: string | null;
+}
+
+/** Match the detail page's agent → agency contact chain, using persisted IDs. */
+export async function getPublishContact(
+  userId: number,
+  draftId: number | null,
+): Promise<PublishContact | null> {
+  let identity: { agentId: number | null; agencyId: number | null };
+  if (draftId != null) {
+    const [draft] = await db
+      .select({ agentId: listings.agentId, agencyId: listings.agencyId })
+      .from(listings)
+      .where(and(
+        eq(listings.id, draftId),
+        eq(listings.ownerUserId, userId),
+        eq(listings.status, "draft"),
+      ))
+      .limit(1);
+    if (!draft) return null;
+    identity = draft;
+  } else {
+    identity = await resolvePublisher(userId);
+  }
+  const [agent, agency] = await Promise.all([
+    identity.agentId == null ? null : db
+      .select({ whatsapp: agents.whatsapp }).from(agents)
+      .where(eq(agents.id, identity.agentId)).limit(1).then(rows => rows[0]),
+    identity.agencyId == null ? null : db
+      .select({ whatsapp: agencies.whatsapp }).from(agencies)
+      .where(eq(agencies.id, identity.agencyId)).limit(1).then(rows => rows[0]),
+  ]);
+  return {
+    professional: identity.agentId != null || identity.agencyId != null,
+    whatsapp: agent?.whatsapp ?? agency?.whatsapp ?? null,
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /* Reference data for the wizard selects                               */
@@ -189,14 +241,16 @@ async function draftFields(input: DraftInput, agencyId: number | null) {
  * to (id, ownerUserId, status='draft') so a published/removed row can't be
  * mutated back into a draft, and no other user's draft can be touched.
  * Returns the draft id (0 when an update matched nothing).
+ * New rows resolve both professional IDs from the authenticated user's agent
+ * profile. Private sellers have no such row, so their agentId stays null.
  */
 export async function saveDraft(params: {
   userId: number;
-  agencyId: number | null;
   draftId: number | null;
   input: DraftInput;
 }): Promise<number> {
-  const { userId, agencyId, draftId, input } = params;
+  const { userId, draftId, input } = params;
+  const { agentId, agencyId } = await resolvePublisher(userId);
   const fields = await draftFields(input, agencyId);
 
   if (draftId) {
@@ -223,6 +277,7 @@ export async function saveDraft(params: {
     slug: slugify(input.title) || "propiedad",
     status: "draft",
     ownerUserId: userId,
+    agentId,
     ...fields,
   });
   const newId = Number((res as unknown as { insertId: number }).insertId);

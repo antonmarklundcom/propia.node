@@ -830,7 +830,7 @@ export const esPublish = {
   photosDraftFirst:
     "Completá los datos de la propiedad y seguí adelante: apenas se guarda el borrador vas a poder subir fotos.",
   photosStorageOff:
-    "El almacenamiento de fotos todavía no está disponible. Podés publicar igual y agregarlas después.",
+    "La carga de fotos está pendiente de habilitación por el equipo del portal. Podés enviar tu propiedad a revisión sin fotos y agregarlas cuando esté disponible.",
   photosFailed: "No pudimos subir algunas fotos. Probá de nuevo.",
   photosTooMany:
     "Son demasiadas fotos de una vez. Subí hasta 20 por tanda.",
@@ -838,12 +838,20 @@ export const esPublish = {
     "Mostrar también a compradores del exterior (realestateinparaguay.com) — próximamente",
 
   // Publicación sin verificación (no hay proveedor de mensajería configurado)
+  professionalPublishSubtitle: "Revisamos el aviso antes de que salga publicado. El contacto público es el que se muestra abajo.",
+  publicWhatsappPreview: (number: string) => `WhatsApp público del aviso: ${number}`,
+  publicWhatsappMissing: "Tu perfil profesional y tu inmobiliaria todavía no tienen un WhatsApp público válido.",
+  publicWhatsappHint: "El aviso usa el WhatsApp de tu perfil de agente y, si no tiene uno, el de tu inmobiliaria. El número que ingresás abajo se guarda en tu cuenta; no cambia ese contacto público.",
+  publicWhatsappEdit: "Editar mi contacto profesional",
   publishTitle: "Publicá tu aviso",
   publishSubtitle:
     "Dejanos tu WhatsApp para que te contacten los interesados. Revisamos el aviso antes de que salga publicado.",
 
   // OTP
   otpTitle: "Verificá tu WhatsApp para publicar",
+  messagingRequired: "Se requiere un código de WhatsApp para enviar este aviso a revisión.",
+  messagingUnavailable: "La verificación por WhatsApp no está habilitada. Podés enviar este aviso a revisión sin código.",
+  reviewAndProfessionalStatus: "El aviso se publica solo después de la aprobación del equipo. Verificar el teléfono no otorga la insignia de profesional verificado.",
   otpSubtitle:
     "Te mandamos un código por WhatsApp. Los avisos verificados muestran el sello ✓ y generan más confianza.",
   whatsappLabel: "Número de WhatsApp",
@@ -867,6 +875,7 @@ export const esPublish = {
   doneCta: "Ir a mi panel",
 
   errors: {
+    public_contact: "Revisá el WhatsApp público en tu perfil y recargá el borrador antes de enviarlo. Falta un número válido o cambió desde la vista previa.",
     operation: "Elegí si es venta o alquiler.",
     propertyType: "Elegí el tipo de propiedad.",
     title: "Poné un título de al menos 8 caracteres.",
@@ -1310,7 +1319,7 @@ export const esGuideEn = {
     { numeral: "≈ 3–5 %", label: "Costos totales de compra (verificar)" },
     { numeral: "Escritura pública", label: "Escriturado e inscripto" },
   ],
-  newWeekTitle: "Nuevo esta semana",
+  newWeekTitle: "Últimas publicaciones",
   newWeekMore: "Ver todas →",
   whyTitle: "Por qué Paraguay",
   whyReadGuide: "Leer la guía →",
@@ -1534,7 +1543,7 @@ export const esHome = {
   proBullets: [
     "✓ Avisos ilimitados en el plan gratuito",
     "✓ Perfil público de la inmobiliaria y de cada agente",
-    "✓ Importación de cartera desde planilla o enlace",
+    "✓ Importá tu aviso por enlace; te ayudamos con la cartera completa",
     "✓ Panel con las consultas de cada propiedad",
   ],
   proMore: "Conocer más",
@@ -2999,7 +3008,8 @@ export const esPremium = {
     { icon: "clock", label: "Respuesta rápida\npor WhatsApp" },
   ],
   searchTitle: "Encontrá tu próxima propiedad",
-  featuredTitle: "Propiedades destacadas",
+  featuredTitle: "Últimas publicaciones",
+  featuredEmpty: "Todavía no hay propiedades publicadas aquí. Si sos agente o representás a una inmobiliaria, podés publicar tu primera propiedad.",
   featuredMore: "Ver todas las propiedades →",
   typesTitle: "Tipos de propiedades",
   types: {
@@ -3275,6 +3285,7 @@ export const esPublicAuth = {
   loginToRegister: "¿Todavía no tenés cuenta? Registrate",
   registerErrorName: "Escribí tu nombre completo.",
   registerErrorEmail: "Revisá el email.",
+  registerErrorWhatsappTaken: "Este número de WhatsApp ya está registrado.",
   registerErrorEmailTaken: "Ya existe una cuenta con ese email. Probá ingresando.",
   registerErrorPassword: "La contraseña necesita al menos 8 caracteres.",
   registerErrorAgencyName: "Escribí el nombre de la inmobiliaria.",
@@ -3318,7 +3329,7 @@ export const esParaInmobiliarias = {
   title: "Para inmobiliarias y agentes",
   description: (brand: string) => `Publicá tu cartera completa en ${brand}, recibí consultas por WhatsApp y mostrá tu inmobiliaria en el directorio. Empezar es gratis.`,
   benefitPortfolio: "Tu cartera completa, en un solo lugar",
-  benefitPortfolioBody: "Cargá propiedad por propiedad o importá tu cartera entera desde una planilla o desde el enlace de tu aviso. Sin límite de avisos en el plan gratuito.",
+  benefitPortfolioBody: "Cargá propiedad por propiedad desde el panel o importá un aviso propio pegando su enlace. Para empezar con tu cartera completa, te ayudamos con la importación. Sin límite de avisos en el plan gratuito.",
   benefitDirect: "Las consultas llegan directo a vos",
   benefitDirectBody: "Cada aviso lleva tu WhatsApp. No intermediamos la conversación, no te cobramos por contacto y no revendemos tus leads a la competencia.",
   benefitProfile: "Perfil público de tu inmobiliaria",
@@ -3332,7 +3343,7 @@ export const esParaInmobiliarias = {
   stepAccount: "Creá tu cuenta",
   stepAccountBody: "Registro con tu WhatsApp en menos de dos minutos. No pedimos tarjeta.",
   stepPortfolio: "Cargá tu cartera",
-  stepPortfolioBody: "Publicá una por una desde el panel, o importá varias de una vez. Nosotros te ayudamos con la primera carga si querés.",
+  stepPortfolioBody: "Cargá las propiedades una por una desde el panel o importá un aviso propio pegando su enlace. Si querés cargar toda tu cartera al empezar, nosotros te ayudamos a importarla.",
   stepVerification: "Verificamos tu inmobiliaria",
   stepVerificationBody: "Revisamos los datos y activamos el sello de verificado en tu perfil y en todos tus avisos.",
   stepInquiries: "Recibí y gestioná consultas",
@@ -3341,8 +3352,8 @@ export const esParaInmobiliarias = {
   faqCostBody: "El plan Profesional es gratuito e incluye avisos ilimitados, perfil público y panel con consultas. Los planes pagos agregan destaque en las búsquedas y posiciones fijas en la portada; podés verlos en la página de planes.",
   faqCommission: "¿Cobran comisión sobre mis operaciones?",
   faqCommissionBody: "No. No participamos de la negociación ni cobramos porcentaje sobre ninguna venta o alquiler que cierres. Lo que se acuerde entre vos y tu cliente es entre ustedes.",
-  faqImport: "¿Puedo importar mi cartera desde otro portal o desde una planilla?",
-  faqImportBody: "Sí. Desde el panel podés importar avisos a partir de una planilla o pegando el enlace de una publicación existente, y después ajustar lo que haga falta antes de publicar.",
+  faqImport: "¿Cómo importo un aviso propio o pido ayuda para cargar toda mi cartera?",
+  faqImportBody: "Desde el panel podés pegar el enlace de un aviso propio para crear un borrador y ajustar lo que haga falta antes de enviarlo a revisión. Si tenés tu cartera en una planilla, contactanos: nuestro equipo puede importarla por vos para ayudarte con la primera carga. La carga de planillas no está disponible en tu panel.",
   faqLeads: "¿Qué pasa con mis leads?",
   faqLeadsBody: "Son tuyos. Las consultas de tus avisos van directo a tu WhatsApp y quedan en tu panel. No los vendemos ni los compartimos con otras inmobiliarias.",
   faqIndependent: "¿Y si soy agente independiente, sin inmobiliaria?",
@@ -3372,4 +3383,37 @@ export const esParaInmobiliarias = {
   createAccount: "Crear cuenta gratis",
   viewPlans: "Ver planes",
   contact: "Hablar con nosotros",
+} as const;
+
+export const esOnboarding = {
+  title: "Tus primeros pasos",
+  dismiss: "Ocultar por ahora",
+  contact: "Completá el WhatsApp de tu perfil público",
+  photo: "Agregá una foto de perfil o el logo de tu inmobiliaria",
+  publish: "Publicá tu primera propiedad",
+  profileHint: "En Mi perfil podés editar tu contacto y pegar el enlace (URL) de una imagen ya alojada en internet. Los datos de la inmobiliaria los edita su administrador.",
+  review: "Al enviar tu propiedad, si se solicita un código por WhatsApp (OTP), ese código confirma tu número. Después, el equipo revisa el aviso y decide su publicación. La insignia de profesional verificado se otorga por separado: ni el código ni la aprobación del aviso la conceden.",
+  visibility: "Tu perfil público de agente aparece cuando tiene al menos una propiedad publicada a tu nombre; el de tu inmobiliaria, cuando tiene al menos una publicada a nombre de la inmobiliaria. Un borrador o un aviso pendiente de revisión todavía no cuenta.",
+} as const;
+
+export const esTranslationStatus = {
+  title: "Estado de traducción al inglés",
+  configured: "Hay una clave de proveedor configurada. Esto no confirma que el servicio responda ni que cron:translate esté programado.",
+  unavailable: "No hay un proveedor de traducción configurado. cron:translate no puede traducir avisos hasta que se configure una clave.",
+  fallback: "Publicar no ejecuta la traducción. El contenido sin versión en inglés se muestra en español; los cambios posteriores necesitan otra ejecución del trabajo.",
+  next: "Usá Simular en la tarjeta cron:translate para ver candidatos pendientes dentro del límite elegido y la cobertura de títulos en inglés. Una simulación no traduce; una ejecución limitada no garantiza que todo esté actualizado.",
+  history: "El historial registra ejecuciones desde este panel, no confirma ejecuciones por terminal ni la programación del cron.",
+} as const;
+
+export const esNotFound = {
+  "title": "No encontramos propiedades para esa búsqueda",
+  "explanation": "Puede que no haya publicaciones disponibles en esa zona o combinación todavía. Probá con otra ciudad o tipo de propiedad.",
+  "popularSearches": "BÚSQUEDAS POPULARES",
+  "home": "Volver al inicio",
+  "suggestions": [
+    "Casas en Asunción",
+    "Departamentos en Asunción",
+    "Terrenos en Luque",
+    "Alquileres en Asunción"
+  ]
 } as const;
