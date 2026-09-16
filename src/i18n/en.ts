@@ -175,6 +175,10 @@ export const en = {
     "Your property will also be shown to overseas buyers on our English site — at no extra cost.",
   inquiryPrefill: "Hi, I am interested in this property.",
   quickQuestions: ["Still available?", "Can I visit?", "What is required?"],
+  login: "Log in",
+  menuOpen: "Open menu",
+  menuClose: "Close menu",
+  menuLabel: "Main menu",
 } as const;
 
 /** Peer of esContactForm — see that namespace's comment. */

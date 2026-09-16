@@ -189,7 +189,7 @@ export async function SiteHeader() {
         <div className="site-header__actions">
           {showLogin && (
             <Link className="site-header__login" href="/login">
-              Ingresar
+              {d.common.login}
             </Link>
           )}
           {/* Two labels, one shown at a time — on a 320px screen the full label
@@ -207,6 +207,9 @@ export async function SiteHeader() {
             nav={nav}
             ctaHref={showHeaderCta ? headerCtaHref : null}
             ctaLabel={ctaLabelFull}
+            menuOpenLabel={d.common.menuOpen}
+            menuCloseLabel={d.common.menuClose}
+            menuLabel={d.common.menuLabel}
             companyGroup={
               isRental
                 ? {
