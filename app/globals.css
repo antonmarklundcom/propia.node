@@ -382,6 +382,14 @@ h2 {
   transform: scale(1.06);
 }
 
+/* The global `a:hover` rule (0,1,1) otherwise outranks this card's own
+   `color: #fff` (0,1,0), so any text here with no color of its own — the
+   title, which relies on inheriting white — turns link-hover gold the
+   instant the card is hovered, right as the scrim also darkens. */
+.ds-photo-card:hover {
+  color: #fff;
+}
+
 .ds-photo-card__scrim {
   position: absolute;
   inset: 0;
