@@ -75,7 +75,7 @@ export default async function OperationHubPage({ params }: Params) {
   const vertical = await currentVertical();
   const [origin, hub, cities, recent] = await Promise.all([
     siteOrigin(),
-    getOperationHubData(op),
+    getOperationHubData(op, vertical),
     listCities(),
     getRecentListingsBy({ operation: op, vertical }, 8),
   ]);

@@ -503,9 +503,17 @@ export interface OperationHubData {
  * published rows of that operation, bucketed by city and by property type.
  * The hubs are the entry point competitors have at /venta and /alquiler and
  * this portal simply 404'd on, since the category route needs a city segment.
+ *
+ * `vertical` is required, not optional: this is a per-door page (every host
+ * renders its own /venta), and a door with a hard filter (terreno.com.py's
+ * property_type: ["terreno"], for one) must never show another door's
+ * unfiltered counts here, the same rule `listDirectoryZonesUncached` follows
+ * above. Passing `null` explicitly is how a caller opts out on purpose,
+ * mirroring that function's signature.
  */
 export async function getOperationHubData(
   operation: string,
+  vertical: VerticalConfig | null,
 ): Promise<OperationHubData> {
   const [locRows, rows] = await Promise.all([
     db
@@ -528,6 +536,7 @@ export async function getOperationHubData(
         and(
           eq(listings.status, "published"),
           eq(listings.operation, operation as "venta" | "alquiler"),
+          ...(vertical ? verticalConds(vertical) : []),
         ),
       )
       .groupBy(listings.locationId, listings.propertyType),
