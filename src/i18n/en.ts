@@ -1105,6 +1105,10 @@ export const enRental = {
   ctaButton: "Talk to us",
 
   services: {
+    alquilerAutos: {
+      title: "Rent a car",
+      tagline: "Short-term car hire with delivery and pickup arranged at the airport or your accommodation.",
+    },
     alquiler: {
       title: "Rent an apartment or house",
       tagline:
@@ -1232,6 +1236,40 @@ export const enLeadForm = {
  * what O3 fills versus what S3 finishes.
  */
 export const enRentalServices = {
+  alquilerAutos: {
+    metaTitle: "Car rental in Paraguay",
+    metaDescription: (brand: string) =>
+      `${brand}: short-term car rental in Paraguay, with delivery and pickup arranged at the airport or your accommodation.`,
+    h1: "Rent a car in Paraguay",
+    tagline: "A car for your visit or your first days in Paraguay, with delivery and pickup arranged where you arrive or stay.",
+    intro: "We offer short-term car hire for visitors and new residents. Book a car while staying at a property we manage, or arrange it independently without renting a home through us.",
+    challengeTitle: "Get around from the day you arrive",
+    challengeText: "Arrivals, viewings and settling-in errands are easier to plan when you have a way to get around. Tell us your dates and where you need the car so we can arrange delivery and pickup before you confirm.",
+    frameworkTitle: "How we arrange your rental",
+    framework: [
+      { title: "Tell us your plans", text: "Share your travel dates and whether you would like the car delivered to the airport or your accommodation." },
+      { title: "Agree on the details", text: "We check availability and agree on the terms, location and times for delivery and pickup with you." },
+      { title: "Delivery and return", text: "We coordinate the handover and pickup of the car as agreed for your stay." },
+    ],
+    specialTitle: "With accommodation or on its own",
+    special: [
+      { title: "Guests at our managed properties", text: "Arrange your car alongside your arrival at a property we manage." },
+      { title: "Independent car hire", text: "You can rent just the car, even if you are staying elsewhere." },
+    ],
+    benefitsTitle: "Built around a short stay",
+    benefits: [
+      { title: "Coordinated delivery", text: "We agree on delivery and pickup at the airport or your accommodation with you." },
+      { title: "No long-term lease", text: "The service is for a visit or the first days of a move, without a long-term car lease." },
+    ],
+    faq: [
+      { q: "Do I need to rent a property through you?", a: "No. You can book a car independently or alongside a stay at a property we manage." },
+      { q: "Can you deliver and collect the car at the airport?", a: "Yes, we arrange delivery and pickup at the airport or your accommodation. We agree on the location and times before confirming the rental." },
+      { q: "Do you offer long-term leases?", a: "This service is for short-term car hire. Send us the dates you need to check availability." },
+    ],
+    ctaTitle: "Arrange a car for your stay",
+    ctaText: "Tell us when you arrive, how long you need the car and where you would like it delivered.",
+    ctaButton: "Check availability",
+  },
   alquiler: {
     metaTitle: "Rent an apartment or house in Asunción",
     metaDescription: (brand: string) =>

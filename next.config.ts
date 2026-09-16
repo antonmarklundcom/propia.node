@@ -105,12 +105,14 @@ const nextConfig: NextConfig = {
    */
   async redirects() {
     const wordpressMap: Array<[string, string]> = [
-      ...RENTAL_SERVICES.map(
+      // A service with no oldPath never existed on the old site — nothing
+      // to redirect from, so it has no entry in this map.
+      ...RENTAL_SERVICES.filter((s) => s.oldPath).map(
         (s): [string, string] => [
           // `oldPath` carries the old site's trailing slash (and, for the
           // virtual address, its misspelling); the loop below adds the
           // slashless form.
-          s.oldPath.replace(/\/$/, ""),
+          s.oldPath!.replace(/\/$/, ""),
           rentalPath("en", "services", s),
         ],
       ),
