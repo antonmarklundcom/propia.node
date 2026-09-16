@@ -452,12 +452,32 @@ export const enVender = {
  */
 export const enGuideEn = {
   chromeNav: [
-    { label: "Buy", href: "/venta" },
-    { label: "Rent", href: "/alquiler" },
-    { label: "Land", href: "/venta/asuncion/terrenos" },
-    { label: "New developments", href: "/proyectos" },
-    { label: "How it works", href: "/guias/buying-property-in-paraguay" },
-    { label: "Guides", href: "/guias" },
+    {
+      label: "Buy",
+      href: "/venta",
+      links: [
+        { label: "All for sale", href: "/venta", desc: "Every city and type" },
+        { label: "Houses for sale", href: "/venta/asuncion/casas", desc: "Asuncion and the metro area" },
+        { label: "Apartments for sale", href: "/venta/asuncion/departamentos", desc: "From studios to penthouses" },
+        { label: "Land", href: "/venta/asuncion/terrenos", desc: "Lots and subdivisions" },
+        { label: "Duplexes", href: "/venta/asuncion/duplex", desc: "Duplexes and townhouses" },
+      ],
+    },
+    {
+      label: "Rent",
+      href: "/alquiler",
+      links: [
+        { label: "All for rent", href: "/alquiler", desc: "Every city and type" },
+        { label: "Apartments for rent", href: "/alquiler/asuncion/departamentos", desc: "Furnished and unfurnished" },
+        { label: "Houses for rent", href: "/alquiler/asuncion/casas", desc: "Family homes and gated communities" },
+        { label: "Offices", href: "/alquiler/asuncion/oficinas", desc: "Corporate space" },
+        { label: "Commercial units", href: "/alquiler/asuncion/comerciales", desc: "Street-front and mall space" },
+      ],
+    },
+    { label: "Land", href: "/venta/asuncion/terrenos", links: [] as { label: string; href: string; desc?: string }[] },
+    { label: "New developments", href: "/proyectos", links: [] as { label: string; href: string; desc?: string }[] },
+    { label: "How it works", href: "/guias/buying-property-in-paraguay", links: [] as { label: string; href: string; desc?: string }[] },
+    { label: "Guides", href: "/guias", links: [] as { label: string; href: string; desc?: string }[] },
   ],
   footerBuyTitle: "Buy",
   footerBuyLinks: [

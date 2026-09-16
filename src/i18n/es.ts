@@ -1262,12 +1262,32 @@ export const esVender = {
  */
 export const esGuideEn = {
   chromeNav: [
-    { label: "Comprar", href: "/venta" },
-    { label: "Alquilar", href: "/alquiler" },
-    { label: "Terrenos", href: "/venta/asuncion/terrenos" },
-    { label: "Proyectos nuevos", href: "/proyectos" },
-    { label: "Cómo funciona la compra", href: "/guias/buying-property-in-paraguay" },
-    { label: "Guías", href: "/guias" },
+    {
+      label: "Comprar",
+      href: "/venta",
+      links: [
+        { label: "Todo en venta", href: "/venta", desc: "Todas las ciudades y tipos" },
+        { label: "Casas en venta", href: "/venta/asuncion/casas", desc: "Asunción y área metropolitana" },
+        { label: "Departamentos en venta", href: "/venta/asuncion/departamentos", desc: "Desde monoambientes a penthouses" },
+        { label: "Terrenos", href: "/venta/asuncion/terrenos", desc: "Lotes y loteamientos" },
+        { label: "Dúplex", href: "/venta/asuncion/duplex", desc: "Dúplex y townhouses" },
+      ],
+    },
+    {
+      label: "Alquilar",
+      href: "/alquiler",
+      links: [
+        { label: "Todo en alquiler", href: "/alquiler", desc: "Todas las ciudades y tipos" },
+        { label: "Departamentos en alquiler", href: "/alquiler/asuncion/departamentos", desc: "Amoblados y sin amoblar" },
+        { label: "Casas en alquiler", href: "/alquiler/asuncion/casas", desc: "Familiares y barrios cerrados" },
+        { label: "Oficinas", href: "/alquiler/asuncion/oficinas", desc: "Espacios corporativos" },
+        { label: "Locales comerciales", href: "/alquiler/asuncion/comerciales", desc: "Sobre avenida y en shopping" },
+      ],
+    },
+    { label: "Terrenos", href: "/venta/asuncion/terrenos", links: [] as { label: string; href: string; desc?: string }[] },
+    { label: "Proyectos nuevos", href: "/proyectos", links: [] as { label: string; href: string; desc?: string }[] },
+    { label: "Cómo funciona la compra", href: "/guias/buying-property-in-paraguay", links: [] as { label: string; href: string; desc?: string }[] },
+    { label: "Guías", href: "/guias", links: [] as { label: string; href: string; desc?: string }[] },
   ],
   footerBuyTitle: "Comprar",
   footerBuyLinks: [
