@@ -2002,6 +2002,9 @@ export const enDirectory = {
       cta: "I want to rent out my property",
     },
   ],
+  /** Peer of esDirectory.heroTrust — see that namespace's comment. */
+  heroTrust: (count: number) =>
+    `We already work with ${count} verified agents across the country.`,
 
   // NEW: "The difference" — the network section between the hero and the form.
   networkKicker: "The difference",

@@ -53,11 +53,27 @@ export function DirectoryHome({
 
       {sections.includes("hero") && (
         <section className="dir-hero">
+          {/* Every other door's hero is a photograph with the theme's own
+              --overlay-hero gradient on top; this one rendered a flat
+              --color-primary fill instead, which is why it read as a plain
+              SaaS panel next to the rest of the site. Reuses an existing
+              editorial asset (already public, used on the terreno.com.py
+              home) rather than commissioning anything new. */}
+          <img
+            className="dir-hero__photo"
+            src="/img/editorial-vender.webp"
+            alt=""
+            fetchPriority="high"
+          />
+          <div className="dir-hero__scrim" />
           <div className="ds-container dir-hero__inner">
             <div className="dir-hero__copy">
               <p className="ds-label dir-hero__kicker">{t.heroKicker}</p>
               <h1 className="dir-hero__title">{t.heroTitle}</h1>
               <p className="dir-hero__subtitle">{t.heroSubtitle}</p>
+              {showTeaser && (
+                <p className="dir-hero__trust">{t.heroTrust(agents.length)}</p>
+              )}
             </div>
             <div className="dir-doors">
               {t.heroDoors.map((door, i) => (
