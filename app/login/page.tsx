@@ -75,7 +75,7 @@ export default async function LoginPage({
           </form>
 
           <p className="auth-alt">
-            <Link href="/registro">{t.loginToRegister}</Link>
+            <Link href={next ? `/registro?next=${encodeURIComponent(next)}` : "/registro"}>{t.loginToRegister}</Link>
           </p>
         </div>
       </div>
