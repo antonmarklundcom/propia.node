@@ -1919,6 +1919,10 @@ export const esRental = {
    * (S3); these two lines are what the home page and the footer show.
    */
   services: {
+    alquilerAutos: {
+      title: "Alquiler de autos",
+      tagline: "Alquiler de autos por períodos cortos, con entrega y retiro coordinados en el aeropuerto o en tu alojamiento.",
+    },
     alquiler: {
       title: "Alquiler de casas y departamentos",
       tagline:
@@ -2070,6 +2074,40 @@ export const esLeadForm = {
  * than a placeholder sentence would be.
  */
 export const esRentalServices = {
+  alquilerAutos: {
+    metaTitle: "Alquiler de autos en Paraguay",
+    metaDescription: (brand: string) =>
+      `${brand}: alquiler de autos por períodos cortos en Paraguay, con entrega y retiro coordinados en el aeropuerto o en tu alojamiento.`,
+    h1: "Alquiler de autos en Paraguay",
+    tagline: "Un auto para tu visita o tus primeros días en Paraguay, con entrega y retiro coordinados donde llegás o te alojás.",
+    intro: "Alquilamos autos por períodos cortos para visitantes y nuevos residentes. Podés contratar el servicio si te alojás en una propiedad que administramos o de forma independiente, sin alquilar una vivienda con nosotros.",
+    challengeTitle: "Movete desde que llegás",
+    challengeText: "Entre la llegada, las visitas y los primeros trámites, tener cómo moverte ayuda a organizar tu estadía. Contanos tus fechas y dónde necesitás el auto para coordinar la entrega y el retiro antes de confirmar.",
+    frameworkTitle: "Cómo coordinamos tu alquiler",
+    framework: [
+      { title: "Contanos tus planes", text: "Indicanos las fechas de tu estadía y si preferís recibir el auto en el aeropuerto o en tu alojamiento." },
+      { title: "Confirmamos los detalles", text: "Revisamos la disponibilidad y acordamos las condiciones, el lugar y los horarios de entrega y retiro con vos." },
+      { title: "Entrega y devolución", text: "Coordinamos la entrega y el retiro del auto según lo acordado para tu estadía." },
+    ],
+    specialTitle: "Con alojamiento o por separado",
+    special: [
+      { title: "Huéspedes de nuestras propiedades", text: "Podés coordinar el auto junto con tu llegada a una propiedad que administramos." },
+      { title: "Alquiler independiente", text: "También podés alquilar solo el auto, aunque te alojes en otro lugar." },
+    ],
+    benefitsTitle: "Pensado para una estadía corta",
+    benefits: [
+      { title: "Entrega coordinada", text: "Acordamos con vos la entrega y el retiro en el aeropuerto o en el alojamiento." },
+      { title: "Sin alquiler a largo plazo", text: "El servicio es para una visita o los primeros días de una mudanza, sin un contrato de alquiler a largo plazo." },
+    ],
+    faq: [
+      { q: "¿Tengo que alquilar una propiedad con ustedes?", a: "No. Podés contratar el auto de forma independiente o junto con tu estadía en una propiedad que administramos." },
+      { q: "¿Pueden entregar y retirar el auto en el aeropuerto?", a: "Sí, coordinamos la entrega y el retiro en el aeropuerto o en tu alojamiento. Acordamos el lugar y los horarios antes de confirmar el alquiler." },
+      { q: "¿Ofrecen alquileres a largo plazo?", a: "Este servicio está pensado para períodos cortos. Contanos las fechas que necesitás para consultar disponibilidad." },
+    ],
+    ctaTitle: "Coordiná un auto para tu estadía",
+    ctaText: "Contanos cuándo llegás, hasta cuándo necesitás el auto y dónde preferís recibirlo.",
+    ctaButton: "Consultar disponibilidad",
+  },
   alquiler: {
     metaTitle: "Alquiler de casas y departamentos en Asunción",
     metaDescription: (brand: string) =>

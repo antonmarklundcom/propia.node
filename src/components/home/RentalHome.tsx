@@ -89,7 +89,7 @@ export function RentalHome({
             </Link>
           </div>
           <div className="rh-services">
-            {RENTAL_SERVICES.map((s) => {
+            {RENTAL_SERVICES.filter((s) => s.showOnHome !== false).map((s) => {
               const copy = t.services[s.dictKey];
               return (
                 <Link

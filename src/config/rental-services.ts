@@ -1,5 +1,5 @@
 /**
- * The rental family's seven services — the one list that the home page, the
+ * The rental family's services — the one list that the home page, the
  * services hub, the service route, the footer, the sitemap and S1's redirect
  * map all read.
  *
@@ -13,8 +13,8 @@
  * sentences.
  *
  * Order is the order they are shown in, on every surface. It leads with what
- * most visitors arrive for (a place to live) and ends with the two services
- * that only make sense once someone has decided to stay.
+ * most visitors arrive for (a place to live). The home spotlight omits entries
+ * with `showOnHome: false`; the services hub includes the full list.
  *
  * O3 adds `leadType` here and the `/servicios/[slug]` route that consumes it.
  */
@@ -41,6 +41,8 @@ export interface RentalService {
    * never concatenated at a call site.
    */
   slugEn: string;
+  /** Included in the home spotlight unless explicitly disabled. */
+  showOnHome?: boolean;
   /** Key into `rental.services` and (from S3) `rentalServices`. */
   dictKey:
     | "alquiler"
@@ -49,11 +51,16 @@ export interface RentalService {
     | "inmobiliariaAsuncion"
     | "residenciaParaguay"
     | "invertirEnParaguay"
-    | "domicilioVirtual";
+    | "domicilioVirtual"
+    | "alquilerAutos";
   /** Hero/card image. Written by S1 from plan Appendix B. */
   image: string;
-  /** The path the old rentparaguay.com published this at — S1's 301 source. */
-  oldPath: string;
+  /**
+   * The path the old rentparaguay.com published this at — S1's 301 source.
+   * Omitted for a service that never existed on the old site (nothing to
+   * redirect from); next.config.ts skips those when building the map.
+   */
+  oldPath?: string;
   /**
    * Which lane a lead from this service's page belongs in. The existing
    * `lead_type` enum, deliberately: someone renting, applying for residency or
@@ -127,6 +134,16 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
     oldPath: "/virtual-adress/", // the old site's own spelling — S1 redirects it verbatim
     leadType: "renter",
   },
+  {
+    slug: "alquiler-de-autos",
+    slugEn: "car-rental",
+    dictKey: "alquilerAutos",
+    showOnHome: false,
+    image: "/img/rental/hero-home.webp",
+    // No oldPath: this service never existed on the old rentparaguay.com,
+    // so there is nothing for a WordPress redirect to point away from.
+    leadType: "renter",
+  },
 ] as const;
 
 /**
@@ -160,7 +177,7 @@ const RENTAL_PATHS: Record<RentalPageKind, Record<"es" | "en", string>> = {
  *
  * The one place a rental URL is spelled. Nav, footer, home, the hub, the
  * service pages, the canonical tags, the hreflang map, the sitemap and the
- * cross-language 301s all go through it, so the seven services' two sets of
+ * cross-language 301s all go through it, so the services' two sets of
  * slugs cannot drift apart between the link that points at a page and the
  * route that serves it.
  *
