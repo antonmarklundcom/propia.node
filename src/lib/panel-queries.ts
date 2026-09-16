@@ -682,3 +682,26 @@ export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
     .where(guard ? and(routed, guard) : routed)
     .orderBy(desc(leads.createdAt));
 }
+
+/**
+ * Leads captured in the last `hours`, scoped to one panel — the zero-config
+ * half of the FSBO owner notification (CLAUDE.md backlog #8: "nothing pings
+ * the owner when a lead arrives"). Same idea as `countRecentLeads` for
+ * /admin, scoped through `listingScopeWhere()` the same way `getPanelLeads`
+ * is, so an owner's badge counts only their own leads.
+ */
+export async function countRecentPanelLeads(
+  scope: EditScope,
+  hours = 24,
+): Promise<number> {
+  const guard = listingScopeWhere(scope);
+  const routed = inArray(leads.routedTo, ["agency", "agent", "owner"]);
+  const recent = sql`${leads.createdAt} >= now() - interval ${sql.raw(String(Math.max(1, Math.floor(hours))))} hour`;
+
+  const [row] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(leads)
+    .innerJoin(listings, eq(leads.listingId, listings.id))
+    .where(guard ? and(routed, recent, guard) : and(routed, recent));
+  return Number(row?.n ?? 0);
+}

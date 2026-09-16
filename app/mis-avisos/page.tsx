@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireOwnerContext } from "@/lib/auth/guards";
 import { AGENCY_LOCKED_STATUSES, agencyStatusOptions } from "@/lib/listing-edit";
-import { getPanelListings } from "@/lib/panel-queries";
+import { countRecentPanelLeads, getPanelListings } from "@/lib/panel-queries";
 import { getPanelListingStats } from "@/lib/stats-queries";
 import { esOwner, esPanel, listingStatusLabel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
@@ -21,10 +21,11 @@ export const dynamic = "force-dynamic";
 
 export default async function OwnerListingsPage() {
   const { user, scope } = await requireOwnerContext();
-  // Both are scope-guarded reads and neither depends on the other.
-  const [rows, stats] = await Promise.all([
+  // All three are scope-guarded reads and none depends on the others.
+  const [rows, stats, recentLeads] = await Promise.all([
     getPanelListings(scope),
     getPanelListingStats(scope),
+    countRecentPanelLeads(scope),
   ]);
 
   return (
@@ -33,7 +34,7 @@ export default async function OwnerListingsPage() {
         title={esOwner.panelTitle}
         role={user.role}
         userName={user.name}
-        tabs={ownerTabs("listings")}
+        tabs={ownerTabs("listings", recentLeads)}
       />
       <main className="panel site-main">
         <div className="panel-section__header">

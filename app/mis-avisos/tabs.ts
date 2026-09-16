@@ -6,7 +6,15 @@ import { esOwner } from "@/i18n/es";
  * import and no agency profile — offering those would be offering a
  * professional's panel to somebody selling one house (PLAN.md D8).
  */
-export function ownerTabs(active: "listings" | "leads"): PanelTab[] {
+export function ownerTabs(
+  active: "listings" | "leads",
+  /**
+   * Leads from the last 24 h, badged on the Consultas tab. Omitted where it
+   * isn't loaded — same rule as `adminTabs`' `recentLeadCount`: a nudge, not
+   * a number every page must pay a query for.
+   */
+  recentLeadCount?: number,
+): PanelTab[] {
   return [
     {
       href: "/mis-avisos",
@@ -16,6 +24,7 @@ export function ownerTabs(active: "listings" | "leads"): PanelTab[] {
     {
       href: "/mis-avisos/consultas",
       label: esOwner.leadsTab,
+      count: recentLeadCount,
       active: active === "leads",
     },
   ];

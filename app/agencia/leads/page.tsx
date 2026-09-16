@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import type { EditScope } from "@/lib/listing-edit";
-import { getPanelLeads } from "@/lib/panel-queries";
+import { countRecentPanelLeads, getPanelLeads } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
@@ -43,6 +43,7 @@ export default async function AgencyLeadsPage() {
   const ctx = await requireAgencyContext();
   const { user, agencyId } = ctx;
   const scope = panelScope(ctx);
+  const recentLeads = await countRecentPanelLeads(scope);
 
   return (
     <>
@@ -50,7 +51,7 @@ export default async function AgencyLeadsPage() {
         title="Panel de la inmobiliaria"
         role={user.role}
         userName={user.name}
-        tabs={agencyTabs("leads", canManageTeam(ctx))}
+        tabs={agencyTabs("leads", canManageTeam(ctx), recentLeads)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.agencyLeadsTitle}</h2>

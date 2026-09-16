@@ -9,7 +9,7 @@ import {
   agencyStatusOptions,
   type EditScope,
 } from "@/lib/listing-edit";
-import { getPanelListings } from "@/lib/panel-queries";
+import { countRecentPanelLeads, getPanelListings } from "@/lib/panel-queries";
 import {
   getPanelListingStats,
   STATS_WINDOW_DAYS,
@@ -40,6 +40,7 @@ export default async function AgencyListingsPage({
   const ctx = await requireAgencyContext();
   const { user, agencyId } = ctx;
   const scope = panelScope(ctx);
+  const recentLeads = await countRecentPanelLeads(scope);
 
   return (
     <>
@@ -47,7 +48,7 @@ export default async function AgencyListingsPage({
         title="Panel de la inmobiliaria"
         role={user.role}
         userName={user.name}
-        tabs={agencyTabs("listings", canManageTeam(ctx))}
+        tabs={agencyTabs("listings", canManageTeam(ctx), recentLeads)}
       />
       <main className="panel site-main">
         {msg === "welcome" ? (

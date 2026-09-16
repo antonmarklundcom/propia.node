@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireOwnerContext } from "@/lib/auth/guards";
-import { getPanelLeads } from "@/lib/panel-queries";
+import { countRecentPanelLeads, getPanelLeads } from "@/lib/panel-queries";
 import { esOwner } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
@@ -40,9 +40,12 @@ function formatWhen(d: Date): string {
 
 export default async function OwnerLeadsPage() {
   const { user, scope } = await requireOwnerContext();
-  // Scope-guarded: the WHERE clause joins through the caller's own listings,
-  // so this reads their leads and cannot read anyone else's.
-  const leads = await getPanelLeads(scope);
+  // Both scope-guarded the same way: the WHERE clause joins through the
+  // caller's own listings, so neither reads anyone else's.
+  const [leads, recentLeads] = await Promise.all([
+    getPanelLeads(scope),
+    countRecentPanelLeads(scope),
+  ]);
 
   return (
     <>
@@ -50,7 +53,7 @@ export default async function OwnerLeadsPage() {
         title={esOwner.panelTitle}
         role={user.role}
         userName={user.name}
-        tabs={ownerTabs("leads")}
+        tabs={ownerTabs("leads", recentLeads)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esOwner.leadsTitle}</h2>

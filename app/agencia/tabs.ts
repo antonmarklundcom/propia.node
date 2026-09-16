@@ -12,6 +12,12 @@ import { esPanel } from "@/i18n/es";
 export function agencyTabs(
   active: "listings" | "leads" | "profile" | "import" | "team",
   showTeam = false,
+  /**
+   * Leads from the last 24 h, badged on the Consultas tab. Same rule as
+   * `adminTabs`' `recentLeadCount`: a nudge, not a number every page must
+   * pay a query for, so omitted where the caller hasn't loaded it.
+   */
+  recentLeadCount?: number,
 ): PanelTab[] {
   return [
     {
@@ -27,6 +33,7 @@ export function agencyTabs(
     {
       href: "/agencia/leads",
       label: esPanel.agencyLeadsTitle,
+      count: recentLeadCount,
       active: active === "leads",
     },
     ...(showTeam
