@@ -2861,6 +2861,14 @@ export const esDirectory = {
       cta: "Quiero alquilar mi propiedad",
     },
   ],
+  /**
+   * Real-data trust line under the hero doors. Only rendered when the page
+   * already shows the agent teaser (>= MIN_TEASER_AGENTS in
+   * DirectoryHome.tsx) — the same rule that stops the teaser section itself
+   * from padding with placeholders applies here: no count, no line.
+   */
+  heroTrust: (count: number) =>
+    `Ya trabajamos con ${count} inmobiliarios verificados en el país.`,
 
   // NEW: "La diferencia" — the network section between the hero and the form.
   networkKicker: "La diferencia",
