@@ -11,4 +11,4 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runSessions } from "../src/lib/ops/sessions";
 import { DRY, runCli } from "./ops-cli";
 
-void runCli(() => runSessions({ dry: DRY }));
+void runCli("cron:sessions", () => runSessions({ dry: DRY }));

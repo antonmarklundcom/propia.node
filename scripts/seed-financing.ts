@@ -13,4 +13,4 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runSeedFinancing } from "../src/lib/ops/seed-financing";
 import { DRY, runCli } from "./ops-cli";
 
-void runCli(() => runSeedFinancing({ dry: DRY }));
+void runCli("seed:financing", () => runSeedFinancing({ dry: DRY }));

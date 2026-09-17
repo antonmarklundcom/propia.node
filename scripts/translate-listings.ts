@@ -23,6 +23,7 @@ import { runTranslate } from "../src/lib/ops/translate";
 import { DRY, flagNumber, hasFlag, runCli } from "./ops-cli";
 
 void runCli(
+  "cron:translate",
   () =>
     runTranslate({
       dry: DRY,

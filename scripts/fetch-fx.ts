@@ -16,4 +16,4 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runFx } from "../src/lib/ops/fx";
 import { DRY, runCli } from "./ops-cli";
 
-void runCli(() => runFx({ dry: DRY }));
+void runCli("cron:fx", () => runFx({ dry: DRY }));

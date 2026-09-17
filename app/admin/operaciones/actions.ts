@@ -24,7 +24,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateListings } from "@/lib/cache";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { finishOpsRun, startOpsRun } from "@/lib/ops/runs";
+import { finishOpsRun, isJobRunning, startOpsRun } from "@/lib/ops/runs";
 import type { OpsResult } from "@/lib/ops/types";
 import { esPanel } from "@/i18n/es";
 import { findOpsJob, JOBS_THAT_CHANGE_LISTINGS } from "./jobs";
@@ -70,6 +70,16 @@ export async function runOpsJob(input: OpsRunInput): Promise<OpsRunOutcome> {
     }
     // Bounded server-side: this is the money guard, and a form field is not one.
     limit = Math.min(n, 500);
+  }
+
+  /**
+   * The lock this button and cron now share (`isJobRunning`, `src/lib/ops/runs.ts`
+   * — process-audit candidate 5). Checked here rather than only in the CLI's
+   * `runCli` because a press is exactly the "second start" this must catch: the
+   * job itself has no idea another copy of it is already running.
+   */
+  if (await isJobRunning(entry.job)) {
+    return { ok: false, error: esPanel.opsAlreadyRunning };
   }
 
   const runId = await startOpsRun({ job: entry.job, dry, userId: user.id });

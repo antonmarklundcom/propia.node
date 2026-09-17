@@ -29,6 +29,11 @@ function buildCommit(): string | null {
   try {
     return execSync("git rev-parse --short=12 HEAD", {
       stdio: ["ignore", "pipe", "ignore"],
+      // process-audit candidate 7: config evaluation can run at server startup,
+      // not just build time, so a hung git invocation (a corrupt .git, a
+      // network-mounted disk stalling) must not hold that process open
+      // indefinitely on a host tight on its process cap.
+      timeout: 3_000,
     })
       .toString()
       .trim() || null;

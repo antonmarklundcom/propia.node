@@ -41,7 +41,7 @@ if (agencyId !== null && (!Number.isInteger(agencyId) || agencyId <= 0)) {
   process.exit(1);
 }
 
-void runCli(() =>
+void runCli("import:csv", () =>
   runImportCsv({
     dry: DRY,
     csv: readFileSync(file, "utf8"),

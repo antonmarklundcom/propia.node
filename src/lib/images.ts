@@ -17,6 +17,18 @@
 import "server-only";
 import sharp from "sharp";
 
+/**
+ * Cap libvips' own thread pool to one (process-audit, `docs/log/process-audit.md`
+ * candidate 3: "Sharp native threads during uploads/backfill... without setting
+ * Sharp concurrency"). Left at its default, libvips sizes its pool to the CPU
+ * count and each resize spins that many native threads — real demand on a host
+ * that shares a process/resource cap with ~90 other sites (PLAN.md). A gallery
+ * upload or an image backfill is not latency-sensitive enough to trade that for
+ * a few hundred milliseconds per photo. Set once, at module load, so every
+ * caller (uploads, `backfill-images.ts`) is covered without remembering to ask.
+ */
+sharp.concurrency(1);
+
 /** Uploads above this are rejected before decoding — a phone photo is ~5 MB. */
 export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 
@@ -78,10 +90,12 @@ export async function processListingImage(
       .resize({ width: max, height: max, fit: "inside", withoutEnlargement: true })
       .webp({ quality: 82 });
 
-  const [full, thumb] = await Promise.all([
-    resize(FULL_MAX_PX).toBuffer({ resolveWithObject: true }),
-    resize(THUMB_MAX_PX).toBuffer(),
-  ]);
+  // Sequential, not Promise.all: with sharp.concurrency(1) above the two
+  // resizes would just queue behind each other inside libvips anyway: running
+  // them concurrently in JS only holds both native buffers in memory at once
+  // for no wall-clock gain.
+  const full = await resize(FULL_MAX_PX).toBuffer({ resolveWithObject: true });
+  const thumb = await resize(THUMB_MAX_PX).toBuffer();
 
   return {
     full: full.data,

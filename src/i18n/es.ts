@@ -642,6 +642,8 @@ export const esPanel = {
   opsRunConfirm: "¿Ejecutar de verdad? Esto escribe en la base de datos.",
   opsFollowUp: (label: string) => `Después de esto, corré «${label}».`,
   opsError: "El trabajo no se pudo completar. El detalle queda en el historial.",
+  opsAlreadyRunning:
+    "Este trabajo ya está corriendo (por cron o por otra pestaña). Esperá a que termine antes de lanzarlo de nuevo.",
   opsDisabledR2:
     "Falta configurar R2 (R2_ACCOUNT_ID y compañía). Se puede simular, no ejecutar.",
   opsDisabledTranslate:

@@ -15,4 +15,4 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runCuotas } from "../src/lib/ops/cuotas";
 import { DRY, runCli } from "./ops-cli";
 
-void runCli(() => runCuotas({ dry: DRY }));
+void runCli("cron:cuotas", () => runCuotas({ dry: DRY }));

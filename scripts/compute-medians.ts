@@ -11,4 +11,4 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runMedians } from "../src/lib/ops/medians";
 import { DRY, runCli } from "./ops-cli";
 
-void runCli(() => runMedians({ dry: DRY }));
+void runCli("cron:medians", () => runMedians({ dry: DRY }));

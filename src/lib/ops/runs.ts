@@ -30,6 +30,45 @@ export interface OpsRunRow {
   result: OpsResult | { error: string } | null;
 }
 
+/**
+ * How long an unfinished row still counts as "running" (`isJobRunning`).
+ *
+ * A row stuck at `finishedAt: null` is either a job genuinely still working or
+ * one whose process died without closing its row (a crash, an OOM kill, a
+ * Hostinger process-cap eviction — the exact failure mode this lock exists to
+ * prevent doesn't stop happening just because the lock exists). Past this
+ * window a stuck row is assumed dead rather than a permanent lock nothing can
+ * clear: two hours is generously past every job's observed runtime today
+ * (`cron:translate`'s own cap, C4d, bounds it to 50 rows with per-provider
+ * deadlines) while still well under "somebody has to go delete a database row
+ * to unstick tomorrow's cron".
+ */
+const STALE_RUN_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Whether a job is already running (or looks like it is), the advisory lock
+ * behind `startOpsRun`. Reads the same `ops_runs` table rather than a second
+ * lock table: no schema change, and a row already exists for exactly this
+ * question — "did this job start and not yet finish" — for every caller that
+ * goes through `startOpsRun` (docs/log/process-audit.md, candidates 1 and 5:
+ * neither cron-vs-cron nor cron-vs-admin-panel overlap was excluded before
+ * this).
+ */
+export async function isJobRunning(job: OpsJob): Promise<boolean> {
+  const [row] = await db
+    .select({ id: opsRuns.id })
+    .from(opsRuns)
+    .where(
+      and(
+        eq(opsRuns.job, job),
+        sql`${opsRuns.finishedAt} is null`,
+        sql`${opsRuns.startedAt} > (now() - interval ${sql.raw(String(STALE_RUN_MS / 1000))} second)`,
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
 /** Open a run. Returns the row id to hand to `finishOpsRun`. */
 export async function startOpsRun(input: {
   job: OpsJob;

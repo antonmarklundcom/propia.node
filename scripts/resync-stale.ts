@@ -17,4 +17,4 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runResync } from "../src/lib/ops/resync";
 import { DRY, flagNumber, runCli } from "./ops-cli";
 
-void runCli(() => runResync({ dry: DRY, days: flagNumber("--days") }));
+void runCli("cron:resync", () => runResync({ dry: DRY, days: flagNumber("--days") }));

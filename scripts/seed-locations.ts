@@ -13,4 +13,4 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runSeedLocations } from "../src/lib/ops/seed-locations";
 import { DRY, runCli } from "./ops-cli";
 
-void runCli(() => runSeedLocations({ dry: DRY }));
+void runCli("seed:locations", () => runSeedLocations({ dry: DRY }));

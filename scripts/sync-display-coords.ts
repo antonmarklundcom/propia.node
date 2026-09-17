@@ -13,4 +13,4 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runGeo } from "../src/lib/ops/geo";
 import { DRY, runCli } from "./ops-cli";
 
-void runCli(() => runGeo({ dry: DRY }));
+void runCli("cron:geo", () => runGeo({ dry: DRY }));

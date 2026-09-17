@@ -11,7 +11,8 @@
  * on purpose: an operator who has to remember which job says `--dry-run` will
  * eventually run the one that writes.
  */
-import type { OpsResult } from "../src/lib/ops/types";
+import { finishOpsRun, isJobRunning, startOpsRun } from "../src/lib/ops/runs";
+import type { OpsJob, OpsResult } from "../src/lib/ops/types";
 
 const argv = process.argv.slice(2);
 
@@ -89,9 +90,27 @@ export function printResult(result: OpsResult): void {
  * saying "this did not run" (no provider key, R2 unconfigured, the rate API
  * down); it exits 1 so a cron that mails its output says so, and never prints a
  * count that would read as success.
+ *
+ * **A real (non-`--dry`) run locks and records itself in `ops_runs`, the same
+ * table `/admin/operaciones` writes** (`src/lib/ops/runs.ts`). Before this, a
+ * cron invocation was invisible to the audit trail and to the admin panel's
+ * lock — two `cron:*` jobs (or a cron run and an admin-panel press) could
+ * stack with nothing to notice (`docs/log/process-audit.md`, candidates 1 and
+ * 5). `job` is now required: the lock has to know which job it's guarding
+ * before the job body runs, not after.
+ *
+ * **`--dry` never touches `ops_runs`, on purpose.** `scripts/db-credential.ts`
+ * documents the load-bearing split: a dry run uses the **read-only**
+ * `DATABASE_URL` — the credential an agent is given (`AGENTS.md` §3) — and
+ * only a real run may use `DATABASE_URL_RW`. `startOpsRun`/`finishOpsRun` are
+ * writes; making every `--dry` invocation perform them would turn every
+ * agent-run dry preview into a permission error against the read-only user.
+ * A dry run risks no process/resource overlap worth locking against — it does
+ * no external calls and writes nothing of its own — so it simply runs.
  */
 export async function runCli(
-  job: () => Promise<OpsResult>,
+  job: OpsJob,
+  run: () => Promise<OpsResult>,
   opts: {
     /**
      * A run that completed but did partial work — `cron:translate` with rows that
@@ -101,12 +120,36 @@ export async function runCli(
     failWhen?: (result: OpsResult) => boolean;
   } = {},
 ): Promise<void> {
+  if (DRY) {
+    try {
+      const result = await run();
+      printResult(result);
+      process.exit(opts.failWhen?.(result) ? 1 : 0);
+    } catch (err) {
+      console.error(`\n${(err as Error).message}`);
+      if (process.env.OPS_DEBUG) console.error(err);
+      process.exit(1);
+    }
+    return;
+  }
+
+  if (await isJobRunning(job)) {
+    console.error(
+      `\n${job} is already running (another cron firing, or the admin panel). Skipping this invocation.`,
+    );
+    process.exit(1);
+  }
+
+  const runId = await startOpsRun({ job, dry: false, userId: null });
   try {
-    const result = await job();
+    const result = await run();
+    await finishOpsRun(runId, { ok: true, result });
     printResult(result);
     process.exit(opts.failWhen?.(result) ? 1 : 0);
   } catch (err) {
-    console.error(`\n${(err as Error).message}`);
+    const message = (err as Error).message;
+    await finishOpsRun(runId, { ok: false, error: message });
+    console.error(`\n${message}`);
     if (process.env.OPS_DEBUG) console.error(err);
     process.exit(1);
   }

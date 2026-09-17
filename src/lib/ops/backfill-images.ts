@@ -40,6 +40,18 @@ export interface BackfillImagesOptions extends OpsOptions {
 const FETCH_TIMEOUT_MS = 20_000;
 /** How many failures are named before collapsing to a count. */
 const SAMPLE = 20;
+/**
+ * The CLI's default cap for a real (non-`--dry`) run with no explicit
+ * `--limit` (process-audit candidate 4: "unbounded image backfill... loads
+ * all image rows and defaults to all pending images"). `/admin/operaciones`
+ * already forces an operator to type a limit for this job
+ * (`app/admin/operaciones/jobs.ts`'s `requiresLimit: true`); the CLI allowed
+ * an unbounded run, which is a single sequential process held open for as
+ * long as every remaining row takes — long enough to make overlapping the
+ * next scheduled job likelier, on a host already tight on its process cap.
+ * `--limit` still overrides this in either direction.
+ */
+const DEFAULT_CLI_LIMIT = 200;
 
 /** A key that is still a URL has never been stored by us. */
 function isRemoteUrl(key: string): boolean {
@@ -85,7 +97,13 @@ export async function runBackfillImages(
       return true;
     });
 
-    const limit = opts.limit && opts.limit > 0 ? opts.limit : 0;
+    let limit = opts.limit && opts.limit > 0 ? opts.limit : 0;
+    if (limit === 0 && !opts.dry) {
+      limit = DEFAULT_CLI_LIMIT;
+      out.note(
+        `no --limit given — capped this real run at ${DEFAULT_CLI_LIMIT} rows. Pass --limit to change it.`,
+      );
+    }
     const work = limit > 0 ? pending.slice(0, limit) : pending;
 
     out.count("filas_de_imagen", rows.length);

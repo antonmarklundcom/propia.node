@@ -18,7 +18,7 @@ import "./db-credential"; // MUST be first: it picks the credential before src/d
 import { runBackfillImages } from "../src/lib/ops/backfill-images";
 import { DRY, flagNumber, hasFlag, runCli } from "./ops-cli";
 
-void runCli(() =>
+void runCli("backfill:images", () =>
   runBackfillImages({
     dry: DRY,
     limit: flagNumber("--limit"),
