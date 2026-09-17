@@ -145,7 +145,7 @@ const nextConfig: NextConfig = {
       [["alquiler.com.py", "www.alquiler.com.py"], localeMap("es")],
     ];
 
-    return byHost.flatMap(([hosts, map]) =>
+    const hostRedirects = byHost.flatMap(([hosts, map]) =>
       hosts.flatMap((host) =>
         map.flatMap(([oldPath, destination]) =>
           // Trailing-slash and bare forms both match.
@@ -158,6 +158,30 @@ const nextConfig: NextConfig = {
         ),
       ),
     );
+
+    /**
+     * `landforsaleinparaguay.com` is the same 2024-06-11 acquisition as
+     * `landforsaleparaguay.com` (both "In Account"), registered as a pair of
+     * near-identical English domain names for the same land-for-sale niche.
+     * Rather than stand up a second, near-duplicate English land door (two
+     * hosts serving the same terreno.com.py-filtered content would be a
+     * duplicate-content SEO problem, not a neutral extra), this domain is a
+     * whole-host 308 to the one that IS a vertical — `verticals.ts`'s
+     * `landforsaleparaguay.com` entry. Absolute, not relative: this host has
+     * no vertical entry, so `resolveVertical()` would otherwise fall back to
+     * CANONICAL_HOST's Spanish content on an English-named domain.
+     */
+    const landDuplicateRedirect = [
+      "landforsaleinparaguay.com",
+      "www.landforsaleinparaguay.com",
+    ].map((host) => ({
+      source: "/:path*",
+      has: [{ type: "host" as const, value: host }],
+      destination: "https://landforsaleparaguay.com/:path*",
+      permanent: true,
+    }));
+
+    return [...hostRedirects, ...landDuplicateRedirect];
   },
   async headers() {
     return [
