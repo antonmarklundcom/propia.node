@@ -8782,6 +8782,7 @@ summary.panel-btn::-webkit-details-marker {
    only needs its own float removed so it reads as one inset, not two cards. */
 .ph-hero__search .search-bar {
   margin-top: 14px;
+  padding: 0;
   box-shadow: none;
   border-color: transparent;
 }
