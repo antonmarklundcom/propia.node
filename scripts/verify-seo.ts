@@ -551,8 +551,8 @@ check(
 );
 
 check(
-  "(g) six doors are served — three live, two rental, one directory (D1)",
-  servedDoors(CANONICAL_HOST).length === 6,
+  "(g) seven doors are served — four marketplace, two rental, one directory (D1)",
+  servedDoors(CANONICAL_HOST).length === 7,
   servedDoors(CANONICAL_HOST)
     .map((d) => d.host)
     .join(", "),

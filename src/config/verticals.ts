@@ -2,13 +2,15 @@
  * Domain routing layer — how one engine serves every door (ARCHITECTURE.md §2.8).
  *
  * Lives in code, not the database: it changes at deploy cadence and wants
- * type safety. Five hosts are routed today, in two families
+ * type safety. Six hosts are routed today, in two families
  * (`VerticalFamily`, below):
  *
  *   marketplace — inmobiliaria.com.py (the Spanish primary, PLAN.md D6,
  *     flipped 2026-09-04), realestateinparaguay.com (its English translation,
  *     same flip), terreno.com.py (a terrenos-only feeder consolidated onto
- *     this app from its own standalone deployment, 2026-09-04).
+ *     this app from its own standalone deployment, 2026-09-04),
+ *     landforsaleparaguay.com (terreno.com.py's English feeder, registered
+ *     2026-09-17).
  *   rental — alquiler.com.py and rentparaguay.com, one rental-services
  *     business in two languages (fable/plan-rentparaguay.md). Enabled in code
  *     from the O1 phase; DNS for both is still pending, so neither is reachable
@@ -20,6 +22,7 @@
 
 export type VerticalKey =
   | "terreno"
+  | "land"
   | "alquiler"
   | "rent"
   | "agents"
@@ -231,6 +234,45 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     // exists, and pointing this door's /agente/* canonicals at a Spanish URL
     // is a canonical Google drops. Same per-locale rule as detail.
     ownsDirectory: true,
+  },
+  /**
+   * The English land feeder — terreno.com.py's audience in English, not a
+   * second translation of the marketplace: same `family: "marketplace"`
+   * pattern terreno.com.py itself uses (a narrowed feeder, not the family's
+   * translation pair — that role belongs to realestateinparaguay.com, the
+   * only `en` marketplace door with `ownsListingDetail: true`), same
+   * `filters: { property_type: ["terreno"] }`, `locale: "en"`.
+   *
+   * `ownsListingDetail: false`: its /propiedad pages canonicalise to
+   * realestateinparaguay.com, the English detail owner
+   * (`detailOwnerForLocale("en")`) — same rule rentparaguay.com follows.
+   *
+   * **Declared after `realestateinparaguay.com`, not before — on purpose.**
+   * Neither door is `CANONICAL_HOST`, so when `alternatesFor()`
+   * (`src/lib/alternates.ts`) resolves the marketplace family's "en" hreflang
+   * slot for a `scope: "site"` page, its only tiebreak among non-primary
+   * doors sharing a locale is declaration order: the first one it sees wins,
+   * every later same-locale door is silently dropped from the map. Declaring
+   * this entry earlier would make it win that slot on every marketplace page
+   * — including inmobiliaria.com.py's own — displacing
+   * realestateinparaguay.com, the door that is actually the family's English
+   * translation. Do not reorder these two without re-running
+   * `npm run verify:seo`.
+   *
+   * Registered 2026-09-17 (domain owned since 2024-06-11, "In Account").
+   * `landforsaleinparaguay.com` is the same acquisition but is NOT a vertical
+   * here — it 301s whole-host to this domain in `next.config.ts` rather than
+   * getting a second, near-duplicate English land door.
+   */
+  "landforsaleparaguay.com": {
+    key: "land",
+    brand: "Land For Sale Paraguay",
+    locale: "en",
+    family: "marketplace",
+    filters: { property_type: ["terreno"] },
+    copy: "land",
+    enabled: true,
+    ownsListingDetail: false,
   },
   /**
    * FLIPPED 2026-09-04 (PLAN.md D6): the Spanish marketplace primary. Same
