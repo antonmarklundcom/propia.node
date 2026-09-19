@@ -223,8 +223,8 @@ default, `--dry` first). It records itself as a revertible import job.
    screen that does not exist yet. Flipping `active` back to `true` site-wide
    is NOT the intended path.
 
-8. **FSBO loop — the owner inbox (PLAN.md D8) is done; only notification is
-   open.** A listing published through `/publicar` has a working contact: the
+8. **FSBO loop — the owner inbox and optional owner notification (PLAN.md D8)
+   are done.** A listing published through `/publicar` has a working contact: the
    chain on the detail page is agent → agency → **owner**
    (`ListingDetail.ownerUser`, resolved only when there is no agency and no
    agent), the seller card labels them "Particular", `/admin/leads` still
@@ -237,10 +237,12 @@ default, `--dry` first). It records itself as a revertible import job.
    both scoped to the logged-in owner by `requireOwnerContext()`. FSBO
    publishers still get **no** `agents` row, on purpose — that would put a
    private seller into `/agente/[slug]` with a professional's trust signal.
-   **The one real gap:** nothing pings the owner when a lead arrives — they
-   only see it by opening `/mis-avisos/consultas`. `alertOperator()` still
-   only notifies the operator (item 9 below). Adding an owner-facing
-   notification is unscheduled, not blocked on a decision.
+   On an owner-routed lead, `app/api/leads/route.ts` calls `alertOwner()` in
+   `src/lib/crm.ts`, which posts an `owner_alert` event with the seller's
+   WhatsApp to `LEAD_WEBHOOK_URL` (or `GHL_WEBHOOK_URL`) when configured and
+   does nothing otherwise, same rule as `alertOperator()`.
+   With no webhook the seller still only sees leads by opening
+   `/mis-avisos/consultas`.
 9. **Operator alerts are optional and silent when unset.** `alertOperator()`
    in `src/lib/crm.ts` posts `{"event":"operator_alert"}` to
    `LEAD_WEBHOOK_URL` on a new lead and a new review submission. With no
