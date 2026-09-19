@@ -49,16 +49,6 @@ it; none of them blocks a phase.
   source file from plan Appendix B first, then add the `<Image>` — in that
   order, so the grep/ls equality never goes stale.
 
-- **`app/tasacion/actions.ts:69` awaits `pushLead()` inside the server action.**
-  Found in O1 while grepping the `crm.ts` consumers. Same shape as the lead
-  route before this phase — the valuation lead is already in MySQL when the
-  push runs, so the push is a copy that a visitor is nonetheless waiting for.
-  It is bounded now (`crm.ts` caps a webhook round-trip at 5 s), which is why
-  this is a note rather than a fix: plan §5.1 names the files O1 may touch and
-  this is not one of them. Fix: move the `getCrm().pushLead(...)` call into
-  `after()` from `next/server`, exactly as `app/api/leads/route.ts` now does.
-  One line plus a try/catch; no behaviour a caller can see changes.
-
 - **The O1 orphan-draft proof was not run against a real database.** Plan §5.1
   asks for it: throw before the `listing_sources` insert in
   `createClaimedDraft` and show no listing row survives. This sandbox has no

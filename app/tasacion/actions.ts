@@ -10,6 +10,7 @@
  * what was asked without having to ask again.
  */
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
@@ -53,8 +54,8 @@ export async function requestValuationContactAction(input: {
 
   const vertical = (await headers()).get("x-vertical") ?? DEFAULT_VERTICAL_KEY;
 
-  // MySQL first, provider second — the same order /api/leads uses, for the
-  // same reason: a failed push must never lose the lead.
+  // MySQL first, provider second — defer the push with after() like /api/leads,
+  // so a visitor never waits on the webhook and a failed push never loses the lead.
   await db.insert(leads).values({
     leadType: "valuation",
     vertical,
@@ -66,13 +67,19 @@ export async function requestValuationContactAction(input: {
     routedTo: "internal",
   });
 
-  await getCrm().pushLead({
-    leadType: "valuation",
-    vertical,
-    name: input.name.trim() || undefined,
-    whatsapp,
-    message: input.context,
-    routedTo: "internal",
+  after(async () => {
+    try {
+      await getCrm().pushLead({
+        leadType: "valuation",
+        vertical,
+        name: input.name.trim() || undefined,
+        whatsapp,
+        message: input.context,
+        routedTo: "internal",
+      });
+    } catch {
+      /* the lead row is the record; a failed copy is not an incident */
+    }
   });
 
   return { ok: true };
