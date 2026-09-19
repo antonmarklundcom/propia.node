@@ -8,11 +8,11 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { agencies, agents, leads, listings } from "@/db/schema";
-import { alertOperator, getCrm, type LeadPayload } from "@/lib/crm";
+import { agencies, agents, leads, listings, users } from "@/db/schema";
+import { alertOperator, alertOwner, getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
-import { esPanel } from "@/i18n/es";
+import { esPanel, esOwner } from "@/i18n/es";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
 import { rawHostFrom } from "@/lib/host";
@@ -252,6 +252,18 @@ export async function POST(req: NextRequest) {
       : undefined,
   };
 
+  // The owner lane is the FSBO seller (D8). This is their go-look ping,
+  // delivered only when a webhook is configured, same rule as alertOperator.
+  let owner: { whatsapp: string | null; name: string | null } | null = null;
+  if (routedTo === "owner" && listing?.ownerUserId) {
+    const [row] = await db
+      .select({ whatsapp: users.whatsapp, name: users.name })
+      .from(users)
+      .where(eq(users.id, listing.ownerUserId))
+      .limit(1);
+    owner = row ?? null;
+  }
+
   /**
    * Everything outbound happens after the response, on purpose.
    *
@@ -268,6 +280,7 @@ export async function POST(req: NextRequest) {
    * is sent, nobody knows yet, and no client ever read the old `crm` flag.
    */
   const adminUrl = `${await siteOrigin()}/admin/leads`;
+  const ownerUrl = `${await siteOrigin()}/mis-avisos/consultas`;
   after(async () => {
     await alertOperator({
       kind: "new_lead",
@@ -280,6 +293,21 @@ export async function POST(req: NextRequest) {
       }),
       url: adminUrl,
     });
+
+    if (owner?.whatsapp) {
+      await alertOwner({
+        kind: "new_lead",
+        to: owner.whatsapp,
+        ownerName: owner.name ?? null,
+        title: esOwner.alertNewLeadTitle,
+        detail: esOwner.alertNewLeadDetail({
+          name: parsed.name ?? null,
+          whatsapp: parsed.whatsapp,
+          listingTitle: listing?.title ?? null,
+        }),
+        url: ownerUrl,
+      });
+    }
 
     // The provider's contact id is worth storing when it comes back, but a
     // push that fails or times out leaves the lead exactly as complete as it

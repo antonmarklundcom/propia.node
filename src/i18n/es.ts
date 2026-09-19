@@ -755,6 +755,18 @@ export const esPanel = {
  * as the publish wizard they arrived from.
  */
 export const esOwner = {
+  alertNewLeadTitle: "Tenés una nueva consulta por tu aviso en el portal",
+  alertNewLeadDetail: (params: {
+    name: string | null;
+    whatsapp: string;
+    listingTitle: string | null;
+  }) =>
+    [
+      `${params.name ?? "Sin nombre"} (${params.whatsapp})`,
+      params.listingTitle ? `Aviso: ${params.listingTitle}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
   panelTitle: "Tus avisos",
   listingsTab: "Tus avisos",
   leadsTab: "Consultas",

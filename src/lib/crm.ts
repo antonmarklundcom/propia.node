@@ -65,6 +65,26 @@ export interface OperatorAlert {
   url?: string;
 }
 
+/**
+ * The FSBO seller's ping (PLAN.md D8) — a "go look" at their owner inbox.
+ * When a webhook is configured, the seller's WhatsApp lets a downstream flow
+ * deliver it to the person waiting for the enquiry.
+ *
+ * Optional by construction, exactly like every other outbound message here: no
+ * provider means no alert, never a logged line pretending to be one.
+ */
+export interface OwnerAlert {
+  kind: "new_lead";
+  /** The owner's WhatsApp, in the canonical form stored in users.whatsapp. */
+  to: string;
+  ownerName: string | null;
+  /** One line, in Spanish. */
+  title: string;
+  detail?: string;
+  /** Absolute URL of the screen that acts on it. */
+  url?: string;
+}
+
 export interface CrmResult {
   ok: boolean;
   /** Provider-side contact id (stored as leads.ghl_contact_id). */
@@ -99,6 +119,7 @@ export interface CrmProvider {
   pushLead(lead: LeadPayload): Promise<CrmResult>;
   sendOtp(whatsapp: string, code: string): Promise<CrmResult>;
   notifyOperator(alert: OperatorAlert): Promise<CrmResult>;
+  notifyOwner(alert: OwnerAlert): Promise<CrmResult>;
 }
 
 /**
@@ -118,6 +139,10 @@ class WebhookProvider implements CrmProvider {
 
   async notifyOperator(alert: OperatorAlert): Promise<CrmResult> {
     return this.post({ event: "operator_alert", ...alert });
+  }
+
+  async notifyOwner(alert: OwnerAlert): Promise<CrmResult> {
+    return this.post({ event: "owner_alert", ...alert });
   }
 
   private async post(body: unknown): Promise<CrmResult> {
@@ -181,6 +206,13 @@ class NoProvider implements CrmProvider {
     }
     return { ok: false, error: "no messaging provider configured" };
   }
+
+  async notifyOwner(alert: OwnerAlert): Promise<CrmResult> {
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[messaging:dev] owner alert", JSON.stringify(alert));
+    }
+    return { ok: false, error: "no messaging provider configured" };
+  }
 }
 
 /** URL of the outbound webhook, if one is configured. */
@@ -211,6 +243,15 @@ export function getCrm(): CrmProvider {
 export async function alertOperator(alert: OperatorAlert): Promise<void> {
   try {
     await getCrm().notifyOperator(alert);
+  } catch {
+    /* an undelivered ping is not worth an error page */
+  }
+}
+
+/** Fire-and-forget owner alert. The lead is already in MySQL; never throws. */
+export async function alertOwner(alert: OwnerAlert): Promise<void> {
+  try {
+    await getCrm().notifyOwner(alert);
   } catch {
     /* an undelivered ping is not worth an error page */
   }
