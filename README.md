@@ -105,7 +105,7 @@ collapses onto the existing listing (`deduped`). See
 
 Cuota conversion turns normalized `price_usd` into the Gs the financing programs
 quote in, using the newest `fx_rates` row that `npm run cron:fx` recorded;
-`USD_TO_PYG` (default 7300) is the fallback for a database that job has never
+`USD_TO_PYG` (default 6000) is the fallback for a database that job has never
 reached, not the primary source.
 
 **Translation providers**, tried cheapest-first by `cron:translate`; any subset
@@ -200,7 +200,7 @@ list; this is the subset that touches production setup:
    placeholder.
 2. **USD→PYG source.** `npm run cron:fx` records the daily rate into `fx_rates`
    from a free API (open.er-api.com, no key) and `src/lib/fx.ts` reads the most
-   recent row; `USD_TO_PYG` (default 7300) is only the fallback for a database
+   recent row; `USD_TO_PYG` (default 6000) is only the fallback for a database
    that cron has never reached. Schedule it daily — the free tier itself
    refreshes once every 24 h.
 3. **R2 image storage.** The code is complete and gated on `isR2Configured()`
