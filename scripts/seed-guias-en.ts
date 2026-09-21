@@ -3,11 +3,10 @@
  * links to (docs/style/realestateinparaguay.com.md §8 "New content pages
  * this domain needs"): buying-property-in-paraguay, costs-and-taxes,
  * residency. Uses the existing `posts` table (ARCHITECTURE.md §2.10, the
- * same `/guias/[slug]` content model the Spanish door already has) — there
- * is no `locale` column on `posts`, so these three rows also appear in the
- * shared /guias index and mixed with Spanish posts on any door; that is a
- * pre-existing limitation of the content model, not something this script
- * (or PR3) fixes. See the PR description.
+ * same `/guias/[slug]` content model the Spanish door already has). Explicitly
+ * sets `locale` to `en`; omitting it would use the table's Spanish default.
+ * Public guide queries currently do not filter by locale, so the shared
+ * index still mixes languages; locale filtering is outside this script.
  *
  * Every rate, fee, timeline and legal claim in the body below is a
  * placeholder pending a real source, marked "(verify before launch)" per
@@ -140,6 +139,7 @@ async function main() {
       .insert(posts)
       .values({
         slug: g.slug,
+        locale: "en",
         title: g.title,
         excerpt: g.excerpt,
         body: g.body,
@@ -155,6 +155,7 @@ async function main() {
           excerpt: g.excerpt,
           body: g.body,
           updatedAt: now,
+          locale: "en",
         },
       });
   }
