@@ -142,7 +142,7 @@ export default async function ProyectosPage() {
                 )}
                 <div className="mk-dev__name">{d.name}</div>
                 <div className="mk-dev__count">
-                  {d.projectCount}{" "}
+                  {d.projectCount.toLocaleString(numberLocale, { useGrouping: false })}{" "}
                   {d.projectCount === 1 ? c.project : c.projects}
                 </div>
               </div>
