@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FOOTER_COMPANY, type NavGroup } from "@/config/site-nav";
+import type { NavGroup } from "@/config/site-nav";
 
 /**
  * Phone navigation. Below 900px the desktop nav is hidden (globals.css) and
@@ -41,13 +41,8 @@ export function MobileMenu({
   menuCloseLabel: string;
   /** The drawer dialog's own aria-label. */
   menuLabel: string;
-  /**
-   * Overrides the "Sobre nosotros" group below. The default is the Spanish
-   * marketplace's own company links, which is right for the marketplace doors
-   * and wrong for a door in another family and another language — the rental
-   * chrome passes its own, from the `rental` dictionary namespace.
-   */
-  companyGroup?: { title: string; links: readonly { label: string; href: string }[] };
+  /** Dictionary-backed company links, resolved by SiteHeader for every door. */
+  companyGroup: { title: string; links: readonly { label: string; href: string }[] };
 }) {
   const [open, setOpen] = useState(false);
   const [top, setTop] = useState(0);
@@ -127,10 +122,10 @@ export function MobileMenu({
 
             <div className="mobile-menu__group">
               <span className="mobile-menu__group-title">
-                {companyGroup?.title ?? "Sobre nosotros"}
+                {companyGroup.title}
               </span>
               <ul className="mobile-menu__list">
-                {(companyGroup?.links ?? FOOTER_COMPANY).map((l) => (
+                {companyGroup.links.map((l) => (
                   <li key={l.href}>
                     <Link className="mobile-menu__link" href={l.href}>
                       {l.label}

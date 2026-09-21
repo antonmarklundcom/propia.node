@@ -219,7 +219,13 @@ export async function SiteHeader() {
                     title: d.rental.footerCompanyTitle,
                     links: d.rental.footerCompanyLinks,
                   }
-                : undefined
+                : {
+                    title: d.aboutPage.title,
+                    links: [
+                      { label: d.aboutPage.title, href: "/nosotros" },
+                      ...d.directory.footerCompanyLinks,
+                    ],
+                  }
             }
           />
         </div>
