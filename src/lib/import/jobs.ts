@@ -369,12 +369,25 @@ export async function rollbackImportJob(
         (row.outcome === "updated" || row.outcome === "paused") &&
         row.previousJson
       ) {
+        // MariaDB returns JSON columns as text. An invalid snapshot is skipped
+        // just like a missing one, without marking the row as reverted.
+        let previous: unknown = row.previousJson;
+        if (typeof previous === "string") {
+          try {
+            previous = JSON.parse(previous);
+          } catch {
+            continue;
+          }
+        }
+        if (!previous || typeof previous !== "object" || Array.isArray(previous)) {
+          continue;
+        }
         // The snapshot carries two non-column keys the commit rode along:
         // `_images` (the image rows syncImages replaced) and `_source` (the
         // content_hash the commit advanced). Restoring only the scalar columns
         // left curated photos deleted and — because the hash still described the
         // bad import — re-importing a *corrected* file reported `unchanged`.
-        const { _images, _source, ...columns } = row.previousJson as {
+        const { _images, _source, ...columns } = previous as {
           _images?: {
             r2Key: string;
             position: number;
