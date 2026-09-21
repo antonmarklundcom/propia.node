@@ -20,7 +20,7 @@ import { CACHE_TAGS, CACHE_TTL } from "./cache";
  * caller that must *say* which source it used (`runCuotas` prints it) does not
  * re-spell the default and drift from it.
  */
-export const ENV_FALLBACK_USD_TO_PYG = Number(process.env.USD_TO_PYG ?? 7300);
+export const ENV_FALLBACK_USD_TO_PYG = Number(process.env.USD_TO_PYG ?? 6000);
 
 /**
  * Raw DB read, no cache — for callers outside the Next.js runtime
