@@ -248,9 +248,9 @@ function filterConds(q: CategoryQuery, f: CategoryFilters) {
 }
 
 function sortOrder(sort: SortOption | undefined) {
-  if (sort === "precio_asc") return asc(listings.priceUsd);
-  if (sort === "precio_desc") return desc(listings.priceUsd);
-  return desc(listings.publishedAt);
+  if (sort === "precio_asc") return [asc(listings.priceUsd), asc(listings.id)];
+  if (sort === "precio_desc") return [desc(listings.priceUsd), asc(listings.id)];
+  return [desc(listings.publishedAt), asc(listings.id)];
 }
 
 export type ListingCard = Pick<
@@ -312,7 +312,7 @@ export async function getFilteredCategoryListings(
       .select(cardColumns())
       .from(listings)
       .where(where)
-      .orderBy(sortOrder(filters.sort))
+      .orderBy(...sortOrder(filters.sort))
       .limit(q.limit ?? 48)
       .offset(q.offset ?? 0),
     countRows(where),
