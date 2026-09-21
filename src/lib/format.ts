@@ -65,6 +65,7 @@ export function formatCuota(cuotaGs: string | number | null): string | null {
 /** Public R2 URL for a stored image key (empty base → key passthrough). */
 export function imageUrl(r2Key: string | null): string | null {
   if (!r2Key) return null;
+  if (/^https?:\/\//i.test(r2Key)) return r2Key;
   const base = process.env.R2_PUBLIC_BASE_URL ?? "";
   return base ? `${base.replace(/\/$/, "")}/${r2Key}` : r2Key;
 }
@@ -79,6 +80,7 @@ export function imageUrl(r2Key: string | null): string | null {
  */
 export function imageThumbUrl(r2Key: string | null): string | null {
   if (!r2Key) return null;
+  if (/^https?:\/\//i.test(r2Key)) return r2Key;
   if (!/\.webp$/.test(r2Key)) return imageUrl(r2Key);
   return imageUrl(r2Key.replace(/\.webp$/, "-thumb.webp"));
 }
