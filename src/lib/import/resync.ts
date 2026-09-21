@@ -117,41 +117,46 @@ export async function runResync(
   }
 
   const ids = candidates.map((c) => c.listingId);
-  await db
-    .update(listings)
-    .set({ status: "paused" })
-    .where(inArray(listings.id, ids));
+  // Keep the pause and its undo record atomic, including every row chunk.
+  const jobId = await db.transaction(async (tx) => {
+    await tx
+      .update(listings)
+      .set({ status: "paused" })
+      .where(inArray(listings.id, ids));
 
-  const now = new Date();
-  const [res] = await db.insert(importJobs).values({
-    source: "whiteglove", // the enum has no "system" member; kind carries the truth
-    kind: "resync",
-    filename: null,
-    status: "committed",
-    totalRows: candidates.length,
-    skippedCount: 0,
-    permissionGranted: false,
-    createdByUserId: opts.userId ?? undefined,
-    finishedAt: now,
-    rollbackNote: `Pausadas por no aparecer en ninguna fuente desde hace ${staleDays} días.`,
+    const now = new Date();
+    const [res] = await tx.insert(importJobs).values({
+      source: "whiteglove", // the enum has no "system" member; kind carries the truth
+      kind: "resync",
+      filename: null,
+      status: "committed",
+      totalRows: candidates.length,
+      skippedCount: 0,
+      permissionGranted: false,
+      createdByUserId: opts.userId ?? undefined,
+      finishedAt: now,
+      rollbackNote: `Pausadas por no aparecer en ninguna fuente desde hace ${staleDays} días.`,
+    });
+    const jobId = Number((res as unknown as { insertId: number }).insertId);
+
+    const CHUNK = 200;
+    for (let i = 0; i < candidates.length; i += CHUNK) {
+      await tx.insert(importRows).values(
+        candidates.slice(i, i + CHUNK).map((c, n) => ({
+          jobId,
+          rowNumber: i + n + 1,
+          outcome: "paused" as const,
+          listingId: c.listingId,
+          title: c.title.slice(0, 200),
+          error: `sin señal desde ${c.lastSeenAt.toISOString().slice(0, 10)}`,
+          // The undo buffer, in the same shape rollback restores for an update.
+          previousJson: { status: "published" },
+        })),
+      );
+    }
+
+    return jobId;
   });
-  const jobId = Number((res as unknown as { insertId: number }).insertId);
-
-  const CHUNK = 200;
-  for (let i = 0; i < candidates.length; i += CHUNK) {
-    await db.insert(importRows).values(
-      candidates.slice(i, i + CHUNK).map((c, n) => ({
-        jobId,
-        rowNumber: i + n + 1,
-        outcome: "paused" as const,
-        listingId: c.listingId,
-        title: c.title.slice(0, 200),
-        error: `sin señal desde ${c.lastSeenAt.toISOString().slice(0, 10)}`,
-        // The undo buffer, in the same shape rollback restores for an update.
-        previousJson: { status: "published" },
-      })),
-    );
-  }
 
   return { jobId, paused: candidates.length, candidates, staleDays, dryRun };
 }
