@@ -2413,6 +2413,17 @@ export const enAgenciesPage = {
 } as const;
 
 export const enProjectsPage = {
+  card: {
+    stages: {
+      en_pozo: "Pre-construction",
+      en_construccion: "Under construction",
+      entrega_inmediata: "Ready to move in",
+    },
+    delivery: (month: string, year: string) => `Handover ${month} ${year}`,
+    project: "Development",
+    fromPrice: (price: string) => `From ${price}`,
+    available: (count: string) => `${count} available`,
+  },
   priceHeading: "Pre-construction pricing",
   priceBody: "Buying before construction is complete often costs considerably less than buying a finished unit, with the difference building as work progresses.",
   paymentsHeading: "Developer payment plans",

@@ -3312,6 +3312,17 @@ export const esAgenciesPage = {
 } as const;
 
 export const esProjectsPage = {
+  card: {
+    stages: {
+      en_pozo: "En pozo",
+      en_construccion: "En construcción",
+      entrega_inmediata: "Entrega inmediata",
+    },
+    delivery: (month: string, year: string) => `Ent. ${month} ${year}`,
+    project: "Proyecto",
+    fromPrice: (price: string) => `Desde ${price}`,
+    available: (count: string) => `${count} disponibles`,
+  },
   priceHeading: "Precio de preventa",
   priceBody: "Comprar en pozo suele costar bastante menos que la unidad terminada, y la diferencia se capitaliza a medida que avanza la obra.",
   paymentsHeading: "Plan de pagos de la desarrolladora",

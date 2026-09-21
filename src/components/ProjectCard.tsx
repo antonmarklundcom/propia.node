@@ -2,25 +2,32 @@ import Link from "next/link";
 import { Glyph } from "@/components/Glyph";
 import { formatUsd } from "@/lib/format";
 import type { ProjectCard as Card } from "@/lib/queries";
+import { numberLocaleFor, type Dictionary } from "@/i18n";
+import { dict, currentLocale } from "@/i18n/server";
 
-const STAGE_LABEL: Record<string, string> = {
-  en_pozo: "En pozo",
-  en_construccion: "En construcción",
-  entrega_inmediata: "Entrega inmediata",
-};
-
-/** "Ent. Jul 2029" — compact delivery chip like the stage badge's sibling. */
-function deliveryLabel(d: string | Date | null): string | null {
+/** Compact delivery chip alongside the stage badge. */
+function deliveryLabel(
+  d: string | Date | null,
+  numberLocale: string,
+  label: Dictionary["projectsPage"]["card"]["delivery"],
+): string | null {
   if (!d) return null;
   const date = new Date(d);
   if (Number.isNaN(date.getTime())) return null;
-  const month = date.toLocaleDateString("es-PY", { month: "short" });
-  return `Ent. ${month.charAt(0).toUpperCase() + month.slice(1)} ${date.getFullYear()}`;
+  const month = date.toLocaleDateString(numberLocale, { month: "short" });
+  return label(
+    month.charAt(0).toUpperCase() + month.slice(1),
+    date.getFullYear().toLocaleString(numberLocale, { useGrouping: false }),
+  );
 }
 
 /** Homepage carousel / project-row card. Whole card links to /proyecto/{slug}. */
-export function ProjectCard({ card }: { card: Card }) {
-  const delivery = deliveryLabel(card.deliveryDate);
+export async function ProjectCard({ card }: { card: Card }) {
+  const [dictionary, locale] = await Promise.all([dict(), currentLocale()]);
+  const t = dictionary.projectsPage.card;
+  const numberLocale = numberLocaleFor(locale);
+  const stageLabels: Record<string, string> = t.stages;
+  const delivery = deliveryLabel(card.deliveryDate, numberLocale, t.delivery);
   return (
     <Link className="project-card" href={`/proyecto/${card.slug}`}>
       <div
@@ -31,7 +38,7 @@ export function ProjectCard({ card }: { card: Card }) {
           <img className="media-cover-img" src={card.heroImageUrl} alt={card.name} loading="lazy" decoding="async" />
         )}
         {card.stage && (
-          <span className="project-card__badge">{STAGE_LABEL[card.stage] ?? card.stage}</span>
+          <span className="project-card__badge">{stageLabels[card.stage] ?? card.stage}</span>
         )}
         {delivery && <span className="project-card__delivery">{delivery}</span>}
         {!card.heroImageUrl && (
@@ -42,15 +49,15 @@ export function ProjectCard({ card }: { card: Card }) {
       </div>
       <div className="project-card__body">
         <div className="project-card__kicker">
-          Proyecto{card.developerName ? ` · ${card.developerName}` : ""}
+          {t.project}{card.developerName ? ` · ${card.developerName}` : ""}
         </div>
         <div className="project-card__name">{card.name}</div>
         {card.minPriceUsd != null && (
-          <div className="project-card__price">Desde {formatUsd(card.minPriceUsd)}</div>
+          <div className="project-card__price">{t.fromPrice(formatUsd(card.minPriceUsd, numberLocale))}</div>
         )}
         <div className="project-card__meta">
           {card.availableUnits > 0 && (
-            <span>{card.availableUnits} disponibles</span>
+            <span>{t.available(card.availableUnits.toLocaleString(numberLocale, { useGrouping: false }))}</span>
           )}
           {card.cityName && <span>{card.cityName}</span>}
         </div>
