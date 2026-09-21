@@ -14,7 +14,7 @@
  * runner nor a caller of it has a `revalidate*` to call.
  */
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { listings, marketMedians } from "@/db/schema";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
@@ -47,81 +47,121 @@ export async function runMedians(opts: OpsOptions): Promise<OpsResult> {
     const period = currentPeriod();
     out.note(`period ${period}`);
 
-    const rows = await db
-      .select({
-        locationId: listings.locationId,
-        propertyType: listings.propertyType,
-        operation: listings.operation,
-        priceUsd: listings.priceUsd,
-        areaM2: listings.areaM2,
-        landM2: listings.landM2,
-      })
-      .from(listings)
-      .where(eq(listings.status, "published"));
+    await db.transaction(async (tx) => {
+      // Lock the period, including other writers' rows: source is deliberately
+      // NOT part of the unique key. Never overwrite a blended row on collision.
+      const existingQuery = tx
+        .select()
+        .from(marketMedians)
+        .where(eq(marketMedians.period, period));
+      // Preview needs only SELECT privileges and takes no write locks.
+      const existing = await (opts.dry ? existingQuery : existingQuery.for("update"));
+      const groupKey = (r: {
+        locationId: number;
+        propertyType: string;
+        operation: string;
+      }) =>
+        `${r.locationId}|${r.propertyType}|${r.operation}`;
+      const protectedKeys = new Set(
+        existing.filter((r) => r.source !== "own").map(groupKey),
+      );
 
-    out.count("avisos_publicados", rows.length);
+      const rows = await tx
+        .select({
+          locationId: listings.locationId,
+          propertyType: listings.propertyType,
+          operation: listings.operation,
+          priceUsd: listings.priceUsd,
+          areaM2: listings.areaM2,
+          landM2: listings.landM2,
+        })
+        .from(listings)
+        .where(eq(listings.status, "published"));
 
-    const buckets = new Map<string, Bucket>();
-    for (const r of rows) {
-      const key = `${r.locationId}|${r.propertyType}|${r.operation}`;
-      let b = buckets.get(key);
-      if (!b) {
-        b = {
-          locationId: r.locationId,
-          propertyType: r.propertyType,
-          operation: r.operation,
-          prices: [],
-          pricesM2: [],
+      out.count("avisos_publicados", rows.length);
+
+      const buckets = new Map<string, Bucket>();
+      for (const r of rows) {
+        const key = groupKey(r);
+        let b = buckets.get(key);
+        if (!b) {
+          b = {
+            locationId: r.locationId,
+            propertyType: r.propertyType,
+            operation: r.operation,
+            prices: [],
+            pricesM2: [],
+          };
+          buckets.set(key, b);
+        }
+        const price = Number(r.priceUsd);
+        b.prices.push(price);
+        // Built area for structures, lot area for terreno; skip when area unknown.
+        const area = r.areaM2 != null ? Number(r.areaM2) : Number(r.landM2 ?? 0);
+        if (area > 0) b.pricesM2.push(price / area);
+      }
+
+      out.track(
+        "grupos", "grupos_visibles", "escritos",
+        "reemplazados", "eliminados", "protegidos",
+      );
+      const fresh: (typeof marketMedians.$inferInsert)[] = [];
+
+      for (const b of buckets.values()) {
+        out.count("grupos");
+        if (b.prices.length >= RENDER_THRESHOLD) out.count("grupos_visibles");
+        if (protectedKeys.has(groupKey(b))) {
+          out.count("protegidos");
+          continue;
+        }
+
+        const medianPriceUsd = median(b.prices);
+        const medianPriceM2Usd = median(b.pricesM2);
+        const values = {
+          period,
+          locationId: b.locationId,
+          propertyType: b.propertyType,
+          operation: b.operation,
+          medianPriceUsd: medianPriceUsd != null ? medianPriceUsd.toFixed(2) : null,
+          medianPriceM2Usd:
+            medianPriceM2Usd != null ? medianPriceM2Usd.toFixed(2) : null,
+          sampleSize: b.prices.length,
+          // The m² median's own sample — only listings that had an area. Reusing
+          // the price count claimed 40 data points behind a number from 2 (F16).
+          sampleSizeM2: b.pricesM2.length,
+          source: "own" as const,
         };
-        buckets.set(key, b);
+
+        fresh.push(values);
+        out.count("escritos");
       }
-      const price = Number(r.priceUsd);
-      b.prices.push(price);
-      // Built area for structures, lot area for terreno; skip when area unknown.
-      const area = r.areaM2 != null ? Number(r.areaM2) : Number(r.landM2 ?? 0);
-      if (area > 0) b.pricesM2.push(price / area);
-    }
 
-    out.track("grupos", "grupos_visibles", "escritos");
+      for (const row of existing) {
+        if (row.source !== "own") continue;
+        out.count(buckets.has(groupKey(row)) ? "reemplazados" : "eliminados");
+      }
 
-    for (const b of buckets.values()) {
-      out.count("grupos");
-      if (b.prices.length >= RENDER_THRESHOLD) out.count("grupos_visibles");
-
-      const medianPriceUsd = median(b.prices);
-      const medianPriceM2Usd = median(b.pricesM2);
-      const values = {
-        period,
-        locationId: b.locationId,
-        propertyType: b.propertyType,
-        operation: b.operation,
-        medianPriceUsd: medianPriceUsd != null ? medianPriceUsd.toFixed(2) : null,
-        medianPriceM2Usd:
-          medianPriceM2Usd != null ? medianPriceM2Usd.toFixed(2) : null,
-        sampleSize: b.prices.length,
-        // The m² median's own sample — only listings that had an area. Reusing
-        // the price count claimed 40 data points behind a number from 2 (F16).
-        sampleSizeM2: b.pricesM2.length,
-        source: "own" as const,
-      };
-
+      // Both modes plan the same replacement, even when there are no listings.
+      // Plain INSERT ensures an unexpected ownership collision rolls back the
+      // entire replacement instead of silently taking over another writer's row.
       if (!opts.dry) {
-        await db
-          .insert(marketMedians)
-          .values(values)
-          .onDuplicateKeyUpdate({
-            set: {
-              medianPriceUsd: values.medianPriceUsd,
-              medianPriceM2Usd: values.medianPriceM2Usd,
-              sampleSize: values.sampleSize,
-              sampleSizeM2: values.sampleSizeM2,
-              source: values.source,
-            },
-          });
+        await tx.delete(marketMedians).where(
+          and(
+            eq(marketMedians.period, period),
+            eq(marketMedians.source, "own"),
+          ),
+        );
+        for (const values of fresh) {
+          await tx.insert(marketMedians).values(values);
+        }
       }
-      out.count("escritos");
-    }
+    });
 
+    out.note(
+      "escritos: fresh own groups; reemplazados: existing own groups refreshed; " +
+        "eliminados: empty own groups removed; protegidos: computed groups owned by another writer. " +
+        "Counts describe the same plan in dry and real runs.",
+    );
     out.note(
       `groups with at least ${RENDER_THRESHOLD} listings are the ones the context ` +
         "module renders; the rest are stored for /precios with a caveat.",
