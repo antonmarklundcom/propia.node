@@ -245,12 +245,14 @@ interface HopResult {
 
 /**
  * One HTTP request, connecting only to `pinned.address`, reading at most
- * MAX_BYTES and never following a redirect itself.
+ * maxBytes and never following a redirect itself.
  */
 function requestHop(
   url: URL,
   pinned: PinnedAddress,
   deadline: number,
+  maxBytes: number,
+  accept: string,
 ): Promise<HopResult> {
   const client = url.protocol === "https:" ? https : http;
 
@@ -277,7 +279,7 @@ function requestHop(
         headers: {
           // Honest about who we are; some sites 403 an unidentified client.
           "user-agent": "listing-import/1.0 (+https://realestateinparaguay.com)",
-          accept: "text/html,application/xhtml+xml",
+          accept,
           // No accept-encoding on purpose: identity responses mean MAX_BYTES
           // counts the bytes that will actually be decoded.
           "accept-encoding": "identity",
@@ -290,7 +292,7 @@ function requestHop(
         const contentLength = Number(res.headers["content-length"] ?? 0);
         const location = res.headers.location ?? null;
 
-        // Redirects and non-HTML bodies are never read — the caller only needs
+        // Redirect bodies are never read — the caller only needs
         // the headers, and reading them would be free bandwidth for an attacker.
         if (status >= 300 && status < 400) {
           res.destroy();
@@ -302,7 +304,7 @@ function requestHop(
         let total = 0;
         res.on("data", (chunk: Buffer) => {
           total += chunk.length;
-          if (total > MAX_BYTES) {
+          if (total > maxBytes) {
             // Stop pulling bytes the moment the cap is crossed — this is the
             // whole point of streaming rather than buffering (audit F19).
             res.destroy();
@@ -344,11 +346,31 @@ function requestHop(
  * we never saw, and would drop the pinned lookup on the way.
  */
 export async function fetchUserUrl(raw: string): Promise<FetchedPage> {
+  const res = await fetchUserBody(raw, MAX_BYTES, true);
+  return { url: res.url, html: new TextDecoder("utf-8").decode(res.body) };
+}
+
+/** Binary download with the same pinned hosts, redirect checks and streaming cap. */
+export async function fetchUserBuffer(raw: string, maxBytes: number): Promise<Buffer> {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
+    throw new RangeError("maxBytes must be a positive safe integer");
+  }
+  return (await fetchUserBody(raw, maxBytes, false)).body;
+}
+
+async function fetchUserBody(
+  raw: string,
+  maxBytes: number,
+  requireHtml: boolean,
+): Promise<{ url: string; body: Buffer }> {
   const deadline = Date.now() + TIMEOUT_MS;
   let { url, pinned } = await resolveFetchTarget(raw);
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-    const res = await requestHop(url, pinned, deadline);
+    const res = await requestHop(
+      url, pinned, deadline, maxBytes,
+      requireHtml ? "text/html,application/xhtml+xml" : "*/*",
+    );
 
     if (res.status >= 300 && res.status < 400) {
       if (!res.location) throw new UnsafeUrlError("http_error");
@@ -366,16 +388,16 @@ export async function fetchUserUrl(raw: string): Promise<FetchedPage> {
       throw new UnsafeUrlError("http_error");
     }
 
-    if (!/text\/html|application\/xhtml/i.test(res.contentType)) {
+    if (requireHtml && !/text\/html|application\/xhtml/i.test(res.contentType)) {
       throw new UnsafeUrlError("not_html");
     }
-    if (res.contentLength > MAX_BYTES || res.body.byteLength > MAX_BYTES) {
+    if (res.contentLength > maxBytes || res.body.byteLength > maxBytes) {
       throw new UnsafeUrlError("too_large");
     }
 
     return {
       url: url.toString(),
-      html: new TextDecoder("utf-8").decode(res.body),
+      body: res.body,
     };
   }
 

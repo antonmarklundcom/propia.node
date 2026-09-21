@@ -19,12 +19,13 @@
  * else's. A backfill has all night; it must not look like a scrape.
  */
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { listingImages, listings } from "@/db/schema";
-import { isPlaceholderPhoto } from "@/lib/photos";
+import { fetchUserBuffer } from "@/lib/safe-fetch";
 import {
   buildImageKey,
+  MAX_UPLOAD_BYTES,
   processListingImage,
   STORED_CONTENT_TYPE,
   thumbKey,
@@ -37,24 +38,9 @@ export interface BackfillImagesOptions extends OpsOptions {
   includePlaceholders?: boolean;
 }
 
-const FETCH_TIMEOUT_MS = 20_000;
+const PAGE_SIZE = 100;
 /** How many failures are named before collapsing to a count. */
 const SAMPLE = 20;
-
-/** A key that is still a URL has never been stored by us. */
-function isRemoteUrl(key: string): boolean {
-  return /^https?:\/\//i.test(key);
-}
-
-async function download(url: string): Promise<Buffer> {
-  const res = await fetch(url, {
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    // Some source sites 403 an unidentified client.
-    headers: { "user-agent": "propia-image-backfill/1.0" },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
-}
 
 export async function runBackfillImages(
   opts: BackfillImagesOptions,
@@ -70,60 +56,78 @@ export async function runBackfillImages(
       out.note("R2 is not configured — a real run would refuse. Counts below are still real.");
     }
 
-    const rows = await db
-      .select({
-        id: listingImages.id,
-        r2Key: listingImages.r2Key,
-        publicId: listings.publicId,
-      })
-      .from(listingImages)
-      .innerJoin(listings, eq(listingImages.listingId, listings.id));
-
-    const pending = rows.filter((row) => {
-      if (!isRemoteUrl(row.r2Key)) return false; // already ours
-      if (!opts.includePlaceholders && isPlaceholderPhoto(row.r2Key)) return false;
-      return true;
-    });
-
-    const limit = opts.limit && opts.limit > 0 ? opts.limit : 0;
-    const work = limit > 0 ? pending.slice(0, limit) : pending;
-
-    out.count("filas_de_imagen", rows.length);
-    out.count("aun_remotas", pending.length);
-    out.count("en_esta_tanda", work.length);
-    out.track("guardadas", "fallaron");
-
-    if (opts.dry) {
-      for (const row of work.slice(0, SAMPLE)) {
-        out.note(`  would fetch ${row.r2Key} → listings/${row.publicId}/…`);
-      }
-      if (work.length > SAMPLE) out.note(`  … and ${work.length - SAMPLE} more`);
-      out.note("--dry: nothing downloaded, nothing stored.");
-      return;
-    }
-
+    const limit = opts.limit && opts.limit > 0 ? Math.floor(opts.limit) : Infinity;
+    let cursor = 0;
+    let processedRows = 0;
     let failures = 0;
-    for (const row of work) {
-      try {
-        const processed = await processListingImage(await download(row.r2Key));
-        const key = buildImageKey(row.publicId);
+    out.track("filas_de_imagen", "aun_remotas", "en_esta_tanda", "guardadas", "fallaron");
+    out.note("Counts cover eligible rows read in this batch, not the whole table.");
 
-        await putObject(key, processed.full, STORED_CONTENT_TYPE);
-        await putObject(thumbKey(key), processed.thumb, STORED_CONTENT_TYPE);
+    while (processedRows < limit) {
+      const pageSize = Math.min(PAGE_SIZE, limit - processedRows);
+      const rows = await db
+        .select({
+          id: listingImages.id,
+          r2Key: listingImages.r2Key,
+          publicId: listings.publicId,
+        })
+        .from(listingImages)
+        .innerJoin(listings, eq(listingImages.listingId, listings.id))
+        .where(
+          and(
+            gt(listingImages.id, cursor),
+            sql`(lower(${listingImages.r2Key}) like 'http://%' or lower(${listingImages.r2Key}) like 'https://%')`,
+            // Same substring match as isPlaceholderPhoto, applied before LIMIT.
+            opts.includePlaceholders
+              ? undefined
+              : sql`lower(${listingImages.r2Key}) not like '%picsum.photos%'`,
+          )
+        )
+        .orderBy(asc(listingImages.id))
+        .limit(pageSize);
+      if (rows.length === 0) break;
 
-        // Rewrite last: if anything above threw, the row still points at the
-        // source and the next run retries it.
-        await db
-          .update(listingImages)
-          .set({ r2Key: key, width: processed.width, height: processed.height })
-          .where(eq(listingImages.id, row.id));
+      for (const row of rows) {
+        // Advance even on failure; rewrites cannot shift keyset pagination.
+        cursor = row.id;
+        processedRows++;
+        out.count("filas_de_imagen");
+        out.count("aun_remotas");
+        out.count("en_esta_tanda");
+        if (opts.dry) {
+          if (processedRows <= SAMPLE) {
+            out.note(`  would fetch ${row.r2Key} → listings/${row.publicId}/…`);
+          }
+          continue;
+        }
+        try {
+          const processed = await processListingImage(
+            await fetchUserBuffer(row.r2Key, MAX_UPLOAD_BYTES),
+          );
+          const key = buildImageKey(row.publicId);
 
-        out.count("guardadas");
-      } catch (err) {
-        out.count("fallaron");
-        failures++;
-        if (failures <= SAMPLE) out.note(`  #${row.id} ${row.r2Key}: ${String(err)}`);
+          await putObject(key, processed.full, STORED_CONTENT_TYPE);
+          await putObject(thumbKey(key), processed.thumb, STORED_CONTENT_TYPE);
+
+          // Rewrite last: if anything above threw, the row still points at the
+          // source and the next run retries it.
+          await db
+            .update(listingImages)
+            .set({ r2Key: key, width: processed.width, height: processed.height })
+            .where(eq(listingImages.id, row.id));
+
+          out.count("guardadas");
+        } catch (err) {
+          out.count("fallaron");
+          failures++;
+          if (failures <= SAMPLE) out.note(`  #${row.id} ${row.r2Key}: ${String(err)}`);
+        }
       }
+      if (rows.length < pageSize) break;
+    }
+    if (opts.dry) {
+      if (processedRows > SAMPLE) out.note(`  … and ${processedRows - SAMPLE} more`);
+      out.note("--dry: nothing downloaded, nothing stored.");
     }
     if (failures > SAMPLE) out.note(`  … and ${failures - SAMPLE} more failures`);
     if (failures > 0) out.note("Failed rows still point at their source — safe to re-run.");
