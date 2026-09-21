@@ -27,6 +27,7 @@ import {
 import { publishedFacetWhere, verticalConds } from "../src/lib/facet-sql";
 import { VERTICALS, type VerticalConfig } from "../src/config/verticals";
 import { OPERATIONS, PROPERTY_TYPES } from "../src/lib/import/types";
+import { imageUrl, imageThumbUrl } from "../src/lib/format";
 
 let failures = 0;
 
@@ -225,6 +226,35 @@ for (const [host, v] of Object.entries(VERTICALS)) {
     ),
   ];
   check(`${host} declares only known enum values`, bad.length === 0, bad.join(", "));
+}
+
+// Listing-card image URLs share this pure verification gate with their filters.
+console.log("\nimages: stored keys and remote URLs");
+const originalImageBase = process.env.R2_PUBLIC_BASE_URL;
+const imageBase = "https://inmobiliaria.com.py/images";
+try {
+  // The helpers read the env at call time, so no module reload is needed.
+  for (const base of [imageBase, "", undefined]) {
+    if (base === undefined) delete process.env.R2_PUBLIC_BASE_URL;
+    else process.env.R2_PUBLIC_BASE_URL = base;
+    const label = base ? "with R2 base" : base === "" ? "with empty base" : "without base";
+    const prefix = base ? `${base}/` : "";
+    check(`${label}: stored key is resolved`, imageUrl("listings/photo.webp") === `${prefix}listings/photo.webp`);
+    check(`${label}: stored thumb gets its suffix`, imageThumbUrl("listings/photo.webp") === `${prefix}listings/photo-thumb.webp`);
+    check(`${label}: non-WebP key has no thumb suffix`, imageThumbUrl("listings/photo.jpg") === `${prefix}listings/photo.jpg`);
+    for (const scheme of ["http", "https", "HTTPS"]) {
+      for (const file of ["photo.jpg", "photo.webp", "photo.webp?width=480#image"]) {
+        const url = `${scheme}://inmobiliaria.com.py/${file}`;
+        check(`${label}: ${scheme} ${file} passes through both helpers`, imageUrl(url) === url && imageThumbUrl(url) === url);
+      }
+    }
+    check(`${label}: missing images remain null`, [null, ""].every((key) => imageUrl(key) === null && imageThumbUrl(key) === null));
+  }
+  process.env.R2_PUBLIC_BASE_URL = `${imageBase}/`;
+  check("trailing base slash is removed", imageUrl("listings/photo.webp") === `${imageBase}/listings/photo.webp` && imageThumbUrl("listings/photo.webp") === `${imageBase}/listings/photo-thumb.webp`);
+} finally {
+  if (originalImageBase === undefined) delete process.env.R2_PUBLIC_BASE_URL;
+  else process.env.R2_PUBLIC_BASE_URL = originalImageBase;
 }
 
 console.log(
