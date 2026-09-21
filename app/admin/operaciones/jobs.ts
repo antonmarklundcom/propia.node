@@ -22,6 +22,13 @@ import "server-only";
  *   with an upload, a permission attestation and a rollback log, all of which
  *   this page has no way to collect. Its runner exists for the CLI.
  */
+import {
+  revalidateDirectory,
+  revalidateFx,
+  revalidateListings,
+  revalidateLocations,
+  revalidateMarketMedians,
+} from "@/lib/cache";
 import type { OpsJob, OpsResult } from "@/lib/ops/types";
 import { isR2Configured } from "@/lib/r2";
 import { isTranslationConfigured } from "@/lib/translate";
@@ -68,6 +75,8 @@ type Runner = (opts: {
 
 interface Entry extends OpsJobMeta {
   run: Runner;
+  /** Called by the action only after a successful real run; sessions have no cached reader. */
+  revalidate: (() => void) | null;
 }
 
 /**
@@ -89,6 +98,7 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runFx(o),
+      revalidate: revalidateFx,
     },
     {
       job: "cron:cuotas",
@@ -98,6 +108,7 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runCuotas(o),
+      revalidate: revalidateListings,
     },
     {
       job: "cron:medians",
@@ -107,6 +118,7 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runMedians(o),
+      revalidate: revalidateMarketMedians,
     },
     {
       job: "cron:geo",
@@ -116,6 +128,7 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runGeo(o),
+      revalidate: revalidateListings,
     },
     {
       job: "cron:translate",
@@ -126,6 +139,7 @@ export function opsJobs(): Entry[] {
       defaultLimit: 25,
       disabledReason: translation ? null : esPanel.opsDisabledTranslate,
       run: (o) => runTranslate(o),
+      revalidate: revalidateListings,
     },
     {
       job: "cron:resync",
@@ -135,6 +149,7 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runResync(o),
+      revalidate: revalidateListings,
     },
     {
       job: "cron:sessions",
@@ -144,6 +159,7 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runSessions(o),
+      revalidate: null,
     },
     {
       job: "seed:financing",
@@ -153,6 +169,7 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runSeedFinancing(o),
+      revalidate: revalidateDirectory,
     },
     {
       job: "seed:locations",
@@ -162,6 +179,7 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runSeedLocations(o),
+      revalidate: revalidateLocations,
     },
     {
       job: "backfill:images",
@@ -172,6 +190,7 @@ export function opsJobs(): Entry[] {
       defaultLimit: 50,
       disabledReason: r2 ? null : esPanel.opsDisabledR2,
       run: (o) => runBackfillImages(o),
+      revalidate: revalidateListings,
     },
   ];
 }
@@ -196,29 +215,6 @@ export function opsJobMeta(): OpsJobMeta[] {
 export function findOpsJob(job: string): Entry | undefined {
   return opsJobs().find((j) => j.job === job);
 }
-
-/**
- * Jobs whose non-dry run changes what a visitor sees, and therefore need the
- * listing cache dropped afterwards (`fable-plan-ops.md` §4.2 item 4).
- *
- * The runners cannot do this themselves — under `tsx` there is no cache handler
- * to call `revalidateTag` on — so it is the action's job, and this is the list it
- * consults. `cron:medians` is **not** here on purpose: `market-medians` is the
- * one tag with no writer (`src/lib/cache.ts`), TTL-only by design.
- * `cron:sessions` and `cron:fx` change nothing a visitor reads.
- */
-export const JOBS_THAT_CHANGE_LISTINGS: ReadonlySet<string> = new Set<OpsJob>([
-  // Writes listings.cuota_gs, printed on every venta card.
-  "cron:cuotas",
-  // Moves map pins (display_lat / display_lng).
-  "cron:geo",
-  // Writes listings.title_en / description_en, read by the English door.
-  "cron:translate",
-  // Pauses listings: changes what is published.
-  "cron:resync",
-  // Rewrites listing_images.r2_key, i.e. every photo URL it touched.
-  "backfill:images",
-]);
 
 /**
  * Jobs that must be followed by another job, and which one.

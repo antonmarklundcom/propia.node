@@ -26,31 +26,15 @@ import { revalidateTag } from "next/cache";
 export const CACHE_TAGS = {
   /** Published listing rows: home rail, sitemap, cards. */
   listings: "listings",
-  /** Agency / agent / developer / project directories and portal counts. */
+  /** Agency / agent / developer / project directories, financing and portal counts. */
   directory: "directory",
   /** /guias index and post detail. */
   guides: "guides",
-  /** The `locations` table — seed data, effectively immutable. */
+  /** Location rows; seed:locations in the operations panel invalidates these. */
   locations: "locations",
-  /**
-   * Computed price medians (precios-queries, valuation).
-   *
-   * The one tag with no writer, by design: its only writer is
-   * `scripts/compute-medians.ts`, a tsx job run from a shell (`cron:medians`)
-   * with no Next.js runtime around it, so it cannot call `revalidateTag` at
-   * all. The TTL below is therefore the whole invalidation story — a fresh
-   * median is visible within it, and nothing in the app can shorten that.
-   * Do not "fix" this by adding a writer in a request path: no request
-   * recomputes medians.
-   */
+  /** Computed prices and valuation; cron:medians in the panel invalidates these. */
   marketMedians: "market-medians",
-  /**
-   * The latest USD→PYG rate (backlog #2). Same "no writer" shape as
-   * marketMedians: its only writer is `scripts/fetch-fx.ts` (`cron:fx`), a
-   * plain tsx job with no Next.js runtime around it, so CACHE_TTL.fx is the
-   * whole invalidation story — do not add a revalidateTag() call for it in a
-   * request path, since nothing in the app ever writes a new rate.
-   */
+  /** Latest USD-to-PYG rate; cron:fx in the panel invalidates this. */
   fx: "fx",
 };
 
@@ -59,7 +43,7 @@ export const CACHE_TTL = {
   listings: 600,
   directory: 300,
   guides: 300,
-  /** Cities change when someone seeds them, i.e. never in normal operation. */
+  /** Backstop for location seeding performed outside the Next.js runtime. */
   locations: 3600,
   marketMedians: 21_600,
   /** open.er-api.com's free tier refreshes daily; this is a safety margin, not the cadence. */
@@ -80,7 +64,7 @@ export function revalidateListings(): void {
   revalidateTag(CACHE_TAGS.directory);
 }
 
-/** Call after agency / agent / developer / project profile writes. */
+/** Call after agency / agent / developer / project profile writes or financing seeding. */
 export function revalidateDirectory(): void {
   revalidateTag(CACHE_TAGS.directory);
 }
@@ -88,4 +72,24 @@ export function revalidateDirectory(): void {
 /** Call after any post create / update / publish / delete. */
 export function revalidateGuides(): void {
   revalidateTag(CACHE_TAGS.guides);
+}
+
+/** Call after a successful real cron:medians run in the operations panel. */
+export function revalidateMarketMedians(): void {
+  revalidateTag(CACHE_TAGS.marketMedians);
+  // The home payload and sitemap embed price-city results under listings.
+  revalidateTag(CACHE_TAGS.listings);
+}
+
+/** Call after a successful real cron:fx run in the operations panel. */
+export function revalidateFx(): void {
+  revalidateTag(CACHE_TAGS.fx);
+}
+
+/** Call after a successful real seed:locations run in the operations panel. */
+export function revalidateLocations(): void {
+  revalidateTag(CACHE_TAGS.locations);
+  // Location names/hierarchies also feed cards, directories, prices and valuation.
+  revalidateListings();
+  revalidateTag(CACHE_TAGS.marketMedians);
 }

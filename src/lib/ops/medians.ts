@@ -9,9 +9,9 @@
  * group when `sample_size >= 8`, but every non-empty group is stored so
  * `/precios` can show sparser cells with a caveat.
  *
- * Cache: `market-medians` is the one tag with no writer (`src/lib/cache.ts`
- * explains why) — its TTL is the whole invalidation story, so neither this
- * runner nor a caller of it has a `revalidate*` to call.
+ * Cache: the operations action calls revalidateMarketMedians() after a
+ * successful real run. This shared CLI runner stays free of next/cache calls;
+ * shell runs rely on the cache TTL.
  */
 import "server-only";
 import { and, eq } from "drizzle-orm";
