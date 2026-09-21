@@ -27,10 +27,8 @@ function isSorted(prices: number[], dir: "asc" | "desc"): boolean {
 
 async function submitSort(page: Page, orden: "precio_asc" | "precio_desc") {
   await page.locator("select#orden").selectOption(orden);
-  await Promise.all([
-    page.waitForURL((u) => u.searchParams.get("orden") === orden),
-    page.locator("button.filter-bar__submit").click(),
-  ]);
+  await page.waitForURL((u) => u.searchParams.get("orden") === orden);
+  await expect(page.locator(".listing-browser__results")).toHaveAttribute("aria-busy", "false");
 }
 
 for (const dir of ["asc", "desc"] as const) {

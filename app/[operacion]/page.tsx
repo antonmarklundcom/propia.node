@@ -7,19 +7,20 @@ import { siteOrigin } from "@/lib/origin";
 import { languageAlternates } from "@/lib/alternates";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
-import { ListingCard } from "@/components/ListingCard";
+import { ListingBrowser, listingPage } from "@/components/ListingBrowser";
+import { hasListingUserParams } from "@/lib/facets";
 import { SearchBar } from "@/components/SearchBar";
-import { getRecentListingsBy, listCities } from "@/lib/queries";
+import { listCities } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
 import { getOperationHubData } from "@/lib/directory-queries";
 import { categoryUrl, parseOperation, operationSlug } from "@/lib/urls";
 import { CtaBand, Section } from "@/components/MarketingUI";
-import type { Operation, PropertyType } from "@/lib/import/types";
+import type { PropertyType } from "@/lib/import/types";
 
 // Live counts per city and per type; no build-time DB on Hostinger.
 export const dynamic = "force-dynamic";
 
-type Params = { params: Promise<{ operacion: string }> };
+type Params = { params: Promise<{ operacion: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 /**
  * National operation hub: /venta, /alquiler, /alquiler-temporal.
@@ -35,7 +36,7 @@ type Params = { params: Promise<{ operacion: string }> };
  * /planes and friends are unaffected; anything that isn't an operation slug
  * falls through to notFound().
  */
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Params): Promise<Metadata> {
   const brand = await brandName();
   const { operacion } = await params;
   const op = parseOperation(operacion);
@@ -45,23 +46,26 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // marketplace's (src/lib/alternates.ts).
   const vertical = await currentVertical();
   const copy = (await dict()).hub.copy[op];
+  const sp = await searchParams;
+  const indexed = !hasListingUserParams(sp) && listingPage(sp.page) === 1;
   return {
+    robots: { index: indexed, follow: true },
     title: `${copy.h1}`,
     description: copy.lead,
     alternates: {
       canonical: `${await siteOrigin()}/${operationSlug(op)}`,
-      languages: languageAlternates({
+      languages: indexed ? languageAlternates({
         path: `/${operationSlug(op)}`,
         scope: "site",
         family: vertical.family,
-      }),
+      }) : undefined,
     },
     // og:title doesn't inherit title.template, so the brand is explicit (F47).
     openGraph: { title: `${copy.h1} — ${brand}`, description: copy.lead },
   };
 }
 
-export default async function OperationHubPage({ params }: Params) {
+export default async function OperationHubPage({ params, searchParams }: Params) {
   const { operacion } = await params;
   const op = parseOperation(operacion);
   if (!op) notFound();
@@ -73,11 +77,10 @@ export default async function OperationHubPage({ params }: Params) {
   // The door's own hard filters narrow this rail like every other listing
   // query on the domain (VerticalConfig.filters).
   const vertical = await currentVertical();
-  const [origin, hub, cities, recent] = await Promise.all([
+  const [origin, hub, cities] = await Promise.all([
     siteOrigin(),
     getOperationHubData(op, vertical),
     listCities(),
-    getRecentListingsBy({ operation: op, vertical }, 8),
   ]);
 
   const topCity = hub.cities[0]?.slug ?? "asuncion";
@@ -109,24 +112,7 @@ export default async function OperationHubPage({ params }: Params) {
         </div>
       </section>
 
-      {recent.length > 0 && (
-        <Section
-          title={t.latestTitle(hub.total.toLocaleString(numberLocale))}
-        >
-          <div className={vertical.key === "inmobiliaria" || vertical.key === "en" ? "ph-grid-4" : "mk-project-grid"}>
-            {recent.map((card) => (
-              <ListingCard key={card.id} card={card} />
-            ))}
-          </div>
-          <p className="mk-note">
-            {t.latestNoteLead}{" "}
-            <Link href={categoryUrl({ operation: op, citySlug: topCity })}>
-              {copy.cityLabel} {hub.cities[0]?.name ?? "Asunción"}
-            </Link>{" "}
-            {t.latestNoteTail}
-          </p>
-        </Section>
-      )}
+      <div className="listing-hub-results"><ListingBrowser basePath={`/${operationSlug(op)}`} query={{ operation: op, vertical }} searchParams={await searchParams} /></div>
 
       {hub.cities.length > 0 && (
         <Section

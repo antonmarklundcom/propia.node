@@ -6,6 +6,8 @@ it; none of them blocks a phase.
 
 ## Open
 
+- **Listing sidebar follow-up (2026-09-21): stored USD conversion.** The manager reported Gs listings whose stored `price_usd` appears to use an older exchange rate. Sidebar filtering and sorting intentionally continue using that column; native card prices remain unchanged. Investigate/reconcile separately with founder-approved money rules. Existing map price labels also use Spanish compact USD formatting on the English door; locale-aware map copy is a separate improvement.
+
 - **`verify:import`'s database half fails against MariaDB, and it is the sandbox
   rather than the code.** Found in ops O1, which got a local database up for the
   first time in several phases (a MariaDB 10.11 stand-in — Docker Hub blob

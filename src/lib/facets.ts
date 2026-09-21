@@ -139,3 +139,11 @@ export function facetSearchParams(
   if (f.sort) out[FACET_PARAM.sort] = f.sort;
   return out;
 }
+
+/** Transient listing choices never become indexable landing pages. */
+export function hasListingUserParams(sp: ParamBag): boolean {
+  return [...USER_FACET_PARAMS, FACET_PARAM.propertyType, FACET_PARAM.barrio, FACET_PARAM.city].some(key => {
+    const value = sp[key];
+    return Array.isArray(value) ? value.some(Boolean) : Boolean(value);
+  });
+}

@@ -20,6 +20,7 @@ import type { SQL } from "drizzle-orm";
 import {
   facetSearchParams,
   hasUserFacets,
+  hasListingUserParams,
   parseFacetParams,
   parseLocationSlugs,
   type ListingFacets,
@@ -47,6 +48,11 @@ function toText(cond: SQL | undefined): string {
 }
 
 console.log("\nfacets: parsing");
+check("clean listing URL remains indexable", !hasListingUserParams({}));
+for (const key of ["precio_min", "precio_max", "dormitorios", "tipo", "barrio", "orden"]) {
+  check(`${key}: transient URLs are noindex`, hasListingUserParams({ [key]: "1" }));
+}
+check("repeated filters are noindex too", hasListingUserParams({ precio_max: ["100", "200"] }));
 
 const parsed = parseFacetParams({
   operacion: "venta",
