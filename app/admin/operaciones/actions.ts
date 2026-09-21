@@ -16,18 +16,17 @@
  * 2. **An `ops_runs` row per press, opened before the job starts.** A job that
  *    throws or a process that dies still leaves the row that says who started
  *    what — see `src/lib/ops/runs.ts`.
- * 3. **The cache drop after a real run.** A runner cannot call `revalidateTag`
+ * 3. **The cache drop after a successful real run.** A runner cannot call `revalidateTag`
  *    (under `tsx` there is no cache handler), so the action owes it — otherwise
  *    an operator recalculates every cuota, looks at a listing page, sees the old
  *    number and concludes the button does nothing.
  */
 import { revalidatePath } from "next/cache";
-import { revalidateListings } from "@/lib/cache";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { finishOpsRun, startOpsRun } from "@/lib/ops/runs";
 import type { OpsResult } from "@/lib/ops/types";
 import { esPanel } from "@/i18n/es";
-import { findOpsJob, JOBS_THAT_CHANGE_LISTINGS } from "./jobs";
+import { findOpsJob } from "./jobs";
 
 const ROUTE = "/admin/operaciones";
 
@@ -78,8 +77,8 @@ export async function runOpsJob(input: OpsRunInput): Promise<OpsRunOutcome> {
     const result = await entry.run({ dry, limit });
     await finishOpsRun(runId, { ok: true, result });
 
-    if (!dry && JOBS_THAT_CHANGE_LISTINGS.has(entry.job)) {
-      revalidateListings();
+    if (!dry) {
+      entry.revalidate?.();
     }
     // The page itself shows "last run", which this press just changed.
     revalidatePath(ROUTE);
