@@ -987,6 +987,8 @@ export const esSearchBar = {
 
 /** Category page filter bar — a plain GET form, no client JS. */
 export const esFilters = {
+  title: "Filtros", close: "Cerrar filtros", apply: "Aplicar filtros", loading: "Actualizando resultados?", price: "Precio en USD", type: "Tipo de propiedad", city: "Ciudad", barrio: "Barrio", remove: "Quitar", results: (n: string) => `${n} propiedades`, preset: (n: string) => `Hasta USD ${n}`,
+
   priceMinLabel: "Precio mín. (US$)",
   priceMinPlaceholder: "Sin mínimo",
   priceMaxLabel: "Precio máx. (US$)",

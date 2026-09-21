@@ -182,7 +182,7 @@ export async function locationChain(locationId: number): Promise<LocationRow[]> 
 
 export interface CategoryQuery {
   operation: Operation;
-  locationIds: number[];
+  locationIds?: number[];
   type?: PropertyType;
   limit?: number;
   offset?: number;
@@ -220,6 +220,8 @@ function categoryConds(q: CategoryQuery) {
  * transient filter choice (ARCHITECTURE.md §4.3).
  */
 export interface CategoryFilters {
+  propertyType?: PropertyType;
+  locationIds?: number[];
   priceMin?: number;
   priceMax?: number;
   minBedrooms?: number;
@@ -243,6 +245,7 @@ function filterConds(q: CategoryQuery, f: CategoryFilters) {
       priceMax: f.priceMax,
       minBedrooms: f.minBedrooms,
     }),
+    ...facetConds({ propertyType: f.propertyType, locationIds: f.locationIds }),
     ...(q.vertical ? verticalConds(q.vertical) : []),
   );
 }
@@ -907,4 +910,9 @@ export async function getBestFinancingProgram() {
     .orderBy(asc(financingPrograms.annualRate))
     .limit(1);
   return row ?? null;
+}
+
+/** Barrio choices reuse request-scoped location data. */
+export async function listCityBarrios(cityId: number) {
+ return [...(await locationsById()).values()].filter(r => r.parentId === cityId && r.level === "barrio");
 }
