@@ -19,6 +19,7 @@
     "seed:financing": "tsx --tsconfig scripts/tsconfig.json scripts/seed-financing.ts",
     "seed:locations": "tsx --tsconfig scripts/tsconfig.json scripts/seed-locations.ts",
     "seed:sample-photos": "tsx --tsconfig scripts/tsconfig.json scripts/seed-sample-photos.ts",
+    "seed:demo-seller": "tsx --tsconfig scripts/tsconfig.json scripts/seed-demo-seller.ts",
     "seed:guias-en": "tsx --tsconfig scripts/tsconfig.json scripts/seed-guias-en.ts",
     "cron:cuotas": "tsx --tsconfig scripts/tsconfig.json scripts/recompute-cuotas.ts",
     "cron:medians": "tsx --tsconfig scripts/tsconfig.json scripts/compute-medians.ts",
