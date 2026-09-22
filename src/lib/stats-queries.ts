@@ -88,6 +88,7 @@ export interface ListingStats {
  */
 export async function getPanelListingStats(
   scope: EditScope,
+  internalLeadsOnly = false,
 ): Promise<Map<number, ListingStats>> {
   const guard = listingScopeWhere(scope);
   const since = windowStart();
@@ -122,6 +123,7 @@ export async function getPanelListingStats(
       .where(
         and(
           inArray(leads.listingId, ids),
+          internalLeadsOnly ? eq(leads.routedTo, "internal") : undefined,
           gte(leads.createdAt, new Date(`${since}T00:00:00Z`)),
         ),
       )

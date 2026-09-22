@@ -11,7 +11,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateDirectory } from "@/lib/cache";
 import { redirect } from "next/navigation";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { createPanelAgency, type AgencyRow } from "@/lib/panel-queries";
 
 const ROUTE = "/admin/inmobiliarias";
@@ -37,7 +37,7 @@ function done(code: string): never {
 }
 
 export async function createAgencyAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const name = str(formData.get("name"));
   if (name.length < 2) done("invalid");

@@ -11,7 +11,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateDirectory } from "@/lib/cache";
 import { redirect } from "next/navigation";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { moveAgentToAgency, type TeamRole } from "@/lib/team-queries";
 
 const ROUTE = "/admin/agentes";
@@ -29,7 +29,7 @@ function toId(v: FormDataEntryValue | null): number {
 }
 
 export async function moveAgentAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const agentId = toId(formData.get("agentId"));
   if (!agentId) done("invalid");

@@ -29,6 +29,7 @@ const ROLES: readonly UserRoleValue[] = [
   "agent",
   "agency_admin",
   "developer",
+  "staff",
   "admin",
 ];
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import {
   listAgenciesWithAdminCount,
@@ -29,6 +29,7 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
 function roleName(role: string | null): string {
   if (role === "agency_admin") return esPanel.teamRoleAdmin;
   if (role === "agent") return esPanel.teamRoleAgent;
+  if (role === "staff") return esPanel.staffRole;
   if (role === "admin") return esPanel.teamRoleSuperAdmin;
   return esPanel.teamRoleNoLogin;
 }
@@ -46,7 +47,7 @@ export default async function AdminAgentsPage({
 }: {
   searchParams: Promise<{ msg?: string }>;
 }) {
-  const [{ msg }, user] = await Promise.all([searchParams, requireSuperAdmin()]);
+  const [{ msg }, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
   const [reviewCount, agents, agencies] = await Promise.all([
     countReviewQueue(),
     listAgentsWithAgency(),

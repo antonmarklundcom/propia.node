@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * Editorial actions. requireSuperAdmin() runs before every read and write —
+ * Editorial actions. requireStaffOrAbove() runs before every read and write —
  * these are the only writes in the app with no ownership scope to fall back
  * on (a post belongs to the site, not to an agency), so the role check is the
  * whole guard and it is re-derived from the session on every call.
@@ -9,7 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateGuides } from "@/lib/cache";
 import { redirect } from "next/navigation";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   createPost,
   deletePost,
@@ -52,7 +52,7 @@ function readForm(formData: FormData): Omit<PostInput, "slug"> | null {
 }
 
 export async function createPostAction(formData: FormData): Promise<void> {
-  const user = await requireSuperAdmin();
+  const user = await requireStaffOrAbove();
 
   const fields = readForm(formData);
   if (!fields) redirect("/admin/guias/nueva?msg=invalid");
@@ -71,7 +71,7 @@ export async function createPostAction(formData: FormData): Promise<void> {
 }
 
 export async function updatePostAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const id = Number(formData.get("postId"));
   if (!Number.isInteger(id) || id <= 0) redirect("/admin/guias?msg=not_found");
@@ -96,7 +96,7 @@ export async function updatePostAction(formData: FormData): Promise<void> {
 }
 
 export async function deletePostAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const id = Number(formData.get("postId"));
   if (Number.isInteger(id) && id > 0) {
@@ -124,7 +124,7 @@ export async function deletePostAction(formData: FormData): Promise<void> {
  * dropped on the way.
  */
 export async function uploadPostCoverAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const id = Number(formData.get("postId"));
   if (!Number.isInteger(id) || id <= 0) redirect("/admin/guias?msg=not_found");
@@ -166,7 +166,7 @@ export async function uploadPostCoverAction(formData: FormData): Promise<void> {
 }
 
 export async function removePostCoverAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const id = Number(formData.get("postId"));
   if (!Number.isInteger(id) || id <= 0) redirect("/admin/guias?msg=not_found");

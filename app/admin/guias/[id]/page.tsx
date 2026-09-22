@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { PostForm } from "@/components/panel/PostForm";
 import { Markdown } from "@/components/Markdown";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { countDraftPosts, getPostById } from "@/lib/post-queries";
 import { imageUrl } from "@/lib/format";
@@ -48,7 +48,7 @@ export default async function EditPostPage({
   const [{ id }, sp, user] = await Promise.all([
     params,
     searchParams,
-    requireSuperAdmin(),
+    requireStaffOrAbove(),
   ]);
 
   const postId = Number(id);

@@ -177,6 +177,9 @@ export const esPrecios = {
  * still es-PY so the founder and agencies read the same language as the site.
  */
 export const esPanel = {
+  staffRole: "Personal",
+  staffEditListing: "Editar propiedad",
+  staffLeadsHint: "Consultas derivadas al equipo interno del portal.",
   loginTitle: "Ingresá a tu panel",
   loginSubtitle: "Usá tu email y contraseña.",
   emailLabel: "Email",

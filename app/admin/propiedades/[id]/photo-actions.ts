@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * Super-admin photo actions. Thin by design: requireSuperAdmin() first, then
+ * Super-admin photo actions. Thin by design: requireStaffOrAbove() first, then
  * the shared handler with the `admin` scope — the only scope that may touch a
  * listing it does not own. Every branch of the outcome ends in the same
  * ?msg= flash the edit form already uses.
@@ -9,7 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   handleCover,
   handleDelete,
@@ -31,21 +31,21 @@ async function finish(listingId: number, flash: PhotoFlash): Promise<never> {
 }
 
 export async function adminUploadPhotosAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
   await finish(readListingId(formData), await handleUpload(formData, SCOPE));
 }
 
 export async function adminDeletePhotoAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
   await finish(readListingId(formData), await handleDelete(formData, SCOPE));
 }
 
 export async function adminMovePhotoAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
   await finish(readListingId(formData), await handleMove(formData, SCOPE));
 }
 
 export async function adminSetCoverAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
   await finish(readListingId(formData), await handleCover(formData, SCOPE));
 }

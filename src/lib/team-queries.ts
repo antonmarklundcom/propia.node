@@ -113,7 +113,7 @@ export async function setTeamMemberRole(params: {
 }): Promise<TeamWriteResult> {
   const current = await memberRole(params.agencyId, params.targetUserId);
   if (current == null) return "not_in_team";
-  if (current === "admin") return "protected";
+  if (current === "admin" || current === "staff") return "protected";
   if (current === params.role) return "ok";
 
   // Demoting the last responsable leaves the agency unmanageable.
@@ -147,7 +147,7 @@ export async function removeTeamMember(params: {
 }): Promise<TeamWriteResult> {
   const current = await memberRole(params.agencyId, params.targetUserId);
   if (current == null) return "not_in_team";
-  if (current === "admin") return "protected";
+  if (current === "admin" || current === "staff") return "protected";
 
   if (
     current === "agency_admin" &&
@@ -199,8 +199,8 @@ export async function joinPreflight(userId: number): Promise<JoinResult> {
     .where(eq(users.id, userId))
     .limit(1);
   if (!me) return "no_profile";
-  // The founder's own account is not an agency employee.
-  if (me.role === "admin") return "protected";
+  // Portal operators are not agency employees.
+  if (me.role === "admin" || me.role === "staff") return "protected";
 
   const [agent] = await db
     .select({ id: agents.id, agencyId: agents.agencyId })
@@ -340,8 +340,8 @@ export async function moveAgentToAgency(params: {
     .where(eq(agents.id, params.agentId))
     .limit(1);
   if (!row) return "not_found";
-  // Never rewrite a super-admin's role from a list of agents.
-  if (row.role === "admin") return "protected";
+  // Never rewrite a portal operator's role from a list of agents.
+  if (row.role === "admin" || row.role === "staff") return "protected";
 
   const leaving = row.agencyId != null && row.agencyId !== params.agencyId;
   if (

@@ -1,7 +1,8 @@
+import { isStaff } from "@/lib/auth/roles";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   countLeadsByType,
   countRecentLeads,
@@ -126,18 +127,19 @@ export default async function AdminLeadsPage({
 }) {
   const [{ tipo, q, msg }, user] = await Promise.all([
     searchParams,
-    requireSuperAdmin(),
+    requireStaffOrAbove(),
   ]);
 
   const activeType = LEAD_TYPES.includes(tipo as (typeof LEAD_TYPES)[number])
     ? (tipo as (typeof LEAD_TYPES)[number])
     : "all";
 
+  const internalOnly = isStaff(user.role);
   const [reviewCount, recentLeads, counts, rows] = await Promise.all([
     countReviewQueue(),
-    countRecentLeads(),
-    countLeadsByType(),
-    listAllLeads({ type: activeType, q }),
+    countRecentLeads(24, internalOnly),
+    countLeadsByType(internalOnly),
+    listAllLeads({ type: activeType, q, internalOnly }),
   ]);
 
   // D3 matching, loaded once for the page rather than per card: one candidate
@@ -173,7 +175,7 @@ export default async function AdminLeadsPage({
 
         <h2 className="panel-section__title">{esPanel.adminLeadsTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 13, marginTop: 0 }}>
-          {esPanel.adminLeadsHint}
+          {internalOnly ? esPanel.staffLeadsHint : esPanel.adminLeadsHint}
         </p>
         {/* Says what the tab badge is counting — a bare number next to
             "Consultas" would read as the all-time total. */}

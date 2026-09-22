@@ -1,13 +1,14 @@
 "use server";
 
 /**
- * Super-admin actions. Every action re-checks requireSuperAdmin() — the form
- * is never trusted, and a non-admin who forges a POST is bounced by the guard
+ * Review actions are super-admin-only; agency/agent verification also permits
+ * staff. Every action re-checks its role guard — the form
+ * is never trusted, and an unauthorized caller who forges a POST is bounced by the guard
  * before any write. Mutations revalidate the affected panel routes.
  */
 import { revalidatePath } from "next/cache";
 import { revalidateListings } from "@/lib/cache";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireSuperAdmin, requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   approveListing,
   rejectListing,
@@ -41,7 +42,7 @@ export async function rejectAction(formData: FormData): Promise<void> {
 }
 
 export async function toggleAgencyVerifiedAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
   const id = toId(formData.get("agencyId"));
   const verified = formData.get("verified") === "1";
   if (id) await setAgencyVerified(id, verified);
@@ -49,7 +50,7 @@ export async function toggleAgencyVerifiedAction(formData: FormData): Promise<vo
 }
 
 export async function toggleAgentVerifiedAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
   const id = toId(formData.get("agentId"));
   const verified = formData.get("verified") === "1";
   if (id) await setAgentVerified(id, verified);

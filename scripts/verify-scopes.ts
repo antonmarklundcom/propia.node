@@ -21,6 +21,7 @@ import {
   agencies,
   agents,
   leads,
+  leadMatches,
   listings,
   locations,
   sessions,
@@ -35,11 +36,14 @@ import {
   updateOwnAgentProfile,
 } from "../src/lib/profile-queries";
 import {
+  listAllLeads,
   getPanelLeads,
   getPanelListings,
   setPanelListingStatus,
 } from "../src/lib/panel-queries";
 import { getEditableListing, updateListing } from "../src/lib/listing-edit";
+import { isStaff, isStaffOrAbove, isSuperAdmin, isAgencyRole } from "../src/lib/auth/roles";
+import { proposeMatches, markMatchSent } from "../src/lib/matching";
 import { verifyPassword } from "../src/lib/auth/password";
 
 const url = process.env.DATABASE_URL ?? "";
@@ -345,6 +349,39 @@ async function main() {
       },
     ]);
 
+    await db.insert(leads).values(
+      (["agency", "agent", "developer"] as const).map((routedTo) => ({
+        leadType: "seller" as const,
+        vertical: "verify",
+        listingId: ownerRows[0].id,
+        whatsapp: "0985000000",
+        name: `Verify ${routedTo} lead ${stamp}`,
+        routedTo,
+      })),
+    );
+    const fixtureLeads = await db.select().from(leads)
+      .where(eq(leads.listingId, ownerRows[0].id));
+    await db.update(agents).set({ isVerified: true }).where(eq(agents.id, indepAgent.id));
+    for (const lead of fixtureLeads) {
+      const created = await proposeMatches(lead.id, [indepAgent.id], isStaff("staff"));
+      check(`staff proposal scope: ${lead.routedTo}`, created === (lead.routedTo === "internal" ? 1 : 0));
+      // Admin can still propose every lane; staff must not mark those as sent.
+      if (lead.routedTo !== "internal") {
+        check(`admin proposal unchanged: ${lead.routedTo}`, await proposeMatches(lead.id, [indepAgent.id]) === 1);
+      }
+      const [match] = await db.select().from(leadMatches).where(eq(leadMatches.leadId, lead.id));
+      if (!match) { check("proposal fixture exists", false); continue; }
+      await markMatchSent(match.id, isStaff("staff"));
+      const [after] = await db.select().from(leadMatches).where(eq(leadMatches.id, match.id));
+      check(`staff hand-off scope: ${lead.routedTo}`, after.status === (lead.routedTo === "internal" ? "sent" : "proposed"));
+    }
+
+    const staffInbox = await listAllLeads({ internalOnly: isStaff("staff"), q: "Verify" });
+    check("staff can read internal leads", staffInbox.some((l) => l.name === "Verify internal lead"));
+    check("staff cannot read non-internal leads", staffInbox.every((l) => l.routedTo === "internal"));
+    check("staff passes the staff role gate", isStaffOrAbove("staff"));
+    check("staff fails the super-admin and agency role gates", !isSuperAdmin("staff") && !isAgencyRole("staff"));
+
     const ownerInbox = await getPanelLeads(ownerScope);
     check(
       "owner sees the lead routed to them",
@@ -506,6 +543,10 @@ async function main() {
     // Clean up in FK order: leads before the listings they point at, listings
     // and sessions before the rows those point at.
     if (createdListingIds.length) {
+      await db.delete(leadMatches).where(inArray(
+        leadMatches.leadId,
+        db.select({ id: leads.id }).from(leads).where(inArray(leads.listingId, createdListingIds)),
+      ));
       await db.delete(leads).where(inArray(leads.listingId, createdListingIds));
     }
     if (createdListingIds.length) {

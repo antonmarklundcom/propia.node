@@ -9,9 +9,10 @@
  * `alertOperator`/`sendOtp`: never write a line that pretends a message was
  * delivered.
  */
+import { isStaff } from "@/lib/auth/roles";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   markMatchSent,
   proposeMatches,
@@ -26,7 +27,7 @@ function toId(v: FormDataEntryValue | null): number {
 }
 
 export async function proposeMatchesAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  const user = await requireStaffOrAbove();
 
   const leadId = toId(formData.get("leadId"));
   if (!leadId) {
@@ -46,7 +47,7 @@ export async function proposeMatchesAction(formData: FormData): Promise<void> {
     redirect(`${ROUTE}?msg=match_limit`);
   }
 
-  const created = await proposeMatches(leadId, agentIds);
+  const created = await proposeMatches(leadId, agentIds, isStaff(user.role));
   revalidatePath(ROUTE);
   redirect(`${ROUTE}?msg=${created > 0 ? "match_saved" : "match_none"}`);
 }
@@ -57,8 +58,8 @@ export async function proposeMatchesAction(formData: FormData): Promise<void> {
  * the same gesture.
  */
 export async function markMatchSentAction(matchId: number): Promise<void> {
-  await requireSuperAdmin();
+  const user = await requireStaffOrAbove();
   if (!Number.isInteger(matchId) || matchId <= 0) return;
-  await markMatchSent(matchId);
+  await markMatchSent(matchId, isStaff(user.role));
   revalidatePath(ROUTE);
 }
