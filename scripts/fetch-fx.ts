@@ -2,6 +2,7 @@
  * CLI over `runFx()` — fetch and record the USD→PYG rate (backlog #2). The job
  * lives in `src/lib/ops/fx.ts`.
  *
+ *   npm run cron:fx -- --dry --rate 6000
  *   npm run cron:fx -- --dry
  *   DATABASE_URL="mysql://..." npm run cron:fx
  *
@@ -14,6 +15,10 @@
  */
 import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { runFx } from "../src/lib/ops/fx";
-import { DRY, runCli } from "./ops-cli";
+import { DRY, flagNumber, hasFlag, runCli } from "./ops-cli";
 
-void runCli(() => runFx({ dry: DRY }));
+void runCli(() => {
+  const rate = flagNumber("--rate");
+  const supplied = hasFlag("--rate") || process.argv.slice(2).some((arg) => arg.startsWith("--rate="));
+  return runFx({ dry: DRY, rate: supplied ? rate ?? NaN : undefined });
+});

@@ -22,7 +22,7 @@ from the old photos sit in `public/img/premium/` until then.
 Generator settings: photorealistic mode, highest quality, **ratio exactly as
 in the table, longest side ≥ 1920 px** (2K if the tool offers it) so webimg
 never upscales. If you generate through the Higgsfield MCP in a Claude
-session the model is `nano_banana_pro` at `2k`, per the
+session the model is `gpt_image_2_5` variant `sunburst`, quality `medium`, per the
 `higgsfield-image-pipeline` skill. On your PC any generator is fine
 (Higgsfield web, Midjourney, Ideogram, Imagen); save as PNG or JPG.
 

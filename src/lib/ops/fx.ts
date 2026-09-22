@@ -1,4 +1,6 @@
 /**
+ * Manual override: npm run cron:fx -- --dry --rate 6000
+ *
  * Fetch the USD→PYG exchange rate and record it (backlog #2, 2026-09-05).
  *
  * Run the dry form first: this is the app's only source of truth for `cuota_gs`
@@ -33,20 +35,29 @@ interface RateApiResponse {
   "error-type"?: string;
 }
 
-export async function runFx(opts: OpsOptions): Promise<OpsResult> {
+export async function runFx(opts: OpsOptions & { rate?: number }): Promise<OpsResult> {
   return opsRun("cron:fx", opts.dry, async (out) => {
-    const res = await fetch(RATE_API_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new Error(`open.er-api.com returned HTTP ${res.status}`);
+    let rate: number;
+    if (opts.rate !== undefined) {
+      rate = opts.rate;
+      if (!Number.isFinite(rate) || rate < 1000 || rate > 20000) {
+        throw new Error("Manual rate must be finite and between 1000 and 20000.");
+      }
+    } else {
+      const res = await fetch(RATE_API_URL, {
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error(`open.er-api.com returned HTTP ${res.status}`);
 
-    const body = (await res.json()) as RateApiResponse;
-    if (body.result !== "success" || !body.rates) {
-      throw new Error(`open.er-api.com error: ${body["error-type"] ?? "unknown"}`);
-    }
-    const rate = body.rates[QUOTE_CURRENCY];
-    if (!rate || !Number.isFinite(rate) || rate <= 0) {
-      throw new Error(`no usable ${QUOTE_CURRENCY} rate in response`);
+      const body = (await res.json()) as RateApiResponse;
+      if (body.result !== "success" || !body.rates) {
+        throw new Error(`open.er-api.com error: ${body["error-type"] ?? "unknown"}`);
+      }
+      rate = body.rates[QUOTE_CURRENCY];
+      if (!rate || !Number.isFinite(rate) || rate <= 0) {
+        throw new Error(`no usable ${QUOTE_CURRENCY} rate in response`);
+      }
+
     }
 
     const previous = await getLatestFxRateRaw(QUOTE_CURRENCY);
@@ -74,7 +85,7 @@ export async function runFx(opts: OpsOptions): Promise<OpsResult> {
     await db.insert(fxRates).values({
       quoteCurrency: QUOTE_CURRENCY,
       rate: rate.toFixed(4),
-      source: "open.er-api.com",
+      source: opts.rate !== undefined ? "manual" : "open.er-api.com",
       fetchedAt: new Date(),
     });
   });

@@ -54,6 +54,7 @@ export type OpsJob =
   | "cron:sessions"
   | "seed:financing"
   | "seed:locations"
+  | "seed:sample-photos"
   | "import:csv"
   | "backfill:images"
   | "financing.edit";

@@ -15,6 +15,15 @@ import type { OpsResult } from "../src/lib/ops/types";
 
 const argv = process.argv.slice(2);
 
+/** Read either --name value or --name=value. */
+export function flagString(name: string): string | undefined {
+  const assigned = argv.find((arg) => arg.startsWith(`${name}=`));
+  const index = argv.indexOf(name);
+  const raw = assigned ? assigned.slice(name.length + 1) :
+    index === -1 ? undefined : argv[index + 1];
+  return raw && !raw.startsWith("--") ? raw : undefined;
+}
+
 /** True when the flag is present in any accepted spelling. */
 export function hasFlag(...names: string[]): boolean {
   return names.some((n) => argv.includes(n));
