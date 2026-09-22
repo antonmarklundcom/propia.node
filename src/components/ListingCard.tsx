@@ -74,61 +74,65 @@ export async function ListingCard({ card }: { card: Card }) {
     );
   }
 
+  // Ficha Clara keeps the photo above a solid comparison body.
+  const { perMonth } = (await dict()).publicUi;
+
   return (
-    <Link className="ds-photo-card listing-card" href={listingUrl(card)}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- pre-sized R2
-          thumb derivative (imageThumbUrl); next/image would only add a proxy hop. */}
-      <img
-        className="ds-photo-card__img"
-        src={cover ?? "/img/listing-fallback.webp"}
-        alt={title}
-        loading="lazy"
-        decoding="async"
-      />
-      <div className="ds-photo-card__scrim" />
+    <Link className="ds-photo-card listing-card listing-card--body" href={listingUrl(card)}>
+      <div className="listing-card__media">
+        {/* eslint-disable-next-line @next/next/no-img-element -- pre-sized R2
+            thumb derivative (imageThumbUrl); next/image would only add a proxy hop. */}
+        <img
+          className="ds-photo-card__img"
+          src={cover ?? "/img/listing-fallback.webp"}
+          alt={title}
+          loading="lazy"
+          decoding="async"
+          width={640}
+          height={480}
+        />
 
-      <span className="ds-photo-card__chip">
-        {t.operationBadge[card.operation]}
-      </span>
-      {/* card.isVerified is the agent/agency's admin-granted flag (attachVerified()
-          in queries.ts) — never listings.is_verified, which means "publisher's
-          WhatsApp passed the (currently disabled) OTP" and would be a different,
-          misleading claim here (audit F57). */}
-      {(card.isVerified || isFeatured) && (
-        <span className="listing-card__flags">
-          {card.isVerified && (
-            <span className="listing-card__flag listing-card__flag--verified">
-              {t.verified}
-            </span>
-          )}
-          {isFeatured && <span className="listing-card__flag">{t.featured}</span>}
+        <span className="ds-photo-card__chip">
+          {t.operationBadge[card.operation]}
         </span>
-      )}
-      {!cover && (
-        <span className="listing-card__nophoto">{t.noPhoto}</span>
-      )}
+        {/* card.isVerified is the agent/agency's admin-granted flag (attachVerified()
+            in queries.ts) — never listings.is_verified, which means "publisher's
+            WhatsApp passed the (currently disabled) OTP" and would be a different,
+            misleading claim here (audit F57). */}
+        {(card.isVerified || isFeatured) && (
+          <span className="listing-card__flags">
+            {card.isVerified && (
+              <span className="listing-card__flag listing-card__flag--verified">
+                {t.verified}
+              </span>
+            )}
+            {isFeatured && <span className="listing-card__flag">{t.featured}</span>}
+          </span>
+        )}
+        {!cover && (
+          <span className="listing-card__nophoto">{t.noPhoto}</span>
+        )}
+      </div>
 
-      <div className="ds-photo-card__body">
+      <div className="listing-card__body">
         {/* No location line: ListingCard carries locationId, not a name, and
             resolving it here would add a query per grid. The title already
             names the barrio in practice. */}
+        <div className="ds-photo-card__price listing-card__price">
+          {formatPrice(card)}{card.operation !== "venta" && perMonth}
+        </div>
         <div className="listing-card__title">{title}</div>
-        <div className="ds-photo-card__price">{formatPrice(card)}</div>
-        {(specs.length > 0 || cuota) && (
+        {specs.length > 0 && (
           <div className="listing-card__specs">
-            {specs.map((s) => (
+            {specs.map((s, index) => (
               <span className="listing-card__spec" key={s}>
-                <span className="listing-card__tick" aria-hidden />
+                {index > 0 && <span aria-hidden>·</span>}
                 {s}
               </span>
             ))}
-            {cuota && (
-              <span className="listing-card__spec listing-card__spec--cuota">
-                {cuota}
-              </span>
-            )}
           </div>
         )}
+        {cuota && <div className="listing-card__cuota">{t.cuotaLine(cuota)}</div>}
       </div>
     </Link>
   );

@@ -1988,6 +1988,108 @@ body {
   text-shadow: 0 1px 14px rgba(7, 15, 11, 0.75);
 }
 
+/* Ficha Clara: keep shared photo-card styles intact for other surfaces. */
+.listing-card--body {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  height: auto;
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.listing-card--body,
+.listing-card--body:hover {
+  color: var(--color-ink);
+}
+
+.listing-card__media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--color-border);
+}
+
+.listing-card--body .ds-photo-card__chip {
+  top: 12px;
+  left: 12px;
+  background: var(--color-primary);
+  color: var(--color-background);
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 6px 10px;
+}
+
+.listing-card--body .listing-card__flags {
+  top: 12px;
+  right: 12px;
+}
+
+.listing-card--body .listing-card__flag {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: transparent;
+  color: var(--color-ink);
+}
+
+.listing-card--body .listing-card__nophoto {
+  top: auto;
+  bottom: 12px;
+  left: 12px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-ink);
+  text-shadow: none;
+}
+
+.listing-card__body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 6px;
+  padding: 14px 16px 16px;
+  background: var(--color-surface);
+}
+
+.listing-card--body .listing-card__price {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--color-ink);
+}
+
+.listing-card--body .listing-card__title {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.listing-card--body .listing-card__specs {
+  gap: 4px 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-ink-secondary);
+}
+
+.listing-card__cuota {
+  font-size: 13px;
+  color: var(--color-link);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listing-card--body .ds-photo-card__img {
+    transition: none;
+  }
+  .listing-card--body:hover .ds-photo-card__img {
+    transform: none;
+  }
+}
+
 /* ---- Nórdico card variant (framed-pill, guide §5 "Listing card") --------- */
 /* White frame instead of the photo-as-card default: hairline border, 10px
    radius, price/title/specs below the photo rather than on it. Selected by
