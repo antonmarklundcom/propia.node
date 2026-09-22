@@ -1988,6 +1988,21 @@ body {
   text-shadow: 0 1px 14px rgba(7, 15, 11, 0.75);
 }
 
+/* A3: demo listing marker. Neutral, never gold: it is a disclosure, not a
+   badge. Bottom-left, where the no-photo label sits (the two never co-occur). */
+.listing-card__sample {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  padding: 5px 9px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--color-ink, #14201a);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
 /* Ficha Clara: keep shared photo-card styles intact for other surfaces. */
 .listing-card--body {
   display: flex;
@@ -3333,6 +3348,8 @@ body {
 .seller-card__whatsapp:hover { color: #fff; text-decoration: underline; }
 .seller-card__divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--color-ink-secondary); }
 .seller-card__divider::before, .seller-card__divider::after { content: ""; flex: 1; border-top: 1px solid var(--color-border); }
+.listing-sample-chip { display: inline-block; margin: 0 0 10px; padding: 4px 10px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-ink-secondary); font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; }
+.seller-card__sample-note { font-size: 12px; line-height: 1.5; color: var(--color-ink-secondary); margin: 8px 0 0; }
 .seller-card__privacy { font-size: 12px; line-height: 1.5; color: var(--color-ink-secondary); margin: 16px 0 0; }
 .contact-form__fallback { margin: 0; padding: 12px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-ink); font-size: 14px; line-height: 1.5; }
 .listing-main .listing-section { border-top: 0; padding-top: 0; }

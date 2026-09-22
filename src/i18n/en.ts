@@ -246,6 +246,7 @@ export const enCard = {
   featured: "Featured",
   verified: "Verified",
   noPhoto: "Photo coming soon",
+  sampleListing: "Sample listing",
   bedroomsShort: (n: number) => `${n} bed`,
   bathrooms: (n: number) => `${n} ${n === 1 ? "bath" : "baths"}`,
   area: (m2: number) => `${m2} m²`,
@@ -963,6 +964,8 @@ export const enListing = {
   locationTitle: "Approximate location",
 
   sellerFallback: (brand: string) => `Listed on ${brand}`,
+  sampleListing: "Sample listing",
+  sampleNote: "This is a sample listing: the property, photos and details are examples, not a real offer.",
   sellerVerified: "Verified",
   sellerKindAgency: "Agency",
   sellerKindAgent: "Agent",

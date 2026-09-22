@@ -1020,6 +1020,8 @@ export const esCard = {
   // agencies.isVerified) — never listings.isVerified, see ListingCard.tsx.
   verified: "Verificado",
   noPhoto: "Foto próximamente",
+  // Cover is a seed:sample-photos demo image (isSamplePhoto).
+  sampleListing: "Aviso de muestra",
   bedroomsShort: (n: number) => `${n} dorm.`,
   bathrooms: (n: number) => `${n} ${n === 1 ? "baño" : "baños"}`,
   area: (m2: number) => `${m2} m²`,
@@ -1781,6 +1783,8 @@ export const esListing = {
   locationTitle: "Ubicación aproximada",
 
   sellerFallback: (brand: string) => `Publicado en ${brand}`,
+  sampleListing: "Aviso de muestra",
+  sampleNote: "Este aviso es contenido de muestra: la propiedad, las fotos y los datos son ejemplos, no una oferta real.",
   sellerVerified: "Verificado",
   sellerKindAgency: "Inmobiliaria",
   sellerKindAgent: "Agente",

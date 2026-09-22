@@ -11,6 +11,15 @@ export function isPlaceholderPhoto(key: string | null | undefined): boolean {
   return !key || /picsum\.photos/i.test(key);
 }
 
+/**
+ * A demo photo from `seed:sample-photos` (public/img/sample/listings/). Its
+ * listing is demo content, so the card and the detail page mark it as a
+ * sample rather than let a visitor read it as a real offer.
+ */
+export function isSamplePhoto(key: string | null | undefined): boolean {
+  return !!key && key.includes("/img/sample/listings/");
+}
+
 /** Icon shown on the "photo coming soon" placeholder, per property type. */
 export const TYPE_ICON: Record<PropertyType, string> = {
   casa: "🏠",
