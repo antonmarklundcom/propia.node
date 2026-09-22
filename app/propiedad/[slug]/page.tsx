@@ -191,14 +191,9 @@ export default async function ListingPage({ params }: Params) {
       ? formatUsd(Number(listing.priceUsd) / Number(area), "en-US")
       : null;
   const showForeignerBox = foreignerBox(vertical.key);
-  // Guide §5: "estimated closing costs at this price" — the same 3–5% band
-  // the home facts strip cites, applied to this listing's own price. Marked
-  // "(verify before launch)" like every other figure this door hasn't
-  // sourced yet — see the PR description.
-  const closingCostsEstimate =
-    showForeignerBox && listing.operation === "venta"
-      ? `${formatUsd(Number(listing.priceUsd) * 0.03, "en-US")}–${formatUsd(Number(listing.priceUsd) * 0.05, "en-US")}`
-      : null;
+  // Closing costs are named but never estimated (plan 2026-09-22 A6): the
+  // 3–5% band had no source. The buyer is told to get the figure in writing.
+  const showClosingCosts = showForeignerBox && listing.operation === "venta";
   const origin = await listingCanonicalOrigin();
   const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
@@ -454,11 +449,11 @@ export default async function ListingPage({ params }: Params) {
                   <div className="foreigner-box__label">{d.guideEn.foreignerBoxTitleStatusLabel}</div>
                   <div className="foreigner-box__value">{d.guideEn.foreignerBoxTitleStatusValue}</div>
                 </div>
-                {closingCostsEstimate && (
+                {showClosingCosts && (
                   <div>
                     <div className="foreigner-box__label">{d.guideEn.foreignerBoxCostsLabel}</div>
                     <div className="foreigner-box__value">
-                      {d.guideEn.foreignerBoxCostsValue(closingCostsEstimate)}
+                      {d.guideEn.foreignerBoxCostsValue}
                     </div>
                   </div>
                 )}

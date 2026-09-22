@@ -8,10 +8,10 @@
  * Public guide queries currently do not filter by locale, so the shared
  * index still mixes languages; locale filtering is outside this script.
  *
- * Every rate, fee, timeline and legal claim in the body below is a
- * placeholder pending a real source, marked "(verify before launch)" per
- * build-prompt.md's explicit instruction for these three pages — do not
- * remove the markers without actually sourcing the figure.
+ * No rate, fee, timeline or legal claim is stated without a source (plan
+ * 2026-09-22 A6): the "(verify before launch)" placeholders were replaced by
+ * what is verifiable and by the questions to ask the notary, the agent or
+ * Migraciones. Put figures back only with a source the founder signs.
  *
  * Idempotent: upsert by slug, so re-running never duplicates.
  *
@@ -42,23 +42,25 @@ const GUIDES: GuideSeed[] = [
     title: "How buying property in Paraguay works",
     excerpt:
       "The five-step process a foreign buyer goes through, from choosing a property to registration and handover.",
-    body: `Foreigners can own land and homes outright in Paraguay in most cases (verify before launch — confirm any category of restricted rural or border-zone land with a local attorney before publishing this as unconditional). Purchases are priced and paid in US dollars, and title passes by public deed before a notary (escribano) and is registered with the Registro Público (Public Registry).
+    body: `Foreigners can buy and own property in Paraguay in their own name. The transfer is formalised by public deed (escritura pública) before a notary (escribano) and then registered. Some land can carry extra rules, so ask the notary about the specific property before you commit.
+
+Every listing on this site shows its price in the currency the seller chose, US dollars or guaraníes. Agree the currency and the payment method with the seller and the notary in writing.
 
 ## The five steps
 
-1. **Choose and verify.** Find the property and verify the basic facts of its title with the seller or agency.
-2. **Offer and reservation.** A price is agreed and a reservation is signed, typically with a deposit (verify before launch — confirm typical deposit percentage).
-3. **Due diligence on title.** Your notary or attorney checks the title against the Registro Público — liens, boundary disputes and ownership history. Typical time: 2–4 weeks (verify before launch).
-4. **Public deed before a notary.** Both parties sign the escritura pública before an escribano, who is a public official in Paraguay's system, not merely a private notary. Typical time: one day for the signing itself (verify before launch).
-5. **Registration and handover.** The notary files the deed for registration and coordinates key handover. Typical time: 2–6 weeks (verify before launch).
+1. **Choose and verify.** Find the property and ask the seller or agent for the basic facts of its title.
+2. **Offer and reservation.** A price is agreed and a reservation is signed. Ask what deposit is expected and under which conditions it is returned, and get it in writing.
+3. **Due diligence on title.** Your notary or attorney checks the title with the Registro Público (Public Registry): liens, boundaries and ownership history. Ask the notary how long this will take for your property.
+4. **Public deed before a notary.** Both parties sign the escritura pública before the escribano. The notary sets the date.
+5. **Registration and handover.** The notary files the deed for registration and coordinates the handover. Ask the notary for the expected timeline.
 
-## What you need before you start
+## Questions to ask your notary before you start
 
-- A cédula (Paraguayan ID) is not always required to buy — a passport is often sufficient, but confirm with your notary (verify before launch).
-- If you cannot be present in person, a power of attorney (poder) can authorise someone to sign on your behalf (verify before launch — confirm the notarisation/apostille requirements for a POA executed abroad).
-- Funds are typically sent by international bank transfer to a Paraguayan account or the notary's escrow (verify before launch).
+- Does my purchase need a cédula (Paraguayan ID), or is my passport enough?
+- If I cannot be there in person, what must a power of attorney (poder) signed abroad contain, and does it need an apostille?
+- How and to which account should the money be sent? Never send money to an account you have not confirmed with the notary directly.
 
-> This page is a general orientation, not legal advice. Engage a Paraguayan attorney or escribano before signing anything, and verify every figure above against current law before relying on it.
+> This page is a general orientation, not legal advice. Engage a Paraguayan attorney or escribano before signing anything.
 
 See also: [Costs and taxes when buying in Paraguay](/guias/costs-and-taxes-buying-in-paraguay), [Residency in Paraguay](/guias/residency-in-paraguay).`,
   },
@@ -66,25 +68,24 @@ See also: [Costs and taxes when buying in Paraguay](/guias/costs-and-taxes-buyin
     slug: "costs-and-taxes-buying-in-paraguay",
     title: "Costs and taxes when buying in Paraguay",
     excerpt:
-      "What a buyer typically pays on top of the purchase price, and the territorial tax system foreign owners should understand.",
-    body: `Total purchase costs on top of the agreed price are typically in the range of 3–5% of the property's value (verify before launch — confirm current rates before publishing this as fact).
+      "What to ask for on top of the purchase price, and who can tell you the real figures.",
+    body: `On top of the agreed price, a buyer usually pays closing costs: taxes on the transfer, the notary's fees and registration. The amounts depend on the property and on how the deal is structured, so get them in writing before you sign anything.
 
-## Typical closing costs
+## Closing costs: what to ask for
 
-- Transfer tax: buyer, ≈ 1.5–2% (verify before launch)
-- Notary fees: buyer, ≈ 1–3% (verify before launch)
-- Registration: buyer, ≈ 0.5–1% (verify before launch)
-- Agent commission: seller (typically), ≈ 3–5% (verify before launch)
+- **Transfer taxes and registration.** Ask the notary for a written breakdown for your specific property.
+- **Notary fees.** Ask the notary for a written quote before the due diligence starts.
+- **Agent commission.** Ask the agent who pays it and how much, and agree it in writing before you visit.
 
 ## Ongoing taxes
 
-Paraguay runs a territorial tax system — income earned outside Paraguay is generally not taxed here (verify before launch). Personal income tax (IRP) applies at a flat rate around 10% on Paraguay-source income above a threshold (verify before launch — confirm current rate and threshold). Property owners also pay an annual municipal real-estate tax (impuesto inmobiliario), assessed on the cadastral value rather than market value (verify before launch — confirm current rate).
+Owning property in Paraguay comes with ongoing taxes, and your own income tax position depends on where you live and where your income comes from. Ask a Paraguayan accountant before you buy, and ask the municipality or the notary about the yearly property tax for the specific property.
 
 ## Opening a bank account
 
-Foreign buyers can generally open an account as a foreigner, though requirements (proof of address, minimum deposit, in-person visit) vary by bank (verify before launch).
+Requirements differ from bank to bank. Ask the bank which documents it needs from a foreigner, and whether you must be there in person, before you travel.
 
-> This page is a general orientation, not tax or legal advice. Verify every rate above with a Paraguayan accountant or attorney before relying on it.
+> This page is a general orientation, not tax or legal advice. Confirm every figure with a Paraguayan accountant or attorney before relying on it.
 
 See also: [How buying property in Paraguay works](/guias/buying-property-in-paraguay), [Residency in Paraguay](/guias/residency-in-paraguay).`,
   },
@@ -93,24 +94,28 @@ See also: [How buying property in Paraguay works](/guias/buying-property-in-para
     title: "Residency in Paraguay for property buyers",
     excerpt:
       "Temporary and permanent residency paths, and what buying property does and doesn't do for your immigration status.",
-    body: `Buying property in Paraguay does not by itself grant residency (verify before launch — confirm whether any investment-linked residency category currently exists). Residency is a separate application, though many buyers pursue both around the same time.
+    body: `Residency is a separate process from buying property. Treat them as two projects: the notary handles the purchase, and the migration office (Dirección General de Migraciones) or an immigration attorney handles residency.
 
-## Temporary to permanent
+## Questions to ask about residency
 
-Paraguay's residency process generally runs temporary → permanent, with specific requirements at each stage (verify before launch — confirm current requirements, minimum deposit amounts and processing times with an immigration attorney before publishing any figure as current). A police-clearance certificate from your home country and a local cédula application are typically part of the process (verify before launch).
+- Which residency category fits my situation, and what are its current requirements?
+- Which documents from my home country do I need, and do they need an apostille or a translation?
+- How long does the process take today, and do I need to be in Paraguay for any step?
+
+Requirements change, so confirm them with Migraciones or an immigration attorney before you plan around them.
 
 ## What is a cédula?
 
-The cédula de identidad is Paraguay's national ID document. It is not always required to buy property, but it is generally required to formalise residency, open certain accounts and register a vehicle (verify before launch).
+The cédula de identidad is the Paraguayan identity document. Ask your notary whether your purchase needs one, and ask Migraciones how and when you can apply for it.
 
 ## Relocation basics
 
-- **Banking.** Opening an account as a foreigner is generally possible; requirements vary by bank (verify before launch).
-- **Schools.** Asunción and the surrounding metro area have several bilingual (Spanish/English) private schools (verify before launch — confirm current list and admissions requirements).
-- **Healthcare.** Paraguay has both public and private healthcare; most expatriates use private clinics and private insurance (verify before launch — confirm current private insurance costs).
-- **Moving.** Import rules for household goods and vehicles brought in as part of a relocation vary and change; confirm with a licensed customs broker before shipping anything (verify before launch).
+- **Banking.** Ask the bank which documents it needs from a foreigner before you travel.
+- **Schools.** Contact schools directly for current programmes, languages and admission rules.
+- **Healthcare.** Compare private health plans and what they cover before you move.
+- **Moving.** Rules for bringing household goods and vehicles change; ask a licensed customs broker before you ship anything.
 
-> This page is a general orientation, not immigration advice. Residency law and requirements change — verify every claim above with a Paraguayan immigration attorney before relying on it.
+> This page is a general orientation, not immigration advice. Confirm every step with Migraciones or a Paraguayan immigration attorney before relying on it.
 
 See also: [How buying property in Paraguay works](/guias/buying-property-in-paraguay), [Costs and taxes when buying in Paraguay](/guias/costs-and-taxes-buying-in-paraguay).`,
   },
