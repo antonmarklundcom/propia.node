@@ -545,6 +545,26 @@ body {
   opacity: 0.45;
 }
 
+/* One line on a phone (F-b, 2026-09-22): the label and the full sentence took
+   ~130 px above the header at 390 px. The short line states the same two facts
+   and is never hidden, so the notice still shows on first load. */
+.site-notice__inner--short {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .site-notice__inner--full {
+    display: none;
+  }
+  .site-notice__inner--short {
+    display: block;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+}
+
 /* ---- Site header -------------------------------------------------------- */
 /* Dark, translucent over whatever the page starts with (usually the hero
    photo), gold hairline instead of a grey border. Nav is uppercase micro-type
