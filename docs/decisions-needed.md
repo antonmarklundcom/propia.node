@@ -73,3 +73,24 @@ result (including drafts) without changing panel queries; dismiss the checklist
 for the current page visit without storing account data; show R2 readiness copy
 before upload using the existing server predicate, retaining all upload gates.
 Messaging/OTP readiness indicators and translation-status UI are out of scope.
+
+## 2026-09-22 — Facts for the English door (A6, needs the founder)
+
+PR "A6: remove unsourced legal and cost claims" replaced every "(verify before
+launch)" placeholder on realestateinparaguay.com (home dictionary, foreigner
+box on `/propiedad`, and the three guides in `scripts/seed-guias-en.ts`) with
+wording that states no rate, fee, timeline or legal category. To put real
+figures back, the founder supplies, from a lawyer or escribano, in writing:
+
+1. Whether foreign ownership has exceptions (rural, border zone) and the wording to use.
+2. The escribanía cost band (transfer taxes, notary fees, registration) and who pays each.
+3. Typical deposit, due-diligence, deed and registration timelines.
+4. Who answers English enquiries (the listing agent, or the portal forwards them).
+5. Residency: whether any category is linked to buying property.
+
+**Separate, also the founder's:** the English footer says "`<brand>` is a service
+of EAS", and the Spanish peer says "es un servicio de EAS". The entity is not
+registered yet (about a month away), and "EAS" alone names a company type,
+not a company. Decide the exact legal line to show until then (for example the
+brand only) and after registration (the full registered name). Not changed in
+code, because it is a statement of fact to visitors.

@@ -32,6 +32,9 @@ export const tokens = {
     link: "#8A6626",
     linkHover: "#6B4F1C",
     whatsapp: "#1FAC54", // floating button only; never repurposed
+    // White-text WhatsApp buttons (seller card, mobile bar): #1FAC54 under
+    // white text is 2.96:1; this darker green is 5.0:1 (A4, 2026-09-22).
+    whatsappStrong: "#15803D",
     ink: "#16211B",
     inkSecondary: "#56605A",
     inkMuted: "#7D857F",
@@ -113,7 +116,8 @@ export const tokens = {
     fg: "rgba(255,255,255,0.72)",
     fgStrong: "#fff",
     fgMuted: "rgba(255,255,255,0.5)",
-    fgFaint: "rgba(255,255,255,0.45)",
+    // A4: 0.45 measured 4.43:1 on the footer green at 11.5px; 0.6 clears AA.
+    fgFaint: "rgba(255,255,255,0.6)",
     taglineColor: "rgba(255,255,255,0.62)",
     hairline: "rgba(255,255,255,0.12)",
   },
@@ -125,7 +129,8 @@ export const tokens = {
    * only means to retheme its own label color must not also repaint every
    * other door's (PR3 review, round 2). Same literal the label always had.
    */
-  siteNotice: { labelColor: "#8C6829" },
+  // A4 (2026-09-22): #8C6829 measured 4.36:1 on cream at 10px; #7A5A20 is 5.7:1.
+  siteNotice: { labelColor: "#7A5A20" },
   /** Photo overlays. Text sits on the image; these keep it readable. */
   overlay: {
     hero: "linear-gradient(95deg, rgba(9,20,14,0.96) 0%, rgba(9,20,14,0.84) 34%, rgba(9,20,14,0.34) 62%, rgba(9,20,14,0.42) 100%)",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatPrice, formatCuota, formatUsd, formatSqft, imageThumbUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
-import { isPlaceholderPhoto } from "@/lib/photos";
+import { isPlaceholderPhoto, isSamplePhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
 import { dict, currentLocale } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
@@ -112,6 +112,9 @@ export async function ListingCard({ card }: { card: Card }) {
         {!cover && (
           <span className="listing-card__nophoto">{t.noPhoto}</span>
         )}
+        {isSamplePhoto(card.coverKey) && (
+          <span className="listing-card__sample">{t.sampleListing}</span>
+        )}
       </div>
 
       <div className="listing-card__body">
@@ -181,6 +184,9 @@ function FramedPillCard({
           <span className="listing-card__nophoto listing-card__nophoto--framed">
             {t.noPhoto}
           </span>
+        )}
+        {isSamplePhoto(card.coverKey) && (
+          <span className="listing-card__sample">{t.sampleListing}</span>
         )}
       </div>
       <div className="listing-card__framed-body">
@@ -287,6 +293,9 @@ function FramedFactCard({
           <span className="listing-card__nophoto listing-card__nophoto--framed">
             {t.noPhoto}
           </span>
+        )}
+        {isSamplePhoto(card.coverKey) && (
+          <span className="listing-card__sample">{t.sampleListing}</span>
         )}
       </div>
       <div className="listing-card__framed-body">

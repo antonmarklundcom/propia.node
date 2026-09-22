@@ -18,7 +18,7 @@ import {
   agencyUrl,
 } from "@/lib/urls";
 import { formatPrice, formatCuota, formatUsd, formatSqft, imageUrl, imageThumbUrl } from "@/lib/format";
-import { isPlaceholderPhoto } from "@/lib/photos";
+import { isPlaceholderPhoto, isSamplePhoto } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import {
@@ -191,14 +191,9 @@ export default async function ListingPage({ params }: Params) {
       ? formatUsd(Number(listing.priceUsd) / Number(area), "en-US")
       : null;
   const showForeignerBox = foreignerBox(vertical.key);
-  // Guide §5: "estimated closing costs at this price" — the same 3–5% band
-  // the home facts strip cites, applied to this listing's own price. Marked
-  // "(verify before launch)" like every other figure this door hasn't
-  // sourced yet — see the PR description.
-  const closingCostsEstimate =
-    showForeignerBox && listing.operation === "venta"
-      ? `${formatUsd(Number(listing.priceUsd) * 0.03, "en-US")}–${formatUsd(Number(listing.priceUsd) * 0.05, "en-US")}`
-      : null;
+  // Closing costs are named but never estimated (plan 2026-09-22 A6): the
+  // 3–5% band had no source. The buyer is told to get the figure in writing.
+  const showClosingCosts = showForeignerBox && listing.operation === "venta";
   const origin = await listingCanonicalOrigin();
   const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
@@ -246,6 +241,7 @@ export default async function ListingPage({ params }: Params) {
     .concat([{ name: title, url: canonical }]);
 
   const realImages = images.filter((im) => !isPlaceholderPhoto(im.r2Key));
+  const isSample = isSamplePhoto(images[0]?.r2Key);
 
   // Approximate location only — barrio centroid, else city centroid. Never
   // the listing's own lat/lng (schema.ts: precise coords are "never shown
@@ -390,6 +386,7 @@ export default async function ListingPage({ params }: Params) {
 
       <header className="listing-header">
         <div>
+          {isSample && <span className="listing-sample-chip">{t.sampleListing}</span>}
           <h1 className="listing-title">{title}</h1>
           {(barrio || city) && <p className="listing-header__location"><Glyph name="pin" /> {[barrio?.name, city?.name].filter(Boolean).join(", ")}</p>}
         </div>
@@ -452,11 +449,11 @@ export default async function ListingPage({ params }: Params) {
                   <div className="foreigner-box__label">{d.guideEn.foreignerBoxTitleStatusLabel}</div>
                   <div className="foreigner-box__value">{d.guideEn.foreignerBoxTitleStatusValue}</div>
                 </div>
-                {closingCostsEstimate && (
+                {showClosingCosts && (
                   <div>
                     <div className="foreigner-box__label">{d.guideEn.foreignerBoxCostsLabel}</div>
                     <div className="foreigner-box__value">
-                      {d.guideEn.foreignerBoxCostsValue(closingCostsEstimate)}
+                      {d.guideEn.foreignerBoxCostsValue}
                     </div>
                   </div>
                 )}
@@ -597,6 +594,7 @@ export default async function ListingPage({ params }: Params) {
             locale={locale}
           />
           <p className="seller-card__privacy">{t.contactPrivacy}</p>
+          {isSample && <p className="seller-card__sample-note">{t.sampleNote}</p>}
           {showForeignerBox && (
             <p className="seller-card__reply-note">{d.guideEn.replyInEnglish}</p>
           )}

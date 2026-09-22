@@ -9,8 +9,6 @@ import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingBrowser, listingPage } from "@/components/ListingBrowser";
 import { facetSearchParams, hasListingUserParams } from "@/lib/facets";
-import { SearchBar } from "@/components/SearchBar";
-import { listCities } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
 import { getOperationHubData } from "@/lib/directory-queries";
 import { categoryUrl, parseOperation, operationSlug, typePlural } from "@/lib/urls";
@@ -77,10 +75,9 @@ export default async function OperationHubPage({ params, searchParams }: Params)
   // The door's own hard filters narrow this rail like every other listing
   // query on the domain (VerticalConfig.filters).
   const vertical = await currentVertical();
-  const [origin, hub, cities] = await Promise.all([
+  const [origin, hub] = await Promise.all([
     siteOrigin(),
     getOperationHubData(op, vertical),
-    listCities(),
   ]);
 
   // National type links stay national (plan 2026-09-22 A7): the counts are
@@ -101,23 +98,16 @@ export default async function OperationHubPage({ params, searchParams }: Params)
         ]}
       />
 
-      <section className="hub-hero" data-op={op}>
-        <div className="hub-hero__inner">
-          <h1 className="hub-hero__title">{copy.h1}</h1>
-          <p className="hub-hero__lead">{copy.lead}</p>
-          {/* The bar opens on THIS hub's operation, not the site default: a
-              visitor on /alquiler who saw "Comprar" preselected was one wrong
-              click from the wrong hub. The bar has no short-term rung, so the
-              temporary-rental hub opens on "alquiler". */}
-          <SearchBar
-            cities={cities}
-            locale={locale}
-            defaultOperation={op === "venta" ? "venta" : "alquiler"}
-          />
-        </div>
-      </section>
-
-      <div className="listing-hub-results"><ListingBrowser basePath={`/${operationSlug(op)}`} query={{ operation: op, vertical }} searchParams={await searchParams} /></div>
+      {/* Compact header, no hero and no SearchBar (plan 2026-09-22 A1): the
+          sidebar already is the search, and every pixel above the first card
+          costs a mobile visitor. H1 and lead keep their text for SEO. */}
+      <div className="listing-hub-results">
+        <header className="hub-header">
+          <h1 className="hub-header__title">{copy.h1}</h1>
+          <p className="hub-header__lead">{copy.lead}</p>
+        </header>
+        <ListingBrowser basePath={`/${operationSlug(op)}`} query={{ operation: op, vertical }} searchParams={await searchParams} />
+      </div>
 
       {hub.cities.length > 0 && (
         <Section

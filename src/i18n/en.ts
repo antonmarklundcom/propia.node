@@ -246,6 +246,7 @@ export const enCard = {
   featured: "Featured",
   verified: "Verified",
   noPhoto: "Photo coming soon",
+  sampleListing: "Sample listing",
   bedroomsShort: (n: number) => `${n} bed`,
   bathrooms: (n: number) => `${n} ${n === 1 ? "bath" : "baths"}`,
   area: (m2: number) => `${m2} m²`,
@@ -448,11 +449,12 @@ export const enVender = {
  * additions. Tone per guide §1: "plain declarative English, facts before
  * adjectives, numbers with sources... never stunning, exclusive, paradise."
  *
- * Every rate, fee, timeline and legal claim below is a placeholder pending a
- * real source — marked "(verify before launch)" rather than stated as fact,
- * per build-prompt.md's explicit instruction and the lesson CLAUDE.md
- * already records about a fabricated "48h" figure that shipped once. None of
- * these numbers should reach a visitor unverified; see the PR description.
+ * No rate, fee, timeline or legal claim is stated here without a source
+ * (plan 2026-09-22 A6). The "(verify before launch)" placeholders that were
+ * live on the English door are replaced by what is verifiable: foreigners
+ * can buy and own property in their own name, a notary (escribano)
+ * formalises the transfer, and every number comes from the agent or the
+ * notary in writing. Put figures back only with a source the founder signs.
  */
 export const enGuideEn = {
   chromeNav: [
@@ -519,23 +521,23 @@ export const enGuideEn = {
   ],
   footerVersionEs: "Versión en español",
   footerTagline:
-    "A guide-first portal for buying property in Paraguay from abroad — freehold ownership, USD pricing and the public-deed process, alongside real listings.",
+    "A guide-first portal for buying property in Paraguay from abroad: listings with their currency shown, and the public-deed process explained step by step.",
   footerContactUs: "Contact us",
   footerAddress: "Asunción, Paraguay",
   footerLegalLine: (brand: string) =>
     `${brand} is a service of EAS. Published reference prices and cost estimates are indicative only and do not constitute legal, tax or financial advice.`,
   heroKicker: "Property in Paraguay · For international buyers",
   heroTitleLead: "Buy property in Paraguay. ",
-  heroTitleAccent: "Freehold",
-  heroTitleTail: ", in US dollars, from abroad.",
+  heroTitleAccent: "In your own name",
+  heroTitleTail: ", from abroad.",
   heroStrap:
-    "Foreigners can own land and homes outright; purchases are priced and paid in USD; title passes by public deed before a notary and is registered nationally.",
+    "Foreigners can buy and own property in Paraguay in their own name. A notary (escribano) formalises the transfer by public deed. Every listing shows its price in the currency the seller chose: US dollars or guaraníes.",
   heroGuideLink: "Or start with the guide: How buying works →",
   factsStrip: [
-    { numeral: "Freehold", label: "Foreign ownership allowed (verify before launch)" },
-    { numeral: "USD", label: "Priced and paid in US dollars" },
-    { numeral: "≈ 3–5%", label: "Total purchase costs (verify before launch)" },
-    { numeral: "Public deed", label: "Notarised and registered" },
+    { numeral: "Own name", label: "Foreigners can buy and own property" },
+    { numeral: "US$ / Gs", label: "Every price shows its currency" },
+    { numeral: "In writing", label: "Ask for the full cost breakdown before signing" },
+    { numeral: "Public deed", label: "Formalised by a notary (escribano)" },
   ],
   newWeekTitle: "Latest listings",
   newWeekMore: "See all →",
@@ -544,17 +546,17 @@ export const enGuideEn = {
   whyCards: [
     {
       title: "Ownership",
-      text: "Freehold for foreigners in most cases — some rural and border-zone land carries restrictions (verify before launch).",
+      text: "Foreigners can buy and own property in their own name. Ask the notary whether any extra rules apply to the specific land before you commit.",
       href: "/guias/buying-property-in-paraguay",
     },
     {
       title: "Cost of living and taxes",
-      text: "A territorial tax system, with a flat 10% rate (verify before launch).",
+      text: "What you pay depends on the property and on your own situation. Read the guide, then confirm with an accountant or the notary.",
       href: "/guias/costs-and-taxes-buying-in-paraguay",
     },
     {
       title: "Residency",
-      text: "Temporary through permanent — requirements and timelines (verify before launch).",
+      text: "Residency is a separate process from buying. Read the guide and confirm the current requirements with the migration office (Migraciones).",
       href: "/guias/residency-in-paraguay",
     },
   ],
@@ -569,46 +571,46 @@ export const enGuideEn = {
   howTitle: "How buying works",
   howSteps: [
     { title: "Choose and verify", text: "Find the property and verify the basic facts of its title.", who: "Buyer", time: "Varies" },
-    { title: "Offer and reservation", text: "A price is agreed and a reservation is signed.", who: "Buyer and seller", time: "1–2 weeks (verify before launch)" },
-    { title: "Due diligence on title", text: "Verification with the Registro Público (Public Registry).", who: "Notary (escribano)", time: "2–4 weeks (verify before launch)" },
-    { title: "Public deed before a notary", text: "Signing before an escribano.", who: "Notary (escribano)", time: "1 day (verify before launch)" },
-    { title: "Registration and handover", text: "Registration and key handover.", who: "Notary (escribano)", time: "2–6 weeks (verify before launch)" },
+    { title: "Offer and reservation", text: "A price is agreed and a reservation is signed.", who: "Buyer and seller", time: "Agreed with the seller" },
+    { title: "Due diligence on title", text: "Verification with the Registro Público (Public Registry).", who: "Notary (escribano)", time: "Ask the notary" },
+    { title: "Public deed before a notary", text: "Signing before an escribano.", who: "Notary (escribano)", time: "Set by the notary" },
+    { title: "Registration and handover", text: "Registration and key handover.", who: "Notary (escribano)", time: "Ask the notary" },
   ],
   costsTableTitle: "Costs of buying",
-  costsTableHead: ["Item", "Who pays", "Typical %"],
+  costsTableHead: ["Item", "Who pays", "How to get the figure"],
   costsRows: [
-    { item: "Transfer tax", who: "Buyer", typical: "≈ 1.5–2% (verify before launch)" },
-    { item: "Notary fees", who: "Buyer", typical: "≈ 1–3% (verify before launch)" },
-    { item: "Registration", who: "Buyer", typical: "≈ 0.5–1% (verify before launch)" },
-    { item: "Agent commission", who: "Seller (typically)", typical: "≈ 3–5% (verify before launch)" },
+    { item: "Transfer taxes", who: "Confirm with the notary", typical: "In the notary's written breakdown" },
+    { item: "Notary fees", who: "Confirm with the notary", typical: "Ask for a written quote" },
+    { item: "Registration", who: "Confirm with the notary", typical: "In the notary's written breakdown" },
+    { item: "Agent commission", who: "Agree it in writing", typical: "Ask the agent before you visit" },
   ],
   relocationTitle: "Relocation",
   relocationCards: [
-    { title: "Moving", text: "What to bring and how to enter the country (verify before launch).", href: "/guias/residency-in-paraguay" },
-    { title: "Banking", text: "Opening an account as a foreigner (verify before launch).", href: "/guias/costs-and-taxes-buying-in-paraguay" },
+    { title: "Moving", text: "Entry and residency rules change. Read the guide and check them with Migraciones.", href: "/guias/residency-in-paraguay" },
+    { title: "Banking", text: "Ask the bank which documents it needs from a foreigner before you travel.", href: "/guias/costs-and-taxes-buying-in-paraguay" },
     { title: "Schools", text: "Bilingual options in and around Asunción.", href: "/guias/residency-in-paraguay" },
-    { title: "Healthcare", text: "Private and public coverage (verify before launch).", href: "/guias/residency-in-paraguay" },
+    { title: "Healthcare", text: "Compare private health plans before you move.", href: "/guias/residency-in-paraguay" },
   ],
   faqTitle: "Frequently asked questions",
   faqSubtitle: (brand: string) => `What you need to know before buying, from ${brand}.`,
   faq: [
-    { q: "Can foreigners own land in Paraguay?", a: "Yes, freehold in most cases (verify before launch)." },
-    { q: "Do I need to be there in person?", a: "Not always — a power of attorney can authorise someone to sign on your behalf (verify before launch)." },
-    { q: "How do I send money?", a: "International bank transfer to a Paraguayan account or the notary's escrow (verify before launch)." },
-    { q: "What is a cédula?", a: "The Paraguayan national ID document; not always required to buy (verify before launch)." },
+    { q: "Can foreigners own land in Paraguay?", a: "Foreigners can buy and own property in their own name. Ask the notary whether any extra rules apply to the specific land." },
+    { q: "Do I need to be there in person?", a: "Ask the notary. A power of attorney (poder) is one way to let someone sign for you; the notary tells you what it must contain." },
+    { q: "How do I send money?", a: "Agree the payment method with the notary before signing, and never send money to an account you have not confirmed with them directly." },
+    { q: "What is a cédula?", a: "The Paraguayan identity document. Ask the notary whether your purchase needs one or whether your passport is enough." },
   ],
   cardPerM2: (v: string) => `${v}/m²`,
   cardSqftArea: (sqft: string, m2: string) => `${sqft} sq ft (${m2} m²)`,
   foreignerBoxTitle: "Buying this property as a foreigner",
   foreignerBoxOwnershipLabel: "Ownership type",
-  foreignerBoxOwnershipValue: "Freehold (verify before launch)",
+  foreignerBoxOwnershipValue: "Foreigners can own in their own name; ask the notary about this land",
   foreignerBoxTitleStatusLabel: "Title status",
   foreignerBoxTitleStatusValue: "Verify with the Registro Público",
-  foreignerBoxCostsLabel: "Estimated closing costs",
-  foreignerBoxCostsValue: (v: string) => `≈ ${v} (verify before launch)`,
+  foreignerBoxCostsLabel: "Closing costs",
+  foreignerBoxCostsValue: "Ask the agent and the notary for a written breakdown before signing",
   foreignerBoxNextStepLabel: "Next step",
   foreignerBoxNextStepValue: "Contact the seller and request a title verification.",
-  replyInEnglish: "We reply in English",
+  replyInEnglish: "Your enquiry goes to this listing's agent. You can write in English.",
 } as const;
 
 /** Home page. */
@@ -963,6 +965,8 @@ export const enListing = {
   locationTitle: "Approximate location",
 
   sellerFallback: (brand: string) => `Listed on ${brand}`,
+  sampleListing: "Sample listing",
+  sampleNote: "This is a sample listing: the property, photos and details are examples, not a real offer.",
   sellerVerified: "Verified",
   sellerKindAgency: "Agency",
   sellerKindAgent: "Agent",
