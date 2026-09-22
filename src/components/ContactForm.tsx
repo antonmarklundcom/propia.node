@@ -6,15 +6,13 @@ import { getDictionary, type Locale } from "@/i18n";
 import { waLink, waPhone } from "@/lib/wa";
 
 /**
- * Full contact form for a listing (ARCHITECTURE.md §3 sticky WhatsApp
- * contact, extended to match the form-first pattern sellers expect).
+ * Shared inquiry form; the listing seller card leads with WhatsApp when available.
  * Records the lead through /api/leads (MySQL first, then GHL) and then
  * hands the visitor a WhatsApp link with the same message — a lead is
  * captured even if the visitor never sends the WhatsApp message.
  *
- * Success is only claimed when the POST actually succeeded (res.ok) or the
- * seller is reachable by WhatsApp anyway; a total failure shows an error
- * with the WhatsApp fallback instead of a false "¡Mensaje enviado!". The
+ * Success is only claimed when res.ok. Failed capture with WhatsApp
+ * available shows a neutral fallback notice. The
  * WhatsApp continuation is a rendered <a> the visitor taps, not a
  * post-await window.open — popup blockers (iOS Safari especially) eat
  * window.open calls that don't happen synchronously in the tap handler.
@@ -51,7 +49,7 @@ export function ContactForm({
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState(prefillMessage);
   const [questions, setQuestions] = useState<string[]>([]);
-  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">(
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "fallback" | "error">(
     "idle",
   );
 
@@ -91,7 +89,7 @@ export function ContactForm({
     }
     // Without a WhatsApp fallback a failed capture means nobody got the
     // message — say so instead of lying with a success state.
-    setState(captured || waHref ? "sent" : "error");
+    setState(captured ? "sent" : waHref ? "fallback" : "error");
   }
 
   const fieldsRow = (
@@ -147,6 +145,7 @@ export function ContactForm({
             key={q}
             type="button"
             onClick={() => toggleQuestion(q)}
+            aria-pressed={questions.includes(q)}
             className={`contact-form__chip${questions.includes(q) ? " contact-form__chip--on" : ""}`}
           >
             {q}
@@ -176,7 +175,8 @@ export function ContactForm({
             : t.submitIdle}
       </button>
 
-      {state === "sent" && waHref && (
+      {state === "fallback" && <p className="contact-form__fallback" role="status">{t.fallbackText}</p>}
+      {(state === "sent" || state === "fallback") && waHref && (
         <a
           className="contact-form__submit contact-form__submit--wa"
           href={waHref}
@@ -197,7 +197,7 @@ export function ContactForm({
             deliver to. With no contact on the listing the lead lands in the
             operator's inbox instead, and promising otherwise is a lie the
             buyer can't check (audit F4). */}
-        {waHref && (
+        {waHref && state !== "fallback" && state !== "error" && (
           <span className="contact-form__note"><Glyph name="check" /> {t.directNote}</span>
         )}
         {waHref && (

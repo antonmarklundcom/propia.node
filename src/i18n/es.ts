@@ -59,7 +59,7 @@ export const esSiteNotice = {
 export const esContactForm = {
   nameLabel: "Nombre",
   namePlaceholder: "Ingresa tu nombre",
-  emailLabel: "Email",
+  emailLabel: "Email (opcional)",
   emailPlaceholder: "Ingresa tu email",
   phoneLabel: "Teléfono",
   phonePlaceholder: "981 234 567",
@@ -72,6 +72,7 @@ export const esContactForm = {
   directNote: "Tu consulta llega directamente al vendedor",
   waLinkLabel: "WhatsApp",
   phoneLinkLabel: "Ver teléfono",
+  fallbackText: "No pudimos guardar tu consulta. Podes escribirle directo por WhatsApp.",
 } as const;
 
 /** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
@@ -987,6 +988,7 @@ export const esSearchBar = {
 
 /** Category page filter bar — a plain GET form, no client JS. */
 export const esFilters = {
+  viewResults: (n: string) => `Ver ${n} propiedades`, instant: "Los filtros se aplican al instante", applying: "Aplicando...",
   title: "Filtros", close: "Cerrar filtros", apply: "Aplicar filtros", loading: "Actualizando resultados?", price: "Precio en USD", type: "Tipo de propiedad", city: "Ciudad", barrio: "Barrio", remove: "Quitar", results: (n: string) => `${n} propiedades`, preset: (n: string) => `Hasta USD ${n}`,
 
   priceMinLabel: "Precio mín. (US$)",
@@ -1721,6 +1723,15 @@ export const esCategory = {
 
 /** Property detail: /propiedad/[slug]. */
 export const esListing = {
+  galleryOpen: (n: number, total: number) => `Ver foto ${n} de ${total}`,
+  galleryTitle: "Fotos de la propiedad",
+  galleryPrevious: "Foto anterior",
+  galleryNext: "Foto siguiente",
+  galleryClose: "Cerrar visor",
+  askWhatsapp: "Consultar por WhatsApp",
+  contactOr: "o",
+  contactPrivacy: "Tus datos van solo a quien publica este aviso",
+
   metaNotFound: "Propiedad no encontrada",
   metaTitle: (title: string, price: string) => `${title} — ${price}`,
   ogTitle: (title: string, brand: string) => `${title} — ${brand}`,
@@ -1784,6 +1795,7 @@ export const esListing = {
   moreInCity: (city: string) => `Todas las propiedades en ${city}`,
 
   ctaBarWhatsapp: "Contactar por WhatsApp",
+  ctaBarWhatsappShort: "WhatsApp",
   ctaBarConsult: "Consultar",
   ctaBarCall: "Llamar",
 

@@ -36,11 +36,12 @@ import { languageAlternates } from "@/lib/alternates";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
-import { showCuota, stickyMobileContactBar, secondaryAreaUnit, foreignerBox } from "@/design/sections";
+import { contactPrimaryFirst, showCuota, stickyMobileContactBar, secondaryAreaUnit, foreignerBox } from "@/design/sections";
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink, waPhone } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
 import { Glyph, type GlyphName } from "@/components/Glyph";
+import { ListingGallery } from "@/components/ListingGallery";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
@@ -245,8 +246,6 @@ export default async function ListingPage({ params }: Params) {
     .concat([{ name: title, url: canonical }]);
 
   const realImages = images.filter((im) => !isPlaceholderPhoto(im.r2Key));
-  const visibleThumbs = realImages.slice(1, 4);
-  const extraCount = realImages.length - 1 - visibleThumbs.length;
 
   // Approximate location only — barrio centroid, else city centroid. Never
   // the listing's own lat/lng (schema.ts: precise coords are "never shown
@@ -389,54 +388,26 @@ export default async function ListingPage({ params }: Params) {
         ))}
       </nav>
 
-      <h1 className="listing-title">{title}</h1>
-
-      {/* Gallery */}
-      {realImages.length === 0 ? (
-        <div className="detail-gallery__empty">
-          <span className="listing-card__nophoto">{t.galleryEmpty}</span>
+      <header className="listing-header">
+        <div>
+          <h1 className="listing-title">{title}</h1>
+          {(barrio || city) && <p className="listing-header__location"><Glyph name="pin" /> {[barrio?.name, city?.name].filter(Boolean).join(", ")}</p>}
         </div>
-      ) : (
-        <div
-          className={`detail-gallery${visibleThumbs.length === 0 ? " detail-gallery--single" : ""}`}
-        >
-          <div className="detail-gallery__main">
-            {/* eslint-disable-next-line @next/next/no-img-element -- the LCP
-                element on the page that matters most for SEO; eager + high
-                priority so the browser fetches it before it even reaches this
-                point in the markup, instead of after CSS/JS discover it. */}
-            <img
-              className="media-cover-img"
-              src={imageUrl(realImages[0].r2Key) ?? ""}
-              alt={title}
-              loading="eager"
-              fetchPriority="high"
-            />
+        <div className="listing-price">
+          <div className="listing-price__line">
+            <span className="listing-price__amount">{formatPrice(listing, numberLocale)}</span>
+            <span className="listing-price__currency">{listing.priceCurrency === "USD" ? "USD" : "PYG"}</span>
+            {listing.operation !== "venta" && <span className="listing-price__period">{t.priceRentPeriod}</span>}
           </div>
-          {visibleThumbs.length > 0 && (
-            <div className="detail-gallery__thumbs">
-              {visibleThumbs.map((im, i) => {
-                const isLast = i === visibleThumbs.length - 1;
-                return (
-                  <div key={im.id} className="detail-gallery__thumb">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      className="media-cover-img"
-                      src={imageUrl(im.r2Key) ?? ""}
-                      alt={t.galleryThumbAlt(title, i + 2)}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    {isLast && extraCount > 0 && (
-                      <div className="detail-gallery__more">{t.galleryMore(extraCount)}</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {cuota && <span className="listing-price__secondary">{d.card.cuotaLine(cuota)}</span>}
+          {pricePerM2 && <span className="listing-price__secondary">{d.card.cardPerM2(pricePerM2)}</span>}
+          <PriceAlert locale={locale} listingPublicId={listing.publicId} listingTitle={title} leadType={leadType} />
         </div>
-      )}
+      </header>
+      <ListingGallery locale={locale} images={realImages.map((im, i) => ({
+        url: imageUrl(im.r2Key) ?? "",
+        alt: i === 0 ? title : t.galleryThumbAlt(title, i + 1),
+      }))} />
 
       <div className="listing-detail__layout">
         <div>
@@ -468,26 +439,6 @@ export default async function ListingPage({ params }: Params) {
               </li>
             )}
           </ul>
-
-          <div className="listing-price">
-            {listing.operation !== "venta" ? (
-              <>
-                <span className="listing-price__label">{t.priceRentLabel}</span>{" "}
-                <span className="listing-price__amount">{formatPrice(listing, numberLocale)}</span>
-                <span className="listing-price__period">{t.priceRentPeriod}</span>
-              </>
-            ) : (
-              <span className="listing-price__amount">{formatPrice(listing, numberLocale)}</span>
-            )}
-            {pricePerM2 && (
-              <span className="listing-price__perm2">{d.card.cardPerM2(pricePerM2)}</span>
-            )}
-            <PriceAlert locale={locale}
-              listingPublicId={listing.publicId}
-              listingTitle={title}
-              leadType={leadType}
-            />
-          </div>
 
           {showForeignerBox && (
             <div className="foreigner-box">
@@ -628,6 +579,14 @@ export default async function ListingPage({ params }: Params) {
               </div>
             </div>
           </div>
+          {!contactPrimaryFirst(vertical.key) && waHref && (
+            <>
+              <a className="seller-card__whatsapp" href={waHref} target="_blank" rel="noopener noreferrer">
+                <Glyph name="whatsapp" /> {t.askWhatsapp}
+              </a>
+              <div className="seller-card__divider"><span>{t.contactOr}</span></div>
+            </>
+          )}
           <ContactForm
             id="contacto"
             listingPublicId={listing.publicId}
@@ -637,10 +596,7 @@ export default async function ListingPage({ params }: Params) {
             variant="card"
             locale={locale}
           />
-          {/* Guide §5 "Detail page": inquiry form first (already true —
-              ContactForm's primary submit renders before its WhatsApp
-              continuation for every vertical, see contactPrimaryFirst() in
-              src/design/sections.ts), "We reply in English" second. */}
+          <p className="seller-card__privacy">{t.contactPrivacy}</p>
           {showForeignerBox && (
             <p className="seller-card__reply-note">{d.guideEn.replyInEnglish}</p>
           )}
@@ -770,6 +726,7 @@ export default async function ListingPage({ params }: Params) {
               aria-label={t.ctaBarWhatsapp}
             >
               <Glyph name="whatsapp" />
+              {t.ctaBarWhatsappShort}
             </a>
           )}
           {/* Guide §5 "Detail page" (mobile): WhatsApp + Llamar for Nórdico —

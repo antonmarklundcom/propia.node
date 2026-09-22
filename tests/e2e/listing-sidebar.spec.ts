@@ -61,8 +61,8 @@ test("GET filters work without JavaScript", async ({ browser }) => {
   await page.goto("http://localhost:" + (process.env.E2E_PORT ?? "3000") + "/venta");
   await page.locator("#precio_max").fill("50000");
   // The site uses smooth scrolling, so Playwright's scroll-into-view keeps restarting and the far-below-the-fold button never looks stable. Jump there instantly first.
-  await page.locator(".filter-bar__submit").evaluate((el) => el.scrollIntoView({ behavior: "instant", block: "center" }));
-  await page.locator(".filter-bar__submit").click();
+  await page.locator(".listing-sidebar .filter-bar__submit").evaluate((el) => el.scrollIntoView({ behavior: "instant", block: "center" }));
+  await page.locator(".listing-sidebar .filter-bar__submit").click();
   await expect(page).toHaveURL(/precio_max=50000/);
   await expect(page.locator('a.listing-card[href*="sort-fixture"]')).toHaveCount(3);
   await context.close();

@@ -310,17 +310,9 @@ export function stickyMobileContactBar(key: VerticalKey): boolean {
   return key === "inmobiliaria";
 }
 
-/**
- * Detail-page contact card affordance order: the shared `ContactForm`
- * component's primary submit ("Enviar mensaje") already renders before its
- * post-submit WhatsApp continuation for every vertical — guide §5's
- * "WhatsApp-second sidebar" requirement is already true of the current
- * component and needed no reordering. This flag exists so a future vertical
- * that wants WhatsApp first has a registry entry to flip rather than a
- * conditional inside `ContactForm`.
- */
+/** The WhatsApp action leads when a number exists, on every door. */
 export function contactPrimaryFirst(_key: VerticalKey): boolean {
-  return true;
+  return false;
 }
 
 export type ChromeVariant = "default" | "guide-en" | "rental" | "directory";
