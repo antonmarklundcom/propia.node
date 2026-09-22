@@ -94,3 +94,47 @@ registered yet (about a month away), and "EAS" alone names a company type,
 not a company. Decide the exact legal line to show until then (for example the
 brand only) and after registration (the full registered name). Not changed in
 code, because it is a statement of fact to visitors.
+
+## 2026-09-22 — National type pages (`/venta/casas`), F-f, proposal only
+
+**Today.** `/venta/casas` is a 404: `parseCategorySegments()` (`src/lib/urls.ts`)
+reads one segment as a city slug, and no city is called `casas`. Since #178 the
+national hub's type chips link to `/venta?tipo=casas`, which is correct and
+works, but every `?tipo=` URL is `noindex` by design (`hasListingUserParams`,
+pinned by `verify:facets`). So the highest-volume type searches ("casas en venta
+Paraguay", "terrenos en venta") have no indexable page on any door; only
+city-scoped pages (`/venta/asuncion/casas`) can rank.
+
+**Proposal (recommended: option A).**
+
+- **A. `/<operacion>/<tipo>` as a real category page.** In
+  `parseCategorySegments()`, a single segment that `parseTypePlural()` accepts
+  becomes `{ kind: "national-type", type }`, and everything else stays a city.
+  No city slug collides with a type plural today (checked against the local
+  `locations` table: casas, departamentos, terrenos, duplex, comerciales,
+  oficinas, depositos, quintas all return no row). A seed guard in
+  `seed:locations` would keep it that way. Canonical is itself, indexable under
+  the same `getIndexability()` rule (`MIN_INDEXABLE = 3`), listed in the
+  sitemap, hreflang derived by `languageAlternates()` like any category page,
+  breadcrumb Inicio › Venta › Casas. The hub chips then link there instead of `?tipo=`.
+- B. A distinct prefix (`/venta/tipo/casas`). No collision risk, but an uglier
+  URL and a new shape to teach every helper.
+- C. Make a lone `?tipo=` indexable. Breaks the "query strings are transient"
+  rule that `verify:facets` and the sitemap rely on. Not recommended.
+
+**What the founder decides (the rest is implementation):**
+
+1. Option A, B or C.
+2. What happens to `/venta?tipo=casas` (and the same on `/alquiler`) once the
+   clean URL exists: a **308 to `/venta/casas`** (recommended: one URL per set)
+   or keep it as a noindex filter view that canonicalises to `/venta/casas`.
+3. Terreno doors (`terreno.com.py`, `landforsaleparaguay.com`) already filter
+   every page to terrenos, so their `/venta/terrenos` would duplicate `/venta`.
+   Proposal: on those doors a national-type URL for their own type 308s to the
+   hub, and other types 404 as they do today.
+4. The English door keeps the Spanish path segments (`/venta/casas`), as it
+   does for every category page today. Localised English paths would be a
+   separate, larger change (the `rentalPath()` pattern).
+
+Size once decided: M (urls.ts, the segments page, sitemap, hub chips,
+`verify:seo`/`verify:facets` cases, one e2e). Not built.
