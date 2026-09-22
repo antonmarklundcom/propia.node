@@ -59,7 +59,7 @@ export const esSiteNotice = {
 export const esContactForm = {
   nameLabel: "Nombre",
   namePlaceholder: "Ingresa tu nombre",
-  emailLabel: "Email",
+  emailLabel: "Email (opcional)",
   emailPlaceholder: "Ingresa tu email",
   phoneLabel: "Teléfono",
   phonePlaceholder: "981 234 567",
@@ -72,6 +72,7 @@ export const esContactForm = {
   directNote: "Tu consulta llega directamente al vendedor",
   waLinkLabel: "WhatsApp",
   phoneLinkLabel: "Ver teléfono",
+  fallbackText: "No pudimos guardar tu consulta. Podes escribirle directo por WhatsApp.",
 } as const;
 
 /** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
@@ -1722,6 +1723,15 @@ export const esCategory = {
 
 /** Property detail: /propiedad/[slug]. */
 export const esListing = {
+  galleryOpen: (n: number, total: number) => `Ver foto ${n} de ${total}`,
+  galleryTitle: "Fotos de la propiedad",
+  galleryPrevious: "Foto anterior",
+  galleryNext: "Foto siguiente",
+  galleryClose: "Cerrar visor",
+  askWhatsapp: "Consultar por WhatsApp",
+  contactOr: "o",
+  contactPrivacy: "Tus datos van solo a quien publica este aviso",
+
   metaNotFound: "Propiedad no encontrada",
   metaTitle: (title: string, price: string) => `${title} — ${price}`,
   ogTitle: (title: string, brand: string) => `${title} — ${brand}`,

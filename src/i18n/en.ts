@@ -185,7 +185,7 @@ export const en = {
 export const enContactForm = {
   nameLabel: "Name",
   namePlaceholder: "Enter your name",
-  emailLabel: "Email",
+  emailLabel: "Email (optional)",
   emailPlaceholder: "Enter your email",
   phoneLabel: "Phone",
   phonePlaceholder: "981 234 567",
@@ -198,6 +198,7 @@ export const enContactForm = {
   directNote: "Your inquiry goes straight to the seller",
   waLinkLabel: "WhatsApp",
   phoneLinkLabel: "See phone number",
+  fallbackText: "We couldn't save your inquiry. You can contact the seller directly on WhatsApp.",
 } as const;
 
 export const enSearchBar = {
@@ -906,6 +907,15 @@ export const enCategory = {
 
 /** Property detail: /propiedad/[slug]. */
 export const enListing = {
+  galleryOpen: (n: number, total: number) => `View photo ${n} of ${total}`,
+  galleryTitle: "Property photos",
+  galleryPrevious: "Previous photo",
+  galleryNext: "Next photo",
+  galleryClose: "Close viewer",
+  askWhatsapp: "Ask on WhatsApp",
+  contactOr: "or",
+  contactPrivacy: "Your details go only to the seller of this listing",
+
   metaNotFound: "Property not found",
   metaTitle: (title: string, price: string) => `${title} — ${price}`,
   ogTitle: (title: string, brand: string) => `${title} — ${brand}`,

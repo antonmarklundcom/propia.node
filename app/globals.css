@@ -2296,7 +2296,7 @@ body {
 /* ---- Listing detail page -------------------------------------------------- */
 
 .listing-main {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -3305,6 +3305,65 @@ body {
     overflow-y: auto;
     box-shadow: none;
   }
+}
+
+/* Ficha Clara: scoped here so shared project/profile sections retain their layout. */
+.listing-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; margin: 24px 0; }
+.listing-header > * { min-width: 0; }
+.listing-header .listing-title { font: 400 40px/1.15 var(--font-display); margin: 0 0 12px; overflow-wrap: anywhere; }
+.listing-header__location { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--color-ink-secondary); margin: 0; overflow-wrap: anywhere; }
+.listing-header .listing-price { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 100%; }
+.listing-price__line { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 8px; }
+.listing-header .listing-price__amount { font: 400 44px/1.1 var(--font-display); color: var(--color-ink); overflow-wrap: anywhere; }
+.listing-price__currency { font: 400 11px/1.4 var(--font-sans); text-transform: uppercase; letter-spacing: 2px; border: 1px solid var(--color-border); padding: 4px 6px; color: var(--color-ink); }
+.listing-price__secondary { font-size: 14px; color: var(--color-ink-secondary); }
+.listing-header .price-alert { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--color-border); background: transparent; color: var(--color-ink); white-space: normal; }
+.listing-header .price-alert__form { max-width: 100%; flex-wrap: wrap; }
+.listing-header .price-alert__input { min-width: 0; max-width: 100%; }
+.listing-main .detail-gallery { height: 520px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.listing-main .detail-gallery--single { grid-template-columns: minmax(0, 1fr); }
+.listing-main .detail-gallery__main, .listing-main .detail-gallery__thumb { appearance: none; border: 0; padding: 0; min-width: 0; min-height: 0; aspect-ratio: auto; cursor: pointer; }
+.listing-main .detail-gallery__thumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; min-height: 0; }
+.listing-main .detail-gallery__more { background: rgb(0 0 0 / 65%); }
+.listing-main .listing-facts { gap: 24px; border-block: 1px solid var(--color-border); padding: 16px 0; }
+.listing-main .listing-facts__item { font-size: 15px; color: var(--color-ink); text-transform: none; letter-spacing: normal; }
+.listing-main .listing-detail__aside { padding: 20px; background: #fff; }
+.listing-main .seller-card__avatar { background: var(--color-accent); color: var(--color-ink); }
+.seller-card__whatsapp { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 8px; box-sizing: border-box; width: 100%; background: #1FAC54; color: #fff; font: 600 16px/1.3 var(--font-sans); text-align: center; text-decoration: none; }
+.seller-card__whatsapp:hover { color: #fff; text-decoration: underline; }
+.seller-card__divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--color-ink-secondary); }
+.seller-card__divider::before, .seller-card__divider::after { content: ""; flex: 1; border-top: 1px solid var(--color-border); }
+.seller-card__privacy { font-size: 12px; line-height: 1.5; color: var(--color-ink-secondary); margin: 16px 0 0; }
+.contact-form__fallback { margin: 0; padding: 12px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-ink); font-size: 14px; line-height: 1.5; }
+.listing-main .listing-section { border-top: 0; padding-top: 0; }
+.listing-main .listing-section__title { font: 400 26px/1.2 var(--font-display); border-bottom: 1px solid var(--color-border); padding-bottom: 12px; }
+.listing-main .listing-details-grid__row { border-bottom-style: dotted; }
+.listing-main .listing-amenities { display: flex; flex-wrap: wrap; gap: 8px; }
+.listing-main .listing-amenities__item { min-height: 36px; box-sizing: border-box; padding: 6px 10px; border: 1px solid var(--color-border); max-width: 100%; }
+.listing-main :is(button, a, input, textarea):focus-visible, .listing-viewer button:focus-visible { outline: 3px solid var(--color-ink); outline-offset: 3px; }
+.listing-main .detail-gallery button:focus-visible { outline-offset: -4px; outline-color: #fff; box-shadow: inset 0 0 0 7px var(--color-ink); }
+.listing-viewer { width: min(1100px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 16px; border: 1px solid #777; background: #151515; color: #fff; box-sizing: border-box; }
+.listing-viewer::backdrop { background: rgb(0 0 0 / 90%); }
+.listing-viewer__toolbar { display: flex; align-items: center; gap: 12px; }
+.listing-viewer__toolbar h2 { flex: 1; font: 400 20px/1.2 var(--font-display); margin: 0; }
+.listing-viewer button { width: 44px; height: 44px; flex-shrink: 0; background: #fff; color: #151515; border: 1px solid #fff; font-size: 24px; cursor: pointer; }
+.listing-viewer button:focus-visible { outline-color: #fff; }
+.listing-viewer__stage { height: min(70dvh, 760px); margin: 12px 0; }
+.listing-viewer__stage img { width: 100%; height: 100%; object-fit: contain; }
+.listing-viewer__stage img[hidden] { display: none; }
+.listing-viewer__navigation { display: flex; justify-content: center; gap: 16px; }
+@media (max-width: 639px) {
+  .listing-header { grid-template-columns: minmax(0, 1fr); }
+  .listing-header .listing-title { font-size: 32px; }
+  .listing-header .listing-price { align-items: flex-start; }
+  .listing-price__line { justify-content: flex-start; }
+  .listing-main .detail-gallery { height: auto; grid-template-columns: minmax(0, 1fr); }
+  .listing-main .detail-gallery__main { aspect-ratio: 4 / 3; }
+  .listing-main .detail-gallery__thumbs { grid-template-rows: auto; }
+  .listing-main .detail-gallery__thumb { aspect-ratio: 4 / 3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .listing-main *, .listing-viewer *, .contact-form * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
 /* ---- Mobile contact bar (listing detail only) ---------------------------- */
