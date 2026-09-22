@@ -184,6 +184,30 @@ it cannot be blocked by one being down.
    actually own and have mapped in Cloudflare (see `.env.example` — do not
    point it at an unowned placeholder domain).
 
+### Demo photos and manual FX rate
+
+Run these on the founder's machine with `DATABASE_URL_RW` already exported
+for writes and `DATABASE_URL` exported for read-only dry runs (`tsx` does not
+load `.env`).
+
+```powershell
+npm run seed:sample-photos -- --dry --base https://inmobiliaria.com.py
+npm run seed:sample-photos -- --base https://inmobiliaria.com.py
+```
+
+Optionally add `--replace-placeholders` to both commands to replace listings
+whose photos are all placeholders. Listings with real photos are skipped.
+
+```powershell
+npm run cron:fx -- --dry --rate 6000
+npm run cron:fx -- --rate 6000
+npm run cron:cuotas -- --dry
+npm run cron:cuotas
+```
+
+The daily `cron:fx` on Hostinger will append a fresh market rate on top of a
+manual one, so a fixed manual rate only holds while that cron is not scheduled.
+
 ## Founder-only items — still open
 
 The site is **live** on `realestateinparaguay.com` (Hostinger Node.js app,
