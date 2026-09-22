@@ -218,6 +218,7 @@ export const enSearchBar = {
 
 /** Category page filter bar — a plain GET form, no client JS. */
 export const enFilters = {
+  viewResults: (n: string) => `View ${n} properties`, instant: "Filters apply instantly", applying: "Applying...",
   title: "Filters", close: "Close filters", apply: "Apply filters", loading: "Updating results?", price: "Price in USD", type: "Property type", city: "City", barrio: "Neighbourhood", remove: "Remove", results: (n: string) => `${n} properties`, preset: (n: string) => `Up to USD ${n}`,
 
   priceMinLabel: "Min. price (US$)",
