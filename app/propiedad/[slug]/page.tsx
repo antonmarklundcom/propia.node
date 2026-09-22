@@ -18,7 +18,7 @@ import {
   agencyUrl,
 } from "@/lib/urls";
 import { formatPrice, formatCuota, formatUsd, formatSqft, imageUrl, imageThumbUrl } from "@/lib/format";
-import { isPlaceholderPhoto } from "@/lib/photos";
+import { isPlaceholderPhoto, isSamplePhoto } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import {
@@ -246,6 +246,7 @@ export default async function ListingPage({ params }: Params) {
     .concat([{ name: title, url: canonical }]);
 
   const realImages = images.filter((im) => !isPlaceholderPhoto(im.r2Key));
+  const isSample = isSamplePhoto(images[0]?.r2Key);
 
   // Approximate location only — barrio centroid, else city centroid. Never
   // the listing's own lat/lng (schema.ts: precise coords are "never shown
@@ -390,6 +391,7 @@ export default async function ListingPage({ params }: Params) {
 
       <header className="listing-header">
         <div>
+          {isSample && <span className="listing-sample-chip">{t.sampleListing}</span>}
           <h1 className="listing-title">{title}</h1>
           {(barrio || city) && <p className="listing-header__location"><Glyph name="pin" /> {[barrio?.name, city?.name].filter(Boolean).join(", ")}</p>}
         </div>
@@ -597,6 +599,7 @@ export default async function ListingPage({ params }: Params) {
             locale={locale}
           />
           <p className="seller-card__privacy">{t.contactPrivacy}</p>
+          {isSample && <p className="seller-card__sample-note">{t.sampleNote}</p>}
           {showForeignerBox && (
             <p className="seller-card__reply-note">{d.guideEn.replyInEnglish}</p>
           )}
