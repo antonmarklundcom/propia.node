@@ -77,8 +77,9 @@ git push -u origin claude/<feature-name>
   This has already cost a session.
 - **Branch naming: `claude/<feature-name>`.** One PR per unit of work.
 - **`npm run verify:local` must pass before every push.** It is
-  `typecheck → build → verify:import → verify:facets → verify:i18n → verify:seo`.
-  The last four are pure — no database, no network.
+  `typecheck → build → verify:import → verify:facets → verify:i18n → verify:seo →
+  verify:rate-limit`. The last five are pure — no database, no network (the
+  rate-limit check runs on a fake clock).
 - **Never `git push --no-verify`.** `.githooks/pre-push` runs the same gate; it is
   the only CI this repo has. Hooks install themselves via `prepare` on
   `npm install`; after a clone that skipped scripts, run `npm run hooks:install`.
