@@ -8,12 +8,12 @@ import { languageAlternates } from "@/lib/alternates";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingBrowser, listingPage } from "@/components/ListingBrowser";
-import { hasListingUserParams } from "@/lib/facets";
+import { facetSearchParams, hasListingUserParams } from "@/lib/facets";
 import { SearchBar } from "@/components/SearchBar";
 import { listCities } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
 import { getOperationHubData } from "@/lib/directory-queries";
-import { categoryUrl, parseOperation, operationSlug } from "@/lib/urls";
+import { categoryUrl, parseOperation, operationSlug, typePlural } from "@/lib/urls";
 import { CtaBand, Section } from "@/components/MarketingUI";
 import type { PropertyType } from "@/lib/import/types";
 
@@ -83,7 +83,12 @@ export default async function OperationHubPage({ params, searchParams }: Params)
     listCities(),
   ]);
 
-  const topCity = hub.cities[0]?.slug ?? "asuncion";
+  // National type links stay national (plan 2026-09-22 A7): the counts are
+  // country-wide, so the link filters this hub by type instead of jumping to
+  // the biggest city. There is no /venta/<tipo> route; ?tipo= is the same
+  // facet the sidebar writes.
+  const typeHref = (type: PropertyType) =>
+    `/${operationSlug(op)}?${new URLSearchParams(facetSearchParams({}, { typeSlug: typePlural(type) }))}`;
 
   return (
     <main className={vertical.key === "inmobiliaria" || vertical.key === "en" ? "c3b-marketplace c3b-hub" : undefined}>
@@ -149,11 +154,7 @@ export default async function OperationHubPage({ params, searchParams }: Params)
               <Link
                 key={row.type}
                 className="mk-chip hub-chip"
-                href={categoryUrl({
-                  operation: op,
-                  citySlug: topCity,
-                  type: row.type as PropertyType,
-                })}
+                href={typeHref(row.type as PropertyType)}
               >
                 {d.category.typeLabel[row.type] ?? row.type}
                 <span className="hub-chip__count">
