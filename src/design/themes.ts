@@ -183,7 +183,7 @@ const RENTAL: ThemeVars = {
   "--footer-fg": "rgba(255,255,255,0.74)", // 8.6:1 on slate
   "--footer-fg-strong": "#FFFFFF", // 15.16:1
   "--footer-fg-muted": "rgba(255,255,255,0.52)",
-  "--footer-fg-faint": "rgba(255,255,255,0.45)",
+  "--footer-fg-faint": "rgba(255,255,255,0.6)", // 0.45 was 4.2-4.4:1 at 11.5px (F-c); same as the editorial token
   "--footer-tagline-color": "rgba(255,255,255,0.64)",
   "--footer-hairline": "rgba(255,255,255,0.12)",
   // .site-notice__label on THIS door's --color-accent-soft (#F6E7DF): the
@@ -265,7 +265,7 @@ const DIRECTORY: ThemeVars = {
   "--footer-fg": "rgba(255,255,255,0.74)",
   "--footer-fg-strong": "#FFFFFF",
   "--footer-fg-muted": "rgba(255,255,255,0.52)",
-  "--footer-fg-faint": "rgba(255,255,255,0.45)",
+  "--footer-fg-faint": "rgba(255,255,255,0.6)", // 0.45 was 4.2-4.4:1 at 11.5px (F-c); same as the editorial token
   "--footer-tagline-color": "rgba(255,255,255,0.64)",
   "--footer-hairline": "rgba(255,255,255,0.12)",
   "--site-notice-label-color": "#173FB0",
