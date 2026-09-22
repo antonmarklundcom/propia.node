@@ -30,6 +30,7 @@ const ROLE_OPTIONS = [
   "agent",
   "agency_admin",
   "developer",
+  "staff",
   "admin",
 ] as const;
 

@@ -88,11 +88,14 @@ export async function countReviewQueue(): Promise<number> {
  * One COUNT on idx_created (leads.created_at), so it stays cheap enough to run
  * on every admin page render.
  */
-export async function countRecentLeads(hours = 24): Promise<number> {
+export async function countRecentLeads(hours = 24, internalOnly = false): Promise<number> {
   const [row] = await db
     .select({ n: sql<number>`count(*)` })
     .from(leads)
-    .where(sql`${leads.createdAt} >= now() - interval ${sql.raw(String(Math.max(1, Math.floor(hours))))} hour`);
+    .where(and(
+      sql`${leads.createdAt} >= now() - interval ${sql.raw(String(Math.max(1, Math.floor(hours))))} hour`,
+      internalOnly ? eq(leads.routedTo, "internal") : undefined,
+    ));
   return Number(row?.n ?? 0);
 }
 
@@ -538,17 +541,20 @@ export interface AdminLeadRow extends LeadRow {
 /**
  * Every lead the site captured, newest first — the super-admin view.
  *
- * Unscoped by design: this is the founder's own inbox, and it is the only
+ * Unscoped for the founder; staff callers pass internalOnly. This is the only
  * place a lead with `routed_to = 'internal'` (valuation and seller leads,
  * which belong to no agency) is visible at all. Optional filters narrow by
  * type and search name / WhatsApp / email.
  */
 export async function listAllLeads(params: {
+  /** Derived from the authenticated role, never from search params. */
+  internalOnly?: boolean;
   type?: LeadRow["leadType"] | "all";
   q?: string;
   limit?: number;
 }): Promise<AdminLeadRow[]> {
   const filters: SQL[] = [];
+  if (params.internalOnly) filters.push(eq(leads.routedTo, "internal"));
   if (params.type && params.type !== "all") {
     filters.push(eq(leads.leadType, params.type));
   }
@@ -632,10 +638,11 @@ function parseUtm(value: unknown): Record<string, string> | null {
 }
 
 /** Lead counts per type for the admin filter chips — one GROUP BY, not one query each. */
-export async function countLeadsByType(): Promise<Record<string, number>> {
+export async function countLeadsByType(internalOnly = false): Promise<Record<string, number>> {
   const rows = await db
     .select({ leadType: leads.leadType, n: sql<number>`count(*)` })
     .from(leads)
+    .where(internalOnly ? eq(leads.routedTo, "internal") : undefined)
     .groupBy(leads.leadType);
   const out: Record<string, number> = {};
   let total = 0;

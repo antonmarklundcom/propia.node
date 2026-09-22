@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   countReviewQueue,
   listAgencies,
@@ -51,7 +51,7 @@ export default async function AdminAgenciesPage({
 }: {
   searchParams: Promise<{ msg?: string }>;
 }) {
-  const [{ msg }, user] = await Promise.all([searchParams, requireSuperAdmin()]);
+  const [{ msg }, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
   const [reviewCount, agencies, agents] = await Promise.all([
     countReviewQueue(),
     listAgencies(),

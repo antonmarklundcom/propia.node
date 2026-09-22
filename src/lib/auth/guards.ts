@@ -11,12 +11,12 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { agents } from "@/db/schema";
 import { getSessionUser, type SessionUser } from "./session";
-import { isAgencyRole, isSuperAdmin } from "./roles";
+import { isAgencyRole, isSuperAdmin, isStaffOrAbove } from "./roles";
 import type { EditScope } from "@/lib/listing-edit";
 
 /** Where a logged-in user belongs by role — used for post-login and 403 bounces. */
 export function homeForRole(user: SessionUser): string {
-  if (isSuperAdmin(user.role)) return "/admin";
+  if (isStaffOrAbove(user.role)) return "/admin";
   if (isAgencyRole(user.role)) return "/agencia";
   // A consumer account exists because somebody published a property; their
   // own avisos are the only panel they have (D8).
@@ -37,6 +37,14 @@ export async function requireSuperAdmin(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) redirect("/login?next=%2Fadmin");
   if (!isSuperAdmin(user.role)) redirect(homeForRole(user));
+  return user;
+}
+
+/** Scoped staff or full super-admin. Every permitted action re-checks this. */
+export async function requireStaffOrAbove(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login?next=%2Fadmin");
+  if (!isStaffOrAbove(user.role)) redirect(homeForRole(user));
   return user;
 }
 

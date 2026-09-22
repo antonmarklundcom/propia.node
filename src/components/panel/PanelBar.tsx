@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { esPanel } from "@/i18n/es";
-import { roleLabel, type UserRole } from "@/lib/auth/roles";
+import { isStaff, roleLabel, type UserRole } from "@/lib/auth/roles";
 import { logoutAction } from "@/lib/auth/actions";
 
 export interface PanelTab {
@@ -36,6 +36,12 @@ export function PanelBar({
   userName: string | null;
   tabs: PanelTab[];
 }) {
+  if (isStaff(role)) {
+    tabs = tabs.filter((tab) => [
+      "/admin", "/admin/propiedades", "/admin/leads", "/admin/guias",
+      "/admin/inmobiliarias", "/admin/agentes",
+    ].includes(tab.href));
+  }
   const manage = tabs.filter((t) => t.group === "manage");
 
   return (

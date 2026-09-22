@@ -1,7 +1,9 @@
+import Link from "next/link";
+import { isStaff, isSuperAdmin } from "@/lib/auth/roles";
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { HealthSection } from "@/components/panel/HealthSection";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { getHealth } from "@/lib/health";
 import { countRecentLeads, getReviewQueue } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
@@ -24,10 +26,10 @@ const OPERATION_LABEL: Record<string, string> = {
 };
 
 export default async function AdminReviewPage() {
-  const user = await requireSuperAdmin();
+  const user = await requireStaffOrAbove();
   const [queue, recentLeads, health] = await Promise.all([
     getReviewQueue(),
-    countRecentLeads(),
+    countRecentLeads(24, isStaff(user.role)),
     /**
      * Cached for five minutes and never tagged (`src/lib/health.ts`), so this
      * adds a handful of counts to the first render of each window and nothing to
@@ -35,7 +37,7 @@ export default async function AdminReviewPage() {
      * urgent than an unreviewed listing, and because a section nobody scrolls to
      * is a section nobody reads.
      */
-    getHealth(),
+    isSuperAdmin(user.role) ? getHealth() : Promise.resolve(null),
   ]);
 
   return (
@@ -47,7 +49,7 @@ export default async function AdminReviewPage() {
         tabs={adminTabs("review", queue.length, undefined, recentLeads)}
       />
       <main className="panel site-main">
-        <HealthSection health={health} />
+        {health ? <HealthSection health={health} /> : null}
 
         <h2 className="panel-section__title">{esPanel.adminReviewTitle}</h2>
 
@@ -76,44 +78,50 @@ export default async function AdminReviewPage() {
               </div>
 
               <div className="panel-card__body">
-                <div className="panel-actions">
-                  <form action={approveAction}>
-                    <input type="hidden" name="listingId" value={row.id} />
-                    <button className="panel-btn panel-btn--primary" type="submit">
-                      {esPanel.approve}
-                    </button>
-                  </form>
-
-                  <details>
-                    <summary className="panel-btn panel-btn--danger">
-                      {esPanel.reject}
-                    </summary>
-                    <form action={rejectAction} className="panel-reject">
+                {isSuperAdmin(user.role) ? (
+                  <div className="panel-actions">
+                    <form action={approveAction}>
                       <input type="hidden" name="listingId" value={row.id} />
-                      <label
-                        className="auth-field__label"
-                        htmlFor={`reason-${row.id}`}
-                      >
-                        {esPanel.rejectReasonLabel}
-                      </label>
-                      <textarea
-                        id={`reason-${row.id}`}
-                        name="reason"
-                        className="panel-reject__textarea"
-                        placeholder={esPanel.rejectReasonPlaceholder}
-                        required
-                      />
-                      <div>
-                        <button
-                          className="panel-btn panel-btn--danger"
-                          type="submit"
-                        >
-                          {esPanel.reject}
-                        </button>
-                      </div>
+                      <button className="panel-btn panel-btn--primary" type="submit">
+                        {esPanel.approve}
+                      </button>
                     </form>
-                  </details>
-                </div>
+
+                    <details>
+                      <summary className="panel-btn panel-btn--danger">
+                        {esPanel.reject}
+                      </summary>
+                      <form action={rejectAction} className="panel-reject">
+                        <input type="hidden" name="listingId" value={row.id} />
+                        <label
+                          className="auth-field__label"
+                          htmlFor={`reason-${row.id}`}
+                        >
+                          {esPanel.rejectReasonLabel}
+                        </label>
+                        <textarea
+                          id={`reason-${row.id}`}
+                          name="reason"
+                          className="panel-reject__textarea"
+                          placeholder={esPanel.rejectReasonPlaceholder}
+                          required
+                        />
+                        <div>
+                          <button
+                            className="panel-btn panel-btn--danger"
+                            type="submit"
+                          >
+                            {esPanel.reject}
+                          </button>
+                        </div>
+                      </form>
+                    </details>
+                  </div>
+                ) : (
+                  <Link className="panel-btn" href={`/admin/propiedades/${row.id}`}>
+                    {esPanel.staffEditListing}
+                  </Link>
+                )}
               </div>
             </article>
           ))

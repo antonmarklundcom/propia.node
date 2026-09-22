@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { PostForm } from "@/components/panel/PostForm";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { countDraftPosts, isPostsTableReady } from "@/lib/post-queries";
 import { adminTabs } from "../../tabs";
@@ -20,7 +20,7 @@ export default async function NewPostPage({
 }: {
   searchParams: Promise<{ msg?: string }>;
 }) {
-  const [params, user] = await Promise.all([searchParams, requireSuperAdmin()]);
+  const [params, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
   const [reviewCount, drafts, ready] = await Promise.all([
     countReviewQueue(),
     countDraftPosts(),

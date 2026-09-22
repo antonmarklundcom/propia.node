@@ -1,14 +1,14 @@
 "use server";
 
 /**
- * Super-admin listing actions. requireSuperAdmin() runs before every write, and
+ * Super-admin listing actions. requireStaffOrAbove() runs before every write, and
  * the scope passed to the query layer is `admin` — the only scope that may
  * touch a listing it does not own, or delete one outright.
  */
 import { revalidatePath } from "next/cache";
 import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   ADMIN_STATUSES,
   deleteListing,
@@ -19,7 +19,7 @@ import { readListingForm } from "@/lib/listing-form-input";
 import { setPanelListingStatus } from "@/lib/panel-queries";
 
 export async function adminUpdateListingAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const parsed = readListingForm(formData);
   if (!parsed.ok) {
@@ -42,7 +42,7 @@ export async function adminUpdateListingAction(formData: FormData): Promise<void
 }
 
 export async function adminDeleteListingAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const id = Number(formData.get("listingId"));
   if (Number.isInteger(id) && id > 0) await deleteListing(id);
@@ -81,7 +81,7 @@ function isAdminStatus(v: string): v is ListingStatusValue {
 }
 
 export async function bulkListingAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  await requireStaffOrAbove();
 
   const ids = selectedIds(formData);
   const op = String(formData.get("op") ?? "");

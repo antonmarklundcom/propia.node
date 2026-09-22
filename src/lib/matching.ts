@@ -193,33 +193,47 @@ export async function listMatchesForLeads(
 export async function proposeMatches(
   leadId: number,
   agentIds: number[],
+  internalOnly = false,
 ): Promise<number> {
   const unique = [...new Set(agentIds)].filter(
     (n) => Number.isInteger(n) && n > 0,
   );
   if (unique.length === 0) return 0;
 
-  // Only verified agents can be proposed, whatever the form posted: the
-  // checkbox list is a suggestion, and the gate belongs on the write.
-  const allowed = await db
-    .select({ id: agents.id })
-    .from(agents)
-    .where(and(inArray(agents.id, unique), eq(agents.isVerified, true)));
-  if (allowed.length === 0) return 0;
+  return db.transaction(async (tx) => {
+    // Re-derive scope from the lead, then hold its row lock through the insert.
+    // An out-of-scope id returns zero, just like a scoped listing write.
+    if (internalOnly) {
+      const [lead] = await tx
+        .select({ id: leads.id })
+        .from(leads)
+        .where(and(eq(leads.id, leadId), eq(leads.routedTo, "internal")))
+        .for("update");
+      if (!lead) return 0;
+    }
 
-  const existing = await db
-    .select({ agentId: leadMatches.agentId })
-    .from(leadMatches)
-    .where(eq(leadMatches.leadId, leadId));
-  const already = new Set(existing.map((r) => r.agentId));
+    // Only verified agents can be proposed, whatever the form posted: the
+    // checkbox list is a suggestion, and the gate belongs on the write.
+    const allowed = await tx
+      .select({ id: agents.id })
+      .from(agents)
+      .where(and(inArray(agents.id, unique), eq(agents.isVerified, true)));
+    if (allowed.length === 0) return 0;
 
-  const fresh = allowed.filter((a) => !already.has(a.id));
-  if (fresh.length === 0) return 0;
+    const existing = await tx
+      .select({ agentId: leadMatches.agentId })
+      .from(leadMatches)
+      .where(eq(leadMatches.leadId, leadId));
+    const already = new Set(existing.map((r) => r.agentId));
 
-  await db
-    .insert(leadMatches)
-    .values(fresh.map((a) => ({ leadId, agentId: a.id })));
-  return fresh.length;
+    const fresh = allowed.filter((a) => !already.has(a.id));
+    if (fresh.length === 0) return 0;
+
+    await tx
+      .insert(leadMatches)
+      .values(fresh.map((a) => ({ leadId, agentId: a.id })));
+    return fresh.length;
+  });
 }
 
 /**
@@ -230,9 +244,23 @@ export async function proposeMatches(
  * `declined` are never overwritten either: those come from the agent side
  * (D3b) and outrank an operator's re-click.
  */
-export async function markMatchSent(matchId: number): Promise<void> {
+export async function markMatchSent(
+  matchId: number,
+  internalOnly = false,
+): Promise<void> {
   await db
     .update(leadMatches)
     .set({ status: "sent", sentAt: new Date() })
-    .where(and(eq(leadMatches.id, matchId), eq(leadMatches.status, "proposed")));
+    .where(
+      and(
+        eq(leadMatches.id, matchId),
+        eq(leadMatches.status, "proposed"),
+        internalOnly
+          ? inArray(
+              leadMatches.leadId,
+              db.select({ id: leads.id }).from(leads).where(eq(leads.routedTo, "internal")),
+            )
+          : undefined,
+      ),
+    );
 }

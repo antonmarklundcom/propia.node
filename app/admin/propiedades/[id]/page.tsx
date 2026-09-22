@@ -1,3 +1,4 @@
+import { isStaff } from "@/lib/auth/roles";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -5,7 +6,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { ListingForm } from "@/components/panel/ListingForm";
 import { PhotoManager } from "@/components/panel/PhotoManager";
 import { ListingStats } from "@/components/panel/ListingStats";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { ADMIN_STATUSES, getEditableListing } from "@/lib/listing-edit";
 import { listListingImages } from "@/lib/listing-images";
@@ -56,7 +57,7 @@ export default async function AdminListingEditPage({
   const [{ id }, { msg }, user] = await Promise.all([
     params,
     searchParams,
-    requireSuperAdmin(),
+    requireStaffOrAbove(),
   ]);
 
   const listingId = Number(id);
@@ -74,7 +75,7 @@ export default async function AdminListingEditPage({
   // Lead count for this one listing, from the same scoped aggregate the
   // listings table uses.
   const leadCount =
-    (await getPanelListingStats({ kind: "admin" })).get(listing.id)?.leads ?? 0;
+    (await getPanelListingStats({ kind: "admin" }, isStaff(user.role))).get(listing.id)?.leads ?? 0;
 
   const flash = msg ? FLASH[msg] : undefined;
 

@@ -2627,3 +2627,10 @@ export const enNotFound = {
     "Rentals in Asunción"
   ]
 } as const;
+
+/** English peers for new staff panel copy; the existing panel is Spanish. */
+export const enPanel = {
+  staffRole: "Staff",
+  staffEditListing: "Edit property",
+  staffLeadsHint: "Enquiries routed to the portal's internal team.",
+} satisfies Record<keyof Pick<typeof import("./es").esPanel, "staffRole" | "staffEditListing" | "staffLeadsHint">, string>;

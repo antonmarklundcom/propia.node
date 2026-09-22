@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
-import { requireSuperAdmin } from "@/lib/auth/guards";
+import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import {
   ADMIN_STATUSES,
@@ -46,7 +46,7 @@ export default async function AdminListingsPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; msg?: string }>;
 }) {
-  const [params, user] = await Promise.all([searchParams, requireSuperAdmin()]);
+  const [params, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
   const status = isStatus(params.status) ? params.status : "all";
   const q = params.q?.trim() ?? "";
 

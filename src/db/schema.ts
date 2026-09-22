@@ -710,6 +710,7 @@ export const users = mysqlTable("users", {
     "agency_admin",
     "developer",
     "admin",
+    "staff", // Append only: preserve existing MySQL ENUM ordinals.
   ])
     .notNull()
     .default("consumer"),
