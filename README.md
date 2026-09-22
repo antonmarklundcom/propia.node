@@ -82,8 +82,9 @@ npm run seed:locations && npm run cron:geo      # a moved centroid leaves pins a
 ```
 
 Each job's body lives in `src/lib/ops/<job>.ts` as `run<Job>({ dry })`, and the
-`scripts/*.ts` file is a thin CLI over it — one runner per job, so the operations
-page being built on `/admin/operaciones` presses the same code you run here.
+`scripts/*.ts` file is a thin CLI over it — one runner per job, so the buttons on
+`/admin/operaciones` press the same code you run here. Only a button run is
+recorded in the panel's run history (`ops_runs`); a CLI or cron run is not.
 
 White-glove import (M2) — CSV/spreadsheet → pending_review listings:
 
@@ -117,7 +118,8 @@ of the three keys may be set and a row falls through to the next configured one:
 | 2 | `GEMINI_API_KEY` | The intended ongoing path once that credit is spent. `GEMINI_TRANSLATION_MODEL` overrides the default. |
 | 3 | `ANTHROPIC_API_KEY` | Last-resort fallback. `ANTHROPIC_TRANSLATION_MODEL` overrides the default. |
 
-With none of them set the job refuses to run and writes nothing — the English
+With none of them set a real run refuses and writes nothing (a `--dry` run still
+works and lists the candidates; Gemini alone is a valid setup) — the English
 door reads `title_en`/`description_en` straight from the row and shows the
 Spanish text until they are filled. Publishing never calls a translation API, so
 it cannot be blocked by one being down.
@@ -147,9 +149,11 @@ it cannot be blocked by one being down.
    historical and stops at 0011. **No file in this repo can say what production
    has actually applied** — a migration pasted into phpMyAdmin records nothing —
    so `db:status` against prod is the only answer.
-3. **Domains:** five doors share this app, routed by `middleware.ts` on the
-   Host header (an unrecognized host resolves to the canonical primary). As
-   of 2026-09-10:
+3. **Domains:** `src/config/verticals.ts` has eight entries, seven enabled
+   (`desarrolladores.com.py` is not), all served by this app and routed by
+   `middleware.ts` on the Host header (an unrecognized host resolves to the
+   canonical primary). Also enabled: `terreno.com.py` and its English feeder
+   `landforsaleparaguay.com` (terrenos only). The rest, as of 2026-09-10:
    - `inmobiliaria.com.py` — **live.** The Spanish marketplace primary
      (`family: "marketplace"`, PLAN.md D6).
    - `realestateinparaguay.com` — **live.** Its English translation, same
@@ -168,17 +172,21 @@ it cannot be blocked by one being down.
      Spanish half of the rental pair has no real address.
    See CLAUDE.md's domain table for the full detail (ownership, filters,
    `ownsListingDetail`/`ownsDirectory`) before pointing a new one here.
-4. **Cron jobs:** hPanel → Cron Jobs → schedule
-   `npx tsx scripts/<job>.ts` for each `cron:*` script in `package.json`
+4. **Cron jobs:** hPanel → Cron Jobs → schedule `npm run cron:<name>` (the
+   package script carries the right `tsx --tsconfig` flags) for each `cron:*`
+   script in `package.json`
    (`cron:fx`, `cron:cuotas`, `cron:medians`, `cron:geo`, `cron:translate`,
    `cron:resync`, `cron:sessions` — see the cron block above). `cron:fx` runs
    before `cron:cuotas`: the cuota is derived from the recorded rate. Run
    `seed:financing` once before `cron:cuotas` and `seed:locations` once before
    `cron:geo` are ever scheduled. Every script is idempotent, and every one of
    them accepts `--dry` if you want to see a schedule's effect before trusting
-   it. The same jobs are also becoming buttons on `/admin/operaciones`
-   (`fable-plan-ops.md`), so a cron that silently stopped running is visible on
-   `/admin` rather than invisible.
+   it. The same jobs are buttons on `/admin/operaciones` (`fable-plan-ops.md`);
+   note that a scheduled CLI run does not appear in that page's run history.
+   **While you want the manual 6000 rate, do not schedule `cron:fx`:** it
+   appends the market rate on top. Cuotas use AFD Mi Primera Vivienda only
+   (10% down payment, financed amount capped at 700M Gs, placeholder 9.00%
+   rate in `src/lib/ops/seed-financing.ts`), so pricier listings show none.
 5. **R2:** create the bucket in Cloudflare, fill the `R2_*` envs, then map
    `R2_PUBLIC_BASE_URL` to the bucket's own public URL or a custom domain you
    actually own and have mapped in Cloudflare (see `.env.example` — do not
@@ -207,6 +215,19 @@ npm run cron:cuotas
 
 The daily `cron:fx` on Hostinger will append a fresh market rate on top of a
 manual one, so a fixed manual rate only holds while that cron is not scheduled.
+
+A demo seller, so the unowned demo listings show a WhatsApp button (number:
+digits only, `595` first):
+
+```powershell
+npm run seed:demo-seller -- --dry --whatsapp 5959XXXXXXXX
+npm run seed:demo-seller -- --whatsapp 5959XXXXXXXX
+```
+
+Side effect: form leads on those listings then route to the `agency` lane, not
+`internal`, so the `staff` role no longer sees them (`/admin` still does).
+`npm run seed:demo-seller -- --remove` (after a `--dry`) undoes it. The English
+guides take the same shape: `npm run seed:guias-en -- --dry`, then without it.
 
 ## Founder-only items — still open
 
@@ -253,7 +274,7 @@ src/lib/sitemap.ts         sitemap entries via getIndexability (single source)
 app/propiedad/[slug]/      listing detail page (canonical, JSON-LD, WhatsApp)
 app/[operacion]/[...]/     category pages (§4 shapes, indexability enforced)
 app/api/leads/             leads → MySQL first, then the optional CRM webhook (crm.ts)
-app/sitemap.ts app/robots.ts   SEO surface
+app/sitemap.xml/route.ts, app/sitemap/[chunk]/route.ts, app/robots.ts   SEO surface (what is listed: src/lib/sitemap.ts; serving: src/lib/sitemap-xml.ts)
 src/i18n/es.ts             canonical voseo strings (never neutral Spanish)
 src/design/tokens.ts       design tokens v1
 middleware.ts              host-header vertical resolution
