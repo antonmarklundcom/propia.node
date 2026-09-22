@@ -1795,6 +1795,7 @@ export const esListing = {
   moreInCity: (city: string) => `Todas las propiedades en ${city}`,
 
   ctaBarWhatsapp: "Contactar por WhatsApp",
+  ctaBarWhatsappShort: "WhatsApp",
   ctaBarConsult: "Consultar",
   ctaBarCall: "Llamar",
 

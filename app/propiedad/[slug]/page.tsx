@@ -726,6 +726,7 @@ export default async function ListingPage({ params }: Params) {
               aria-label={t.ctaBarWhatsapp}
             >
               <Glyph name="whatsapp" />
+              {t.ctaBarWhatsappShort}
             </a>
           )}
           {/* Guide §5 "Detail page" (mobile): WhatsApp + Llamar for Nórdico —
