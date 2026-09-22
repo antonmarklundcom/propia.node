@@ -89,30 +89,13 @@ it; none of them blocks a phase.
   proof. A permanent check needs a decision about how a pure verify script
   imports `server-only` modules.
 
-- **The `esPanel`, `esPublish` and `esOwner` namespaces have no English peer.**
-  Noticed in O2 while adding `registerErrorThrottled`. Only eight namespaces are
-  assembled into `Dictionary` (`src/i18n/index.ts:51`); the panel, publish and
-  owner surfaces are read as direct `esPanel.*` imports, so `verify:i18n` never
-  walks them and there is nothing to add an English string *to*. Adding one key
-  to a non-existent `enPanel` is not a one-line change — it is porting ~400
-  staff-surface strings — so O2 added its copy to `esPanel` alone. This is a D6
-  flip-day precondition for `/registro`, `/publicar` and `/agencia`, and it is
-  larger than any phase in this plan.
-
-- **`esAgentProfile` (`src/i18n/es.ts`) is imported directly into
-  `app/agente/[slug]/page.tsx` rather than read through `dict()`, and has no
-  English peer.** Found in S2 while adding the `profile`/`project`
-  namespaces — the same shape KNOWN-ISSUES already records for `esPanel`,
-  `esPublish` and `esOwner`. It predates this plan (it is above the "Batch 3"
-  comment block in `es.ts`, not part of it) and covers ~10 agent-profile-only
-  strings (contact copy, meta title/description, "Trabaja en", …), so porting
-  it to an `enAgentProfile` is a job of its own, not a one-line addition. S2
-  only pulled the two strings this page shared with the agency profile page
-  (breadcrumb nav label, empty-state line) into the new `profile` namespace
-  and left the rest of `esAgentProfile` as-is — `verify:i18n` cannot see it
-  either way, since it never enters `Dictionary`. Fix: fold `esAgentProfile`
-  into `dict()` with an `enProfile`/`agent`-shaped English translation, same
-  D6 flip-day precondition as the panel/publish/owner namespaces.
+- **Panel and owner copy is Spanish-only, by decision.** `esPanel` and
+  `esOwner` are read as direct imports (`app/admin/*`, `/agencia`,
+  `/mis-avisos`), so `verify:i18n` never walks them. Publish is no longer part
+  of this: `enPublish` is assembled into `Dictionary` (`src/i18n/index.ts`).
+  An `enPanel` object exists in `en.ts` but nothing reads it through `dict()`.
+  Staff and owner surfaces stay Spanish (`fable-plan-quality.md`); reopen only if
+  English-speaking realtors appear.
 
 - **Q1 (package manager) is still unanswered.** `fable/REVIEW.md` Q1 asks
   which package manager hPanel's build step actually runs for this site
@@ -123,25 +106,22 @@ it; none of them blocks a phase.
   `"packageManager": "pnpm@<version>"` to `package.json`, delete
   `package-lock.json`; if npm, delete `pnpm-workspace.yaml` and `.npmrc`.
 
-- **The home `<title>`'s tagline is hard-coded to Spanish for every door**
-  (`app/page.tsx`: `brandTaglineFor("es")`). `brandTaglineFor` already takes a
-  locale and `brand-server.ts` passes the vertical's, so
-  realestateinparaguay.com's home has been titled "Real Estate in Paraguay —
-  Encontrá tu propiedad en Paraguay" since the D6 flip. Found in O2
-  (fable/plan-rentparaguay.md) and deliberately **not** fixed there: the fix
-  changes a live door's `<head>`, and that phase's exit criterion is that the
-  three live doors' `<head>` is byte-identical. The rental doors do not wait
-  on it — they take their own tagline from `rental.metaTagline` — so this is
-  now a one-line fix for the English marketplace door alone:
-  `brandTaglineFor(vertical.locale)`, in its own PR, with the head diff
-  reviewed rather than asserted empty.
+- **Closed 2026-09-22 (A8 docs pass), verified in code:** the home `<title>`
+  tagline now uses `brandTaglineFor(vertical.locale)` (`app/page.tsx`); the
+  header/menu labels are no longer hard-coded Spanish in `src/components`;
+  `esAgentProfile` is read through `dict()` with an `enAgentProfile` peer.
+  Their entries were removed from this file.
 
-- **The chrome's last hard-coded Spanish literals.** `SiteHeader` renders
-  "Ingresar" for the login link and `MobileMenu` uses "Abrir menú" / "Cerrar
-  menú" / "Menú principal" as its aria labels, in every language. The login
-  one is invisible on the doors that matter (`chromeShowLogin` is false for
-  the English and rental families), but the drawer's aria labels reach a
-  screen reader on realestateinparaguay.com and on rentparaguay.com. Fix: two
-  keys in `common`, read through `dict()` in the header and passed to the
-  drawer as props (it is a client component). Not done in O2 because it
-  touches a live door's rendered markup.
+- **Local test data only: `/img/premium/*-thumb.webp` 404s (F-e, 2026-09-22).**
+  Seven `listing_images` rows in the local MariaDB point at
+  `/img/premium/…-1280.webp`, and `imageThumbUrl()` asks for a `-thumb.webp`
+  that folder does not have. No shipped path writes such a key: uploads write
+  the thumb too (`thumbKey()`), imports and `seed:sample-photos` store absolute
+  URLs. No code change; delete or re-point those local rows if they get in the
+  way. (Sample photos now do use their shipped thumbs, #186.)
+
+- **Production does not show the pre-launch notice (2026-09-22).**
+  `curl https://inmobiliaria.com.py/venta` has no `site-notice` markup, so
+  hPanel has `NEXT_PUBLIC_UNDER_CONSTRUCTION=false` while the listings are
+  still demo data. Founder decision: set it back to unset/true and rebuild, or
+  keep it off once `seed:sample-photos` has marked every demo listing.

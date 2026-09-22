@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-09-22.** Superseded by completed C1-C4 work; open work lives in `docs/plan-next-work-2026-09-22.md`. Kept for history.
+
 # Site quality plan — marketplace doors, 2026-09-13
 
 Written by the Fable director session on 2026-09-13 after rendering the **live**

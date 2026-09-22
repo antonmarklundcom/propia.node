@@ -77,5 +77,5 @@ Phase log ≤ 12/8/8 lines + one Verification line. Add the §9 line.
   name). No new copy — reused existing `directory` keys. Marketplace branch
   of both pages untouched. `docs/log/p3.md`.
 
-- P2 — hub hero photos: `docs/log/p2.md`. CSS wiring + `data-op` landed; the two WebP files are blocked on the environment network allowlist (no credits spent).
+- P2 — hub hero photos: `docs/log/p2.md`. The WebPs were committed later, then deleted with the hub hero itself (#176 compact header, #185 removed the files, 2026-09-22). Nothing left to do.
 - P4 — `docs/log/p4.md` — D3: `agents.bio/license_no/years_active/zones`, the `lead_matches` table and the "match 3" panel in `/admin/leads`. Schema; PR open, Anton merges after `db:status`.

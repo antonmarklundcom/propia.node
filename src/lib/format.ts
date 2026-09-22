@@ -8,7 +8,9 @@
  * (docs/style/realestateinparaguay.com.md §3) — without touching the default
  * for every other caller that doesn't pass one.
  */
-const nf = (locale: string) =>
+import { isSamplePhoto } from "./photos";
+
+const nf =(locale: string) =>
   new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
 
 export function formatUsd(
@@ -77,10 +79,15 @@ export function imageUrl(r2Key: string | null): string | null {
  *
  * Only keys we uploaded have a thumb: imported placeholders are still remote
  * URLs, so those fall back to the original rather than 404ing a grid of cards.
+ * The one absolute URL that does have a thumb is a sample photo
+ * (`seed:sample-photos` stores `<base>/img/sample/listings/<file>.webp`), and
+ * every file there ships with its `-thumb.webp` (~45 KB instead of ~230 KB).
  */
 export function imageThumbUrl(r2Key: string | null): string | null {
   if (!r2Key) return null;
-  if (/^https?:\/\//i.test(r2Key)) return r2Key;
+  if (/^https?:\/\//i.test(r2Key)) {
+    return isSamplePhoto(r2Key) ? r2Key.replace(/(?<!-thumb)\.webp$/, "-thumb.webp") : r2Key;
+  }
   if (!/\.webp$/.test(r2Key)) return imageUrl(r2Key);
   return imageUrl(r2Key.replace(/\.webp$/, "-thumb.webp"));
 }

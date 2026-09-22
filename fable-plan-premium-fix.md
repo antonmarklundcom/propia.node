@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-09-22.** Superseded by completed C1-C4 work; open work lives in `docs/plan-next-work-2026-09-22.md`. Kept for history.
+
 # Premium Editorial — fix plan after the first live render (PF)
 
 Written 2026-09-12 by the director session, after rendering `main` @ `897e683`
