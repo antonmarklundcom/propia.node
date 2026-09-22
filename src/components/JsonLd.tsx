@@ -27,9 +27,14 @@ export async function JsonLd({ data }: { data: object | object[] }) {
   );
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
+    // suppressHydrationWarning: browsers hide a parsed nonce (the DOM
+    // attribute reads ""), so React saw nonce="…" vs "" and logged a
+    // hydration mismatch on every page. It silences this one element's
+    // attribute check only; the nonce is still sent and the CSP is unchanged.
     <script
       type="application/ld+json"
       nonce={nonce}
+      suppressHydrationWarning
       dangerouslySetInnerHTML={{ __html: json }}
     />
   );
