@@ -6498,48 +6498,34 @@ summary.panel-btn::-webkit-details-marker {
 
 /* ---- Operation hubs (/venta, /alquiler) ---------------------------------- */
 
-.hub-hero {
-  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+/* A1: compact header on cream inside the results column. The sidebar is the
+   search, so no SearchBar here; H1 and lead keep their text for SEO. */
+.hub-header {
+  margin: 0 0 20px;
 }
 
-.hub-hero__inner {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 46px 16px;
-  text-align: center;
-}
-
-.hub-hero__title {
+.hub-header__title {
   margin: 0;
-  font-size: 32px;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: #fff;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
 }
 
 @media (max-width: 640px) {
-  .hub-hero__title {
-    font-size: 25px;
+  .hub-header__title {
+    font-size: 28px;
   }
 }
 
-.hub-hero__lead {
-  margin: 12px auto 0;
-  max-width: 62ch;
-  line-height: 1.65;
-  color: var(--color-border);
-}
-
-.hub-hero__count {
-  display: inline-block;
-  margin: 16px 0;
-  padding: 6px 14px;
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  font-size: 13.5px;
-  font-weight: 650;
-  color: #fff;
+.hub-header__lead {
+  margin: 8px 0 0;
+  max-width: 72ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-ink-secondary);
 }
 
 .hub-grid {
@@ -8501,10 +8487,6 @@ summary.panel-btn::-webkit-details-marker {
 
 /* == P1 == */
 
-/* Compact hero: no min-height, tight vertical rhythm (decision 1). */
-.hub-hero__inner {
-  padding: clamp(40px, 5vw, 64px) 16px;
-}
 
 /* Type section as chips, never one lonely tile (decision 4). */
 .hub-chips {
@@ -8730,48 +8712,6 @@ summary.panel-btn::-webkit-details-marker {
 
 /* == P2 == */
 
-/* Hero photography for the operation hubs.
-   Three background layers, top to bottom:
-     1. the dark overlay (translucent),
-     2. the photo,
-     3. an opaque copy of the hub's original flat gradient.
-   Layer 3 is what makes this rule harmless while the photo files are absent:
-   a missing url() renders nothing, the overlay sits on the opaque gradient,
-   and the hero degrades to (very nearly) the look it had before this block.
-   Contrast, read from the alpha rather than by eye: the worst case is a
-   pure-white photo pixel under the lightest stop (0.72) on the lightest door
-   primary in the token set (#182830, rental). Composited that is #58646A,
-   against which #fff measures 6.0:1 — comfortably over AA's 4.5:1, and every
-   other door's primary is darker still.
-   The temporary-rental hub deliberately reuses the alquiler photo. */
-.hub-hero[data-op="venta"],
-.hub-hero[data-op^="alquiler"] {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-.hub-hero[data-op="venta"] {
-  background-image:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--color-primary) 72%, transparent),
-      color-mix(in srgb, var(--color-primary-dark) 80%, transparent)
-    ),
-    url("/img/hub-venta.webp"),
-    linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
-}
-
-.hub-hero[data-op^="alquiler"] {
-  background-image:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--color-primary) 72%, transparent),
-      color-mix(in srgb, var(--color-primary-dark) 80%, transparent)
-    ),
-    url("/img/hub-alquiler.webp"),
-    linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
-}
 
 /* ========================================================================== */
 /* Premium Editorial home (ph-*) — docs/prompts/premium-editorial.md          */
@@ -9748,21 +9688,6 @@ summary.panel-btn::-webkit-details-marker {
   outline-offset: 3px;
 }
 
-/* The hub search sits directly on C1's dark photograph. Use existing on-dark ink. */
-.c3b-hub .search-bar__label {
-  color: var(--color-background);
-  opacity: 0.8;
-}
-
-.c3b-hub .search-bar__select {
-  color: var(--color-background);
-  color-scheme: dark;
-}
-
-.c3b-hub .search-bar__select option {
-  background: var(--color-primary);
-  color: var(--color-background);
-}
 
 @media (max-width: 640px) {
   .c3b-marketplace .search-bar__field,
