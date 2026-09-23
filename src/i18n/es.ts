@@ -959,6 +959,20 @@ export const esAgentProfile = {
     `${n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`} por ${agentName} en ${brand}.`,
 } as const;
 
+/** Agency profile (/inmobiliaria/[slug]); the peer of esAgentProfile. */
+export const esAgencyProfile = {
+  notFoundTitle: "Inmobiliaria no encontrada",
+  kind: "Inmobiliaria",
+  listingsTitle: "Propiedades publicadas",
+  listingCount: (n: number) =>
+    n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`,
+  empty: "Esta inmobiliaria todavía no tiene propiedades publicadas.",
+  metaTitle: (agencyName: string) =>
+    `${agencyName} — Propiedades en venta y alquiler`,
+  metaDescription: (brand: string, agencyName: string, n: number) =>
+    `${n === 1 ? "1 propiedad publicada" : `${n} propiedades publicadas`} por ${agencyName} en ${brand}.`,
+} as const;
+
 /**
  * Agent-profile WhatsApp prefill: names the agent and links back to their
  * profile, mirroring inquiryPrefillFor above for listings.

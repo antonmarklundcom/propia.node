@@ -2568,6 +2568,17 @@ export const enAgentProfile = {
     `${n === 1 ? "1 published property" : `${n} published properties`} by ${agentName} on ${brand}.`,
 } as const;
 
+export const enAgencyProfile = {
+  notFoundTitle: "Agency not found",
+  kind: "Real estate agency",
+  listingsTitle: "Published properties",
+  listingCount: (n: number) => n === 1 ? "1 published property" : `${n} published properties`,
+  empty: "This agency has no published properties yet.",
+  metaTitle: (agencyName: string) => `${agencyName} — Properties for sale and rent`,
+  metaDescription: (brand: string, agencyName: string, n: number) =>
+    `${n === 1 ? "1 published property" : `${n} published properties`} by ${agencyName} on ${brand}.`,
+} as const;
+
 export function inquiryPrefillFor(brand: string, title: string, url: string): string {
   return `Hello, I saw this property on ${brand} and I am interested: ${title}\n${url}`;
 }
