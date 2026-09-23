@@ -23,7 +23,7 @@ import {
 } from "../db/schema";
 import { getIndexability } from "./indexability";
 import { citiesWithPrices } from "./precios-queries";
-import { categoryUrl, agencyUrl, agentUrl } from "./urls";
+import { categoryUrl, agencyUrl, agentUrl, parseOperation } from "./urls";
 import {
   DIRECTORY_SITEMAP_PATHS,
   MARKETPLACE_SITEMAP_PATHS,
@@ -152,8 +152,19 @@ export async function buildSitemapEntries(
   // canonicalises /agente/* away has no business submitting the index of them
   // either.
   const DIRECTORY_INDEX_PATHS = ["/agentes", "/inmobiliarias"];
+  // An operation hub (/venta, /alquiler, /alquiler-temporal) follows the same
+  // thin-page rule as its categories: the hub renders noindex below
+  // MIN_INDEXABLE listings on this door (app/[operacion]/page.tsx), so it is
+  // not submitted either. terreno.com.py has no temporary rentals at all.
+  const opTotal = new Map<string, number>();
+  for (const l of pub) opTotal.set(l.operation, (opTotal.get(l.operation) ?? 0) + 1);
+  const hubIndexable = (path: string) => {
+    const op = path.lastIndexOf("/") === 0 ? parseOperation(path.slice(1)) : null;
+    return !op || getIndexability({ listingCount: opTotal.get(op) ?? 0 }).state === "index";
+  };
   const entries: SitemapEntry[] = staticPaths
     .filter((path) => path !== "/vender" || venderAllowed)
+    .filter(hubIndexable)
     .filter((path) => includeDirectory || !DIRECTORY_INDEX_PATHS.includes(path))
     .map((path) => ({ path }));
 
