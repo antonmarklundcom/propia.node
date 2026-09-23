@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { Locale } from "@/i18n";
 
 /**
  * Same reason as ListingMapLazy: keeps maplibre-gl (~270kB) out of the
@@ -17,6 +18,7 @@ export function CategoryMapLazy(props: {
   centerLng: number;
   zoom?: number;
   query: Record<string, string>;
+  locale: Locale;
 }) {
   return <CategoryMap {...props} />;
 }

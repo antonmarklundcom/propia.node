@@ -1694,6 +1694,23 @@ export const esHub = {
   } as Record<string, { title: string; paragraphs: readonly string[] }>,
 } as const;
 
+/**
+ * CategoryMap (src/components/CategoryMap.tsx), a client component: reached via
+ * getDictionary(locale). Pin prices use the listing's own currency (a Guaraní
+ * listing never shows a dollar figure) and the request's number locale; only
+ * the unit words live here.
+ */
+export const esMap = {
+  pinThousands: (n: string) => `${n} mil`,
+  pinMillions: (n: string) => `${n} M`,
+  clusterTitle: (n: number) => `${n} propiedades`,
+  approximate: (title: string) => `${title} — ubicación aproximada`,
+  error: "No pudimos cargar el mapa. Movelo de nuevo para reintentar.",
+  loading: "Buscando…",
+  capped: (n: number) => `Mostrando las ${n} más económicas de esta zona — acercá para ver el resto.`,
+  count: (n: number) => `${n} ${n === 1 ? "propiedad" : "propiedades"} en esta zona`,
+} as const;
+
 /** Category grid: /[operacion]/[...segments]. */
 export const esCategory = {
   operationLabel: {
