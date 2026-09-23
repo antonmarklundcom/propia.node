@@ -307,7 +307,10 @@ The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
   button renders. **Side effect:** form leads on those listings then route to
   the `agency` lane instead of `internal`, so the `staff` role does not see
   them (`/admin` still does); `--remove` undoes it. `cron:fx -- --rate N`
-  records a manual USD→PYG rate (founder wants 6000), then `cron:cuotas`.
+  records a manual USD→PYG rate (founder wants 6000), then `cron:price-usd`
+  (re-derives `price_usd` of Guaraní listings, which kept the rate they were
+  written with; without it their cuota is computed on ~82% of the real price
+  after the 7300 → 6000 change), then `cron:cuotas`.
   All three take `--dry`, and are run on production by the founder only.
 - **The pre-launch notice** (`src/components/SiteNotice.tsx`) is one short
   line under 641 px (#183). **Production does not render it at all** as of

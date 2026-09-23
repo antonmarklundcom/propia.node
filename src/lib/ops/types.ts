@@ -46,6 +46,7 @@ export interface OpsResult {
  */
 export type OpsJob =
   | "cron:cuotas"
+  | "cron:price-usd"
   | "cron:medians"
   | "cron:geo"
   | "cron:fx"

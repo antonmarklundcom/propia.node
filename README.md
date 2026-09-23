@@ -55,6 +55,7 @@ Cron-style jobs (idempotent; also run on a schedule in production):
 
 ```bash
 npm run cron:fx               # record today's USD→PYG rate (fx_rates)
+npm run cron:price-usd        # re-derive price_usd of Guaraní listings from that rate
 npm run cron:cuotas           # cache listings.cuota_gs (French amortization)
 npm run cron:medians          # market_medians for the current month
 npm run cron:geo              # repair listings.display_lat/lng after a centroid moves
@@ -175,9 +176,11 @@ it cannot be blocked by one being down.
 4. **Cron jobs:** hPanel → Cron Jobs → schedule `npm run cron:<name>` (the
    package script carries the right `tsx --tsconfig` flags) for each `cron:*`
    script in `package.json`
-   (`cron:fx`, `cron:cuotas`, `cron:medians`, `cron:geo`, `cron:translate`,
+   (`cron:fx`, `cron:price-usd`, `cron:cuotas`, `cron:medians`, `cron:geo`, `cron:translate`,
    `cron:resync`, `cron:sessions` — see the cron block above). `cron:fx` runs
-   before `cron:cuotas`: the cuota is derived from the recorded rate. Run
+   before `cron:price-usd`, and that before `cron:cuotas`: the cuota is derived
+   from `price_usd`, which for a Guaraní listing is only as current as the last
+   `cron:price-usd`. Run
    `seed:financing` once before `cron:cuotas` and `seed:locations` once before
    `cron:geo` are ever scheduled. Every script is idempotent, and every one of
    them accepts `--dry` if you want to see a schedule's effect before trusting
@@ -209,6 +212,8 @@ whose photos are all placeholders. Listings with real photos are skipped.
 ```powershell
 npm run cron:fx -- --dry --rate 6000
 npm run cron:fx -- --rate 6000
+npm run cron:price-usd -- --dry
+npm run cron:price-usd
 npm run cron:cuotas -- --dry
 npm run cron:cuotas
 ```
