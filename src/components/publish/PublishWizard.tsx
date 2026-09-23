@@ -476,7 +476,7 @@ export function PublishWizard({
 
   return (
     <div className="wizard">
-      <ol className="wizard-steps" aria-label="Pasos">
+      <ol className="wizard-steps" aria-label={t.stepsLabel}>
         {t.stepLabels.map((label, i) => (
           <li
             key={label}

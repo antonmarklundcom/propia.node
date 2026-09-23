@@ -112,6 +112,7 @@ export const enPublicAuth = {
 
 export const enPublish = {
   pageTitle: "List your property",
+  stepsLabel: "Steps",
   pageSubtitle: "Add it in three steps. We save your progress automatically so you can finish whenever you like.",
   prefillNote: "We filled in the details you gave us for the valuation. Review them and continue — you can change anything.",
   stepLabels: ["Details", "Location", "Price and publishing"] as const,
