@@ -181,6 +181,11 @@ export const en = {
   menuClose: "Close menu",
   menuLabel: "Main menu",
   navLabel: "Main",
+  errorTitle: "Something went wrong",
+  errorText: "We had a problem loading this page. Try again in a few seconds — if it keeps failing, go back to the home page.",
+  errorTextSite: "We had a problem loading the site. Try again in a few seconds.",
+  errorRetry: "Try again",
+  errorHome: "Go to the home page",
 } as const;
 
 /** Peer of esContactForm — see that namespace's comment. */
