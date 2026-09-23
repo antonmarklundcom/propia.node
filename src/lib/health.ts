@@ -214,7 +214,13 @@ const cachedHealth = unstable_cache(
     const [counts, migrations, runs] = await Promise.all([
       readCounts(),
       readMigrationHealth(),
-      lastRunByJob(),
+      /**
+       * `ops_runs` arrives with migration 0014. On a database that never got it,
+       * an uncaught read here 500'd the whole of `/admin` for a super-admin —
+       * the page whose health section exists to say "0014 is missing". An empty
+       * map renders as "never run", and the drift list above names the table.
+       */
+      lastRunByJob().catch(() => new Map<string, OpsRunRow>()),
     ]);
     const lastRuns: Record<string, SerializedRun> = {};
     for (const [job, row] of runs) lastRuns[job] = serializeRun(row);
