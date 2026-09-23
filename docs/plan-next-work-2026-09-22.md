@@ -20,7 +20,7 @@ site must look complete and honest: real-looking photos, explicit currency, clea
 | A7 national hub type chips | #178 | merged |
 | B1 `user:create --dry` (auth) | #181 | **open, founder merges** |
 | F-a favicon, F-d unused hub images, F-e sample thumbs, F-b mobile notice, F-c door contrast | #182, #185, #186, #183, #184 | merged |
-| B2 `verify:rate-limit` (test only) | #187 | **open, founder merges** |
+| B2 `verify:rate-limit` (test only) | #187 | merged by the founder |
 | F-f national type pages | #188 | merged (proposal in `docs/decisions-needed.md`, not built) |
 | A8 docs truth pass | this PR | see PR |
 

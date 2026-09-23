@@ -72,7 +72,13 @@ it; none of them blocks a phase.
   Keep running it on anything touching `listingScopeWhere`, `panelScope` or a
   panel query.
 
-- **`src/lib/rate-limit.ts` has no automated regression test.** O2 fixed a real
+- **RESOLVED 2026-09-22: `npm run verify:rate-limit`** (in `verify:local` and
+  the pre-push hook) now pins the limiter with a hand-moved fake clock: exhausted
+  allowance, the expiry boundary, the mixed-window sweep below, key independence.
+  It imports the module through the `server-only` shim in `scripts/tsconfig.json`.
+  Mutation-checked: reintroducing the pre-O2 sweep, or `>` → `>=` at the window
+  boundary, fails it. History, kept for context:
+  `src/lib/rate-limit.ts` had no automated regression test. O2 fixed a real
   bug in it — the sweep expired every bucket against whichever caller's window
   happened to trigger it, so a 5-minute `import-url` request wiped an hour-long
   `otp` bucket six minutes in and handed the counted user a fresh allowance.
