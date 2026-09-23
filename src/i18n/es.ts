@@ -822,6 +822,8 @@ export const esOwner = {
 /** Voseo strings for the publish wizard (ARCHITECTURE.md §3, M5). */
 export const esPublish = {
   pageTitle: "Publicá tu propiedad",
+  /** aria-label of the step list. */
+  stepsLabel: "Pasos",
   pageSubtitle:
     "Cargala en tres pasos. Guardamos tu avance automáticamente, así podés terminar cuando quieras.",
 
