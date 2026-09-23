@@ -22,7 +22,10 @@ site must look complete and honest: real-looking photos, explicit currency, clea
 | F-a favicon, F-d unused hub images, F-e sample thumbs, F-b mobile notice, F-c door contrast | #182, #185, #186, #183, #184 | merged |
 | B2 `verify:rate-limit` (test only) | #187 | merged by the founder |
 | F-f national type pages | #188 | merged (proposal in `docs/decisions-needed.md`, not built) |
-| A8 docs truth pass | this PR | see PR |
+| A8 docs truth pass | #189 | merged |
+| `cron:price-usd` (Gs listings' stored USD follows the rate) | #190 | merged |
+| Map view localised, pins in the listing's own currency | #191 | merged 2026-09-23 |
+| KNOWN-ISSUES truth: close entries fixed by #165 and #191 | this PR | see PR |
 
 - **F1 (§5 item 4) is answered: a merge deploys.** `/favicon.ico` went 404 → 200 on
   production minutes after #182 merged. Rule for agents: gate before merging,
