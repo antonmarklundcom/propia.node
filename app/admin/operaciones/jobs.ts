@@ -34,6 +34,7 @@ import { isR2Configured } from "@/lib/r2";
 import { isTranslationConfigured } from "@/lib/translate";
 import { esPanel } from "@/i18n/es";
 import { runCuotas } from "@/lib/ops/cuotas";
+import { runPriceUsd } from "@/lib/ops/price-usd";
 import { runMedians } from "@/lib/ops/medians";
 import { runGeo } from "@/lib/ops/geo";
 import { runFx } from "@/lib/ops/fx";
@@ -99,6 +100,16 @@ export function opsJobs(): Entry[] {
       disabledReason: null,
       run: (o) => runFx(o),
       revalidate: revalidateFx,
+    },
+    {
+      job: "cron:price-usd",
+      label: esPanel.opsPriceUsdLabel,
+      description: esPanel.opsPriceUsdDescription,
+      writes: esPanel.opsPriceUsdWrites,
+      requiresLimit: false,
+      disabledReason: null,
+      run: (o) => runPriceUsd(o),
+      revalidate: revalidateListings,
     },
     {
       job: "cron:cuotas",
@@ -233,6 +244,10 @@ export function findOpsJob(job: string): Entry | undefined {
 export const FOLLOW_UP_JOB: Readonly<Partial<Record<OpsJob, OpsJob>>> = {
   // A changed rate leaves every cached cuota quoting the old one.
   "seed:financing": "cron:cuotas",
+  // A new rate leaves every Guaraní listing's price_usd at the old one, and the
+  // cuota is derived from price_usd.
+  "cron:fx": "cron:price-usd",
+  "cron:price-usd": "cron:cuotas",
   // A moved centroid leaves every listing borrowing it at the old spot.
   "seed:locations": "cron:geo",
 };

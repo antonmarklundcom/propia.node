@@ -6,7 +6,7 @@ it; none of them blocks a phase.
 
 ## Open
 
-- **Listing sidebar follow-up (2026-09-21): stored USD conversion.** The manager reported Gs listings whose stored `price_usd` appears to use an older exchange rate. Sidebar filtering and sorting intentionally continue using that column; native card prices remain unchanged. Investigate/reconcile separately with founder-approved money rules. Existing map price labels also use Spanish compact USD formatting on the English door; locale-aware map copy is a separate improvement.
+- **Listing sidebar follow-up (2026-09-21): stored USD conversion.** Gs listings kept the `price_usd` of the rate they were written with (7300 on the demo rows). **Fixed in code 2026-09-22: `npm run cron:price-usd`** re-derives it from the latest `fx_rates` row (plan §4 rule); it still has to be run on production, between `cron:fx` and `cron:cuotas`. Existing map price labels also use Spanish compact USD formatting on the English door; locale-aware map copy is a separate improvement.
 
 - **`verify:import`'s database half fails against MariaDB, and it is the sandbox
   rather than the code.** Found in ops O1, which got a local database up for the
