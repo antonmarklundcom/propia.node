@@ -20,7 +20,8 @@ routed by the `Host` header in `middleware.ts`.
 - **Zero live users so far.** Everything is git-revertible. That is why some
   autonomy is granted below — not because mistakes are cheap in production.
 - **Hostinger auto-deploys `main`. There is no staging environment.** A merge is
-  a deploy. A push that does not build is a live outage.
+  a deploy (confirmed on production 2026-09-22: a merged favicon went live within
+  minutes). A push that does not build is a live outage.
 - **The database is the only copy of every listing and every lead.** Hostinger's
   daily backup is the only backup that exists.
 
@@ -78,7 +79,10 @@ git push -u origin claude/<feature-name>
 - **Branch naming: `claude/<feature-name>`.** One PR per unit of work.
 - **`npm run verify:local` must pass before every push.** It is
   `typecheck → build → verify:import → verify:facets → verify:i18n → verify:seo`.
-  The last four are pure — no database, no network.
+  The last four need no network. `verify:facets`, `verify:i18n` and `verify:seo`
+  never touch a database; `verify:import` also runs a database half (plan →
+  commit → re-run → rollback) when `DATABASE_URL` points at localhost, and
+  refuses any other host.
 - **Never `git push --no-verify`.** `.githooks/pre-push` runs the same gate; it is
   the only CI this repo has. Hooks install themselves via `prepare` on
   `npm install`; after a clone that skipped scripts, run `npm run hooks:install`.
@@ -103,7 +107,9 @@ git push -u origin claude/<feature-name>
   never merged by an agent. Deployed code selects every column in `schema.ts`, so
   code on `main` ahead of the database 500s every page that reads that table.
 - **You never run a migration against production.** `db:migrate` is the founder's
-  command, on the founder's machine.
+  command, on the founder's machine. It is `drizzle-kit migrate`, which reads
+  `DATABASE_URL` through `drizzle.config.ts`, not `DATABASE_URL_RW`: for that one
+  command the owner URL has to be exported as `DATABASE_URL`.
 - **You never hold the write database credential.** See §3.
 - Nothing auto-merges: there is no required status check on this repo.
 
@@ -184,7 +190,8 @@ returning `OpsResult` (`src/lib/ops/types.ts`). The `scripts/*.ts` file is a thi
 CLI over it, and `/admin` calls the same function. **A second code path for the UI
 is forbidden**, and the dry run must be the same pass over the same rows as the
 real one — a preview computed by different code is a guess that agrees most of the
-time. Every writing script takes `--dry`. Import `src/lib/ops/<job>` directly;
+time. Every writing script takes `--dry` (one exception until PR #181 merges:
+`user:create`, which always writes). Import `src/lib/ops/<job>` directly;
 there is deliberately no barrel file (one job pulls in the AWS SDK, another the
 Anthropic SDK).
 
@@ -256,7 +263,8 @@ not a neutral extra.
 `src/config/rental-services.ts` (import-free, because `next.config.ts` reads it)
 and re-exported from `@/design/sections`, which is where the app imports it from.
 The rental family's own pages have a Spanish URL on one door and an English URL on
-the other, and each door 301s the other language's — a literal `"/servicios/…"` at
+the other, and each door 308s the other language's (`permanent: true` in
+`next.config.ts`) — a literal `"/servicios/…"` at
 a new call site is a link into a redirect on half the doors.
 
 **Import pipeline.** `dedupKey()` returns `null` when there is no contact phone,
@@ -335,9 +343,9 @@ These files explain *why*, and are not a substitute for anything above.
 - **`CLAUDE.md`** — the verified state of the world. Its headings:
   "Domains", "Brand name", "Import pipeline", "Backlog state",
   "Caching", "Listing filters", "Map coordinates", "i18n", "CI",
-  "Migrations". Read the domain table and the backlog before proposing work;
+  "Migrations", "Launch track". Read the domain table and the backlog before proposing work;
   the backlog says what is **deliberately not built** (R2 is written and waits on
-  a bucket; the import image pipeline waits on R2; reviews need a founder
+  a bucket; the import image job `backfill:images` is written and waits on R2; reviews need a founder
   decision). This file supersedes `CLAUDE.md`'s old "Working agreements" section.
 - **`ARCHITECTURE.md`** — the design contract. Where it disagrees with
   `CLAUDE.md`, `CLAUDE.md` wins and the contract describes an intention.

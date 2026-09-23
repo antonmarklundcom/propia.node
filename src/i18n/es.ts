@@ -48,6 +48,8 @@ export const es = {
 export const esSiteNotice = {
   label: "Sitio en construcción",
   body: (brand: string) => `Estamos preparando el lanzamiento de ${brand}. Las propiedades que ves son ejemplos de prueba: no son inmuebles reales en venta ni ofertas comerciales, y los datos y las fotos pueden no corresponder a ninguna propiedad existente.`,
+  /** The whole notice on a phone, in one line: the same two facts, no brand. */
+  short: "En construcción: avisos de muestra, no ofertas reales.",
 } as const;
 
 /**

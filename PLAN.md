@@ -1,5 +1,9 @@
 # PLAN.md — live build status
 
+> **Open work lives in `docs/plan-next-work-2026-09-22.md`** (the launch-track
+> queue) and `docs/decisions-needed.md` (founder questions). This file stays
+> the historical tracker and decision log (D1–D21, F-numbers).
+
 Living tracker for the ARCHITECTURE.md §6 milestones. **Update this file in
 every session that finishes a step** — mark items done, add new blockers.
 `[C]` = Claude does it (code/session work). `[YOU]` = founder must do it

@@ -157,6 +157,7 @@ export const enSiteNotice = {
   label: "Site under construction",
   body: (brand: string) =>
     `We're preparing the launch of ${brand}. The properties you see are sample listings: they are not real properties for sale, and the data and photos may not correspond to any existing property.`,
+  short: "Under construction: sample listings, not real offers.",
 } as const;
 
 export const en = {

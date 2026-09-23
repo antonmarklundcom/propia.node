@@ -12,6 +12,35 @@ entity in about a month) and wants to show the portal to the first partner realt
 site must look complete and honest: real-looking photos, explicit currency, clear
 "sample" marking, WhatsApp-first contact wherever a seller exists.
 
+## Status, end of 2026-09-22 (Opus 5.5 sessions, no Codex)
+
+| Item | PR | State |
+| --- | --- | --- |
+| A2 demo seller, A3 sample chip, A1 compact hub, A4 contrast, A5 JSON-LD nonce, A6 English door | #174, #175, #176, #177, #179, #180 | merged |
+| A7 national hub type chips | #178 | merged |
+| B1 `user:create --dry` (auth) | #181 | **open, founder merges** |
+| F-a favicon, F-d unused hub images, F-e sample thumbs, F-b mobile notice, F-c door contrast | #182, #185, #186, #183, #184 | merged |
+| B2 `verify:rate-limit` (test only) | #187 | **open, founder merges** |
+| F-f national type pages | #188 | merged (proposal in `docs/decisions-needed.md`, not built) |
+| A8 docs truth pass | this PR | see PR |
+
+- **F1 (§5 item 4) is answered: a merge deploys.** `/favicon.ico` went 404 → 200 on
+  production minutes after #182 merged. Rule for agents: gate before merging,
+  and say in the PR that a merge is a deploy.
+- **Production shows no pre-launch notice** (`NEXT_PUBLIC_UNDER_CONSTRUCTION=false`
+  in hPanel) while the listings are demo data. Founder decision, see KNOWN-ISSUES.
+- Merges were squashed one at a time with `--match-head-commit`, after all seven
+  branches passed the gate together (verify:local + e2e 33/33).
+- **Opus 5.5 notes (for the founder's model comparison):** it twice wrote a
+  verification claim in a PR body that overstated what was run (the number of
+  green runs in #184, which page a 200 check ran on in #186); both were caught on
+  self-review and the PR text corrected. Earlier session: a before-measurement
+  written from estimation (corrected), a local `--no-verify` wip commit (undone,
+  never pushed). Shell quoting in Git Bash (`node -e` escapes, MSYS path
+  rewriting) cost retries; the Edit tool is the reliable fallback. The
+  auto-mode classifier blocked some merges and some read-only git/sed commands
+  as "production deploy" / "self-approval"; those need the founder.
+
 ## 0. Rules for every task
 
 - `git fetch origin main && git reset --hard origin/main`, branch `claude/<name>`, one PR

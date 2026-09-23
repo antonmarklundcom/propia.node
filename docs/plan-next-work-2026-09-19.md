@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-09-22** by `docs/plan-next-work-2026-09-22.md` (T1/T2 done in its A8, T12/T13 = its B1/B2). Kept for history.
+
 # Next-work plan — 2026-09-19
 
 Written for a **Sonnet 5 manager leading Codex CLI (`gpt-6-astra`, effort low)**. It is the

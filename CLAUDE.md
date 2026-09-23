@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-09-10.
+Last verified against the code: 2026-09-22 (docs truth pass, plan 2026-09-22 A8).
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -24,8 +24,8 @@ table.
 | `terreno.com.py` | **Owned, enabled, consolidated onto this app 2026-09-04** from its own former standalone Node deployment — retire that deployment separately (infra, not this repo). Terrenos-only feeder (`filters: { property_type: ["terreno"] }`), Spanish, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` and its sitemap omits them. |
 | `landforsaleparaguay.com` | **Owned since 2024-06-11 ("In Account"), registered as a vertical 2026-09-17.** `terreno.com.py`'s English feeder — same `filters: { property_type: ["terreno"] }`, `locale: "en"`, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com` (the English detail owner) and its sitemap omits them. **Declared after `realestateinparaguay.com` in `verticals.ts` on purpose** — `alternatesFor()`'s only tiebreak for two non-primary same-locale doors in a family is declaration order, so an earlier entry here would hijack the marketplace family's English hreflang slot from the door that actually is its translation pair. DNS/deploy status not yet confirmed live — verify before treating it as reachable by visitors. |
 | `landforsaleinparaguay.com` | **Owned since 2024-06-11 ("In Account"), same acquisition as `landforsaleparaguay.com` above.** NOT a vertical — two near-identical English "land for sale" domains would be a duplicate-content SEO problem, not a neutral extra. It whole-host 308s to `https://landforsaleparaguay.com` from `next.config.ts`'s `redirects()`. Do not add it to `verticals.ts`. |
-| `alquiler.com.py` | **The rental family's Spanish door — code landed 2026-09-09 (O1). Not purchased yet, and that is the actual blocker, not DNS.** `enabled: true` in `verticals.ts` so it can be previewed with a `Host` header and checked by `verify:seo`, but the host key is a domain nobody owns: there is nothing to point DNS at. Anton's first choice if `alquiler.com.py` stays unavailable is `alquileres.com.py`; once a domain is bought, renaming the host key in `verticals.ts` + the redirect map in `next.config.ts` + this doc is a one-hour Sonnet task (`fable-plan-polish.md`'s "Spanish rental domain" row), not a new build. Not a marketplace feeder: with `rentparaguay.com` it is one rental-services business in two languages (`family: "rental"`, `fable/plan-rentparaguay.md`). Brand "Alquiler Paraguay", `filters: { operation: ["alquiler", "alquiler_temporal"] }`, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` (the Spanish detail owner) and its sitemap omits them. Serves the rental business's own pages at **Spanish** URLs (`/servicios/<slug>`, `/nosotros`, `/contacto`) and 301s the English ones (R2, 2026-09-10). |
-| `rentparaguay.com` | **The same rental business in English — code landed 2026-09-09 (O1). DNS live as of 2026-09-10** (Anton confirmed the domain points at Hostinger), so this door now reaches real visitors. Its own `VerticalKey` (`"rent"`), paired to `alquiler.com.py` by `family`, not by key. Brand "Rent Paraguay", `locale: "en"`, same filters, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com`, the door that owns detail **in its own language**. hreflang pairs it only with `alquiler.com.py`: a door is never a language version of a door in another family. **Its own pages are English URLs since R2 (2026-09-10)** — `/services/<slugEn>`, `/about`, `/contact` — and it 301s the Spanish ones. `/propiedad/*` is NOT localised: that is the marketplace's page type and stays Spanish-slugged on every door. **Still open, founder-only**: `NEXT_PUBLIC_CONTACT_WHATSAPP` is unset, so this door's WhatsApp CTA is hidden until it is set and the app rebuilt (see backlog item 10); the old `rentparaguay.com`'s WordPress redirects still need checking before that deployment is decommissioned. `alquiler.com.py`, its Spanish pair, is not reachable yet — see its own row. |
+| `alquiler.com.py` | **The rental family's Spanish door — code landed 2026-09-09 (O1). Not purchased yet, and that is the actual blocker, not DNS.** `enabled: true` in `verticals.ts` so it can be previewed with a `Host` header and checked by `verify:seo`, but the host key is a domain nobody owns: there is nothing to point DNS at. Anton's first choice if `alquiler.com.py` stays unavailable is `alquileres.com.py`; once a domain is bought, renaming the host key in `verticals.ts` + the redirect map in `next.config.ts` + this doc is a one-hour Sonnet task (`fable-plan-polish.md`'s "Spanish rental domain" row), not a new build. Not a marketplace feeder: with `rentparaguay.com` it is one rental-services business in two languages (`family: "rental"`, `fable/plan-rentparaguay.md`). Brand "Alquiler Paraguay", `filters: { operation: ["alquiler", "alquiler_temporal"] }`, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` (the Spanish detail owner) and its sitemap omits them. Serves the rental business's own pages at **Spanish** URLs (`/servicios/<slug>`, `/nosotros`, `/contacto`) and 308s the English ones (R2, 2026-09-10; `permanent: true` in `next.config.ts` is Next's 308). |
+| `rentparaguay.com` | **The same rental business in English — code landed 2026-09-09 (O1). DNS live as of 2026-09-10** (Anton confirmed the domain points at Hostinger), so this door now reaches real visitors. Its own `VerticalKey` (`"rent"`), paired to `alquiler.com.py` by `family`, not by key. Brand "Rent Paraguay", `locale: "en"`, same filters, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com`, the door that owns detail **in its own language**. hreflang pairs it only with `alquiler.com.py`: a door is never a language version of a door in another family. **Its own pages are English URLs since R2 (2026-09-10)** — `/services/<slugEn>`, `/about`, `/contact` — and it 308s the Spanish ones. `/propiedad/*` is NOT localised: that is the marketplace's page type and stays Spanish-slugged on every door. **Still open, founder-only**: `NEXT_PUBLIC_CONTACT_WHATSAPP` is unset, so this door's WhatsApp CTA is hidden until it is set and the app rebuilt (see backlog item 10); the old `rentparaguay.com`'s WordPress redirects still need checking before that deployment is decommissioned. `alquiler.com.py`, its Spanish pair, is not reachable yet — see its own row. |
 | `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
 
 **Outstanding manual step:** `NEXT_PUBLIC_CANONICAL_HOST` on Hostinger must
@@ -46,7 +46,8 @@ Consequences that bite:
 - `siteOrigin()` / `listingCanonicalOrigin()` in `src/lib/origin.ts` emit
   `PRIMARY_ORIGIN` (= `https://${CANONICAL_HOST}`) for any host that is not an
   `enabled` vertical — preview deploys and `*.hostingersite.com` included.
-- A host's sitemap only lists URLs that host owns: `app/sitemap.ts` skips
+- A host's sitemap only lists URLs that host owns: `src/lib/sitemap.ts` (served by
+  `app/sitemap.xml/route.ts` and `app/sitemap/[chunk]/route.ts`) skips
   `/propiedad` entries when `hostOwnsListingDetail()` is false. Keep any new
   host-specific page type on that same rule — submitting a URL you
   canonicalise elsewhere is a Search Console error, not a neutral extra.
@@ -57,7 +58,7 @@ Consequences that bite:
   host key is spelled in a form `resolveVertical()` never looks up.
 - **A rental URL is spelled in exactly one place: `rentalPath()`.** The rental
   family's own pages have a Spanish URL on `alquiler.com.py` and an English one
-  on `rentparaguay.com` (R2), and every door 301s the other language's. Nav,
+  on `rentparaguay.com` (R2), and every door 308s the other language's. Nav,
   footer, home, hub, canonical, hreflang, sitemap and the redirects in
   `next.config.ts` all build their paths from that one helper — a literal
   `"/servicios/…"` at a new call site is a link into a redirect on half the
@@ -202,15 +203,18 @@ default, `--dry` first). It records itself as a revertible import job.
    rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
 4. **Reviews/ratings** — does not exist. Needs a migration and a moderation /
    anti-fake-review design. **Ask the founder before starting.**
-5. **Import image pipeline** — **not built, on purpose.** `syncImages()` writes
+5. **Import image pipeline** — **written, waiting on R2.** `syncImages()` writes
    the *remote source URL* into `listing_images.r2_key` as an interim, and
-   `imageUrl()` passes it through while `R2_PUBLIC_BASE_URL` is unset. Fetching,
-   deduping, WebP-converting and resizing imported photos waits on backlog item
-   1 above. **Do not build a stub around it** — the R2 code is written.
+   `imageUrl()` passes it through while `R2_PUBLIC_BASE_URL` is unset. The
+   fetch / dedupe / WebP / resize / upload job exists
+   (`src/lib/ops/backfill-images.ts`, `npm run backfill:images`); only its
+   execution waits on backlog item 1. **Do not build a second one.**
 6. **Financing rates** — `afd_primera_vivienda` (9.00%) in
-   `scripts/seed-financing.ts` is a **placeholder**. It feeds
-   `npm run cron:cuotas`, which caches `listings.cuota_gs`, which is printed on
-   every venta card. Wrong rates = wrong money sitewide. Verifying it against
+   `src/lib/ops/seed-financing.ts` (CLI: `scripts/seed-financing.ts`) is a
+   **placeholder**. It feeds `npm run cron:cuotas`, which caches
+   `listings.cuota_gs`, printed on a venta card only when an estimate exists and
+   the door shows cuotas (`showCuota()` in `src/design/sections.ts`: never on
+   the English door or the rental family). Wrong rates = wrong money sitewide. Verifying it against
    published AFD/MUVH terms is a research task, not a code task.
 7. **Che Róga Porã is `active: false`** (founder decision, 2026-08-16): it is
    approved per development, not per portal, so quoting it on every venta
@@ -273,11 +277,52 @@ default, `--dry` first). It records itself as a revertible import job.
     Historical note on what D1 deferred: `/inmobiliaria/[slug]`'s directory *body* (its
     canonical/hreflang/robots already follow the flag) and the rest of
     `/agente/[slug]`'s. Real matching — `agents.bio/zones/license_no`, a
-    `lead_matches` table, the admin "match 3" UI — is **D3, a schema change
-    and a founder decision**; until then a directory lead is a `seller` row
-    marked `utm.source: "directory:home"` / `"directory:profile"` that the
-    operator forwards by hand. **Do not add a `leads.source` column, an
-    `agent_id` column or a new `routed_to` member to get ahead of it.**
+    `lead_matches` table, the admin "match 3" UI — is **D3, and it is built**
+    (`src/lib/matching.ts`, `app/admin/leads/MatchPanel.tsx`, migration 0013).
+    A directory lead is still a `seller` row marked `utm.source:
+    "directory:home"` / `"directory:profile"`; the operator picks matches in
+    the panel and the hand-off to the realtor stays manual. **Do not add a
+    `leads.source` column, an `agent_id` column or a new `routed_to` member.**
+
+## Launch track — state as of 2026-09-22
+
+The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
+
+- **A merge to `main` deploys (F1 answered, 2026-09-22).** Checked on
+  production: `/favicon.ico` went from 404 to 200 minutes after #182 merged,
+  and #178's hub chips were live. AGENTS.md's "Hostinger auto-deploys `main`"
+  is true; there is no manual redeploy step.
+- **Listing design: direction A "Ficha Clara" (#172).** Category and hub
+  pages have a sidebar whose filters apply instantly (with a sticky "Ver N
+  propiedades" bar on mobile), the listing page has a gallery dialog, and a
+  mobile contact bar replaces the sticky seller card below 901 px. Hubs have a
+  compact header, no hero and no second SearchBar (#176). National hub type
+  chips link to `/<operacion>?tipo=<tipo>` (#178); a clean `/venta/casas`
+  URL is a founder decision (`docs/decisions-needed.md`, F-f).
+- **Demo data is marked, and has its own scripts.** `seed:sample-photos` puts
+  the ten photos in `public/img/sample/listings/` on listings as absolute URLs
+  (cards use their shipped `-thumb.webp`, #186); a sample cover shows the
+  "Aviso de muestra" chip (#175). `seed:demo-seller -- --whatsapp 595…` (#174)
+  attaches every unowned published listing to one demo agency so the WhatsApp
+  button renders. **Side effect:** form leads on those listings then route to
+  the `agency` lane instead of `internal`, so the `staff` role does not see
+  them (`/admin` still does); `--remove` undoes it. `cron:fx -- --rate N`
+  records a manual USD→PYG rate (founder wants 6000), then `cron:cuotas`.
+  All three take `--dry`, and are run on production by the founder only.
+- **The pre-launch notice** (`src/components/SiteNotice.tsx`) is one short
+  line under 641 px (#183). **Production does not render it at all** as of
+  2026-09-22: `NEXT_PUBLIC_UNDER_CONSTRUCTION=false` must be set in hPanel,
+  while every listing is still demo data. Founder decision, not code.
+- **e2e specs** (`E2E_PORT=3100 npx playwright test`, local DB only):
+  `sort`, `listing-sidebar`, `hub-type-links`, `contrast` (small text ≥ 4.5:1
+  on the marketplace, A4 #177) and `contrast-doors` (the same on the other six
+  doors through `--host-resolver-rules`, #184). The shared contrast helper is
+  `tests/e2e/contrast.ts`.
+- Also landed: JSON-LD nonce without a hydration warning (#179), English door
+  without unsourced legal/tax/cost claims (#180, wording awaits the founder's
+  signature), `/favicon.ico` + apple-touch icon (#182).
+- **Open, not for an agent to merge:** #181 `user:create --dry` (auth).
+  #187 `verify:rate-limit` (test only, marked sensitive) is open too.
 
 ## Caching — the data cache is the only cache this portal has
 
@@ -418,8 +463,11 @@ the fallback until it does.
     `x-locale` header the middleware sets. **Correct on every public page**,
     in `generateMetadata` and in the component body alike.
   - `getDictionary(locale)` from **`@/i18n`** — pure. For **client components**
-    (which take `locale` as a prop — `SearchBar` is the only buyer-facing one)
-    and for callers that already hold a locale.
+    (which take `locale` as a prop: `SearchBar`, `CategoryFilterBar`,
+    `ContactForm`, `LeadForm`, `PriceAlert`, `ValuationTool`, `VenderForm`,
+    `PublishWizard`, `DirectoryLeadForm`, `ListingGallery`) and for callers that
+    already hold a locale. Spanish defines the contract with `as const`; the
+    assembled dictionaries are checked with `satisfies Dictionary`.
 - **`src/i18n/index.ts` must never import `next/headers`**, directly or
   transitively. `SearchBar` and five other client components consume it. The
   request-scoped half is `server.ts`, which is `server-only`.
@@ -536,7 +584,7 @@ lead inserts, inside a transaction it always rolls back.
 Run it **before merging any PR that touches `schema.ts`** and **again
 immediately after `db:migrate`**. `No drift` is the only green.
 
-**What is on `main` past 0011, as of 2026-09-10.** Two migrations were generated
+**What is on `main` past 0011, as of 2026-09-22.** Four migrations were generated
 and merged after PLAN.md's "Pending migration" section was last rewritten, so
 that section no longer lists everything:
 
@@ -544,6 +592,8 @@ that section no longer lists everything:
 | --- | --- | --- |
 | `drizzle/0012_cooing_shatterstar.sql` | the `fx_rates` table (backlog #2, `cron:fx`) | **nobody knows** |
 | `drizzle/0013_ambitious_violations.sql` | the `lead_matches` table and `agents.bio` / `license_no` / `years_active` / `zones` (D3) | **nobody knows** |
+| `drizzle/0014_shiny_nehzno.sql` | the `ops_runs` and `site_settings` tables, `posts.locale` (`/admin` reads `ops_runs`) | **nobody knows** |
+| `drizzle/0015_broad_kulan_gath.sql` | the `staff` member of `users.role` (#171) | **nobody knows** |
 
 "Nobody knows" is the literal state, and it is the reason `db:status` exists: no
 file in this repo can answer it, because a migration pasted into phpMyAdmin

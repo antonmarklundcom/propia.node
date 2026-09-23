@@ -545,6 +545,26 @@ body {
   opacity: 0.45;
 }
 
+/* One line on a phone (F-b, 2026-09-22): the label and the full sentence took
+   ~130 px above the header at 390 px. The short line states the same two facts
+   and is never hidden, so the notice still shows on first load. */
+.site-notice__inner--short {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .site-notice__inner--full {
+    display: none;
+  }
+  .site-notice__inner--short {
+    display: block;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+}
+
 /* ---- Site header -------------------------------------------------------- */
 /* Dark, translucent over whatever the page starts with (usually the hero
    photo), gold hairline instead of a grey border. Nav is uppercase micro-type
@@ -1867,7 +1887,10 @@ body {
   font-weight: 400;
   letter-spacing: 2.4px;
   text-transform: uppercase;
-  color: var(--color-accent);
+  /* The footer is a dark ground on every door. accent-on-dark equals accent
+     on the editorial doors (#C19A4D); on the rental and directory doors the
+     accent is a dark clay/cobalt that measured 2.6:1 / 2.5:1 there (F-c). */
+  color: var(--color-accent-on-dark);
   margin-bottom: 18px;
 }
 
@@ -6627,6 +6650,13 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink-secondary);
 }
 
+/* DirectoryList's active zone chip is .mk-chip.panel-chip--active: the
+   .mk-chip colour above is declared later than .panel-chip--active's white,
+   so it won and put ink-secondary on the primary fill (2.0:1, F-c). */
+.mk-chip.panel-chip--active {
+  color: #fff;
+}
+
 .mk-agency__logo--round {
   border-radius: 0;
   object-fit: cover;
@@ -8429,7 +8459,8 @@ summary.panel-btn::-webkit-details-marker {
   font-size: 11px;
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
-  color: var(--color-ink-muted);
+  /* ink-muted is decorative only (3.3:1); the bar above carries the state. */
+  color: var(--color-ink-secondary);
 }
 
 .df-step--done .df-step__label {
@@ -9143,6 +9174,14 @@ summary.panel-btn::-webkit-details-marker {
    fill), so the label borrows it rather than inventing a hex. */
 .ph-about .ds-label {
   color: var(--site-notice-label-color);
+}
+
+/* Same 10px gold-on-cream label on the classic home (app/page.tsx, served on
+   terreno.com.py and landforsaleparaguay.com): 2.4:1 (F-c). Only the two light
+   sections; the dark "invertir" editorial keeps its gold. */
+#zonas .ds-label,
+.ds-section.editorial .ds-label {
+  color: var(--color-link);
 }
 
 .ph-about__grid {
