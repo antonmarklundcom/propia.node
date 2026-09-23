@@ -56,7 +56,14 @@ const cachedEntries = unstable_cache(
       vertical: Object.values(VERTICALS).find((v) => v.key === verticalKey),
     }),
   ["sitemap-entries"],
-  { revalidate: 3600, tags: [CACHE_TAGS.listings] },
+  // Every table the entries read has a tag, so the writer that changes it
+  // also refreshes the sitemap: listings, agencies/agents/projects/developers
+  // (directory), posts (guides), locations (category slugs). The hour is the
+  // backstop, not the refresh path.
+  {
+    revalidate: 3600,
+    tags: [CACHE_TAGS.listings, CACHE_TAGS.directory, CACHE_TAGS.guides, CACHE_TAGS.locations],
+  },
 );
 
 /**
