@@ -85,7 +85,7 @@ export default async function GuiasPage() {
   const c = (await dict()).guidesPage;
   const [origin, posts] = await Promise.all([
     siteOrigin(),
-    listPublishedPosts(),
+    currentLocale().then((locale) => listPublishedPosts(locale)),
   ]);
 
   const [featured, ...rest] = posts;
