@@ -5,6 +5,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   countLeadsByType,
+  countLeadsByVertical,
   countRecentLeads,
   countReviewQueue,
   listAllLeads,
@@ -19,6 +20,7 @@ import {
   type LeadMatchRow,
 } from "@/lib/matching";
 import { listingUrl } from "@/lib/urls";
+import { VERTICALS } from "@/config/verticals";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
 import { MatchPanel } from "./MatchPanel";
@@ -58,6 +60,25 @@ const ROUTED_LABEL: Record<string, string> = {
   internal: "Interno",
   developer: "Desarrolladora",
 };
+
+/** `leads.vertical` stores the door's key ("en", "rent"); show its domain. */
+const HOST_BY_VERTICAL: Record<string, string> = Object.fromEntries(
+  Object.entries(VERTICALS).map(([host, v]) => [v.key, host]),
+);
+
+function siteLabel(vertical: string): string {
+  return HOST_BY_VERTICAL[vertical] ?? vertical;
+}
+
+/** One filter URL, so the type chips, site chips and search keep each other. */
+function leadsHref(p: { tipo?: string; sitio?: string; q?: string }): string {
+  const sp = new URLSearchParams();
+  if (p.tipo && p.tipo !== "all") sp.set("tipo", p.tipo);
+  if (p.sitio) sp.set("sitio", p.sitio);
+  if (p.q) sp.set("q", p.q);
+  const qs = sp.toString();
+  return qs ? `/admin/leads?${qs}` : "/admin/leads";
+}
 
 function waReplyHref(whatsapp: string): string {
   return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
@@ -123,9 +144,14 @@ function formatWhen(d: Date): string {
 export default async function AdminLeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; q?: string; msg?: string }>;
+  searchParams: Promise<{
+    tipo?: string;
+    sitio?: string;
+    q?: string;
+    msg?: string;
+  }>;
 }) {
-  const [{ tipo, q, msg }, user] = await Promise.all([
+  const [{ tipo, sitio, q, msg }, user] = await Promise.all([
     searchParams,
     requireStaffOrAbove(),
   ]);
@@ -135,12 +161,22 @@ export default async function AdminLeadsPage({
     : "all";
 
   const internalOnly = isStaff(user.role);
-  const [reviewCount, recentLeads, counts, rows] = await Promise.all([
+  const [reviewCount, recentLeads, counts, siteCounts] = await Promise.all([
     countReviewQueue(),
     countRecentLeads(24, internalOnly),
     countLeadsByType(internalOnly),
-    listAllLeads({ type: activeType, q, internalOnly }),
+    countLeadsByVertical(internalOnly),
   ]);
+  // Only a value that some lead actually carries — never a free-text filter.
+  const activeSite = siteCounts.some((s) => s.vertical === sitio)
+    ? sitio
+    : undefined;
+  const rows = await listAllLeads({
+    type: activeType,
+    vertical: activeSite,
+    q,
+    internalOnly,
+  });
 
   // D3 matching, loaded once for the page rather than per card: one candidate
   // query and one matches query, then the ranking is pure TS per lead. Skipped
@@ -185,10 +221,7 @@ export default async function AdminLeadsPage({
 
         <nav className="panel-chips">
           {LEAD_TYPES.map((t) => {
-            const href =
-              t === "all"
-                ? "/admin/leads"
-                : `/admin/leads?tipo=${t}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+            const href = leadsHref({ tipo: t, sitio: activeSite, q });
             const count = counts[t] ?? 0;
             return (
               <Link
@@ -203,10 +236,37 @@ export default async function AdminLeadsPage({
           })}
         </nav>
 
+        {/* Which door captured the lead. Counts are per site across every
+            type, the same way the type chips count across every site. */}
+        {siteCounts.length > 1 ? (
+          <nav className="panel-chips" aria-label="Sitio">
+            <Link
+              href={leadsHref({ tipo: activeType, q })}
+              className={`panel-chip${activeSite ? "" : " panel-chip--active"}`}
+            >
+              Todos los sitios
+              <span className="panel-tab__count">{counts.all ?? 0}</span>
+            </Link>
+            {siteCounts.map((s) => (
+              <Link
+                key={s.vertical}
+                href={leadsHref({ tipo: activeType, sitio: s.vertical, q })}
+                className={`panel-chip${s.vertical === activeSite ? " panel-chip--active" : ""}`}
+              >
+                {siteLabel(s.vertical)}
+                <span className="panel-tab__count">{s.n}</span>
+              </Link>
+            ))}
+          </nav>
+        ) : null}
+
         {/* Same shape as the listings search on /admin/propiedades. */}
         <form action="/admin/leads" className="panel-form">
           {activeType !== "all" ? (
             <input type="hidden" name="tipo" value={activeType} />
+          ) : null}
+          {activeSite ? (
+            <input type="hidden" name="sitio" value={activeSite} />
           ) : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">
@@ -252,7 +312,7 @@ export default async function AdminLeadsPage({
                           : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
                     </span>
                     {/* Which door captured it — matters once feeders are on. */}
-                    <span>{lead.vertical}</span>
+                    <span>{siteLabel(lead.vertical)}</span>
                     {/* No dedicated `leads.source` column — /vender (PR4)
                         stamps utm.source instead (VenderForm.tsx). */}
                     {lead.utm?.source === "vender" ? (
