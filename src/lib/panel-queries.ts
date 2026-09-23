@@ -550,6 +550,8 @@ export async function listAllLeads(params: {
   /** Derived from the authenticated role, never from search params. */
   internalOnly?: boolean;
   type?: LeadRow["leadType"] | "all";
+  /** A `leads.vertical` key — the door that captured the lead. */
+  vertical?: string;
   q?: string;
   limit?: number;
 }): Promise<AdminLeadRow[]> {
@@ -558,6 +560,7 @@ export async function listAllLeads(params: {
   if (params.type && params.type !== "all") {
     filters.push(eq(leads.leadType, params.type));
   }
+  if (params.vertical) filters.push(eq(leads.vertical, params.vertical));
   const q = params.q?.trim();
   if (q) {
     const term = containsPattern(q);
@@ -638,6 +641,24 @@ function parseUtm(value: unknown): Record<string, string> | null {
 }
 
 /** Lead counts per type for the admin filter chips — one GROUP BY, not one query each. */
+/**
+ * Lead count per capturing door, for the "Sitio" chips on /admin/leads. Keyed
+ * by the raw `leads.vertical` value, so a door that has since been renamed or
+ * removed still shows up rather than hiding its leads from the filter.
+ */
+export async function countLeadsByVertical(
+  internalOnly = false,
+): Promise<Array<{ vertical: string; n: number }>> {
+  const rows = await db
+    .select({ vertical: leads.vertical, n: sql<number>`count(*)` })
+    .from(leads)
+    .where(internalOnly ? eq(leads.routedTo, "internal") : undefined)
+    .groupBy(leads.vertical);
+  return rows
+    .map((r) => ({ vertical: r.vertical, n: Number(r.n) }))
+    .sort((a, b) => b.n - a.n);
+}
+
 export async function countLeadsByType(internalOnly = false): Promise<Record<string, number>> {
   const rows = await db
     .select({ leadType: leads.leadType, n: sql<number>`count(*)` })

@@ -126,10 +126,21 @@ function describeTarget(raw: string): string {
  * text**, before it is split on `--> statement-breakpoint`. Matching on this
  * rather than on the tag is what catches a migration file edited after it ran.
  */
-function hashOf(tag: string): string | null {
+function hashesOf(tag: string): string[] | null {
   const path = join(process.cwd(), "drizzle", `${tag}.sql`);
   if (!existsSync(path)) return null;
-  return createHash("sha256").update(readFileSync(path).toString()).digest("hex");
+  /**
+   * Both line-ending spellings of the same file. A Windows clone checks the
+   * `.sql` files out with CRLF, so a `db:migrate` run from the founder's
+   * machine records CRLF hashes, while the deployed server reads the LF files
+   * from git. Hashing only the bytes on disk made `/admin` report every
+   * multi-line migration as both pending and orphaned (2026-09-23), right
+   * after `db:status` on Windows said "0 pending".
+   */
+  const lf = readFileSync(path).toString().replace(/\r\n/g, "\n");
+  const crlf = lf.replace(/\n/g, "\r\n");
+  const sha = (text: string) => createHash("sha256").update(text).digest("hex");
+  return [sha(lf), sha(crlf)];
 }
 
 /** null when `drizzle/` is not on disk beside the running process — see `journalReadable`. */
@@ -174,7 +185,7 @@ export async function readDatabaseStatus(
       idx: e.idx,
       tag: e.tag,
       applied: false,
-      fileMissing: hashOf(e.tag) === null,
+      fileMissing: hashesOf(e.tag) === null,
     }));
     let pending: number | null = null;
     let orphanHashes = 0;
@@ -187,20 +198,18 @@ export async function readDatabaseStatus(
       const recorded = new Set(rows.map((r) => r.hash));
 
       entries = journalEntries.map((e) => {
-        const h = hashOf(e.tag);
+        const hs = hashesOf(e.tag);
         return {
           idx: e.idx,
           tag: e.tag,
-          applied: h !== null && recorded.has(h),
-          fileMissing: h === null,
+          applied: hs !== null && hs.some((h) => recorded.has(h)),
+          fileMissing: hs === null,
         };
       });
       pending = entries.filter((e) => !e.applied).length;
 
       const known = new Set(
-        journalEntries
-          .map((e) => hashOf(e.tag))
-          .filter((h): h is string => h !== null),
+        journalEntries.flatMap((e) => hashesOf(e.tag) ?? []),
       );
       orphanHashes = rows.filter((r) => !known.has(r.hash)).length;
     }

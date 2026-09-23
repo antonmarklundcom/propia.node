@@ -1,0 +1,3 @@
+# Migration files are hashed by drizzle; keep them LF on every checkout so
+# a Windows machine records the same hash the deployed server computes.
+drizzle/*.sql text eol=lf
