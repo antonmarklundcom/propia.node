@@ -2512,6 +2512,16 @@ export const enGuidesPage = {
   metaTitle: "Guides and articles on Paraguay’s property market",
   description: (brand: string) => `Practical guides to buying, selling and renting in Paraguay, and property market analysis — written by the ${brand} team.`,
   categories: { guia: "Guide", mercado: "Market", noticia: "News" },
+  back: "← Guides and articles",
+  byAuthor: (name: string) => `By ${name}`,
+  updatedOn: (date: string) => `Updated ${date}`,
+  keepReading: "Keep reading",
+  notFound: "Article not found",
+  readCtaTitle: "From reading to searching",
+  // No "estimated monthly payment": the English door does not show cuotas.
+  readCtaText: "Houses, apartments and land across Paraguay.",
+  readCtaListings: "View properties",
+  readCtaValuation: "Value my property",
 } as const;
 
 export const enProjectPage = {

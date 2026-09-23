@@ -3428,6 +3428,16 @@ export const esGuidesPage = {
   metaTitle: "Guías y notas sobre el mercado inmobiliario paraguayo",
   description: (brand: string) => `Guías prácticas para comprar, vender y alquilar en Paraguay, y análisis del mercado inmobiliario — escritas por el equipo de ${brand}.`,
   categories: { guia: "Guía", mercado: "Mercado", noticia: "Noticia" },
+  // One guide (/guias/[slug]).
+  back: "← Guías y notas",
+  byAuthor: (name: string) => `Por ${name}`,
+  updatedOn: (date: string) => `Actualizada el ${date}`,
+  keepReading: "Seguí leyendo",
+  notFound: "Nota no encontrada",
+  readCtaTitle: "Pasá de leer a buscar",
+  readCtaText: "Casas, departamentos y terrenos en todo Paraguay, con cuota estimada.",
+  readCtaListings: "Ver propiedades",
+  readCtaValuation: "Tasar la mía",
 } as const;
 
 export const esProjectPage = {
