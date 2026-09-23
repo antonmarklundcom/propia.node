@@ -1,4 +1,5 @@
-﻿import { JsonLd } from "./JsonLd";
+﻿import { notFound } from "next/navigation";
+import { JsonLd } from "./JsonLd";
 import { itemListJsonLd } from "@/lib/jsonld";
 import { listingCanonicalOrigin } from "@/lib/origin";
 import { listingUrl } from "@/lib/urls";
@@ -50,6 +51,9 @@ export async function ListingBrowser({ basePath, query, searchParams, city, barr
   const center = barrio ?? selectedBarrio ?? city;
   const mapQuery = { ...facetSearchParams(filters, { operationSlug: operationSlug(query.operation), typeSlug: query.type ? typePlural(query.type) : filters.propertyType ? typePlural(filters.propertyType) : undefined }), ...(city ? { ciudad: city.slug } : {}), ...(barrio || barrioSlug ? { barrio: barrio?.slug ?? barrioSlug! } : {}) };
   const totalPages = Math.max(1, Math.ceil(filteredCount / 48));
+  // A page past the last one does not exist: 404 rather than a 200 "no
+  // results" (a soft 404 to a crawler). Page 1 keeps its empty state.
+  if (!mapView && page > totalPages) notFound();
   const typeChoices = withoutEmptyCategoryLinks(query.type && city ? [{ label: d.category.typeLabelAny, href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug })) }, ...PROPERTY_TYPES.map(type => ({ label: d.category.typeLabel[type], href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug, barrioSlug: barrio?.slug, type })) }))] : [], stocked);
   return <CategoryFilterBar basePath={basePath} params={params} locale={locale} count={filteredCount} operation={query.operation} fixedType={query.type} typeChoices={typeChoices} locations={locations} locationLabel={city ? d.filters.barrio : d.filters.city}
     viewSwitch={<nav className="view-switch" aria-label={d.category.viewSwitchLabel}>{(["lista","mapa"] as const).map(view => <a className={`view-switch__option${(view === "mapa") === mapView ? " view-switch__option--active" : ""}`} key={view} href={href({ vista: view === "mapa" ? view : undefined, page: undefined })}>{view === "mapa" ? d.category.viewMap : d.category.viewList}</a>)}</nav>}>

@@ -14,6 +14,11 @@ import { getOperationHubData } from "@/lib/directory-queries";
 import { categoryUrl, parseOperation, operationSlug, typePlural } from "@/lib/urls";
 import { CtaBand, Section } from "@/components/MarketingUI";
 import type { PropertyType } from "@/lib/import/types";
+import { getIndexability } from "@/lib/indexability";
+import { cache } from "react";
+
+/** One hub read per request, shared by generateMetadata and the page. */
+const hubData = cache(getOperationHubData);
 
 // Live counts per city and per type; no build-time DB on Hostinger.
 export const dynamic = "force-dynamic";
@@ -45,7 +50,14 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
   const vertical = await currentVertical();
   const copy = (await dict()).hub.copy[op];
   const sp = await searchParams;
-  const indexed = !hasListingUserParams(sp) && listingPage(sp.page) === 1;
+  // Thin-page rule, same as every category (src/lib/indexability.ts): a hub
+  // with fewer than MIN_INDEXABLE listings on this door is noindex, and the
+  // sitemap leaves it out (src/lib/sitemap.ts).
+  const { total } = await hubData(op, vertical);
+  const indexed =
+    !hasListingUserParams(sp) &&
+    listingPage(sp.page) === 1 &&
+    getIndexability({ listingCount: total }).state === "index";
   return {
     robots: { index: indexed, follow: true },
     title: `${copy.h1}`,
@@ -77,7 +89,7 @@ export default async function OperationHubPage({ params, searchParams }: Params)
   const vertical = await currentVertical();
   const [origin, hub] = await Promise.all([
     siteOrigin(),
-    getOperationHubData(op, vertical),
+    hubData(op, vertical),
   ]);
 
   // National type links stay national (plan 2026-09-22 A7): the counts are
