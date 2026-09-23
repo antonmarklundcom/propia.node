@@ -32,6 +32,7 @@ interface Finding {
 /** Jobs whose last run is worth showing on the dashboard, in reading order. */
 const WATCHED_JOBS: { job: OpsJob; label: string }[] = [
   { job: "cron:fx", label: esPanel.opsFxLabel },
+  { job: "cron:price-usd", label: esPanel.opsPriceUsdLabel },
   { job: "cron:cuotas", label: esPanel.opsCuotasLabel },
   { job: "cron:medians", label: esPanel.opsMediansLabel },
   { job: "cron:geo", label: esPanel.opsGeoLabel },

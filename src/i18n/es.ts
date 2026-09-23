@@ -664,6 +664,12 @@ export const esPanel = {
     "Trae la cotización USD → guaraníes del día y la guarda. Es de donde sale toda conversión de precios y toda cuota.",
   opsFxWrites: "Agrega una fila en fx_rates. No modifica ninguna anterior.",
 
+  opsPriceUsdLabel: "Precio en dólares de los avisos en guaraníes",
+  opsPriceUsdDescription:
+    "Recalcula el precio en dólares de cada aviso publicado en guaraníes con la cotización de hoy. Los filtros de precio y las cuotas salen de ese valor.",
+  opsPriceUsdWrites:
+    "Escribe listings.price_usd en los avisos en guaraníes donde cambió. Correlo después de la cotización y antes de las cuotas.",
+
   opsCuotasLabel: "Recalcular cuotas",
   opsCuotasDescription:
     "Recalcula la cuota mensual que se imprime en cada aviso de venta, con las tasas y la cotización de hoy.",
