@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const brand = await brandName();
   const { slug } = await params;
   const r = await resolve(slug);
-  if (!r) return { title: `Inmobiliaria no encontrada` };
+  if (!r) return { title: (await dict()).agencyProfile.notFoundTitle };
   const { agency, listingCount } = r;
   const ix = getIndexability({ listingCount });
   const [directoryOrigin, ownsDirectory, vertical] = await Promise.all([
@@ -61,9 +61,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     currentVertical(),
   ]);
   const canonical = `${directoryOrigin}${agencyUrl(agency.slug)}`;
+  const t = (await dict()).agencyProfile;
   return {
-    title: `${agency.name} — Propiedades en venta y alquiler`,
-    description: `${listingCount} ${listingCount === 1 ? "propiedad" : "propiedades"} publicadas por ${agency.name} en ${brand}.`,
+    title: t.metaTitle(agency.name),
+    description: t.metaDescription(brand, agency.name, listingCount),
     alternates: {
       canonical,
       languages: languageAlternates({
@@ -279,9 +280,9 @@ export default async function AgencyProfilePage({ params }: Params) {
               )}
             </h1>
             <p className="agency-profile__meta">
-              Inmobiliaria ·{" "}
+              {d.agencyProfile.kind} ·{" "}
               {listingCount > 0
-                ? `${listingCount} ${listingCount === 1 ? "propiedad publicada" : "propiedades publicadas"}`
+                ? d.agencyProfile.listingCount(listingCount)
                 : d.profile.emptyState}
             </p>
             {(agency.whatsapp || agency.email) && (
@@ -308,7 +309,7 @@ export default async function AgencyProfilePage({ params }: Params) {
 
         {listings.length > 0 ? (
           <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-            <h2 className="similar-listings__title">Propiedades publicadas</h2>
+            <h2 className="similar-listings__title">{d.agencyProfile.listingsTitle}</h2>
             <div className="similar-listings__grid">
               {listings.map((card) => (
                 <ListingCard key={card.id} card={card} />
@@ -317,7 +318,7 @@ export default async function AgencyProfilePage({ params }: Params) {
           </section>
         ) : (
           <p className="agency-profile__empty">
-            Esta inmobiliaria todavía no tiene propiedades publicadas.
+            {d.agencyProfile.empty}
           </p>
         )}
 
