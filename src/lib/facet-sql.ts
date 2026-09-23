@@ -73,6 +73,25 @@ export function verticalConds(vertical: VerticalConfig): SQL[] {
 }
 
 /**
+ * verticalConds() for one row already in hand: whether this door's filters
+ * admit the listing. For pages that load a listing by id (the detail page)
+ * rather than through a filtered query. Keep the two in step.
+ */
+export function verticalAdmits(
+  vertical: VerticalConfig,
+  listing: { operation: string; propertyType: string; foreignExposure: boolean | null },
+): boolean {
+  const f = vertical.filters;
+  if (!f) return true;
+  const ops = (f.operation ?? []).filter((o) => (OPERATIONS as readonly string[]).includes(o));
+  if (ops.length > 0 && !ops.includes(listing.operation)) return false;
+  const types = (f.property_type ?? []).filter((t) => (PROPERTY_TYPES as readonly string[]).includes(t));
+  if (types.length > 0 && !types.includes(listing.propertyType)) return false;
+  if (f.foreign_exposure === true && listing.foreignExposure !== true) return false;
+  return true;
+}
+
+/**
  * The complete WHERE for a public listing query: published, narrowed by the
  * visitor's facets, narrowed again by the door they arrived through.
  *

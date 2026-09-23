@@ -33,6 +33,8 @@ import {
   siteOrigin,
 } from "@/lib/origin";
 import { pageLanguageAlternates } from "@/lib/alternates-server";
+import { verticalAdmits } from "@/lib/facet-sql";
+import { VERTICALS } from "@/config/verticals";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
@@ -91,13 +93,29 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // Only a host that OWNS its detail pages is a language version of anything;
   // a feeder canonicalises this page away, and hreflang on a non-canonical URL
   // is a contradiction. Same predicate the sitemap gates on (origin.ts).
-  const languages = (await hostOwnsListingDetail())
+  //
+  // A door's filters narrow its listing set (foreign_exposure on the English
+  // door, a type on a feeder), but this page loads by id, so an excluded
+  // listing still renders here. It is not this door's page: noindex (on a door
+  // that owns detail), and no hreflang. Nor is a set emitted that names a door which excludes it — that
+  // alternate would be a page its own door does not list.
+  const admitted = verticalAdmits(vertical, listing);
+  const ownsDetail = await hostOwnsListingDetail();
+  const allLanguages = admitted && ownsDetail
     ? await pageLanguageAlternates({
         path: listingUrl(listing),
         scope: "listing",
         family: vertical.family,
       })
     : undefined;
+  const languages =
+    allLanguages &&
+    Object.values(allLanguages).every((url) => {
+      const door = VERTICALS[new URL(url).host];
+      return !door || verticalAdmits(door, listing);
+    })
+      ? allLanguages
+      : undefined;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
     title: t.metaTitle(title, formatPrice(listing, locale === "en" ? "en-US" : "es-PY")),
@@ -110,7 +128,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       images: cover ? [cover] : undefined,
       type: "website",
     },
-    robots: { index: true, follow: true },
+    // noindex only where this page is self-canonical: a feeder already
+    // canonicalises away, and noindex beside a cross-domain canonical is two
+    // contradicting signals.
+    robots: { index: admitted || !ownsDetail, follow: true },
   };
 }
 
