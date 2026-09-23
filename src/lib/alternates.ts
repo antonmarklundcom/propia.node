@@ -93,6 +93,15 @@ export interface AlternateInput {
    * Google the alternate is a redirect, and it drops the pair.
    */
   pathByLocale?: Partial<Record<Locale, string>>;
+  /**
+   * The host serving this request. A page's hreflang set must include the
+   * page itself: when the serving door is not the one its locale's slot went
+   * to — a feeder (terreno.com.py's terrenos-only /venta/asuncion is not the
+   * marketplace's all-types page), or a door that canonicalises this page
+   * type elsewhere — the set describes other pages, so none is emitted.
+   * Omitted, no such check (verify:seo's table-level cases).
+   */
+  servingHost?: string;
 }
 
 export interface Door {
@@ -177,6 +186,13 @@ export function alternatesFor(
 
   const urlFor = (door: Door) =>
     `https://${door.host}${input.pathByLocale?.[door.config.locale] ?? input.path}`;
+
+  if (
+    input.servingHost !== undefined &&
+    ![...byLocale.values()].some((door) => door.host === input.servingHost)
+  ) {
+    return undefined;
+  }
 
   const languages: Record<string, string> = {};
   for (const [locale, door] of byLocale) languages[locale] = urlFor(door);

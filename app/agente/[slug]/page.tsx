@@ -21,7 +21,7 @@ import {
   listingCanonicalOrigin,
   siteOrigin,
 } from "@/lib/origin";
-import { languageAlternates } from "@/lib/alternates";
+import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { currentVertical } from "@/lib/vertical-context";
 import { getIndexability } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
@@ -67,7 +67,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description: d.agentProfile.metaDescription(brand, agent.name, listingCount),
     alternates: {
       canonical,
-      languages: languageAlternates({
+      languages: await pageLanguageAlternates({
         path: agentUrl(agent.slug),
         scope: "directory",
         family: vertical.family,

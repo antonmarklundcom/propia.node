@@ -32,7 +32,7 @@ import {
   listingCanonicalOrigin,
   siteOrigin,
 } from "@/lib/origin";
-import { languageAlternates } from "@/lib/alternates";
+import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
@@ -92,7 +92,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // a feeder canonicalises this page away, and hreflang on a non-canonical URL
   // is a contradiction. Same predicate the sitemap gates on (origin.ts).
   const languages = (await hostOwnsListingDetail())
-    ? languageAlternates({
+    ? await pageLanguageAlternates({
         path: listingUrl(listing),
         scope: "listing",
         family: vertical.family,

@@ -141,6 +141,36 @@ check(
   Object.keys(home ?? {}).join(", "),
 );
 
+// A page's hreflang set must contain the page itself: served from a host
+// that holds none of the locale slots (a feeder, or a door that
+// canonicalises the page type elsewhere), no set is emitted at all.
+const homeInput = { path: "/", scope: "site" as const, family: "marketplace" as const };
+check(
+  "the primary serving its own page still gets the set",
+  alternatesFor(flipDoors, FLIP_PRIMARY, { ...homeInput, servingHost: FLIP_PRIMARY })?.["es"] ===
+    "https://inmobiliaria.com.py/",
+);
+check(
+  "the English door serving its own page still gets the set",
+  alternatesFor(flipDoors, FLIP_PRIMARY, { ...homeInput, servingHost: "realestateinparaguay.com" })?.["en"] ===
+    "https://realestateinparaguay.com/",
+);
+check(
+  "a host outside the set (a feeder) emits no hreflang",
+  alternatesFor(flipDoors, FLIP_PRIMARY, { ...homeInput, servingHost: "terreno.com.py" }) === undefined,
+);
+check(
+  "every served door either emits nothing or a set that names itself",
+  servedDoors(CANONICAL_HOST).every((door) => {
+    const set = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+      ...homeInput,
+      family: door.config.family,
+      servingHost: door.host,
+    });
+    return set === undefined || Object.values(set).some((url) => new URL(url).host === door.host);
+  }),
+);
+
 const cat = alternatesFor(flipDoors, FLIP_PRIMARY, {
   path: "/venta/asuncion/casas",
   scope: "site",

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
 import { currentLocale, dict } from "@/i18n/server";
 import { siteOrigin } from "@/lib/origin";
-import { languageAlternates } from "@/lib/alternates";
+import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingBrowser, listingPage } from "@/components/ListingBrowser";
@@ -64,7 +64,7 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
     description: copy.lead,
     alternates: {
       canonical: `${await siteOrigin()}/${operationSlug(op)}`,
-      languages: indexed ? languageAlternates({
+      languages: indexed ? await pageLanguageAlternates({
         path: `/${operationSlug(op)}`,
         scope: "site",
         family: vertical.family,
