@@ -141,7 +141,7 @@ export default async function ContactoPage() {
                 {c.propertyHeading}</h3>
               <p className="mk-card__text">
                 {c.propertyBody}</p>
-              <Link className="mk-card__link" href="/venta/asuncion">
+              <Link className="mk-card__link" href="/venta">
                 {c.browse}</Link>
             </div>
 

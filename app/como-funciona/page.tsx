@@ -134,7 +134,7 @@ export default async function ComoFuncionaPage() {
       <CtaBand
         title="Empezá por donde te sirva"
         text="Buscar, tasar o publicar — las tres cosas son gratis."
-        primary={{ label: "Ver propiedades", href: "/venta/asuncion" }}
+        primary={{ label: "Ver propiedades", href: "/venta" }}
         secondary={{ label: "Publicar la mía", href: "/publicar" }}
       />
     </main>

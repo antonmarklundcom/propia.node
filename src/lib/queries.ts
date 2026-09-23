@@ -34,7 +34,7 @@ import type { Operation, PropertyType } from "./import/types";
 import { CACHE_TAGS, CACHE_TTL } from "./cache";
 import type { VerticalConfig } from "@/config/verticals";
 import { facetConds, verticalConds, publishedFacetWhere } from "./facet-sql";
-import { categoryUrl } from "./urls";
+import { categoryUrl, parseOperation, parseTypePlural } from "./urls";
 import type { ListingFacets, SortOption } from "./facets";
 
 export type { SortOption } from "./facets";
@@ -107,6 +107,35 @@ export function stockedNavigationPaths(
     paths.add(categoryUrl({ operation: row.operation, citySlug: row.citySlug, type: row.propertyType }));
   }
   return paths;
+}
+
+/** The stocked set for chrome: null when the read fails, which keeps every link. */
+export async function stockedPathsOrNull(vertical: VerticalConfig): Promise<Set<string> | null> {
+  return listNavigationInventory(vertical).then(stockedNavigationPaths).catch(() => null);
+}
+
+/** /{operacion}/{ciudad} or /{operacion}/{ciudad}/{tipo}: the two shapes stockedNavigationPaths() knows. */
+function isCityCategoryPath(path: string): boolean {
+  const seg = path.split("/").filter(Boolean);
+  if (!path.startsWith("/") || seg.length < 2 || seg.length > 3) return false;
+  if (!parseOperation(seg[0])) return false;
+  return seg.length === 2 || parseTypePlural(seg[2]) !== null;
+}
+
+/**
+ * Drops links to a city or city/type category with no stock on this door:
+ * that page 404s (city) or redirects to its parent (type). Everything else,
+ * barrio paths included, passes unchanged; a null set keeps every link.
+ */
+export function withoutEmptyCategoryLinks<T extends { href: string }>(
+  links: readonly T[],
+  stocked: Set<string> | null,
+): T[] {
+  if (!stocked) return [...links];
+  return links.filter((l) => {
+    const path = l.href.split(/[?#]/)[0];
+    return !isCityCategoryPath(path) || stocked.has(path);
+  });
 }
 
 /** A ciudad by slug (slugs are unique per level in our seed). */

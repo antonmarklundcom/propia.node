@@ -21,6 +21,7 @@ import {
   parseOperation,
   parseCategorySegments,
   categoryUrl,
+  operationSlug,
   typePlural,
   parseTypePlural,
 } from "@/lib/urls";
@@ -54,8 +55,6 @@ interface Resolved {
   locationIds: number[];
   canonicalPath: string;
   parentUrl?: string;
-  /** True only when parentUrl (the 0-result redirect target) drops the tipo filter. */
-  parentDropsType: boolean;
   title: string;
 }
 
@@ -82,6 +81,25 @@ const countFor = cache(
     }),
 );
 
+/**
+ * Where an empty typed page sends the visitor: the nearest level up that has
+ * stock on this door. The direct parent can be empty too, and a redirect into
+ * a 404 is worse than either page, so it walks barrio/type → city/type →
+ * city (with ?tipo_vacio to explain the bounce) → the operation hub with the
+ * type as a filter, which always renders.
+ */
+async function emptyRedirectTarget(r: Resolved, vertical: VerticalConfig): Promise<string> {
+  const type = r.type!;
+  const cityIds = await subtreeIds(r.city.id);
+  if (r.barrio && (await countFor(r.operation, cityIds, type, vertical)) > 0) {
+    return categoryUrl({ operation: r.operation, citySlug: r.city.slug, type });
+  }
+  if ((await countFor(r.operation, cityIds, null, vertical)) > 0) {
+    return `${categoryUrl({ operation: r.operation, citySlug: r.city.slug })}?tipo_vacio=${typePlural(type)}`;
+  }
+  return `/${operationSlug(r.operation)}?tipo=${typePlural(type)}`;
+}
+
 /** Shared resolution for metadata + page (structure + DB lookups, no listings). */
 const resolve = cache(async function resolve(
   operacion: string,
@@ -104,7 +122,6 @@ const resolve = cache(async function resolve(
   let type: PropertyType | null = null;
   let locationIds: number[];
   let parentUrl: string | undefined;
-  let parentDropsType = false;
 
   if (shape.kind === "city") {
     locationIds = await subtreeIds(city.id);
@@ -112,7 +129,6 @@ const resolve = cache(async function resolve(
     type = shape.type;
     locationIds = await subtreeIds(city.id);
     parentUrl = categoryUrl({ operation, citySlug: city.slug });
-    parentDropsType = true;
   } else {
     type = shape.type;
     barrio = await resolveBarrio(city.id, shape.barrioSlug);
@@ -142,7 +158,6 @@ const resolve = cache(async function resolve(
       type: type ?? undefined,
     }),
     parentUrl,
-    parentDropsType,
     title,
   };
 });
@@ -251,15 +266,9 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   });
 
   if (ix.state === "gone") {
-    if (ix.redirectTo) {
-      // Tell the parent page which sub-category was empty so it can explain
-      // the bounce instead of silently swapping what the visitor asked for.
-      const to =
-        r.type && r.parentDropsType
-          ? `${ix.redirectTo}?tipo_vacio=${typePlural(r.type)}`
-          : ix.redirectTo;
-      redirect(to);
-    }
+    // Only typed pages have a parent to bounce to; the target explains the
+    // bounce (?tipo_vacio) and is never itself an empty page.
+    if (ix.redirectTo && r.type) redirect(await emptyRedirectTarget(r, vertical));
     notFound();
   }
 
