@@ -292,6 +292,7 @@ export async function POST(req: NextRequest) {
         listingTitle: listing?.title ?? null,
       }),
       url: adminUrl,
+      site: new URL(adminUrl).host,
     });
 
     if (owner?.whatsapp) {

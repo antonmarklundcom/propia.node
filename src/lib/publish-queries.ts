@@ -7,7 +7,7 @@
  * (locations, nearby projects, financing programs) feeds the wizard's selects.
  */
 import "server-only";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   agencies, agents, financingPrograms, listings, locations, projects,
@@ -304,6 +304,9 @@ export async function submitDraftForReview(params: {
         eq(listings.id, params.draftId),
         eq(listings.ownerUserId, params.userId),
         eq(listings.status, "draft"),
+        // A draft may be saved before its price step (saveDraftAction), but it
+        // never reaches the review queue without one.
+        sql`${listings.priceAmount} > 0`,
       ),
     );
   return res.affectedRows;

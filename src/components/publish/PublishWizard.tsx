@@ -359,9 +359,13 @@ export function PublishWizard({
       setStepError(err);
       return;
     }
-    // Step 1 completes the required core → we can persist the server draft.
-    const saved = await persist();
-    if (saved === null) return;
+    // The location step completes the required core → only from there can the
+    // server draft be saved. Saving from the first step failed on the location
+    // (and, before, on the price), so "Siguiente" never got past "Detalles".
+    if (step >= 1) {
+      const saved = await persist();
+      if (saved === null) return;
+    }
     setStep((s) => Math.min(2, s + 1));
   }, [persist, step, validateStep]);
 

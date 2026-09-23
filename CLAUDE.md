@@ -249,7 +249,11 @@ default, `--dry` first). It records itself as a revertible import job.
    `/mis-avisos/consultas`.
 9. **Operator alerts are optional and silent when unset.** `alertOperator()`
    in `src/lib/crm.ts` posts `{"event":"operator_alert"}` to
-   `LEAD_WEBHOOK_URL` on a new lead and a new review submission. With no
+   `LEAD_WEBHOOK_URL` on a new lead and a new review submission, and (since
+   2026-09-23) sends the same alert to the founder's phone through a Telegram
+   bot when `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` are set. The Telegram
+   pair is alerts-only on purpose: `LEAD_WEBHOOK_URL` also switches /publicar
+   to OTP verification, which must stay off until something delivers codes. With no
    webhook there is no alert and no fake one — the zero-config signal is the
    `/admin` badges (review queue, and leads from the last 24 h). Same rule as
    `sendOtp`: never log a line that pretends a message was delivered.
@@ -593,10 +597,19 @@ that section no longer lists everything:
 
 | File | What it adds | Recorded as applied to prod? |
 | --- | --- | --- |
-| `drizzle/0012_cooing_shatterstar.sql` | the `fx_rates` table (backlog #2, `cron:fx`) | **nobody knows** |
-| `drizzle/0013_ambitious_violations.sql` | the `lead_matches` table and `agents.bio` / `license_no` / `years_active` / `zones` (D3) | **nobody knows** |
-| `drizzle/0014_shiny_nehzno.sql` | the `ops_runs` and `site_settings` tables, `posts.locale` (`/admin` reads `ops_runs`) | **nobody knows** |
-| `drizzle/0015_broad_kulan_gath.sql` | the `staff` member of `users.role` (#171) | **nobody knows** |
+| `drizzle/0012_cooing_shatterstar.sql` | the `fx_rates` table (backlog #2, `cron:fx`) | **yes, 2026-09-23** |
+| `drizzle/0013_ambitious_violations.sql` | the `lead_matches` table and `agents.bio` / `license_no` / `years_active` / `zones` (D3) | **yes, 2026-09-23** |
+| `drizzle/0014_shiny_nehzno.sql` | the `ops_runs` and `site_settings` tables, `posts.locale` (`/admin` reads `ops_runs`) | **yes, 2026-09-23** |
+| `drizzle/0015_broad_kulan_gath.sql` | the `staff` member of `users.role` (#171) | **yes, 2026-09-23** |
+
+**Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
+pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a
+Windows clone, then `db:status` again: **0 pending, No drift.** A Windows clone
+checks the `.sql` files out CRLF, so the hashes recorded for that run differ
+from the LF files the server reads; `db:status` matches either spelling since
+#208, and `.gitattributes` pins `drizzle/*.sql` to LF for future runs. The
+database is MariaDB 11.8 with a non-strict `sql_mode` (informational in the
+`/admin` health box; `src/db/index.ts` is not edited to change it).
 
 "Nobody knows" is the literal state, and it is the reason `db:status` exists: no
 file in this repo can answer it, because a migration pasted into phpMyAdmin

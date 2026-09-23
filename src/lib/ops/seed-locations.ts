@@ -154,6 +154,8 @@ const TREE: Node[] = [
     children: [
       { name: "Paraguarí", level: "ciudad", lat: -25.6314, lng: -57.1461 },
       { name: "Ypacaraí", level: "ciudad", lat: -25.4058, lng: -57.2839 },
+      // Requested by an agency with a listing there (lead 2026-09-04).
+      { name: "Yaguarón", level: "ciudad", lat: -25.5617, lng: -57.2833 },
     ],
   },
 ];
