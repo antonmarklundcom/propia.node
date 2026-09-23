@@ -204,7 +204,10 @@ export default async function ListingPage({ params }: Params) {
 
   const city = chain.find((c) => c.level === "ciudad");
   const barrio = chain.find((c) => c.level === "barrio");
-  const typeLabel = PROPERTY_TYPE_LABELS[listing.propertyType];
+  // Plural for the breadcrumb (it names the category page), singular for the
+  // facts strip and the details row; both in the request's language.
+  const typeLabel = d.category.typeLabel[listing.propertyType] ?? PROPERTY_TYPE_LABELS[listing.propertyType];
+  const typeSingular = t.typeSingular[listing.propertyType] ?? typeLabel;
   const typeUrl = city
     ? categoryUrl({ operation: listing.operation, citySlug: city.slug, type: listing.propertyType })
     : undefined;
@@ -322,7 +325,7 @@ export default async function ListingPage({ params }: Params) {
   const details: { icon: GlyphName; label: string; value: string }[] = [];
   if (barrio) details.push({ icon: "pin", label: t.detailBarrio, value: barrio.name });
   if (city) details.push({ icon: "building", label: t.detailCity, value: city.name });
-  details.push({ icon: propertyGlyph, label: t.detailType, value: typeLabel });
+  details.push({ icon: propertyGlyph, label: t.detailType, value: typeSingular });
   if (listing.propertyState)
     details.push({
       icon: "key",
@@ -359,7 +362,7 @@ export default async function ListingPage({ params }: Params) {
         entry={{
           href: listingUrl(listing),
           title,
-          price: formatPrice(listing),
+          price: formatPrice(listing, numberLocale),
           operation: listing.operation,
           // realImages already excludes placeholder keys, so a listing with no
           // real photo stores no img and the card renders the fallback.
@@ -416,7 +419,7 @@ export default async function ListingPage({ params }: Params) {
           {/* Facts strip: type · beds · baths · area · freshness */}
           <ul className="listing-facts">
             <li className="listing-facts__item">
-              <Glyph name={propertyGlyph} /> {typeLabel.replace(/s$/, "")}
+              <Glyph name={propertyGlyph} /> {typeSingular}
             </li>
             {listing.bedrooms != null && (
               <li className="listing-facts__item"><Glyph name="bed" /> {t.factBedrooms(listing.bedrooms)}</li>
@@ -622,25 +625,25 @@ export default async function ListingPage({ params }: Params) {
             {contextCell ? (
               <>
                 {d.precios.contextMedian({
-                  typeLabel: locale === "en" ? d.category.typeLabel[contextCell.propertyType] : PROPERTY_TYPE_LABELS[contextCell.propertyType],
+                  typeLabel: d.category.typeLabel[contextCell.propertyType] ?? PROPERTY_TYPE_LABELS[contextCell.propertyType],
                   operationLabel:
                     d.precios.contextOperationLabel[contextCell.operation] ??
                     contextCell.operation,
                   city: city.name,
                   median:
                     contextCell.medianPriceUsd != null
-                      ? formatUsd(contextCell.medianPriceUsd)
+                      ? formatUsd(contextCell.medianPriceUsd, numberLocale)
                       : "—",
                   perM2:
                     contextCell.medianPriceM2Usd != null
-                      ? formatUsd(contextCell.medianPriceM2Usd)
+                      ? formatUsd(contextCell.medianPriceM2Usd, numberLocale)
                       : null,
                   sample: contextCell.sampleSize,
                 })}
                 {listingPerM2 != null && (
                   <>
                     {" — "}
-                    {d.precios.contextThisListing(formatUsd(listingPerM2))}
+                    {d.precios.contextThisListing(formatUsd(listingPerM2, numberLocale))}
                   </>
                 )}
               </>

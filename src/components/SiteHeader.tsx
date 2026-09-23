@@ -166,7 +166,7 @@ export async function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="site-header__nav" aria-label="Principal">
+        <nav className="site-header__nav" aria-label={d.common.navLabel}>
           {nav.map((group) => (
             <div key={group.label} className="site-header__group">
               <Link className="site-header__link" href={group.href}>

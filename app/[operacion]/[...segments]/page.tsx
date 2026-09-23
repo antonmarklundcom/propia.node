@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { dict } from "@/i18n/server";
-import type { Dictionary } from "@/i18n";
+import { numberLocaleFor, type Dictionary } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
 import {
   resolveCity,
@@ -344,11 +344,11 @@ export default async function CategoryPage({ params, searchParams }: Params) {
                   city: r.city.name,
                   median:
                     contextCell.medianPriceUsd != null
-                      ? formatUsd(contextCell.medianPriceUsd)
+                      ? formatUsd(contextCell.medianPriceUsd, numberLocaleFor(vertical.locale))
                       : "—",
                   perM2:
                     contextCell.medianPriceM2Usd != null
-                      ? formatUsd(contextCell.medianPriceM2Usd)
+                      ? formatUsd(contextCell.medianPriceM2Usd, numberLocaleFor(vertical.locale))
                       : null,
                   sample: contextCell.sampleSize,
                 })
