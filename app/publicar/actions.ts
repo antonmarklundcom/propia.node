@@ -61,8 +61,14 @@ export type SaveDraftResult =
 
 /**
  * Persist the wizard's core once the required fields are present (operation,
- * type, title, price, location). Called on step advance and on manual save;
+ * type, title, location). Called on step advance and on manual save;
  * partial step-1 state stays client-side until it's complete.
+ *
+ * The price is NOT required here: it lives on the last step, and the draft has
+ * to exist before then (photos attach to it). Requiring it made "Siguiente"
+ * on the location step fail with "Ingresá un precio válido" before the price
+ * field was ever shown. A draft with no price is stored as 0 and
+ * `submitDraftForReview` refuses it, so it can never reach the review queue.
  */
 export async function saveDraftAction(
   payload: DraftPayload,
@@ -72,7 +78,7 @@ export async function saveDraftAction(
   const operation = payload.operation as Operation;
   const propertyType = payload.propertyType as PropertyType;
   const title = String(payload.title ?? "").trim();
-  const priceAmount = Number(payload.priceAmount);
+  const priceAmount = Number(payload.priceAmount ?? 0);
   const priceCurrency = payload.priceCurrency === "PYG" ? "PYG" : "USD";
   const locationId = Number(payload.locationId);
 
@@ -80,7 +86,7 @@ export async function saveDraftAction(
   if (!PROPERTY_TYPES.includes(propertyType))
     return { ok: false, error: "propertyType" };
   if (title.length < 8) return { ok: false, error: "title" };
-  if (!Number.isFinite(priceAmount) || priceAmount <= 0)
+  if (!Number.isFinite(priceAmount) || priceAmount < 0)
     return { ok: false, error: "price" };
   if (!Number.isInteger(locationId) || locationId <= 0)
     return { ok: false, error: "location" };
@@ -202,6 +208,7 @@ async function alertReviewSubmitted(
     title: esPanel.alertReviewTitle,
     detail: esPanel.alertReviewDetail(row?.title ?? String(draftId), verified),
     url: `${await siteOrigin()}/admin`,
+    site: new URL(await siteOrigin()).host,
   });
 }
 

@@ -63,6 +63,8 @@ export interface OperatorAlert {
   detail?: string;
   /** Absolute URL of the screen that acts on it. */
   url?: string;
+  /** The domain it happened on, e.g. `rentparaguay.com`. */
+  site?: string;
 }
 
 /**
@@ -236,16 +238,59 @@ export function getCrm(): CrmProvider {
 }
 
 /**
+ * The operator's own phone, through a Telegram bot. Deliberately separate from
+ * `LEAD_WEBHOOK_URL`: setting that webhook also turns on OTP verification in
+ * /publicar (`isMessagingConfigured()`), which must stay off until something
+ * can actually deliver the codes. These two variables only ever carry alerts.
+ */
+function telegramConfig(): { token: string; chatId: string } | null {
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
+  return token && chatId ? { token, chatId } : null;
+}
+
+async function sendTelegram(text: string): Promise<CrmResult> {
+  const cfg = telegramConfig();
+  if (!cfg) return { ok: false, error: "telegram not configured" };
+  try {
+    const res = await fetch(
+      `https://api.telegram.org/bot${cfg.token}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          chat_id: cfg.chatId,
+          text,
+          disable_web_page_preview: true,
+        }),
+        signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+      },
+    );
+    return res.ok ? { ok: true } : { ok: false, error: `telegram ${res.status}` };
+  } catch (e) {
+    return { ok: false, error: isTimeout(e) ? "telegram timeout" : String(e) };
+  }
+}
+
+function operatorAlertText(alert: OperatorAlert): string {
+  return [alert.title, alert.detail, alert.site, alert.url]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
+}
+
+/**
  * Fire-and-forget operator alert. Never throws and never reports back: no
  * caller may fail, retry or slow a request because a ping did not land — the
  * lead or the pending listing is already in MySQL, which is the record.
+ *
+ * Goes to every configured channel: the webhook (when set) and Telegram (when
+ * set). With neither, nothing is sent and nothing pretends it was.
  */
 export async function alertOperator(alert: OperatorAlert): Promise<void> {
-  try {
-    await getCrm().notifyOperator(alert);
-  } catch {
-    /* an undelivered ping is not worth an error page */
-  }
+  await Promise.allSettled([
+    getCrm().notifyOperator(alert),
+    telegramConfig() ? sendTelegram(operatorAlertText(alert)) : null,
+  ]);
 }
 
 /** Fire-and-forget owner alert. The lead is already in MySQL; never throws. */
