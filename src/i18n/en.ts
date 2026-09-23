@@ -2573,6 +2573,7 @@ export const enPriceAlert = {
   phoneLabel: "Your WhatsApp number",
   sending: "…",
   submit: "Notify me",
+  error: "We could not save your alert. Check the number and try again.",
 } as const;
 
 export const enParaInmobiliarias = {

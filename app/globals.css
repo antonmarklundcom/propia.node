@@ -49,6 +49,8 @@
   --color-link-hover: #6B4F1C;
   --color-ink: #16211B;
   --color-ink-secondary: #56605A;
+  /* Error text and danger outlines; the literal .lead-form__error uses. */
+  --color-error: #A3302B;
   --color-ink-muted: #7D857F;
   --color-surface: #ffffff;
   --color-background: #F6F3EC;
@@ -2603,6 +2605,13 @@ body {
   font-size: 13px;
   width: 170px;
   max-width: 100%;
+}
+
+.price-alert__error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-error);
 }
 
 .price-alert__submit {
@@ -7440,8 +7449,7 @@ summary.panel-btn::-webkit-details-marker {
   text-align: center;
 }
 
-/* Same literal .lead-form__error uses — --color-error isn't wired into
-   :root anywhere in this codebase yet (pre-existing, out of scope here). */
+/* Same literal .lead-form__error uses (now also --color-error in :root). */
 .vd-form__error {
   margin: 0;
   font-size: 13.5px;
