@@ -37,7 +37,7 @@ import { categoryUrl } from "@/lib/urls";
 import { brandTaglineFor } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
-import { languageAlternates } from "@/lib/alternates";
+import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
 import { safeImageUrl } from "@/lib/external-image";
@@ -200,7 +200,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // (see alternates.ts).
     alternates: {
       canonical: await siteOrigin(),
-      languages: languageAlternates({
+      languages: await pageLanguageAlternates({
         path: "/",
         scope: "site",
         family: vertical.family,

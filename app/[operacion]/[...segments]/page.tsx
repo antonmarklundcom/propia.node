@@ -34,7 +34,7 @@ import {
 } from "@/lib/precios-queries";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { siteOrigin } from "@/lib/origin";
-import { languageAlternates } from "@/lib/alternates";
+import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingBrowser, listingPage as parsePage } from "@/components/ListingBrowser";
 import type { Operation, PropertyType } from "@/lib/import/types";
@@ -212,7 +212,7 @@ export async function generateMetadata({
     alternates: {
       canonical,
       languages: indexed
-        ? languageAlternates({
+        ? await pageLanguageAlternates({
             path: r.canonicalPath,
             scope: "site",
             family: vertical.family,

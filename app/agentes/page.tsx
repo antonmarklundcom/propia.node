@@ -7,7 +7,7 @@ import {
   hostOwnsDirectory,
   siteOrigin,
 } from "@/lib/origin";
-import { languageAlternates } from "@/lib/alternates";
+import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { currentVertical } from "@/lib/vertical-context";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
@@ -43,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: c.description(brand),
     alternates: {
       canonical: `${directoryOrigin}/agentes`,
-      languages: languageAlternates({
+      languages: await pageLanguageAlternates({
         path: "/agentes",
         scope: "directory",
         family: vertical.family,

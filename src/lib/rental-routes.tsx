@@ -39,7 +39,7 @@ import {
 } from "@/design/sections";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
-import { languageAlternates } from "@/lib/alternates";
+import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import {
@@ -79,7 +79,7 @@ async function rentalAlternates(
   const origin = await siteOrigin();
   return {
     canonical: `${origin}${rentalPath(vertical.locale, page, service)}`,
-    languages: languageAlternates({
+    languages: await pageLanguageAlternates({
       path: rentalPath(vertical.locale, page, service),
       pathByLocale: rentalPathsByLocale(page, service),
       scope: "site",
