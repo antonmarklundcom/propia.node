@@ -25,7 +25,9 @@ export interface LeadPayload {
     | "seller"
     | "valuation"
     | "developer"
-    | "agent_signup";
+    | "agent_signup"
+    | "landlord"
+    | "question";
   vertical: string;
   name?: string;
   whatsapp: string;

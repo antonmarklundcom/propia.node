@@ -18,6 +18,10 @@ import {
   proposeMatches,
   MAX_MATCHES_PER_LEAD,
 } from "@/lib/matching";
+import { updateLeadFollowUp, type LeadFollowUp } from "@/lib/panel-queries";
+
+const FOLLOW_UP: readonly LeadFollowUp[] = ["new", "contacted", "closed"];
+const NOTE_MAX = 2000;
 
 const ROUTE = "/admin/leads";
 
@@ -62,4 +66,37 @@ export async function markMatchSentAction(matchId: number): Promise<void> {
   if (!Number.isInteger(matchId) || matchId <= 0) return;
   await markMatchSent(matchId, isStaff(user.role));
   revalidatePath(ROUTE);
+}
+
+/**
+ * Save a lead's follow-up state and note. `back` returns the operator to the
+ * filtered list they were on; anything that is not an /admin/leads URL is
+ * ignored rather than followed.
+ */
+export async function updateLeadAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+
+  const back = String(formData.get("back") ?? "");
+  const target = back.startsWith(`${ROUTE}?`) || back === ROUTE ? back : ROUTE;
+
+  const leadId = toId(formData.get("leadId"));
+  const status = String(formData.get("status") ?? "") as LeadFollowUp;
+  if (!leadId || !FOLLOW_UP.includes(status)) {
+    revalidatePath(ROUTE);
+    redirect(target);
+  }
+
+  const note =
+    String(formData.get("note") ?? "")
+      .trim()
+      .slice(0, NOTE_MAX) || null;
+
+  await updateLeadFollowUp({
+    id: leadId,
+    status,
+    note,
+    internalOnly: isStaff(user.role),
+  });
+  revalidatePath(ROUTE);
+  redirect(target);
 }

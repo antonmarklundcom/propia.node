@@ -102,7 +102,7 @@ export default async function ContactoPage() {
                   value: "developer",
                   label: c.reasonDeveloper,
                 },
-                { value: "buyer", label: c.reasonOther },
+                { value: "question", label: c.reasonOther },
               ]}
               companyField
             />

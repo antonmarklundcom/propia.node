@@ -23,6 +23,8 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
   valuation: "Tasación",
   developer: "Desarrolladora",
   agent_signup: "Alta de agente",
+  landlord: "Alquilar su propiedad",
+  question: "Consulta",
 };
 
 /** wa.me deep link to reply to the lead's own WhatsApp number. */
