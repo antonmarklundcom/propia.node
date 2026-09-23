@@ -11,6 +11,7 @@
 import type { ListingDetail } from "./queries";
 import { imageUrl } from "./format";
 import { listingUrl } from "./urls";
+import { roundCoord } from "./coords";
 
 export function breadcrumbJsonLd(
   origin: string,
@@ -51,10 +52,13 @@ export function listingJsonLd(
       .map((im) => imageUrl(im.r2Key))
       .filter((u): u is string => !!u),
     datePosted: listing.publishedAt?.toISOString(),
+    // The listing's own currency and amount, as the page prints it: a Guaraní
+    // listing never shows a dollar figure (format.ts), and its stored USD is a
+    // conversion that can lag the rate.
     offers: {
       "@type": "Offer",
-      price: Number(listing.priceUsd),
-      priceCurrency: "USD",
+      price: Number(listing.priceAmount),
+      priceCurrency: listing.priceCurrency,
       availability: "https://schema.org/InStock",
     },
     address: {
@@ -63,12 +67,13 @@ export function listingJsonLd(
       addressRegion: chain.find((c) => c.level === "departamento")?.name,
       addressCountry: "PY",
     },
+    // Rounded like the map pins (src/lib/coords.ts): page source is public.
     ...(listing.lat && listing.lng
       ? {
           geo: {
             "@type": "GeoCoordinates",
-            latitude: Number(listing.lat),
-            longitude: Number(listing.lng),
+            latitude: roundCoord(Number(listing.lat)),
+            longitude: roundCoord(Number(listing.lng)),
           },
         }
       : {}),

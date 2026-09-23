@@ -183,11 +183,13 @@ export default async function ListingPage({ params }: Params) {
   const area = listing.areaM2 ?? listing.landM2;
   // English door only (guide §3/§6): "sq ft" next to every m² figure, and a
   // US$/m² line next to the native price — secondaryAreaUnit() gates both,
-  // never a vertical-key check inline.
+  // never a vertical-key check inline. No US$/m² for a Guaraní listing: USD
+  // is never shown for a PYG-listed property (src/lib/format.ts).
   const showSqft = secondaryAreaUnit(vertical.key) === "sqft";
   const areaSqft = showSqft && area != null ? formatSqft(Number(area)) : null;
   const pricePerM2 =
-    showSqft && area != null && Number(area) > 0 && listing.operation === "venta"
+    showSqft && area != null && Number(area) > 0 && listing.operation === "venta" &&
+    listing.priceCurrency === "USD"
       ? formatUsd(Number(listing.priceUsd) / Number(area), "en-US")
       : null;
   const showForeignerBox = foreignerBox(vertical.key);
@@ -297,8 +299,11 @@ export default async function ListingPage({ params }: Params) {
       ? (listing.landM2 ?? listing.areaM2)
       : (listing.areaM2 ?? listing.landM2),
   );
+  // The city medians are USD market figures; this listing's own per-m² joins
+  // them only when it is priced in USD (format.ts: no USD for a Gs listing).
   const listingPerM2 =
-    contextCell && Number.isFinite(listingArea) && listingArea > 0
+    contextCell && listing.priceCurrency === "USD" &&
+    Number.isFinite(listingArea) && listingArea > 0
       ? Number(listing.priceUsd) / listingArea
       : null;
 

@@ -19,13 +19,7 @@ import { listings } from "@/db/schema";
 import { facetConds, verticalConds } from "@/lib/facet-sql";
 import type { ListingFacets } from "@/lib/facets";
 import type { VerticalConfig } from "@/config/verticals";
-
-/**
- * 3 decimals ≈ 110 m at this latitude. Enough for "this block", not enough to
- * pick a house out of it. Bump with care: every extra decimal is ~10x more
- * precise about someone's home.
- */
-const COORD_DECIMALS = 3;
+import { COORD_DECIMALS, roundCoord as round } from "@/lib/coords";
 
 /** Pins per response. A denser view is what clustering is for. */
 const MAX_PINS = 400;
@@ -77,10 +71,6 @@ export function boundsAreSane(b: MapBounds): boolean {
   return true;
 }
 
-function round(value: number): number {
-  const f = 10 ** COORD_DECIMALS;
-  return Math.round(value * f) / f;
-}
 
 /**
  * Published listings whose position falls inside the box.
