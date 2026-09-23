@@ -862,6 +862,18 @@ export const enHub = {
 } as const;
 
 /** Category grid: /[operacion]/[...segments]. */
+/** English peer of `esMap` (CategoryMap). */
+export const enMap = {
+  pinThousands: (n: string) => `${n}k`,
+  pinMillions: (n: string) => `${n}M`,
+  clusterTitle: (n: number) => `${n} properties`,
+  approximate: (title: string) => `${title} — approximate location`,
+  error: "We could not load the map. Move it again to retry.",
+  loading: "Searching…",
+  capped: (n: number) => `Showing the ${n} lowest-priced in this area — zoom in to see the rest.`,
+  count: (n: number) => `${n} ${n === 1 ? "property" : "properties"} in this area`,
+};
+
 export const enCategory = {
   operationLabel: {
     venta: "for sale",

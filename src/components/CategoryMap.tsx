@@ -26,6 +26,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { listingUrl } from "@/lib/urls";
+import { getDictionary, type Dictionary, type Locale } from "@/i18n";
 
 const OSM_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -54,12 +55,22 @@ interface Pin {
   approximate: boolean;
 }
 
-/** Compact price for a pin: "US$ 85 mil", "US$ 1,2 M". Space is ~70px. */
-function pinPrice(pin: Pin): string {
-  const n = pin.priceUsd;
+/**
+ * Compact price for a pin, in the listing's own currency: "US$ 85 mil" /
+ * "Gs 4,5 M" on a Spanish door, "US$ 85k" / "Gs 4.5M" on an English one. A
+ * Guaraní listing never shows a dollar figure (src/lib/format.ts). Space is
+ * ~70px. The decimal separator comes from the number locale; the unit words
+ * from the dictionary.
+ */
+function pinPrice(pin: Pin, t: Dictionary["map"], numberLocale: string): string {
+  const pyg = pin.priceCurrency === "PYG";
+  const n = pyg ? Number(pin.priceAmount) : Number(pin.priceUsd);
   if (!Number.isFinite(n) || n <= 0) return "—";
-  if (n >= 1_000_000) return `US$ ${(n / 1_000_000).toFixed(1).replace(".", ",")} M`;
-  return `US$ ${Math.round(n / 1000)} mil`;
+  const prefix = pyg ? "Gs" : "US$";
+  const one = new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 1 });
+  if (n >= 1_000_000) return `${prefix} ${t.pinMillions(one.format(n / 1_000_000))}`;
+  if (n >= 1_000) return `${prefix} ${t.pinThousands(String(Math.round(n / 1000)))}`;
+  return `${prefix} ${one.format(n)}`;
 }
 
 /**
@@ -107,12 +118,16 @@ export function CategoryMap({
   zoom = 12,
   /** Category filters, forwarded verbatim so map and grid never disagree. */
   query,
+  locale,
 }: {
   centerLat: number;
   centerLng: number;
   zoom?: number;
   query: Record<string, string>;
+  locale: Locale;
 }) {
+  const t = getDictionary(locale).map;
+  const numberLocale = locale === "en" ? "en-US" : "es-PY";
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -208,7 +223,7 @@ export function CategoryMap({
       if (cluster.pins.length > 1) {
         el.className = "map-chip";
         el.textContent = String(cluster.pins.length);
-        el.title = `${cluster.pins.length} propiedades`;
+        el.title = t.clusterTitle(cluster.pins.length);
         el.addEventListener("click", () => {
           // Zoom toward the chip rather than opening an arbitrary listing.
           map.easeTo({
@@ -223,12 +238,10 @@ export function CategoryMap({
         link.href = listingUrl(pin);
         link.target = "_blank";
         link.rel = "noopener";
-        link.textContent = pinPrice(pin);
+        link.textContent = pinPrice(pin, t, numberLocale);
         // The approximate case is the honest default, so only the exact one
         // is worth distinguishing in the tooltip.
-        link.title = pin.approximate
-          ? `${pin.title} — ubicación aproximada`
-          : pin.title;
+        link.title = pin.approximate ? t.approximate(pin.title) : pin.title;
         if (pin.approximate) link.classList.add("map-pin--approx");
         el.appendChild(link);
       }
@@ -239,19 +252,19 @@ export function CategoryMap({
           .addTo(map),
       );
     }
-  }, [pins]);
+  }, [pins, t, numberLocale]);
 
   return (
     <div className="map-view">
       <div ref={containerRef} className="map-view__canvas" />
       <div className="map-view__status" aria-live="polite">
         {error
-          ? "No pudimos cargar el mapa. Movelo de nuevo para reintentar."
+          ? t.error
           : loading
-            ? "Buscando…"
+            ? t.loading
             : capped
-              ? `Mostrando las ${pins.length} más económicas de esta zona — acercá para ver el resto.`
-              : `${pins.length} ${pins.length === 1 ? "propiedad" : "propiedades"} en esta zona`}
+              ? t.capped(pins.length)
+              : t.count(pins.length)}
       </div>
     </div>
   );
