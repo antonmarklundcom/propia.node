@@ -14,6 +14,7 @@ import { chromeVariant, rentalPath } from "@/design/sections";
 import { RENTAL_SERVICES } from "@/config/rental-services";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
+import { stockedPathsOrNull, withoutEmptyCategoryLinks } from "@/lib/queries";
 
 /** Same envelope/pin paths and stroke as the home's contact rows. */
 function FooterGlyph({ kind }: { kind: "mail" | "pin" | "chat" }) {
@@ -57,20 +58,27 @@ function FooterGlyph({ kind }: { kind: "mail" | "pin" | "chat" }) {
  *
  * Locations are a fixed curated list (not a DB query) — the footer renders on
  * every page via the root layout, and a handful of known-good cities beats
- * coupling every page render to the locations table.
+ * coupling every page render to the locations table. The one read it does is
+ * the cached navigation inventory, to drop a city or city/type link that has
+ * no stock on this door (it would 404 or redirect); if that read fails, every
+ * link stays.
  */
 function Column({
   title,
   links,
+  stocked,
 }: {
   title: string;
   links: readonly { label: string; href: string }[];
+  stocked: Set<string> | null;
 }) {
+  const shown = withoutEmptyCategoryLinks(links, stocked);
+  if (shown.length === 0) return null;
   return (
     <div>
       <div className="site-footer__col-title">{title}</div>
       <ul className="site-footer__links">
-        {links.map((l) => (
+        {shown.map((l) => (
           <li key={l.href + l.label}>
             <Link className="site-footer__link" href={l.href}>
               {l.label}
@@ -89,6 +97,7 @@ export async function SiteFooter() {
     currentVertical(),
     dict(),
   ]);
+  const stocked = await stockedPathsOrNull(vertical);
   const year = new Date().getFullYear();
   const whatsapp = CONTACT_WHATSAPP;
   const waHref = waLink(whatsapp);
@@ -151,9 +160,9 @@ export async function SiteFooter() {
             </ul>
           </div>
 
-          <Column title={t.footerServicesTitle} links={services} />
-          <Column title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
-          <Column title={t.footerLegalTitle} links={t.footerLegalLinks} />
+          <Column stocked={stocked} title={t.footerServicesTitle} links={services} />
+          <Column stocked={stocked} title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
+          <Column stocked={stocked} title={t.footerLegalTitle} links={t.footerLegalLinks} />
         </div>
 
         <div className="site-footer__bottom">
@@ -217,9 +226,9 @@ export async function SiteFooter() {
             </ul>
           </div>
 
-          <Column title={t.footerOwnersTitle} links={t.footerOwnersLinks} />
-          <Column title={t.footerDirectoryTitle} links={t.footerDirectoryLinks} />
-          <Column title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
+          <Column stocked={stocked} title={t.footerOwnersTitle} links={t.footerOwnersLinks} />
+          <Column stocked={stocked} title={t.footerDirectoryTitle} links={t.footerDirectoryLinks} />
+          <Column stocked={stocked} title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
         </div>
 
         <div className="site-footer__bottom">
@@ -271,11 +280,11 @@ export async function SiteFooter() {
             </ul>
           </div>
 
-          <Column title={t.footerBuyTitle} links={t.footerBuyLinks} />
-          <Column title={t.footerGuidesTitle} links={t.footerGuidesLinks} />
-          <Column title={t.footerAreasTitle} links={t.footerAreasLinks} />
-          <Column title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
-          <Column title={t.footerLegalTitle} links={t.footerLegalLinks} />
+          <Column stocked={stocked} title={t.footerBuyTitle} links={t.footerBuyLinks} />
+          <Column stocked={stocked} title={t.footerGuidesTitle} links={t.footerGuidesLinks} />
+          <Column stocked={stocked} title={t.footerAreasTitle} links={t.footerAreasLinks} />
+          <Column stocked={stocked} title={t.footerCompanyTitle} links={t.footerCompanyLinks} />
+          <Column stocked={stocked} title={t.footerLegalTitle} links={t.footerLegalLinks} />
         </div>
 
         <div className="site-footer__bottom">
@@ -338,11 +347,11 @@ export async function SiteFooter() {
           </ul>
         </div>
 
-        <Column title="Comprar y alquilar" links={FOOTER_BUY} />
-        <Column title="Herramientas" links={FOOTER_TOOLS} />
-        <Column title="Para profesionales" links={FOOTER_PRO} />
-        <Column title="Ubicaciones" links={FOOTER_LOCATIONS} />
-        <Column title="Por tipo" links={FOOTER_TYPES} />
+        <Column stocked={stocked} title="Comprar y alquilar" links={FOOTER_BUY} />
+        <Column stocked={stocked} title="Herramientas" links={FOOTER_TOOLS} />
+        <Column stocked={stocked} title="Para profesionales" links={FOOTER_PRO} />
+        <Column stocked={stocked} title="Ubicaciones" links={FOOTER_LOCATIONS} />
+        <Column stocked={stocked} title="Por tipo" links={FOOTER_TYPES} />
       </div>
 
       <div className="site-footer__bottom">

@@ -225,7 +225,7 @@ export default async function FinanciamientoPage() {
       <CtaBand
         title="Buscá con la cuota a la vista"
         text="Todas las propiedades en venta muestran su cuota mensual estimada."
-        primary={{ label: "Ver propiedades en venta", href: "/venta/asuncion" }}
+        primary={{ label: "Ver propiedades en venta", href: "/venta" }}
         secondary={{ label: "Tasar mi propiedad", href: "/tasacion" }}
       />
     </main>

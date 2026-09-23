@@ -14,6 +14,7 @@ import {
   rentalPath,
 } from "@/design/sections";
 import { dict } from "@/i18n/server";
+import { stockedPathsOrNull, withoutEmptyCategoryLinks } from "@/lib/queries";
 
 /**
  * Global top bar (portal shell). Brand + grouped nav + a "publish" CTA.
@@ -36,6 +37,7 @@ export async function SiteHeader() {
     currentVertical(),
     dict(),
   ]);
+  const stocked = await stockedPathsOrNull(vertical);
   // No `vertical.key === ...` here — the registry decides both whether there
   // is an extra nav entry and where the CTA points; the *label* comes from
   // the i18n dictionary (never a hardcoded Spanish literal), so this
@@ -96,7 +98,7 @@ export async function SiteHeader() {
   // §5 "Header" (Nórdico): Comprar · Alquilar · Vender · Proyectos ·
   // Inmobiliarias — the extra entry (when the registry adds one) sits right
   // after "Proyectos".
-  const nav = isDirectory
+  const chosenNav = isDirectory
     ? directoryNav
     : isRental
     ? rentalNav
@@ -109,6 +111,12 @@ export async function SiteHeader() {
             ...HEADER_NAV.slice(3),
           ]
         : HEADER_NAV;
+  // Dropdown items that point at an empty city/type category (404 or redirect
+  // on this door) are left out; top-level entries always stay.
+  const nav = chosenNav.map((group) => ({
+    ...group,
+    links: withoutEmptyCategoryLinks(group.links, stocked),
+  }));
   const ctaLabelFull = isDirectory
     ? d.directory.chromeCtaLabel
     : isRental

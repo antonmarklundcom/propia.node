@@ -9,7 +9,8 @@ import { ListingCard } from "./ListingCard";
 import { CategoryMapLazy } from "./CategoryMapLazy";
 import { categoryUrl, operationSlug, typePlural } from "@/lib/urls";
 import { facetSearchParams, parseFacetParams, parseLocationSlugs } from "@/lib/facets";
-import { getFilteredCategoryListings, listCities, listCityBarrios, resolveBarrio, type CategoryQuery, type LocationRow } from "@/lib/queries";
+import { getFilteredCategoryListings, listCities, listCityBarrios, resolveBarrio, stockedPathsOrNull, withoutEmptyCategoryLinks, type CategoryQuery, type LocationRow } from "@/lib/queries";
+import { currentVertical } from "@/lib/vertical-context";
 
 export function listingPage(value: string | string[] | undefined) {
   const n = typeof value === "string" ? Number(value) : 1;
@@ -30,24 +31,26 @@ export async function ListingBrowser({ basePath, query, searchParams, city, barr
   const selectedBarrio = city && !barrio && barrioSlug ? await resolveBarrio(city.id, barrioSlug) : null;
   const locationIds = city && !barrio && barrioSlug ? (selectedBarrio ? [selectedBarrio.id] : []) : undefined;
   const page = listingPage(searchParams.page);
-  const [{ listings, filteredCount }, cities, barrios] = await Promise.all([
+  const [{ listings, filteredCount }, cities, barrios, stocked] = await Promise.all([
     getFilteredCategoryListings({ ...query, limit: 48, offset: (page - 1) * 48 }, { ...filters, locationIds }),
     listCities(), city ? listCityBarrios(city.id) : Promise.resolve([]),
+    currentVertical().then(stockedPathsOrNull),
   ]);
   const href = (changes: Record<string,string | undefined>, path = basePath) => {
     const sp = new URLSearchParams(params);
     for (const [k,v] of Object.entries(changes)) { sp.delete(k); if (v) sp.set(k,v); }
     return `${path}${sp.size ? `?${sp}` : ""}`;
   };
-  const locations = city ? barrios.map(b => ({ label: b.name, href: barrio
+  // City and type links skip empty categories on this door: those 404 or redirect.
+  const locations = withoutEmptyCategoryLinks(city ? barrios.map(b => ({ label: b.name, href: barrio
     ? href({ page: undefined, barrio: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug, barrioSlug: b.slug, type: query.type }))
     : href({ page: undefined, barrio: b.slug }) }))
-    : cities.map(c => ({ label: c.name, href: href({ page: undefined, barrio: undefined }, categoryUrl({ operation: query.operation, citySlug: c.slug })) }));
+    : cities.map(c => ({ label: c.name, href: href({ page: undefined, barrio: undefined }, categoryUrl({ operation: query.operation, citySlug: c.slug })) })), stocked);
   const mapView = params.vista === "mapa";
   const center = barrio ?? selectedBarrio ?? city;
   const mapQuery = { ...facetSearchParams(filters, { operationSlug: operationSlug(query.operation), typeSlug: query.type ? typePlural(query.type) : filters.propertyType ? typePlural(filters.propertyType) : undefined }), ...(city ? { ciudad: city.slug } : {}), ...(barrio || barrioSlug ? { barrio: barrio?.slug ?? barrioSlug! } : {}) };
   const totalPages = Math.max(1, Math.ceil(filteredCount / 48));
-  const typeChoices = query.type && city ? [{ label: d.category.typeLabelAny, href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug })) }, ...PROPERTY_TYPES.map(type => ({ label: d.category.typeLabel[type], href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug, barrioSlug: barrio?.slug, type })) }))] : [];
+  const typeChoices = withoutEmptyCategoryLinks(query.type && city ? [{ label: d.category.typeLabelAny, href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug })) }, ...PROPERTY_TYPES.map(type => ({ label: d.category.typeLabel[type], href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug, barrioSlug: barrio?.slug, type })) }))] : [], stocked);
   return <CategoryFilterBar basePath={basePath} params={params} locale={locale} count={filteredCount} operation={query.operation} fixedType={query.type} typeChoices={typeChoices} locations={locations} locationLabel={city ? d.filters.barrio : d.filters.city}
     viewSwitch={<nav className="view-switch" aria-label={d.category.viewSwitchLabel}>{(["lista","mapa"] as const).map(view => <a className={`view-switch__option${(view === "mapa") === mapView ? " view-switch__option--active" : ""}`} key={view} href={href({ vista: view === "mapa" ? view : undefined, page: undefined })}>{view === "mapa" ? d.category.viewMap : d.category.viewList}</a>)}</nav>}>
     <JsonLd data={itemListJsonLd(await listingCanonicalOrigin(), listings.map(l => ({ title: locale === "en" ? l.titleEn ?? l.title : l.title, url: listingUrl(l) })))} />

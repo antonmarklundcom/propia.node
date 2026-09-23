@@ -19,6 +19,8 @@ import {
   getFeaturedDevelopers,
   countPublished,
   listCities,
+  stockedPathsOrNull,
+  withoutEmptyCategoryLinks,
   type ListingCard as Card,
 } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
@@ -376,6 +378,17 @@ export default async function Home() {
     return <RentalHome vertical={vertical} d={d} recent={recent} />;
   }
 
+  // Default layout (terreno.com.py, landforsaleparaguay.com). A door with a
+  // narrow filter can have no stock in a given city, and that city page 404s
+  // (a city/type page redirects), so each fixed link falls back to the
+  // operation hub or is left out. A failed read keeps every link.
+  const stocked = await stockedPathsOrNull(vertical);
+  const stockedOr = (href: string, fallback: string) =>
+    !stocked || stocked.has(href) ? href : fallback;
+  const shortcuts = cityShortcuts.filter(
+    (c) => !stocked || stocked.has(categoryUrl({ operation: "venta", citySlug: c.slug })),
+  );
+
   return (
     <main>
       <JsonLd data={[faqJsonLd(faq)]} />
@@ -400,7 +413,7 @@ export default async function Home() {
           <p className="home-hero__subtitle">{t.heroSubtitle}</p>
 
           <div className="home-hero__actions">
-            <Link className="ds-btn ds-btn--primary" href="/venta/asuncion">
+            <Link className="ds-btn ds-btn--primary" href={stockedOr("/venta/asuncion", "/venta")}>
               {t.heroSeeListings}
             </Link>
             <Link className="ds-btn ds-btn--on-photo" href="/publicar">
@@ -413,7 +426,7 @@ export default async function Home() {
           </div>
 
           <div className="home-hero__chips">
-            {POPULAR_SEARCHES.map((q) => (
+            {withoutEmptyCategoryLinks(POPULAR_SEARCHES, stocked).map((q) => (
               <Link key={q.href} href={q.href} className="home-hero__chip">
                 {q.label}
               </Link>
@@ -444,8 +457,7 @@ export default async function Home() {
       )}
 
       {/* Zonas — four photographed cards, the design's "tarjeta de zona".
-          Cities are matched by name against the DB so a card never links to a
-          category page that doesn't exist. */}
+          A zone with no stock on this door is left out: its city page 404s. */}
       {sections.includes("zonas") && (
       <section className="ds-section ds-container" id="zonas">
         <div className="home-section__head">
@@ -453,13 +465,13 @@ export default async function Home() {
             <p className="ds-label">{t.zonesKicker}</p>
             <h2>{t.zonesTitle}</h2>
           </div>
-          <Link className="ds-link-underline" href="/venta/asuncion">
+          <Link className="ds-link-underline" href={stockedOr("/venta/asuncion", "/venta")}>
             {t.zonesAll}
           </Link>
         </div>
         <div className="ds-grid" style={{ ["--ds-track" as string]: "220px" }}>
-          {ZONE_CARDS.map((z) => (
-            <Link key={z.slug} className="ds-photo-card ds-photo-card--zone" href={`/venta/${z.slug}`}>
+          {withoutEmptyCategoryLinks(ZONE_CARDS.map((z) => ({ ...z, href: `/venta/${z.slug}` })), stocked).map((z) => (
+            <Link key={z.slug} className="ds-photo-card ds-photo-card--zone" href={z.href}>
               <img
                 className="ds-photo-card__img"
                 src={z.img}
@@ -580,12 +592,12 @@ export default async function Home() {
       )}
 
       {/* City shortcuts */}
-      {sections.includes("ciudades") && cityShortcuts.length > 0 && (
+      {sections.includes("ciudades") && shortcuts.length > 0 && (
         <section className="home-cities">
           <div className="home-cities__inner">
             <h2 className="home-cities__title">{t.citiesTitle}</h2>
             <div className="home-cities__row">
-              {cityShortcuts.map((c) => (
+              {shortcuts.map((c) => (
                 <Link
                   key={c.slug}
                   className="home-cities__chip"
@@ -604,27 +616,27 @@ export default async function Home() {
         <RecentlyViewed />
         <Row
           title={t.rowRecommended}
-          href="/venta/asuncion"
+          href={stockedOr("/venta/asuncion", "/venta")}
           cards={recent}
         />
         <Row
           title={t.rowHousesForSale}
-          href="/venta/asuncion/casas"
+          href={stockedOr("/venta/asuncion/casas", "/venta?tipo=casas")}
           cards={ventaCasas}
         />
         <Row
           title={t.rowFlatsForSale}
-          href="/venta/asuncion/departamentos"
+          href={stockedOr("/venta/asuncion/departamentos", "/venta?tipo=departamentos")}
           cards={ventaDeptos}
         />
         <Row
           title={t.rowRentals}
-          href="/alquiler/asuncion"
+          href={stockedOr("/alquiler/asuncion", "/alquiler")}
           cards={alquileres}
         />
         <Row
           title={t.rowLand}
-          href="/venta/asuncion/terrenos"
+          href={stockedOr("/venta/asuncion/terrenos", "/venta?tipo=terrenos")}
           cards={terrenos}
         />
 
