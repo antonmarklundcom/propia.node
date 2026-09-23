@@ -861,7 +861,6 @@ export const enHub = {
   } as Record<string, { title: string; paragraphs: readonly string[] }>,
 } as const;
 
-/** Category grid: /[operacion]/[...segments]. */
 /** English peer of `esMap` (CategoryMap). */
 export const enMap = {
   pinThousands: (n: string) => `${n}k`,
@@ -872,8 +871,9 @@ export const enMap = {
   loading: "Searching…",
   capped: (n: number) => `Showing the ${n} lowest-priced in this area — zoom in to see the rest.`,
   count: (n: number) => `${n} ${n === 1 ? "property" : "properties"} in this area`,
-};
+} as const;
 
+/** Category grid: /[operacion]/[...segments]. */
 export const enCategory = {
   operationLabel: {
     venta: "for sale",

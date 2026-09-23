@@ -1694,7 +1694,6 @@ export const esHub = {
   } as Record<string, { title: string; paragraphs: readonly string[] }>,
 } as const;
 
-/** Category grid: /[operacion]/[...segments]. */
 /**
  * CategoryMap (src/components/CategoryMap.tsx), a client component: reached via
  * getDictionary(locale). Pin prices use the listing's own currency (a Guaraní
@@ -1712,6 +1711,7 @@ export const esMap = {
   count: (n: number) => `${n} ${n === 1 ? "propiedad" : "propiedades"} en esta zona`,
 } as const;
 
+/** Category grid: /[operacion]/[...segments]. */
 export const esCategory = {
   operationLabel: {
     venta: "venta",

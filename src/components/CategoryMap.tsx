@@ -68,7 +68,8 @@ function pinPrice(pin: Pin, t: Dictionary["map"], numberLocale: string): string 
   if (!Number.isFinite(n) || n <= 0) return "—";
   const prefix = pyg ? "Gs" : "US$";
   const one = new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 1 });
-  if (n >= 1_000_000) return `${prefix} ${t.pinMillions(one.format(n / 1_000_000))}`;
+  // 999 500 rounds to "1000 mil"; from there on it is "1 M".
+  if (n >= 999_500) return `${prefix} ${t.pinMillions(one.format(n / 1_000_000))}`;
   if (n >= 1_000) return `${prefix} ${t.pinThousands(String(Math.round(n / 1000)))}`;
   return `${prefix} ${one.format(n)}`;
 }
