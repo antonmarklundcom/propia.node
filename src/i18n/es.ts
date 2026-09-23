@@ -40,6 +40,12 @@ export const es = {
   menuLabel: "Menú principal",
   /** aria-label of the desktop header nav. */
   navLabel: "Principal",
+  /** app/error.tsx and app/global-error.tsx (client, no dict()). */
+  errorTitle: "Algo salió mal",
+  errorText: "Tuvimos un problema al cargar esta página. Probá de nuevo en unos segundos — si sigue fallando, volvé al inicio.",
+  errorTextSite: "Tuvimos un problema al cargar el sitio. Probá de nuevo en unos segundos.",
+  errorRetry: "Reintentar",
+  errorHome: "Ir al inicio",
 } as const;
 
 /**
