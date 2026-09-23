@@ -9261,7 +9261,9 @@ summary.panel-btn::-webkit-details-marker {
 
 .ph-services {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* One column per card on desktop (PremiumHome sets the count: the English
+     door has no financing card). */
+  grid-template-columns: repeat(var(--ph-services-n, 5), minmax(0, 1fr));
   gap: 34px;
 }
 

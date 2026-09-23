@@ -1498,6 +1498,7 @@ export const esHome = {
   howTitle: "Cómo funciona",
   howSubtitle: "Buscar, comparar y contactar. Gratis, sin registro y sin comisión.",
   howMore: "Ver la guía completa →",
+  howMoreHref: "/como-funciona",
   howSteps: [
     {
       icon: "search",
