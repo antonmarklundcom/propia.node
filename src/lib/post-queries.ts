@@ -82,13 +82,20 @@ function toCard(row: PostRow): PostCard {
   };
 }
 
-/** Published posts, newest first — the /guias index. */
-async function listPublishedPostsUncached(limit = 60): Promise<PostCard[]> {
+/**
+ * Published posts in one language, newest first — the /guias index. The
+ * locale is the door's (posts.locale, schema.ts): without it the English
+ * guides showed up, in English, in the Spanish door's index.
+ */
+async function listPublishedPostsUncached(
+  locale: PostRow["locale"],
+  limit = 60,
+): Promise<PostCard[]> {
   try {
     const rows = await db
       .select()
       .from(posts)
-      .where(eq(posts.status, "published"))
+      .where(and(eq(posts.status, "published"), eq(posts.locale, locale)))
       .orderBy(desc(posts.publishedAt), desc(posts.id))
       .limit(limit);
     return rows.map(toCard);
@@ -120,7 +127,12 @@ async function getPublishedPostUncached(
     const related = await db
       .select()
       .from(posts)
-      .where(and(eq(posts.status, "published"), ne(posts.id, row.post.id)))
+      // Siblings in the post's own language.
+      .where(and(
+        eq(posts.status, "published"),
+        eq(posts.locale, row.post.locale),
+        ne(posts.id, row.post.id),
+      ))
       .orderBy(desc(posts.publishedAt), desc(posts.id))
       .limit(3);
 
@@ -136,15 +148,15 @@ async function getPublishedPostUncached(
   }
 }
 
-/** Slugs of every published post — sitemap. */
-export async function listPublishedPostSlugs(): Promise<
-  { slug: string; updatedAt: Date | null }[]
-> {
+/** Slugs of every published post in the door's language — sitemap. */
+export async function listPublishedPostSlugs(
+  locale: PostRow["locale"],
+): Promise<{ slug: string; updatedAt: Date | null }[]> {
   try {
     return await db
       .select({ slug: posts.slug, updatedAt: posts.updatedAt })
       .from(posts)
-      .where(eq(posts.status, "published"));
+      .where(and(eq(posts.status, "published"), eq(posts.locale, locale)));
   } catch (err) {
     if (isSchemaDrift(err)) return [];
     throw err;
@@ -318,9 +330,12 @@ const cachedPublishedPosts = unstable_cache(
   GUIDES_CACHE,
 );
 
-/** Published posts, newest first — the /guias index. */
-export async function listPublishedPosts(limit = 60): Promise<PostCard[]> {
-  return (await cachedPublishedPosts(limit)).map(reviveCard);
+/** Published posts in one language, newest first — the /guias index. */
+export async function listPublishedPosts(
+  locale: PostRow["locale"],
+  limit = 60,
+): Promise<PostCard[]> {
+  return (await cachedPublishedPosts(locale, limit)).map(reviveCard);
 }
 
 const cachedPublishedPost = unstable_cache(

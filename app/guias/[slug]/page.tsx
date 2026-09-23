@@ -40,10 +40,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     post.excerpt?.trim() || markdownToPlainText(post.body, 160);
   const cover = imageUrl(post.coverR2Key);
 
+  // A guide in the other language still renders on this door (a link may
+  // point here), but it is not this door's page: noindex, and the index,
+  // related list and sitemap leave it out (post-queries.ts).
+  const ownLanguage = post.locale === (await currentLocale());
   return {
     title: `${post.title}`,
     description,
     alternates: { canonical: `${await siteOrigin()}/guias/${post.slug}` },
+    ...(ownLanguage ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       type: "article",
       // og:title doesn't inherit title.template — brand goes in by hand (F47).

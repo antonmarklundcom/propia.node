@@ -30,6 +30,7 @@ import {
   rentalSitemapPaths,
 } from "../config/site-nav";
 import { listPublishedPostSlugs } from "./post-queries";
+import { DEFAULT_LOCALE } from "@/i18n";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 import type { VerticalConfig } from "@/config/verticals";
@@ -339,8 +340,10 @@ export async function buildSitemapEntries(
 
   // 7. Editorial posts. listPublishedPostSlugs() is fail-soft on a missing
   //    table, so a sitemap request between deploy and `db:migrate` returns the
-  //    rest of the site rather than erroring.
-  for (const post of servesMarketplace ? await listPublishedPostSlugs() : []) {
+  //    rest of the site rather than erroring. Only the door's own language:
+  //    an English guide on a Spanish door is noindex (app/guias/[slug]).
+  const postLocale = vertical?.locale ?? DEFAULT_LOCALE;
+  for (const post of servesMarketplace ? await listPublishedPostSlugs(postLocale) : []) {
     entries.push({
       path: `/guias/${post.slug}`,
       lastmod: post.updatedAt ?? undefined,
