@@ -26,14 +26,14 @@ export function PriceAlert({
   const t = d.priceAlert;
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState("");
-  const [state, setState] = useState<"idle" | "sending" | "done">("idle");
+  const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!phone.trim()) return;
     setState("sending");
     try {
-      await fetch("/api/leads", {
+      const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -43,9 +43,11 @@ export function PriceAlert({
           message: t.message(listingTitle),
         }),
       });
-      setState("done");
+      // A 400 (number too short) or 429 is not a saved alert: say so rather
+      // than thank the visitor for a lead that was never stored.
+      setState(res.ok ? "done" : "error");
     } catch {
-      setState("idle");
+      setState("error");
     }
   }
 
@@ -73,6 +75,9 @@ export function PriceAlert({
         autoFocus
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
+        minLength={6}
+        maxLength={30}
+        required
         placeholder={t.phonePlaceholder}
         aria-label={t.phoneLabel}
       />
@@ -83,6 +88,11 @@ export function PriceAlert({
       >
         {state === "sending" ? t.sending : t.submit}
       </button>
+      {state === "error" && (
+        <p className="price-alert__error" role="alert">
+          {t.error}
+        </p>
+      )}
     </form>
   );
 }

@@ -3506,6 +3506,8 @@ export const esPriceAlert = {
   phoneLabel: "Tu número de WhatsApp",
   sending: "…",
   submit: "Avisame",
+  /** The API refused (bad number, rate limit) or the network failed. */
+  error: "No pudimos guardar tu aviso. Revisá el número y probá de nuevo.",
 } as const;
 
 export const esParaInmobiliarias = {
