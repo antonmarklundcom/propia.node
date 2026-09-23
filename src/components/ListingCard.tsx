@@ -4,6 +4,7 @@ import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto, isSamplePhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
 import { dict, currentLocale } from "@/i18n/server";
+import { numberLocaleFor } from "@/i18n";
 import { currentVertical } from "@/lib/vertical-context";
 import { showCuota, cardVariant, secondaryAreaUnit } from "@/design/sections";
 
@@ -28,6 +29,8 @@ export async function ListingCard({ card }: { card: Card }) {
   // English requests fall back to the Spanish title when cron:translate
   // hasn't produced titleEn yet — never render blank.
   const title = locale === "en" ? (card.titleEn ?? card.title) : card.title;
+  // Numbers follow the request's locale: US$ 145,000 on an English door.
+  const numberLocale = numberLocaleFor(locale);
   // Thumb, not the full 1600px original: a category page renders ~20 of these
   // on Paraguayan mobile data. Falls back to the stored key for imported rows
   // that have no derivative yet (see imageThumbUrl).
@@ -56,6 +59,7 @@ export async function ListingCard({ card }: { card: Card }) {
         cuota={cuota}
         isFeatured={isFeatured}
         specs={specs}
+        numberLocale={numberLocale}
         t={t}
       />
     );
@@ -122,7 +126,7 @@ export async function ListingCard({ card }: { card: Card }) {
             resolving it here would add a query per grid. The title already
             names the barrio in practice. */}
         <div className="ds-photo-card__price listing-card__price">
-          {formatPrice(card)}{card.operation !== "venta" && perMonth}
+          {formatPrice(card, numberLocale)}{card.operation !== "venta" && perMonth}
         </div>
         <div className="listing-card__title">{title}</div>
         {specs.length > 0 && (
@@ -155,6 +159,7 @@ function FramedPillCard({
   cuota,
   isFeatured,
   specs,
+  numberLocale,
   t,
 }: {
   card: Card;
@@ -163,6 +168,7 @@ function FramedPillCard({
   cuota: string | null;
   isFeatured: boolean;
   specs: string[];
+  numberLocale: string;
   t: Awaited<ReturnType<typeof dict>>["card"];
 }) {
   return (
@@ -191,7 +197,7 @@ function FramedPillCard({
       </div>
       <div className="listing-card__framed-body">
         <div className="ds-photo-card__price listing-card__framed-price">
-          {formatPrice(card)}
+          {formatPrice(card, numberLocale)}
         </div>
         <div className="listing-card__title listing-card__framed-title">
           {title}

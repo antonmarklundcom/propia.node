@@ -180,6 +180,7 @@ export const en = {
   menuOpen: "Open menu",
   menuClose: "Close menu",
   menuLabel: "Main menu",
+  navLabel: "Main",
 } as const;
 
 /** Peer of esContactForm — see that namespace's comment. */
@@ -968,6 +969,16 @@ export const enListing = {
   detailBarrio: "Neighbourhood",
   detailCity: "City",
   detailType: "Type",
+  typeSingular: {
+    casa: "House",
+    departamento: "Apartment",
+    terreno: "Land",
+    duplex: "Duplex",
+    comercial: "Commercial unit",
+    oficina: "Office",
+    deposito: "Warehouse",
+    quinta: "Country house",
+  } as Record<string, string>,
   detailState: "Condition",
   detailArea: "Built area",
   detailLand: "Land",

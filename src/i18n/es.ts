@@ -38,6 +38,8 @@ export const es = {
   menuOpen: "Abrir menú",
   menuClose: "Cerrar menú",
   menuLabel: "Menú principal",
+  /** aria-label of the desktop header nav. */
+  navLabel: "Principal",
 } as const;
 
 /**
@@ -1798,6 +1800,17 @@ export const esListing = {
   detailBarrio: "Barrio",
   detailCity: "Ciudad",
   detailType: "Tipo",
+  /** One property of the type, for the facts strip and the details row. */
+  typeSingular: {
+    casa: "Casa",
+    departamento: "Departamento",
+    terreno: "Terreno",
+    duplex: "Dúplex",
+    comercial: "Local comercial",
+    oficina: "Oficina",
+    deposito: "Depósito",
+    quinta: "Quinta",
+  } as Record<string, string>,
   detailState: "Estado",
   detailArea: "Superficie",
   detailLand: "Terreno",
