@@ -11,7 +11,7 @@ import { Picture } from "@/components/Picture";
 import { SearchBar } from "@/components/SearchBar";
 import { JsonLd } from "@/components/JsonLd";
 import { faqJsonLd } from "@/lib/jsonld";
-import { homeSections, sellerCtaHref } from "@/design/sections";
+import { homeSections, sellerCtaHref, showCuota } from "@/design/sections";
 import { categoryUrl } from "@/lib/urls";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
@@ -210,6 +210,10 @@ export async function PremiumHome({
   const locale: Locale = vertical.locale;
   const numberLocale = numberLocaleFor(locale);
   const sellHref = sellerCtaHref(vertical.key);
+  const cuotas = showCuota(vertical.key);
+  // The financing card's promise is a per-listing monthly payment, so it goes
+  // wherever cuotas do not (showCuota: never on the English door).
+  const services = t.services.filter((s) => s.key !== "financiamiento" || cuotas);
   const heroWaHref = waLink(CONTACT_WHATSAPP, t.waPrefill(brand));
   const contactWaHref = waLink(CONTACT_WHATSAPP);
   const trustItems = t.trust.filter((item) => item.icon !== "clock" || contactWaHref);
@@ -370,8 +374,8 @@ export async function PremiumHome({
       {sections.includes("servicios") && (
         <section className="ds-section ds-container ph-section ph-section--cream ph-section--tight">
           <h2 className="ph-h2 ph-h2--centered">{t.servicesTitle}</h2>
-          <div className="ph-services">
-            {t.services.map((s) => (
+          <div className="ph-services" style={{ ["--ph-services-n" as string]: services.length }}>
+            {services.map((s) => (
               <Link
                 key={s.key}
                 className="ph-services__item"
@@ -450,7 +454,7 @@ export async function PremiumHome({
             <div className="ph-how__more">
               <Link
                 className="ds-link-underline ds-link-underline--dark"
-                href="/como-funciona"
+                href={d.home.howMoreHref}
               >
                 {d.home.howMore}
               </Link>

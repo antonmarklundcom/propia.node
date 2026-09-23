@@ -652,6 +652,9 @@ export const enHome = {
   howTitle: "How it works",
   howSubtitle: "Search, compare and contact. Free, no sign-up, no commission.",
   howMore: "Read the full guide →",
+  // /como-funciona has no English copy; the English guide is the same idea,
+  // and the English header's "How it works" already points there.
+  howMoreHref: "/guias/buying-property-in-paraguay",
   howSteps: [
     {
       icon: "search",
