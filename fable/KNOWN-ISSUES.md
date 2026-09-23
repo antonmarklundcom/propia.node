@@ -6,36 +6,25 @@ it; none of them blocks a phase.
 
 ## Open
 
-- **Listing sidebar follow-up (2026-09-21): stored USD conversion.** Gs listings kept the `price_usd` of the rate they were written with (7300 on the demo rows). **Fixed in code 2026-09-22: `npm run cron:price-usd`** re-derives it from the latest `fx_rates` row (plan §4 rule); it still has to be run on production, between `cron:fx` and `cron:cuotas`. Existing map price labels also use Spanish compact USD formatting on the English door; locale-aware map copy is a separate improvement.
+- **Listing sidebar follow-up (2026-09-21): stored USD conversion.** Gs listings kept the `price_usd` of the rate they were written with (7300 on the demo rows). **Fixed in code 2026-09-22: `npm run cron:price-usd`** re-derives it from the latest `fx_rates` row (plan §4 rule); it still has to be run on production, between `cron:fx` and `cron:cuotas`. (The map pins' Spanish-only USD formatting noted here was fixed in #191: pins use the listing's own currency and the door's locale.)
 
-- **`verify:import`'s database half fails against MariaDB, and it is the sandbox
-  rather than the code.** Found in ops O1, which got a local database up for the
-  first time in several phases (a MariaDB 10.11 stand-in — Docker Hub blob
-  fetches are blocked in that sandbox, so `mysql:8.4` could not be pulled).
-  Every check passes except "rollback restored the old prices". Cause: MariaDB
-  implements `json` as `longtext`, so `mysql2` hands `import_rows.previous_json`
-  back as a **string**, and `rollbackImportJob`'s
-  `const { _images, _source, ...columns } = row.previousJson` then spreads a
-  string into an object of character indices, restores nothing, and still reports
-  success. On MySQL 8 (Hostinger, and `docker compose`'s image) the column is
-  native JSON and `mysql2` parses it, which is why this has never been seen in
-  production. Fix, if a portability guarantee is ever wanted: parse defensively in
-  `src/lib/import/jobs.ts` (`typeof previousJson === "string" ? JSON.parse(…)`) —
-  O1 deliberately did not, because rewriting the rollback path to accommodate a
-  server the project does not target is the wrong trade during a guardrails
-  phase. Until then: run `verify:import`'s DB half against MySQL 8 only.
+- **Two `previous_json` readers still assume MySQL 8's parsed JSON (MariaDB
+  only, 2026-09-23).** MariaDB stores `json` as `longtext`, so `mysql2` returns
+  `import_rows.previous_json` as a string. `rollbackImportJob`'s restore of
+  `updated`/`paused` rows parses it since #165 (`verify:import`'s "rollback
+  restored the old prices" passes on the local MariaDB 11.4 as of 2026-09-23),
+  but two readers do not: the `deduped` branch of the same rollback
+  (`src/lib/import/jobs.ts`, `_sourceRowId`) then finds no id and falls back to
+  its legacy best-effort delete, and `recentPriceChanges()`
+  (`src/lib/import/resync.ts`) finds no `priceUsd` and lists nothing. Production
+  is MySQL 8, where the column is native JSON, so neither is visible there.
+  Fix, if local MariaDB parity matters: one `parseSnapshot(previousJson)` helper
+  in `jobs.ts` used by all three readers.
 
-- **`planImport` reaches for an `unstable_cache` rate by default, and any
-  non-request caller has to pass one instead.** `planImport(db, rows, opts)`
-  defaults `usdToPyg` to `getUsdToPygRate()`. O1 made that function degrade to the
-  uncached read when `NEXT_RUNTIME` is unset, so nothing throws any more, but the
-  underlying shape is still a trap: a *new* cached reader added inside the import
-  pipeline would break every `tsx` caller again with `Invariant: incrementalCache
-  missing`, and the error names the cache rather than the caller. `src/lib/ops/`
-  runners pass the rate explicitly (which also guarantees the plan and the commit
-  price a batch with the same number). Fix, if it recurs: give every cached
-  reader an uncached sibling at the point it is written, as `src/lib/fx.ts` now
-  does, rather than making batch code fake a runtime.
+- **Resolved by #165 (2026-09-21), entries removed 2026-09-23:** the rollback
+  restoring nothing on MariaDB (it now parses string JSON), and `planImport`
+  defaulting to the `unstable_cache` rate (it now defaults to
+  `getUsdToPygRateRaw()`, `src/lib/import/upsert.ts`).
 
 - **Plan Appendix B lists nine image slots S1 did not build.** `hero-home-2.webp`,
   `services.webp`, `contact.webp`, and a `-2` variant for `alquiler`,
