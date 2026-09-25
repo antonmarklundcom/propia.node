@@ -342,6 +342,52 @@ export const leadMatches = mysqlTable(
 );
 
 /**
+ * A lead the operator shared with a partner agency or agent, so it shows in
+ * their /agencia/leads (docs/plan-lead-access-2026-09-25.md §3).
+ *
+ * Why not a column on `leads`: `routed_to` says where a lead *came from*, and
+ * CLAUDE.md forbids a new member or a `leads.agent_id`; sharing says who may
+ * *read* it, and one lead can be shared with more than one party. Why not
+ * `lead_matches`: that targets agents only, means "directory proposal, max 3",
+ * and has no revocation.
+ *
+ * Exactly one of `agency_id` / `agent_id` is set; the other is 0, not NULL —
+ * the `listing_sources.scope_agency_id` rule: MySQL treats NULLs in a unique
+ * key as all-distinct, so NULL would let the same target be shared twice.
+ * Re-sharing a revoked lead clears `revoked_at` on the same row.
+ *
+ * `state` is the realtor's answer, separate from `leads.status` (the
+ * operator's own follow-up) and `leads.note`, which is never shown to them.
+ * Enum members are appended only (see `leads.routed_to`).
+ */
+export const leadAssignments = mysqlTable(
+  "lead_assignments",
+  {
+    id: id(),
+    leadId: fk("lead_id").notNull(),
+    agencyId: fk("agency_id").notNull().default(0),
+    agentId: fk("agent_id").notNull().default(0),
+    assignedByUserId: fk("assigned_by_user_id").notNull(),
+    /** Operator → realtor, shown to them on the card. */
+    note: varchar("note", { length: 280 }),
+    state: mysqlEnum("state", ["pending", "accepted", "declined", "contacted", "closed"])
+      .notNull()
+      .default("pending"),
+    /** When `state` last changed; NULL while still `pending`. */
+    stateAt: datetime("state_at"),
+    /** NULL = access active. */
+    revokedAt: datetime("revoked_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("uq_lead_target").on(t.leadId, t.agencyId, t.agentId),
+    // The realtor-side reads: "shared with my agency", "shared with me".
+    index("idx_agency").on(t.agencyId, t.createdAt),
+    index("idx_agent").on(t.agentId, t.createdAt),
+  ],
+);
+
+/**
  * Invitations that let an agency add a colleague without the founder wiring
  * rows by hand (the /agencia/equipo flow).
  *
@@ -949,3 +995,29 @@ export const siteSettings = mysqlTable("site_settings", {
   /** Who last changed it — the same accountability `ops_runs` gives a job. */
   updatedBy: fk("updated_by"),
 });
+
+/**
+ * Who did what in /admin — the operator history (`/admin/historial`).
+ *
+ * Written for the actions a second operator makes it necessary to answer
+ * "who did that": sharing and revoking a lead, publishing or deleting a
+ * listing, a role change, a password set by the super-admin. `action` and
+ * `target_type` are varchars, not enums, for the same reason as `ops_runs.job`:
+ * a new kind of event must not need a migration. `detail_json` is display-only.
+ */
+export const adminEvents = mysqlTable(
+  "admin_events",
+  {
+    id: id(),
+    actorUserId: fk("actor_user_id").notNull(),
+    action: varchar("action", { length: 60 }).notNull(),
+    targetType: varchar("target_type", { length: 30 }).notNull(),
+    targetId: fk("target_id").notNull(),
+    detailJson: json("detail_json"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("idx_target").on(t.targetType, t.targetId),
+    index("idx_created").on(t.createdAt),
+  ],
+);

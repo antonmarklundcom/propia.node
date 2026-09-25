@@ -120,6 +120,13 @@
       "when": 1790185073861,
       "tag": "0016_light_post",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1790373853925,
+      "tag": "0017_mushy_madrox",
+      "breakpoints": true
     }
   ]
 }
