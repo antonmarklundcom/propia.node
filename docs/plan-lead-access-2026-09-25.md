@@ -473,3 +473,155 @@ Use Opus 5.5 or Sonnet. Not Fable (AGENTS.md cost guardrail).
 > then L2+L3 together after the founder has migrated `0017` (run
 > `npm run verify:scopes` against a local database and say whether you could),
 > then L4a.
+
+---
+
+## 8. Founder go-ahead, 2026-09-25, and the build waves
+
+Superadmin items approved: **1** (share leads), **3** (user editing),
+**5** (response board), **6** (history), **7** (duplicates), **8** (partner
+checklist), **9** (VenderCRM push). **2** (#210) is already coded and waits
+only on migration `0016`. **4** (staff rights) is explained to the founder
+below; its default in wave 1 is the recommendation. **10** (email) waits
+until the founder has tested Cloudflare nameservers on one parked domain (§4).
+
+**4 in plain words.** Today a `staff` user can publish a listing and delete it
+for good from `/admin/propiedades`. That skips the approval step that only the
+superadmin is meant to do. Recommendation, and the wave-1 default: staff may
+edit listings and set every status except `published`, and cannot hard-delete.
+Publishing and deleting stay with the superadmin.
+
+### What needs a migration and what does not
+
+| Item | Schema change? | Wave |
+| --- | --- | --- |
+| 2 lead status and note (#210) | yes, `0016` (already written) | founder, now |
+| 3 user editing, 4 staff rights | no | 1 |
+| 7 duplicate leads (v1: flag and filter by the same WhatsApp, no merge) | no | 1 |
+| 8 partner checklist (computed from existing columns) | no | 1 |
+| 9 VenderCRM push | no (best-effort, same as today's webhook) | 1 |
+| 1 share leads, 5 response board, 6 history | yes, **one** migration `0017` for both tables | 2 |
+
+Wave 1 can be coded now, in parallel with the founder applying `0016`. Wave 2
+must start from `main` **after** #210 is merged, so `0017` numbers after `0016`.
+
+### Item 9: VenderCRM push, the contract fixed now
+
+- Endpoint `POST https://crm.clientes.com.py/api/v1/leads` with header
+  `X-Api-Key`. **Keys live only in hPanel environment variables**, never in the
+  repo, a doc or a browser bundle.
+- Env var names. A door whose key is unset stays local-only and never borrows
+  another door's key.
+
+  | Env var | Door (`leads.vertical`) | Key exists in VenderCRM (2026-09-23 list)? |
+  | --- | --- | --- |
+  | `VENDERCRM_BASE_URL` | all (`https://crm.clientes.com.py`) | n/a |
+  | `VENDERCRM_KEY_INMOBILIARIA` | inmobiliaria.com.py (`inmobiliaria`) | yes |
+  | `VENDERCRM_KEY_AGENTS` | inmobiliarios.com.py (`agents`) | yes |
+  | `VENDERCRM_KEY_TERRENO` | terreno.com.py (`terreno`) | yes |
+  | `VENDERCRM_KEY_RENT` | rentparaguay.com (`rent`) | yes |
+  | `VENDERCRM_KEY_EN` | realestateinparaguay.com (`en`) | **no**, create the site in VenderCRM first |
+  | `VENDERCRM_KEY_LAND` | landforsaleparaguay.com (`land`) | **no** |
+  | `VENDERCRM_KEY_ALQUILER` | alquiler.com.py (`alquiler`) | **no**, domain not bought |
+  | `VENDERCRM_KEY_DEVS` | desarrolladores.com.py (`devs`, disabled) | yes, unused while disabled |
+
+- The lead is saved in MySQL first, as today. The push runs in `after()` with a
+  5 s timeout and never blocks the visitor. Both writers (`app/api/leads/route.ts`
+  and `app/tasacion/actions.ts`) pass the saved lead id.
+- `idempotency_key` = `portal-lead-<leads.id>`. It is unique per submission
+  (what VenderCRM asks for) *and* the same on a retry of that row, which is what
+  makes the backfill below safe to re-run.
+- `phone` = `leads.whatsapp`. `source` = `site:<vertical>`. The lead id, lead
+  type and listing public id and title go in `fields`. Never send `pipeline`,
+  `stage` or `owner`.
+- VenderCRM keys never turn on OTP. `isMessagingConfigured()` stays tied to the
+  webhook. Alerts stay on Telegram and the webhook.
+- A backfill job for the leads already in the database:
+  `src/lib/ops/crm-backfill.ts` plus `scripts/crm-backfill.ts`,
+  `npm run crm:backfill -- --dry`, with `--limit`. The dry run and the real run
+  are the same pass (AGENTS.md §4). The founder runs it locally with the keys
+  exported.
+- Log only the status code and lead id on failure. Never log the body, the phone
+  or the key.
+
+### Wave 2 schema (`0017`, one migration)
+
+- `lead_assignments`, exactly as §3.3.
+- `admin_events`:
+  - columns `id`, `actor_user_id`, `action varchar(60)`,
+    `target_type varchar(30)`, `target_id bigint unsigned`,
+    `detail_json json NULL` (display only), `created_at`;
+  - indexes on `(target_type, target_id)` and on `created_at`;
+  - written on share and revoke, publish, delete, role change and password
+    reset by admin;
+  - read on `/admin/leads` (per lead) and a new `/admin/historial`.
+- The response board (5) is computed from `lead_assignments.created_at` and
+  `state_at`, so it needs no extra column.
+
+## 9. Founder steps: applying a migration (Windows, PowerShell)
+
+Same steps for `0016` now and `0017` later; only the branch name changes.
+
+1. Hostinger keeps a daily backup. For extra safety, open phpMyAdmin and export
+   the `leads` table.
+2. hPanel → Databases → **Remote MySQL**: make sure your current IP is on the
+   list.
+3. In your local clone:
+   ```powershell
+   cd C:\path\to\propia.node
+   git fetch origin
+   git switch claude/fervent-mccarthy-3yz0t6     # PR #210's branch
+   npm install
+   $env:DATABASE_URL = "<the owner/RW database URL>"
+   npm run db:status      # expect: 1 pending (0016_light_post), drift on leads
+   npm run db:migrate
+   npm run db:status      # must say: 0 pending, No drift
+   ```
+4. Merge PR #210 on GitHub. Hostinger deploys it within minutes.
+5. Test it: send a message from `/contacto`, then open `/admin/leads` and check
+   that it shows with the status chips.
+6. Clean up:
+   ```powershell
+   git switch main
+   git pull
+   Remove-Item Env:DATABASE_URL
+   ```
+
+**Never merge a `MIGRATION REQUIRED` PR before step 3 reports `No drift`.**
+New code that writes a column the database lacks breaks every page that writes
+it.
+
+## 10. Prompts for Sonnet sessions (cheaper than Opus for this)
+
+**Wave 1: start now.**
+
+> Read `AGENTS.md` and `CLAUDE.md`. Then read the plan, which is on another
+> branch: `git fetch origin claude/clever-hawking-32toiz && git show
+> origin/claude/clever-hawking-32toiz:docs/plan-lead-access-2026-09-25.md`.
+> Build **wave 1** of §8 as three PRs, each from a fresh `origin/main`:
+> (A) L0 bugs 1, 2, 4, 7 from §1 plus staff rights (item 4 of §8: staff cannot
+> publish or hard-delete) — auth-adjacent; (B) the VenderCRM push and the
+> `crm:backfill` job exactly as §8 "Item 9", env vars documented empty in
+> `.env.example`; (C) items 7 and 8 (duplicate-WhatsApp flag and filter on
+> `/admin/leads`, partner checklist on `/admin/inmobiliarias`), `esPanel` copy.
+> If your session only allows one branch, make one PR with three clearly
+> separated commits and say so. No schema change in any of them. `npm run
+> verify:local` green before every push, never `--no-verify`, paste its tail in
+> each PR, and say what you could not verify (no production DB from a cloud
+> session). **Do not merge anything** — the founder merges. Stop and report the
+> PR links.
+
+**Wave 2: only after #210 is merged.**
+
+> Read `AGENTS.md`, `CLAUDE.md` and the plan (`git show
+> origin/claude/clever-hawking-32toiz:docs/plan-lead-access-2026-09-25.md`).
+> From a fresh `origin/main` (which must contain `drizzle/0016_light_post.sql`),
+> build **wave 2** of §8. PR 1, titled `MIGRATION REQUIRED — lead_assignments
+> and admin_events`: schema + `drizzle/0017_*.sql` via `npm run db:generate`,
+> nothing else. PR 2, stacked on PR 1: §3.4 L2 (share with bulk, revoke,
+> WhatsApp "Avisar"), L3 (realtor side in `getPanelLeads`), the response board
+> and the `admin_events` writes and `/admin/historial`. Extend
+> `scripts/verify-scopes.ts` with the cases in §3.4 L3, and run `npm run
+> verify:scopes` if a local MySQL is available (say plainly if not). Share only
+> with verified agencies and agents. Staff may share internal-lane leads only.
+> Do not merge either PR. Stop and report.
