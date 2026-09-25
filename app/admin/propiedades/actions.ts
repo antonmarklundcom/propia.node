@@ -24,6 +24,7 @@ import {
 } from "@/lib/listing-edit";
 import { readListingForm } from "@/lib/listing-form-input";
 import { setPanelListingStatus } from "@/lib/panel-queries";
+import { recordAdminEvent } from "@/lib/admin-events";
 
 export async function adminUpdateListingAction(formData: FormData): Promise<void> {
   const user = await requireStaffOrAbove();
@@ -34,11 +35,9 @@ export async function adminUpdateListingAction(formData: FormData): Promise<void
     redirect(`/admin/propiedades/${parsed.id}?msg=invalid`);
   }
 
-  if (isStaff(user.role)) {
-    const current = await getEditableListing(parsed.id, { kind: "admin" });
-    if (!staffMaySetStatus(current?.status, parsed.input.status)) {
-      redirect(`/admin/propiedades/${parsed.id}?msg=staff_publish`);
-    }
+  const current = await getEditableListing(parsed.id, { kind: "admin" });
+  if (isStaff(user.role) && !staffMaySetStatus(current?.status, parsed.input.status)) {
+    redirect(`/admin/propiedades/${parsed.id}?msg=staff_publish`);
   }
 
   const affected = await updateListing({
@@ -46,6 +45,10 @@ export async function adminUpdateListingAction(formData: FormData): Promise<void
     scope: { kind: "admin" },
     input: parsed.input,
   });
+
+  if (affected && parsed.input.status === "published" && current?.status !== "published") {
+    await recordAdminEvent(user.id, "listing.publish", "listing", parsed.id, { via: "edit" });
+  }
 
   revalidatePath("/admin/propiedades");
   revalidatePath(`/admin/propiedades/${parsed.id}`);
@@ -56,10 +59,13 @@ export async function adminUpdateListingAction(formData: FormData): Promise<void
 }
 
 export async function adminDeleteListingAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  const user = await requireSuperAdmin();
 
   const id = Number(formData.get("listingId"));
-  if (Number.isInteger(id) && id > 0) await deleteListing(id);
+  if (Number.isInteger(id) && id > 0) {
+    await deleteListing(id);
+    await recordAdminEvent(user.id, "listing.delete", "listing", id);
+  }
 
   revalidatePath("/admin/propiedades");
   revalidateListings();
@@ -111,7 +117,10 @@ export async function bulkListingAction(formData: FormData): Promise<void> {
     // dismissed by a stray Enter, and this one is not undoable.
     if (String(formData.get("confirm") ?? "").trim().toUpperCase() !== "BORRAR")
       return;
-    for (const id of ids) await deleteListing(id);
+    for (const id of ids) {
+      await deleteListing(id);
+      await recordAdminEvent(user.id, "listing.delete", "listing", id, { via: "bulk" });
+    }
   } else if (isAdminStatus(op)) {
     for (const id of ids) {
       // scope: "admin" — no agency guard, this is the super-admin table.
@@ -120,6 +129,9 @@ export async function bulkListingAction(formData: FormData): Promise<void> {
         scope: { kind: "admin" },
         status: op,
       });
+      if (op === "published") {
+        await recordAdminEvent(user.id, "listing.publish", "listing", id, { via: "bulk" });
+      }
     }
   } else {
     return;

@@ -20,6 +20,7 @@ export function adminTabs(
     | "posts"
     | "import"
     | "operations"
+    | "history"
     | "account",
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
@@ -85,6 +86,12 @@ export function adminTabs(
       group: "manage",
       label: esPanel.adminUsersTitle,
       active: active === "users",
+    },
+    {
+      href: "/admin/historial",
+      group: "manage",
+      label: esPanel.historyTitle,
+      active: active === "history",
     },
     {
       href: "/admin/cuenta",

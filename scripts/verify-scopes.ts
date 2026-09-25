@@ -20,6 +20,7 @@ import { db } from "../src/db";
 import {
   agencies,
   agents,
+  leadAssignments,
   leads,
   leadMatches,
   listings,
@@ -44,6 +45,12 @@ import {
 import { getEditableListing, updateListing } from "../src/lib/listing-edit";
 import { isStaff, isStaffOrAbove, isSuperAdmin, isAgencyRole } from "../src/lib/auth/roles";
 import { proposeMatches, markMatchSent } from "../src/lib/matching";
+import {
+  getSharedLeads,
+  revokeShare,
+  setShareState,
+  shareLeads,
+} from "../src/lib/lead-assignments";
 import { verifyPassword } from "../src/lib/auth/password";
 
 const url = process.env.DATABASE_URL ?? "";
@@ -82,6 +89,7 @@ async function main() {
   const createdUserIds: number[] = [];
   const createdAgencyIds: number[] = [];
   const createdListingIds: number[] = [];
+  const createdLeadIds: number[] = [];
 
   try {
     /* ---------------------------------------------------------------- */
@@ -400,6 +408,125 @@ async function main() {
     );
 
     /* ---------------------------------------------------------------- */
+    /* Shared leads — lead_assignments (plan-lead-access §3)            */
+    /* ---------------------------------------------------------------- */
+    /**
+     * A shared lead is the one way a listing-less lead reaches a partner's
+     * panel, so these pin who sees it and who can answer it: the target and
+     * nobody else, not after revocation, and never a lane staff cannot see.
+     */
+    const otherOwner = await registerAccount({
+      kind: "agency",
+      name: "Verify Other Agency",
+      email: mail("other-agency"),
+      password: "secreto123",
+      whatsapp: null,
+      agencyName: `Verify Otra ${stamp}`,
+    });
+    check("second agency signup succeeds", otherOwner.ok);
+    if (!otherOwner.ok) return;
+    createdUserIds.push(otherOwner.userId);
+    const [otherAgentRow] = await db.select().from(agents).where(eq(agents.userId, otherOwner.userId));
+    const otherAgencyId = otherAgentRow.agencyId!;
+    createdAgencyIds.push(otherAgencyId);
+
+    await db.update(agencies).set({ isVerified: true }).where(eq(agencies.id, agencyId));
+    await db.update(agents).set({ isVerified: true }).where(eq(agents.id, indepAgent.id));
+
+    const [internalRes] = await db.insert(leads).values({
+      leadType: "question",
+      vertical: "verify",
+      whatsapp: "0986000001",
+      name: `Verify shared internal ${stamp}`,
+      routedTo: "internal",
+    });
+    const [agencyLaneRes] = await db.insert(leads).values({
+      leadType: "seller",
+      vertical: "verify",
+      whatsapp: "0986000002",
+      name: `Verify shared agency lane ${stamp}`,
+      routedTo: "agency",
+    });
+    const sharedLeadId = Number((internalRes as unknown as { insertId: number }).insertId);
+    const agencyLaneLeadId = Number((agencyLaneRes as unknown as { insertId: number }).insertId);
+    createdLeadIds.push(sharedLeadId, agencyLaneLeadId);
+
+    const staffShared = await shareLeads({
+      leadIds: [sharedLeadId, agencyLaneLeadId],
+      target: { kind: "agency", id: agencyId },
+      note: "Verify note",
+      byUserId: agencyOwner.userId,
+      internalOnly: isStaff("staff"),
+    });
+    check(
+      "staff shares an internal lead but not an agency-lane one",
+      staffShared.length === 1 && staffShared[0] === sharedLeadId,
+      JSON.stringify(staffShared),
+    );
+    check(
+      "an unverified agency cannot receive a share",
+      (await shareLeads({
+        leadIds: [sharedLeadId],
+        target: { kind: "agency", id: otherAgencyId },
+        note: null,
+        byUserId: agencyOwner.userId,
+        internalOnly: false,
+      })).length === 0,
+    );
+
+    const viewerA = { agencyId, userId: agencyOwner.userId };
+    const viewerB = { agencyId: otherAgencyId, userId: otherOwner.userId };
+    const viewerIndep = { agencyId: null, userId: independent.userId };
+    const seenByA = await getSharedLeads(viewerA);
+    check("the target agency sees the shared lead", seenByA.some((l) => l.id === sharedLeadId));
+    check("the share carries the operator's note", seenByA.find((l) => l.id === sharedLeadId)?.shareNote === "Verify note");
+    check("another agency does not see it", (await getSharedLeads(viewerB)).every((l) => l.id !== sharedLeadId));
+    check("an independent agent does not see an agency share", (await getSharedLeads(viewerIndep)).every((l) => l.id !== sharedLeadId));
+
+    const shareA = seenByA.find((l) => l.id === sharedLeadId)!;
+    check(
+      "another agency cannot answer the share",
+      (await setShareState({ assignmentId: shareA.assignmentId, state: "accepted", viewer: viewerB })) === 0,
+    );
+    check(
+      "the target agency can answer it",
+      (await setShareState({ assignmentId: shareA.assignmentId, state: "accepted", viewer: viewerA })) === 1,
+    );
+    check(
+      "a share cannot be set back to pending by the realtor",
+      (await setShareState({ assignmentId: shareA.assignmentId, state: "pending", viewer: viewerA })) === 0,
+    );
+
+    await shareLeads({
+      leadIds: [sharedLeadId],
+      target: { kind: "agent", id: indepAgent.id },
+      note: null,
+      byUserId: agencyOwner.userId,
+      internalOnly: false,
+    });
+    check("an agent-targeted share reaches that agent", (await getSharedLeads(viewerIndep)).some((l) => l.id === sharedLeadId));
+
+    check("revoking returns the lead id", (await revokeShare({ assignmentId: shareA.assignmentId, internalOnly: false })) === sharedLeadId);
+    check("a revoked share disappears from the panel", (await getSharedLeads(viewerA)).every((l) => l.id !== sharedLeadId));
+    check(
+      "a revoked share cannot be answered",
+      (await setShareState({ assignmentId: shareA.assignmentId, state: "contacted", viewer: viewerA })) === 0,
+    );
+    await shareLeads({
+      leadIds: [sharedLeadId],
+      target: { kind: "agency", id: agencyId },
+      note: null,
+      byUserId: agencyOwner.userId,
+      internalOnly: false,
+    });
+    const [reshared] = await db.select().from(leadAssignments).where(eq(leadAssignments.id, shareA.assignmentId));
+    check(
+      "re-sharing a revoked lead restores it as pending, same row",
+      reshared.revokedAt === null && reshared.state === "pending" && reshared.stateAt === null,
+      `${reshared.state} ${String(reshared.revokedAt)}`,
+    );
+
+    /* ---------------------------------------------------------------- */
     /* Profile editing                                                  */
     /* ---------------------------------------------------------------- */
     const slugBefore = agencyRow!.slug;
@@ -542,6 +669,10 @@ async function main() {
   } finally {
     // Clean up in FK order: leads before the listings they point at, listings
     // and sessions before the rows those point at.
+    if (createdLeadIds.length) {
+      await db.delete(leadAssignments).where(inArray(leadAssignments.leadId, createdLeadIds));
+      await db.delete(leads).where(inArray(leads.id, createdLeadIds));
+    }
     if (createdListingIds.length) {
       await db.delete(leadMatches).where(inArray(
         leadMatches.leadId,

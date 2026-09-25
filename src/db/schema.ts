@@ -373,7 +373,7 @@ export const leadAssignments = mysqlTable(
     state: mysqlEnum("state", ["pending", "accepted", "declined", "contacted", "closed"])
       .notNull()
       .default("pending"),
-    /** When `state` last changed; NULL while still `pending`. */
+    /** When the realtor first answered; NULL while still `pending`. */
     stateAt: datetime("state_at"),
     /** NULL = access active. */
     revokedAt: datetime("revoked_at"),

@@ -22,6 +22,7 @@ import {
   updatePanelUser,
   type UserRoleValue,
 } from "@/lib/panel-queries";
+import { recordAdminEvent } from "@/lib/admin-events";
 
 const ROUTE = "/admin/usuarios";
 
@@ -109,9 +110,14 @@ export async function updateUserAction(formData: FormData): Promise<void> {
 
   if (!ok) done("email_taken");
 
+  if (current !== role) {
+    await recordAdminEvent(me.id, "user.role", "user", id, { from: current, to: role });
+  }
+
   // A password change should not leave old cookies working elsewhere.
   if (password) {
     await revokeUserSessions(id);
+    await recordAdminEvent(me.id, "user.password", "user", id);
     done("password_reset");
   }
 
@@ -131,6 +137,7 @@ export async function deleteUserAction(formData: FormData): Promise<void> {
   if (role === "admin" && (await countSuperAdmins()) <= 1) done("last_admin");
 
   await deletePanelUser(id);
+  await recordAdminEvent(me.id, "user.delete", "user", id, { role });
   done("deleted");
 }
 
