@@ -138,3 +138,25 @@ city-scoped pages (`/venta/asuncion/casas`) can rank.
 
 Size once decided: M (urls.ts, the segments page, sitemap, hub chips,
 `verify:seo`/`verify:facets` cases, one e2e). Not built.
+
+## 2026-09-25 — Sharing leads with partner realtors (plan only)
+
+Plan: `docs/plan-lead-access-2026-09-25.md`. The superadmin shares a lead with
+a verified agency or agent through a new `lead_assignments` table (not
+`routed_to`, not a `leads.agent_id` column), so it shows in their
+`/agencia/leads`. Not built. The founder decides:
+
+1. **Privacy wording.** `/privacidad` §3 covers sharing a lead with whoever
+   published the listing, not handing a general enquiry (`/contacto`,
+   `/vender`, `/tasacion`) to a partner. Proposed added line: "Con
+   profesionales inmobiliarios verificados con los que trabajamos, cuando tu
+   consulta no es sobre un aviso concreto o nos pedís que te pongamos en
+   contacto." Until it is signed, share only directory leads (their form
+   already says verified agents will contact them) and leads whose sender
+   agreed to be forwarded.
+2. **Targets:** verified agencies and agents only (recommended), or any.
+3. **Staff:** may share `internal`-lane leads (recommended, same predicate as
+   their list), or superadmin only.
+4. **Staff listing rights:** today `staff` can set a listing to `published` and
+   hard-delete from `/admin/propiedades`, although Approve/Reject is
+   superadmin-only. Intended or not?
