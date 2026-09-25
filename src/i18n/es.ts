@@ -186,6 +186,18 @@ export const esPrecios = {
  * internal surface (login, review queue, agency dashboard) — never indexed, but
  * still es-PY so the founder and agencies read the same language as the site.
  */
+/** The lead type as the operator reads it in an alert on their phone. */
+const ALERT_LEAD_TYPE: Record<string, string> = {
+  buyer: "Compra",
+  renter: "Alquiler",
+  seller: "Venta",
+  valuation: "Tasación",
+  developer: "Desarrolladora",
+  agent_signup: "Alta de agente",
+  landlord: "Alquilar su propiedad",
+  question: "Consulta",
+};
+
 export const esPanel = {
   staffRole: "Personal",
   staffEditListing: "Editar propiedad",
@@ -545,7 +557,7 @@ export const esPanel = {
     listingTitle: string | null;
   }) =>
     [
-      `${params.leadType} · ${params.name ?? "Sin nombre"} (${params.whatsapp})`,
+      `${ALERT_LEAD_TYPE[params.leadType] ?? params.leadType} · ${params.name ?? "Sin nombre"} (${params.whatsapp})`,
       params.listingTitle ? `Aviso: ${params.listingTitle}` : null,
     ]
       .filter(Boolean)

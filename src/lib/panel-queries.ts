@@ -531,8 +531,13 @@ export interface LeadRow {
  * listing ids first, then read leads on idx_listing. routedTo is constrained to
  * the agency/agent lanes so internal/developer leads never leak in.
  */
+/** `leads.status`: the operator's follow-up state. */
+export type LeadFollowUp = (typeof leads.$inferSelect)["status"];
+
 export interface AdminLeadRow extends LeadRow {
   vertical: string;
+  status: LeadFollowUp;
+  note: string | null;
   routedTo: (typeof leads.$inferSelect)["routedTo"];
   agencyName: string | null;
   /**
@@ -562,6 +567,8 @@ export async function listAllLeads(params: {
   type?: LeadRow["leadType"] | "all";
   /** A `leads.vertical` key — the door that captured the lead. */
   vertical?: string;
+  /** The operator's follow-up state. */
+  status?: LeadFollowUp;
   q?: string;
   limit?: number;
 }): Promise<AdminLeadRow[]> {
@@ -571,6 +578,7 @@ export async function listAllLeads(params: {
     filters.push(eq(leads.leadType, params.type));
   }
   if (params.vertical) filters.push(eq(leads.vertical, params.vertical));
+  if (params.status) filters.push(eq(leads.status, params.status));
   const q = params.q?.trim();
   if (q) {
     const term = containsPattern(q);
@@ -605,6 +613,8 @@ export async function listAllLeads(params: {
       utm: leads.utm,
       vertical: leads.vertical,
       routedTo: leads.routedTo,
+      status: leads.status,
+      note: leads.note,
       agencyName: agencies.name,
       ownerName: users.name,
       ownerWhatsapp: users.whatsapp,
@@ -651,6 +661,41 @@ function parseUtm(value: unknown): Record<string, string> | null {
 }
 
 /** Lead counts per type for the admin filter chips — one GROUP BY, not one query each. */
+/** Lead count per follow-up state, for the status chips on /admin/leads. */
+export async function countLeadsByStatus(
+  internalOnly = false,
+): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ status: leads.status, n: sql<number>`count(*)` })
+    .from(leads)
+    .where(internalOnly ? eq(leads.routedTo, "internal") : undefined)
+    .groupBy(leads.status);
+  return Object.fromEntries(rows.map((r) => [r.status, Number(r.n)]));
+}
+
+/**
+ * Set a lead's follow-up state and note from /admin/leads. A `staff` user only
+ * ever sees the internal lane, so they may only write to it — the same
+ * predicate their list uses, applied to the write. Returns rows affected.
+ */
+export async function updateLeadFollowUp(params: {
+  id: number;
+  status: LeadFollowUp;
+  note: string | null;
+  internalOnly: boolean;
+}): Promise<number> {
+  const [res] = await db
+    .update(leads)
+    .set({ status: params.status, note: params.note })
+    .where(
+      and(
+        eq(leads.id, params.id),
+        params.internalOnly ? eq(leads.routedTo, "internal") : undefined,
+      ),
+    );
+  return res.affectedRows;
+}
+
 /**
  * Lead count per capturing door, for the "Sitio" chips on /admin/leads. Keyed
  * by the raw `leads.vertical` value, so a door that has since been renamed or

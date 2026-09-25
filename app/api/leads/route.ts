@@ -26,6 +26,8 @@ const bodySchema = z.object({
     "valuation",
     "developer",
     "agent_signup",
+    "landlord",
+    "question",
   ]),
   listingPublicId: z.string().length(10).optional(),
   /**

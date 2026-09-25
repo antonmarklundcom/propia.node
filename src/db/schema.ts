@@ -585,6 +585,12 @@ export const leads = mysqlTable(
       "valuation",
       "developer",
       "agent_signup",
+      // Appended (see routed_to below for why order matters). `landlord`: an
+      // owner who wants their property rented out or managed (the rental
+      // doors' Airbnb / apartment-management services). `question`: a general
+      // enquiry that is neither a purchase, a rental nor a sale.
+      "landlord",
+      "question",
     ]).notNull(),
     vertical: varchar("vertical", { length: 40 }).notNull(), // which domain captured it: 'en','inmobiliaria','alquiler',...
     listingId: fk("listing_id"),
@@ -616,6 +622,15 @@ export const leads = mysqlTable(
       "owner",
     ]).notNull(),
     ghlContactId: varchar("ghl_contact_id", { length: 80 }), // set by the GHL webhook response
+    /**
+     * The operator's follow-up state in /admin/leads. Every existing row reads
+     * as `new` after the migration, which is true: none was ever marked.
+     */
+    status: mysqlEnum("status", ["new", "contacted", "closed"])
+      .notNull()
+      .default("new"),
+    /** Free-text operator note, never shown outside /admin. */
+    note: text("note"),
     createdAt: createdAt(),
   },
   (t) => [
