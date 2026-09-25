@@ -5,10 +5,12 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   countLeadsByStatus,
+  countLeadsByPhoneKey,
   countLeadsByType,
   countLeadsByVertical,
   countRecentLeads,
   countReviewQueue,
+  leadPhoneKey,
   listAllLeads,
   type AdminLeadRow,
   type LeadFollowUp,
@@ -97,12 +99,14 @@ function leadsHref(p: {
   tipo?: string;
   sitio?: string;
   estado?: string;
+  tel?: string;
   q?: string;
 }): string {
   const sp = new URLSearchParams();
   if (p.tipo && p.tipo !== "all") sp.set("tipo", p.tipo);
   if (p.sitio) sp.set("sitio", p.sitio);
   if (p.estado) sp.set("estado", p.estado);
+  if (p.tel) sp.set("tel", p.tel);
   if (p.q) sp.set("q", p.q);
   const qs = sp.toString();
   return qs ? `/admin/leads?${qs}` : "/admin/leads";
@@ -176,11 +180,12 @@ export default async function AdminLeadsPage({
     tipo?: string;
     sitio?: string;
     estado?: string;
+    tel?: string;
     q?: string;
     msg?: string;
   }>;
 }) {
-  const [{ tipo, sitio, estado, q, msg }, user] = await Promise.all([
+  const [{ tipo, sitio, estado, tel, q, msg }, user] = await Promise.all([
     searchParams,
     requireStaffOrAbove(),
   ]);
@@ -205,13 +210,21 @@ export default async function AdminLeadsPage({
   const activeSite = siteCounts.some((s) => s.vertical === sitio)
     ? sitio
     : undefined;
+  // "Same number" filter: only a well-formed key, never free text.
+  const activeTel = tel && /^\d{6,9}$/.test(tel) ? tel : undefined;
   const rows = await listAllLeads({
     type: activeType,
     vertical: activeSite,
     status: activeStatus,
+    phoneKey: activeTel,
     q,
     internalOnly,
   });
+  // Which numbers on this page wrote more than once (one GROUP BY).
+  const repeats = await countLeadsByPhoneKey(
+    rows.map((r) => leadPhoneKey(r.whatsapp)),
+    internalOnly,
+  );
   // Where "Guardar" on a card sends the operator back to.
   const backHref = leadsHref({
     tipo: activeType,
@@ -366,6 +379,15 @@ export default async function AdminLeadsPage({
           </div>
         </form>
 
+        {activeTel ? (
+          <p className="panel-note">
+            {esPanel.leadsSamePhoneFilter}{" "}
+            <Link href={leadsHref({ tipo: activeType, sitio: activeSite, estado: activeStatus, q })}>
+              {esPanel.leadsSamePhoneClear}
+            </Link>
+          </p>
+        ) : null}
+
         {rows.length === 0 ? (
           <p className="panel-empty">{esPanel.adminLeadsEmpty}</p>
         ) : (
@@ -387,6 +409,19 @@ export default async function AdminLeadsPage({
                     </span>
                     <span>{formatWhen(lead.createdAt)}</span>
                     <span>{lead.whatsapp}</span>
+                    {/* The same person writing again — or the same bot. */}
+                    {(() => {
+                      const key = leadPhoneKey(lead.whatsapp);
+                      const n = repeats.get(key);
+                      return n && !activeTel ? (
+                        <Link
+                          className="panel-chip panel-chip--active"
+                          href={leadsHref({ tel: key })}
+                        >
+                          {esPanel.leadsSamePhone(n)}
+                        </Link>
+                      ) : null;
+                    })()}
                     {lead.email ? <span>{lead.email}</span> : null}
                     {/* Who owns the follow-up: an agency, a particular
                         seller who has no panel yet, or you. */}
