@@ -47,6 +47,30 @@ export const ADMIN_STATUSES: readonly ListingStatusValue[] = [
 ];
 
 /**
+ * Statuses a `staff` user may set from /admin/propiedades: everything but
+ * `published`. Publishing is the review decision (Approve on /admin), which is
+ * the super-admin's alone — without this a staff bulk action or an edit-form
+ * select skipped the queue entirely. A listing that is already published keeps
+ * its status on save (see `staffMaySetStatus`).
+ */
+export const STAFF_STATUSES: readonly ListingStatusValue[] = [
+  "draft",
+  "pending_review",
+  "paused",
+  "sold",
+  "rented",
+  "removed",
+];
+
+/** Staff may keep `published` on a row that has it, never grant it. */
+export function staffMaySetStatus(
+  current: ListingStatusValue | undefined,
+  next: ListingStatusValue,
+): boolean {
+  return next !== "published" || current === "published";
+}
+
+/**
  * Statuses a non-admin scope may MOVE a listing to.
  *
  * `published` is deliberately absent (audit F1). A self-registered agency

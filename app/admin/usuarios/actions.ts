@@ -15,6 +15,7 @@ import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
   countSuperAdmins,
   createPanelUser,
+  getUserRole,
   deletePanelUser,
   linkUserToAgency,
   revokeUserSessions,
@@ -88,7 +89,12 @@ export async function updateUserAction(formData: FormData): Promise<void> {
   if (id === me.id && role !== me.role) done("self_role");
 
   // Demoting the only remaining admin leaves nobody who can promote one back.
-  if (role !== "admin" && (await countSuperAdmins()) <= 1) {
+  // The check is on the user being edited, read from the database: editing
+  // anybody else (a staff member's name, a new password for an agent) must
+  // not trip it just because there is one admin.
+  const current = await getUserRole(id);
+  if (!current) done("invalid");
+  if (current === "admin" && role !== "admin" && (await countSuperAdmins()) <= 1) {
     done("last_admin");
   }
 
@@ -119,7 +125,9 @@ export async function deleteUserAction(formData: FormData): Promise<void> {
   if (!id) done("invalid");
   if (id === me.id) done("self_delete");
 
-  const role = toRole(formData.get("role"));
+  // The role comes from the database, never from the form.
+  const role = await getUserRole(id);
+  if (!role) done("invalid");
   if (role === "admin" && (await countSuperAdmins()) <= 1) done("last_admin");
 
   await deletePanelUser(id);

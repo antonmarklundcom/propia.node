@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
+import { isStaff } from "@/lib/auth/roles";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import {
   ADMIN_STATUSES,
+  STAFF_STATUSES,
   countListingsByStatus,
   listAllListings,
   type ListingStatusValue,
@@ -32,6 +34,7 @@ const OPERATION_LABEL: Record<string, string> = {
 
 const FLASH: Record<string, string> = {
   deleted: esPanel.listingDeleted,
+  staff_forbidden: esPanel.staffCannotPublish,
 };
 
 /** The whole table is one form, so the bulk bar can live above the rows. */
@@ -57,6 +60,7 @@ export default async function AdminListingsPage({
   ]);
 
   const flash = params.msg ? FLASH[params.msg] : undefined;
+  const staff = isStaff(user.role);
   const chips: (ListingStatusValue | "all")[] = ["all", ...ADMIN_STATUSES];
 
   return (
@@ -127,12 +131,14 @@ export default async function AdminListingsPage({
                   <option value="" disabled>
                     Elegí una acción
                   </option>
-                  {ADMIN_STATUSES.map((s) => (
+                  {(staff ? STAFF_STATUSES : ADMIN_STATUSES).map((s) => (
                     <option key={s} value={s}>
                       Marcar como {listingStatusLabel[s] ?? s}
                     </option>
                   ))}
-                  <option value="delete">Borrar definitivamente</option>
+                  {staff ? null : (
+                    <option value="delete">Borrar definitivamente</option>
+                  )}
                 </select>
               </label>
               <label className="panel-bulk__field">

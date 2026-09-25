@@ -19,7 +19,8 @@ export function adminTabs(
     | "leads"
     | "posts"
     | "import"
-    | "operations",
+    | "operations"
+    | "account",
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
   draftPostCount?: number,
@@ -84,6 +85,12 @@ export function adminTabs(
       group: "manage",
       label: esPanel.adminUsersTitle,
       active: active === "users",
+    },
+    {
+      href: "/admin/cuenta",
+      group: "manage",
+      label: esPanel.profileAccountTitle,
+      active: active === "account",
     },
   ];
 }

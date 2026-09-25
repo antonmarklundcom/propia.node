@@ -8,7 +8,11 @@ import { PhotoManager } from "@/components/panel/PhotoManager";
 import { ListingStats } from "@/components/panel/ListingStats";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
-import { ADMIN_STATUSES, getEditableListing } from "@/lib/listing-edit";
+import {
+  ADMIN_STATUSES,
+  STAFF_STATUSES,
+  getEditableListing,
+} from "@/lib/listing-edit";
 import { listListingImages } from "@/lib/listing-images";
 import {
   getListingDailyViews,
@@ -45,6 +49,7 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   photos_none: { text: esPanel.photosNoFiles, error: true },
   photos_too_many: { text: esPanel.photosTooManyFiles, error: true },
   photos_unconfigured: { text: esPanel.photosNotConfigured, error: true },
+  staff_publish: { text: esPanel.staffCannotPublish, error: true },
 };
 
 export default async function AdminListingEditPage({
@@ -78,6 +83,7 @@ export default async function AdminListingEditPage({
     (await getPanelListingStats({ kind: "admin" }, isStaff(user.role))).get(listing.id)?.leads ?? 0;
 
   const flash = msg ? FLASH[msg] : undefined;
+  const staff = isStaff(user.role);
 
   return (
     <>
@@ -119,9 +125,12 @@ export default async function AdminListingEditPage({
           <ListingForm
             listing={listing}
             locations={locations}
-            statuses={ADMIN_STATUSES}
+            statuses={
+              // Staff keep `published` on a row that has it; they never grant it.
+              staff && listing.status !== "published" ? STAFF_STATUSES : ADMIN_STATUSES
+            }
             action={adminUpdateListingAction}
-            canDelete
+            canDelete={!staff}
             deleteAction={adminDeleteListingAction}
           />
         </article>

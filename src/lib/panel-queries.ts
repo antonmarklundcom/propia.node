@@ -277,6 +277,16 @@ export async function listUsers(): Promise<PanelUserRow[]> {
   }));
 }
 
+/** A user's current role, or null when the id does not exist. */
+export async function getUserRole(id: number): Promise<UserRoleValue | null> {
+  const [row] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return row?.role ?? null;
+}
+
 /** How many super-admins exist — used to refuse removing the last one. */
 export async function countSuperAdmins(): Promise<number> {
   const [row] = await db

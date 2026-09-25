@@ -430,6 +430,8 @@ export const esPanel = {
     "Se borra definitivamente, junto con sus fotos. Si solo querés sacarlo de la web, usá el estado “Eliminado”.",
   listingSaved: "Aviso actualizado.",
   listingDeleted: "Aviso eliminado.",
+  staffCannotPublish:
+    "Publicar y borrar definitivamente quedan para el superadmin. Podés dejarlo en revisión.",
   listingNotFound: "No encontramos ese aviso.",
   listingInvalid: "Revisá los datos: faltan campos obligatorios.",
 
