@@ -4,7 +4,13 @@ Written for the founder's questions of 2026-09-25: how does an employee or a
 partner realtor read the messages, can the superadmin hand existing leads to any
 agency or realtor, and should the portal get a Cloudflare email inbox. Part 1
 records how the code works today (read at `main` `01fb1ea`, open PR #210
-included). Parts 2–4 are the plan. Nothing here is built yet.
+included). Parts 2–4 are the plan.
+
+**Status 2026-09-25 (later the same day): built.** Waves 1 and 2 of §8 — every
+item except §1 bugs 5 and 6 (owner sign-up, keeping listings after joining an
+agency) and email (item 10) — are on branch `claude/clever-hawking-32toiz`,
+together with PR #210, in one PR that needs migrations `0016` + `0017`
+applied first (§9). §10's Sonnet prompts are therefore done; do not run them.
 
 ---
 
