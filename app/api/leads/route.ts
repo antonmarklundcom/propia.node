@@ -9,7 +9,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies, agents, leads, listings, users } from "@/db/schema";
-import { alertOperator, alertOwner, getCrm, type LeadPayload } from "@/lib/crm";
+import { alertOperator, alertOwner, deliverLead, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
 import { esPanel, esOwner } from "@/i18n/es";
@@ -232,7 +232,8 @@ export async function POST(req: NextRequest) {
   const leadId = Number((res as unknown as { insertId: number }).insertId);
 
   // 2. The payload for the deferred push below.
-  const payload: LeadPayload = {
+  const payload: LeadPayload & { leadId: number } = {
+    leadId,
     leadType: parsed.leadType,
     vertical,
     name: parsed.name,
@@ -314,7 +315,8 @@ export async function POST(req: NextRequest) {
     // push that fails or times out leaves the lead exactly as complete as it
     // already was. Nothing here may throw into the runtime's after() handler.
     try {
-      const crmResult = await getCrm().pushLead(payload);
+      // VenderCRM when this door has a key, the generic webhook otherwise.
+      const crmResult = await deliverLead(payload);
       if (crmResult.ok && crmResult.contactId) {
         await db
           .update(leads)

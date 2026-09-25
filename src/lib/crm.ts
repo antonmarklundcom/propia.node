@@ -19,6 +19,11 @@
  */
 
 export interface LeadPayload {
+  /**
+   * The saved `leads.id`. VenderCRM's idempotency key is built from it, so a
+   * retry or a backfill of the same row can never create a second deal.
+   */
+  leadId?: number;
   leadType:
     | "buyer"
     | "renter"
@@ -299,5 +304,136 @@ export async function alertOwner(alert: OwnerAlert): Promise<void> {
     await getCrm().notifyOwner(alert);
   } catch {
     /* an undelivered ping is not worth an error page */
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* VenderCRM — the leads copy (docs/plan-lead-access-2026-09-25.md §8)         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * VenderCRM takes one API key per *site*, and a site is one of our doors: the
+ * key is what tells the CRM which business (and pipeline) a lead belongs to.
+ * So the key is looked up by the lead's saved `vertical`, from a server-only
+ * env var, `VENDERCRM_KEY_<KEY>` (`inmobiliaria` → `VENDERCRM_KEY_INMOBILIARIA`).
+ *
+ * A door without a key is not a door that borrows another's: its leads stay
+ * local-only (and keep going to the generic webhook if one is set). Reusing a
+ * key across doors would file one door's leads under another business.
+ *
+ * Deliberately NOT part of `isMessagingConfigured()`: a leads key cannot
+ * deliver a WhatsApp code, so it must never switch OTP on in /publicar.
+ */
+export function venderCrmKeyFor(vertical: string): string | null {
+  const base = process.env.VENDERCRM_BASE_URL?.trim();
+  if (!base || !/^[a-z0-9_]+$/i.test(vertical)) return null;
+  return process.env[`VENDERCRM_KEY_${vertical.toUpperCase()}`]?.trim() || null;
+}
+
+/** `+595…` for Paraguayan numbers in any of the forms people type. */
+export function toInternationalPhone(raw: string): string {
+  let d = raw.replace(/\D/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.startsWith("595")) return `+${d}`;
+  if (d.startsWith("0")) return `+595${d.slice(1)}`;
+  // A bare local mobile (981 123 456) has at most 9 digits; anything longer
+  // already carries a foreign country code (the English door's buyers).
+  if (d.length <= 9) return `+595${d}`;
+  return `+${d}`;
+}
+
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
+
+/** The request body, built in one place so the backfill sends exactly what a live lead sends. */
+export function venderCrmBody(lead: LeadPayload & { leadId: number }) {
+  const utm = lead.utm ?? {};
+  const fields: Record<string, string> = {
+    lead_id: String(lead.leadId),
+    vertical: lead.vertical,
+    lead_type: lead.leadType,
+    routed_to: lead.routedTo,
+  };
+  // The forms store their own marker in utm.source (`vender`, `directory:home`);
+  // it is form provenance, not a campaign, so it travels as a field.
+  if (utm.source) fields.form = utm.source;
+  if (lead.listing) {
+    fields.listing_public_id = lead.listing.publicId;
+    fields.listing_title = lead.listing.title;
+    fields.listing_url = lead.listing.url;
+    fields.listing_operation = lead.listing.operation;
+    fields.listing_price_usd = String(lead.listing.priceUsd);
+  }
+
+  // Campaign parameters travel under their own names (`utm_source`, …); only
+  // the five known keys, never the whole JSON.
+  const campaign: Record<string, string> = {};
+  for (const key of UTM_KEYS) {
+    const value = utm[key];
+    if (value) campaign[key] = value.slice(0, 190);
+  }
+
+  const message = [
+    lead.message?.trim(),
+    lead.listing ? `Aviso: ${lead.listing.title} — ${lead.listing.url}` : undefined,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return {
+    phone: toInternationalPhone(lead.whatsapp),
+    ...(lead.name ? { name: lead.name } : {}),
+    ...(lead.email ? { email: lead.email } : {}),
+    ...(message ? { message } : {}),
+    source: `site:${lead.vertical}`,
+    idempotency_key: `portal-lead-${lead.leadId}`,
+    ...campaign,
+    fields,
+  };
+}
+
+/**
+ * POST one saved lead to VenderCRM. `null` = this door has no key (nothing was
+ * attempted); otherwise the outcome. 200 (idempotent replay) and 201 are both
+ * delivered. Never throws, and on failure logs the status and lead id only —
+ * never the body, the phone or the key.
+ */
+export async function pushLeadToVenderCrm(
+  lead: LeadPayload & { leadId: number },
+): Promise<CrmResult | null> {
+  const key = venderCrmKeyFor(lead.vertical);
+  if (!key) return null;
+  const url = `${process.env.VENDERCRM_BASE_URL!.trim().replace(/\/+$/, "")}/api/v1/leads`;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": key },
+      body: JSON.stringify(venderCrmBody(lead)),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+    });
+    if (res.ok) return { ok: true };
+    console.warn(`[vendercrm] lead ${lead.leadId} not accepted: HTTP ${res.status}`);
+    return { ok: false, error: `vendercrm ${res.status}` };
+  } catch (e) {
+    const error = isTimeout(e) ? "vendercrm timeout" : "vendercrm network error";
+    console.warn(`[vendercrm] lead ${lead.leadId}: ${error}`);
+    return { ok: false, error };
+  }
+}
+
+/**
+ * The one call both lead writers make after the row is saved: VenderCRM when
+ * the lead's door has a key, the generic webhook (or nothing) otherwise. One
+ * destination per lead, never both, so a lead is not filed twice. Never throws.
+ */
+export async function deliverLead(
+  lead: LeadPayload & { leadId: number },
+): Promise<CrmResult> {
+  try {
+    const vender = await pushLeadToVenderCrm(lead);
+    if (vender) return vender;
+    return await getCrm().pushLead(lead);
+  } catch (e) {
+    return { ok: false, error: String(e) };
   }
 }
