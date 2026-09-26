@@ -15,7 +15,7 @@
  *
  * Cleans up the rows it created, so it is safe to re-run.
  */
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import {
   adminEvents,
@@ -48,12 +48,21 @@ import { getEditableListing, updateListing } from "../src/lib/listing-edit";
 import { isStaff, isStaffOrAbove, isSuperAdmin, isAgencyRole } from "../src/lib/auth/roles";
 import { proposeMatches, markMatchSent } from "../src/lib/matching";
 import {
+  activeShareTargets,
+  claimShareReminder,
   getSharedLeads,
   isLeadSharedWithPanel,
+  listSharesForLeads,
+  PARTNER_NOTE_MAX,
   revokeShare,
+  setPartnerNote,
   setShareState,
   shareLeads,
+  shareRecipients,
+  sharesToRemind,
 } from "../src/lib/lead-assignments";
+import { telegramChatsFor } from "../src/lib/partner-alerts";
+import { linkTelegramChat, unlinkTelegramChat } from "../src/lib/telegram-accounts";
 import { userMaySeeLead } from "../src/lib/inbox-access";
 import { verifyPassword } from "../src/lib/auth/password";
 import { createAgencyInvite, getUsableInvite } from "../src/lib/agency-invites";
@@ -553,6 +562,120 @@ async function main() {
       reshared.revokedAt === null && reshared.state === "pending" && reshared.stateAt === null,
       `${reshared.state} ${String(reshared.revokedAt)}`,
     );
+
+    /* ---------------------------------------------------------------- */
+    /* Partner note, reminders, Telegram recipients (plan-agency b4)    */
+    /* ---------------------------------------------------------------- */
+    /**
+     * The partner note is written and read through `sharedWithPanel()`, so
+     * the same people who can answer a share — and nobody else — can write
+     * its note. The reminder claim and the Telegram recipient lookup are
+     * checked here too, because both decide who is pinged about a lead.
+     */
+    const shareAId = shareA.assignmentId;
+    check(
+      "partner note: the target agency saves a note on its share",
+      (await setPartnerNote({ assignmentId: shareAId, note: "  Verify partner note  ", viewer: viewerA })) === 1,
+    );
+    check(
+      "partner note: saving the same text again still matches the row",
+      (await setPartnerNote({ assignmentId: shareAId, note: "Verify partner note", viewer: viewerA })) === 1,
+    );
+    check(
+      "partner note: the target agency reads it back, trimmed",
+      (await getSharedLeads(viewerA)).find((l) => l.assignmentId === shareAId)?.partnerNote ===
+        "Verify partner note",
+    );
+    check(
+      "partner note: another agency cannot write it",
+      (await setPartnerNote({ assignmentId: shareAId, note: "hijack", viewer: viewerB })) === 0,
+    );
+    check(
+      "partner note: an independent agent cannot write an agency share's note",
+      (await setPartnerNote({ assignmentId: shareAId, note: "hijack", viewer: viewerIndep })) === 0,
+    );
+    check(
+      "partner note: another agency cannot read it",
+      (await getSharedLeads(viewerB)).every((l) => l.assignmentId !== shareAId && l.partnerNote !== "Verify partner note"),
+    );
+    check(
+      "partner note: the operator sees it next to the share",
+      ((await listSharesForLeads([sharedLeadId])).get(sharedLeadId) ?? []).some(
+        (s) => s.id === shareAId && s.partnerNote === "Verify partner note",
+      ),
+    );
+    check(
+      "partner note: capped at PARTNER_NOTE_MAX",
+      (await setPartnerNote({ assignmentId: shareAId, note: "x".repeat(PARTNER_NOTE_MAX + 50), viewer: viewerA })) === 1 &&
+        (await getSharedLeads(viewerA)).find((l) => l.assignmentId === shareAId)?.partnerNote?.length === PARTNER_NOTE_MAX,
+    );
+    await setPartnerNote({ assignmentId: shareAId, note: "Verify partner note", viewer: viewerA });
+
+    // Telegram recipients follow the share: the agency admin with a chat.
+    const verifyChat = "900000000" + String(stamp).slice(-6);
+    check("telegram: a verified link stores the chat", await linkTelegramChat(agencyOwner.userId, verifyChat));
+    check(
+      "telegram: the agency's admin is a recipient of its shares",
+      (await shareRecipients({ kind: "agency", id: agencyId })).some(
+        (r) => r.userId === agencyOwner.userId && r.telegramChatId === verifyChat,
+      ),
+    );
+    check(
+      "telegram: an active share's lead reaches that chat",
+      (await telegramChatsFor(await activeShareTargets(sharedLeadId))).includes(verifyChat),
+    );
+    check(
+      "telegram: another agency's shares do not reach it",
+      !(await telegramChatsFor([{ kind: "agency", id: otherAgencyId }])).includes(verifyChat),
+    );
+
+    // Reminders: only an old, pending, unreminded, active share is due, and a
+    // claim is taken once.
+    await db.update(leadAssignments).set({ createdAt: sql`now() - interval 5 hour` }).where(eq(leadAssignments.id, shareAId));
+    const dueNow = await sharesToRemind({ olderThanHours: 4, limit: 10_000 });
+    check("reminders: a 5 h old pending share is due", dueNow.some((s) => s.id === shareAId));
+    check(
+      "reminders: a fresh share is not due",
+      !(await sharesToRemind({ olderThanHours: 6, limit: 10_000 })).some((s) => s.id === shareAId),
+    );
+    check("reminders: the first claim takes it", await claimShareReminder(shareAId));
+    check("reminders: a second claim does not", !(await claimShareReminder(shareAId)));
+    check(
+      "reminders: a reminded share is no longer due",
+      !(await sharesToRemind({ olderThanHours: 4, limit: 10_000 })).some((s) => s.id === shareAId),
+    );
+    await db
+      .update(leadAssignments)
+      .set({ createdAt: sql`now()`, remindedAt: null })
+      .where(eq(leadAssignments.id, shareAId));
+
+    // Revoked: gone from the panel, the note is frozen, nobody is pinged.
+    await revokeShare({ assignmentId: shareAId, internalOnly: false });
+    check("getSharedLeads still hides a revoked share", (await getSharedLeads(viewerA)).every((l) => l.assignmentId !== shareAId));
+    check(
+      "partner note: a revoked share's note cannot be written",
+      (await setPartnerNote({ assignmentId: shareAId, note: "late", viewer: viewerA })) === 0,
+    );
+    check(
+      "telegram: a revoked share is not an alert target",
+      !(await activeShareTargets(sharedLeadId)).some((t) => t.kind === "agency" && t.id === agencyId),
+    );
+    await db.update(leadAssignments).set({ createdAt: sql`now() - interval 5 hour` }).where(eq(leadAssignments.id, shareAId));
+    check(
+      "reminders: a revoked share is never due",
+      !(await sharesToRemind({ olderThanHours: 4, limit: 10_000 })).some((s) => s.id === shareAId),
+    );
+    check("reminders: a revoked share cannot be claimed", !(await claimShareReminder(shareAId)));
+    await db.update(leadAssignments).set({ createdAt: sql`now()` }).where(eq(leadAssignments.id, shareAId));
+    check("telegram: /stop clears the chat", (await unlinkTelegramChat(verifyChat)) >= 1);
+    // Restore the active share the checks below rely on.
+    await shareLeads({
+      leadIds: [sharedLeadId],
+      target: { kind: "agency", id: agencyId },
+      note: null,
+      byUserId: agencyOwner.userId,
+      internalOnly: false,
+    });
 
     /* ---------------------------------------------------------------- */
     /* Lead exports and per-agent numbers (build A1)                    */

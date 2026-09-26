@@ -8,8 +8,9 @@
  * Matching messages nobody: the WhatsApp link is the delivery, a human
  * clicks it, and `markMatchSent` records that it happened — the same rule as
  * `alertOperator`/`sendOtp`: never write a line that pretends a message was
- * delivered. The one outbound message here is the share notice email (wave
- * E1), sent after the response and only when email is configured.
+ * delivered. The one outbound message here is the share notice — by email
+ * (wave E1) and on Telegram to partners who linked a chat (plan-agency batch
+ * 4) — sent after the response and only on the channels that are configured.
  */
 import { isStaff } from "@/lib/auth/roles";
 import { revalidatePath } from "next/cache";
@@ -29,6 +30,7 @@ import {
   type ShareTarget,
 } from "@/lib/lead-assignments";
 import { emailShareNotice } from "@/lib/lead-emails";
+import { telegramShareNotice } from "@/lib/partner-alerts";
 import { BRAND_NAME } from "@/lib/brand";
 import { siteOrigin } from "@/lib/origin";
 import { recordAdminEvent } from "@/lib/admin-events";
@@ -171,17 +173,22 @@ export async function shareLeadsAction(formData: FormData): Promise<void> {
     after(async () => {
       try {
         const recipients = await shareRecipients(who);
-        await Promise.allSettled(
-          recipients.map((r) =>
-            emailShareNotice({
-              to: r.email,
-              locale: r.locale,
-              brand: BRAND_NAME,
-              count,
-              url: inboxUrl,
-            }),
+        await Promise.allSettled([
+          ...recipients.map((r) =>
+            r.email
+              ? emailShareNotice({
+                  to: r.email,
+                  locale: r.locale,
+                  brand: BRAND_NAME,
+                  count,
+                  url: inboxUrl,
+                })
+              : null,
           ),
-        );
+          // Batch 4: the same "go look" on Telegram, to whoever linked a chat.
+          // No buyer data — see src/lib/partner-alerts.ts.
+          telegramShareNotice({ target: who, leadIds: shared, inboxUrl }),
+        ]);
       } catch {
         /* the share row is the record; an unsent notice is not an incident */
       }

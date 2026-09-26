@@ -183,7 +183,10 @@ say if any should change:
 4. **No email notification to the owner or partner when a buyer replies by
    email.** The operator gets Telegram; the others see it next time they open
    their leads page. Say if they should get an email too (one function in
-   `lead-emails.ts`).
+   `lead-emails.ts`). **Partners resolved by plan-agency batch 4:** a partner
+   holding an active share of the lead now gets a Telegram ping (no buyer
+   data, just "look") when they linked Telegram on `/agencia/perfil`. The FSBO
+   owner still gets nothing; still open for them.
 
 ## 2026-09-26 — Agency mode: public copy that becomes false (founder wording)
 

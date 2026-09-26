@@ -134,10 +134,19 @@ export async function shareLeads(params: {
   return leadIds;
 }
 
+export interface ShareRecipient {
+  userId: number;
+  /** Login email, when the account has one (wave E1's share notice). */
+  email: string | null;
+  locale: "es" | "en";
+  /** Linked Telegram chat (batch 4), when the user connected one. */
+  telegramChatId: string | null;
+}
+
 /**
- * Who to email when leads are shared with `target` (wave E1): the logged-in
- * people who will actually see the share in `/agencia/leads`, and only those
- * with an address on their account.
+ * Who to tell when leads are shared with `target` — by email (wave E1) and by
+ * Telegram (plan-agency batch 4): the logged-in people who will actually see
+ * the share in `/agencia/leads`. Each channel filters for its own field.
  *
  * - an agent → the user linked to that agent row;
  * - an agency → its `agency_admin` users (linked through `agents.agency_id`,
@@ -147,11 +156,14 @@ export async function shareLeads(params: {
  * `agencies.email` is not used: it is a public contact field, not a login,
  * and nobody reading it has necessarily got a panel to open.
  */
-export async function shareRecipients(
-  target: ShareTarget,
-): Promise<{ email: string; locale: "es" | "en" }[]> {
-  const rows = await db
-    .selectDistinct({ email: users.email, locale: users.locale })
+export async function shareRecipients(target: ShareTarget): Promise<ShareRecipient[]> {
+  return db
+    .selectDistinct({
+      userId: users.id,
+      email: users.email,
+      locale: users.locale,
+      telegramChatId: users.telegramChatId,
+    })
     .from(agents)
     .innerJoin(users, eq(users.id, agents.userId))
     .where(
@@ -160,7 +172,95 @@ export async function shareRecipients(
         : and(eq(agents.agencyId, target.id), eq(users.role, "agency_admin")),
     )
     .limit(20);
-  return rows.filter((r): r is { email: string; locale: "es" | "en" } => Boolean(r.email));
+}
+
+/** A share row's target, from its two columns (exactly one is non-zero). */
+function targetOf(row: { agencyId: number; agentId: number }): ShareTarget {
+  return row.agencyId
+    ? { kind: "agency", id: row.agencyId }
+    : { kind: "agent", id: row.agentId };
+}
+
+/** The targets that currently hold an active (not revoked) share of one lead. */
+export async function activeShareTargets(leadId: number): Promise<ShareTarget[]> {
+  const rows = await db
+    .select({ agencyId: leadAssignments.agencyId, agentId: leadAssignments.agentId })
+    .from(leadAssignments)
+    .where(and(eq(leadAssignments.leadId, leadId), isNull(leadAssignments.revokedAt)))
+    .limit(20);
+  return rows.map(targetOf);
+}
+
+/** Listing title of each lead that has a listing — the one detail a partner alert names. */
+export async function listingTitlesForLeads(leadIds: number[]): Promise<Map<number, string>> {
+  const out = new Map<number, string>();
+  if (leadIds.length === 0) return out;
+  const rows = await db
+    .select({ id: leads.id, title: listings.title })
+    .from(leads)
+    .innerJoin(listings, eq(listings.id, leads.listingId))
+    .where(inArray(leads.id, leadIds));
+  for (const r of rows) out.set(r.id, r.title);
+  return out;
+}
+
+/* ------------------------------- reminders -------------------------------- */
+
+export interface ShareToRemind {
+  id: number;
+  leadId: number;
+  target: ShareTarget;
+}
+
+/**
+ * Active shares still `pending` more than `olderThanHours` after they were
+ * made, that have never been reminded (batch 4). Oldest first, so a capped run
+ * works through the backlog in order.
+ */
+export async function sharesToRemind(params: {
+  olderThanHours: number;
+  limit: number;
+}): Promise<ShareToRemind[]> {
+  const rows = await db
+    .select({
+      id: leadAssignments.id,
+      leadId: leadAssignments.leadId,
+      agencyId: leadAssignments.agencyId,
+      agentId: leadAssignments.agentId,
+    })
+    .from(leadAssignments)
+    .where(
+      and(
+        eq(leadAssignments.state, "pending"),
+        isNull(leadAssignments.revokedAt),
+        isNull(leadAssignments.remindedAt),
+        sql`${leadAssignments.createdAt} < now() - interval ${params.olderThanHours} hour`,
+      ),
+    )
+    .orderBy(leadAssignments.createdAt, leadAssignments.id)
+    .limit(params.limit);
+  return rows.map((r) => ({ id: r.id, leadId: r.leadId, target: targetOf(r) }));
+}
+
+/**
+ * Stamp one share as reminded. Re-checks every condition `sharesToRemind()`
+ * selected on, so a share answered or revoked in between — or claimed by a
+ * concurrent run — is not stamped, and the caller does not remind it: true
+ * only when this call is the one that claimed it.
+ */
+export async function claimShareReminder(id: number): Promise<boolean> {
+  const [res] = await db
+    .update(leadAssignments)
+    .set({ remindedAt: sql`now()` })
+    .where(
+      and(
+        eq(leadAssignments.id, id),
+        eq(leadAssignments.state, "pending"),
+        isNull(leadAssignments.revokedAt),
+        isNull(leadAssignments.remindedAt),
+      ),
+    );
+  return res.affectedRows > 0;
 }
 
 /** Revoke one share. Returns its lead id, or null when nothing changed. */
@@ -191,6 +291,8 @@ export interface ShareRow {
   targetWhatsapp: string | null;
   state: ShareState;
   note: string | null;
+  /** The partner's own note (batch 2 column), read-only for the operator. */
+  partnerNote: string | null;
   createdAt: Date;
   stateAt: Date | null;
   revokedAt: Date | null;
@@ -211,6 +313,7 @@ export async function listSharesForLeads(leadIds: number[]): Promise<Map<number,
       agentWhatsapp: agents.whatsapp,
       state: leadAssignments.state,
       note: leadAssignments.note,
+      partnerNote: leadAssignments.partnerNote,
       createdAt: leadAssignments.createdAt,
       stateAt: leadAssignments.stateAt,
       revokedAt: leadAssignments.revokedAt,
@@ -231,6 +334,7 @@ export async function listSharesForLeads(leadIds: number[]): Promise<Map<number,
       targetWhatsapp: kind === "agency" ? r.agencyWhatsapp : r.agentWhatsapp,
       state: r.state,
       note: r.note,
+      partnerNote: r.partnerNote,
       createdAt: r.createdAt,
       stateAt: r.stateAt,
       revokedAt: r.revokedAt,
@@ -334,6 +438,8 @@ export interface SharedLeadRow {
   state: ShareState;
   /** The operator's note to the realtor (never `leads.note`). */
   shareNote: string | null;
+  /** The realtor's own note on this share (`partner_note`), shown to the operator too. */
+  partnerNote: string | null;
   sharedAt: Date;
   id: number;
   leadType: (typeof leads.$inferSelect)["leadType"];
@@ -354,6 +460,7 @@ export async function getSharedLeads(viewer: PanelViewer): Promise<SharedLeadRow
       assignmentId: leadAssignments.id,
       state: leadAssignments.state,
       shareNote: leadAssignments.note,
+      partnerNote: leadAssignments.partnerNote,
       sharedAt: leadAssignments.createdAt,
       id: leads.id,
       leadType: leads.leadType,
@@ -400,6 +507,28 @@ export async function setShareState(params: {
     // state_at keeps the FIRST answer: the response board measures how fast a
     // partner reacted, not when they last touched the card.
     .set({ state: params.state, stateAt: sql`coalesce(${leadAssignments.stateAt}, now())` })
+    .where(and(eq(leadAssignments.id, params.assignmentId), sharedWithPanel(params.viewer)));
+  return res.affectedRows;
+}
+
+/** Longest partner note kept; longer input is cut, not refused. */
+export const PARTNER_NOTE_MAX = 2000;
+
+/**
+ * The realtor's own note on a share (`partner_note`, plan-agency batch 2).
+ * Scoped by `sharedWithPanel()` exactly like `setShareState()`: a forged
+ * assignment id that is not theirs, or a revoked share, updates nothing.
+ * Blank clears it. Returns rows affected (0 = not theirs, or revoked).
+ */
+export async function setPartnerNote(params: {
+  assignmentId: number;
+  note: string;
+  viewer: PanelViewer;
+}): Promise<number> {
+  const note = params.note.trim().slice(0, PARTNER_NOTE_MAX) || null;
+  const [res] = await db
+    .update(leadAssignments)
+    .set({ partnerNote: note })
     .where(and(eq(leadAssignments.id, params.assignmentId), sharedWithPanel(params.viewer)));
   return res.affectedRows;
 }

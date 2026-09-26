@@ -53,6 +53,7 @@ export type OpsJob =
   | "cron:resync"
   | "cron:translate"
   | "cron:sessions"
+  | "cron:reminders"
   | "seed:financing"
   | "seed:locations"
   | "seed:sample-photos"

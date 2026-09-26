@@ -16,6 +16,7 @@
  */
 import Link from "next/link";
 import { esPanel } from "@/i18n/es";
+import { esTelegram } from "@/i18n/es-telegram";
 import type { Health } from "@/lib/health";
 import type { OpsJob } from "@/lib/ops/types";
 
@@ -39,6 +40,7 @@ const WATCHED_JOBS: { job: OpsJob; label: string }[] = [
   { job: "cron:translate", label: esPanel.opsTranslateLabel },
   { job: "cron:resync", label: esPanel.opsResyncLabel },
   { job: "cron:sessions", label: esPanel.opsSessionsLabel },
+  { job: "cron:reminders", label: esTelegram.ops.label },
 ];
 
 const HEALTH_TTL_MINUTES = 5;

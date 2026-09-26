@@ -16,7 +16,11 @@ import { esAgency } from "@/i18n/es-agency";
 import { BRAND_NAME } from "@/lib/brand";
 import { esPanel } from "@/i18n/es";
 import { agencyTabs } from "../tabs";
+import { esTelegram } from "@/i18n/es-telegram";
+import { telegramConnectUrl } from "@/lib/telegram";
+import { telegramChatFor } from "@/lib/telegram-accounts";
 import {
+  disconnectTelegramAction,
   updateAccountAction,
   updateAgencyProfileAction,
   updateAgentProfileAction,
@@ -42,7 +46,54 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   agent_not_found: { text: esA4.profile.notFound, error: true },
   photo: { text: esA4.profile.photoRejected, error: true },
   years: { text: esA4.profile.yearsRejected, error: true },
+  telegram_off: { text: esTelegram.card.flashDisconnected },
 };
+
+/**
+ * Plan-agency batch 4: where a partner ties their Telegram to this login.
+ * Three states, never a broken link: not enabled by the operator (a note),
+ * not linked (the signed `t.me` link), linked (a Desconectar button).
+ */
+function TelegramCard({ linked, connectUrl }: { linked: boolean; connectUrl: string | null }) {
+  const t = esTelegram.card;
+  return (
+    <article className="panel-card">
+      <h2 style={{ fontSize: 18, margin: "0 0 .5rem" }}>{t.title}</h2>
+      <p className="panel-card__meta" style={{ margin: "0 0 1rem" }}>
+        {t.intro}
+      </p>
+      {linked ? (
+        <>
+          <p style={{ margin: "0 0 .5rem" }}>
+            <span className="panel-profile__badge">{t.connected}</span>
+          </p>
+          <p className="panel-card__meta">{t.connectedHint}</p>
+          <form action={disconnectTelegramAction}>
+            <button className="panel-btn" type="submit">
+              {t.disconnect}
+            </button>
+          </form>
+        </>
+      ) : connectUrl ? (
+        <>
+          <p style={{ margin: "0 0 .5rem" }}>
+            <a
+              className="panel-btn panel-btn--primary"
+              href={connectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t.connect}
+            </a>
+          </p>
+          <p className="panel-card__meta">{t.connectHint}</p>
+        </>
+      ) : (
+        <p className="panel-note">{t.disabled}</p>
+      )}
+    </article>
+  );
+}
 
 function VerifiedBadge({ verified }: { verified: boolean }) {
   return (
@@ -76,12 +127,13 @@ export default async function AgencyProfilePage({
   const wanted =
     Number.isInteger(requestedId) && requestedId > 0 ? requestedId : null;
 
-  const [agency, requested, ownAgent, editable, cities] = await Promise.all([
+  const [agency, requested, ownAgent, editable, cities, telegramChat] = await Promise.all([
     ctx.agencyId != null ? getAgencyProfile(ctx.agencyId) : null,
     wanted != null ? getEditableAgent(editor, wanted) : null,
     getEditableAgent(editor, null),
     canManageTeam(ctx) ? listEditableAgents(editor) : [],
     listCities().catch(() => []),
+    telegramChatFor(ctx.user.id),
   ]);
   const agent = requested ?? ownAgent;
   const ownRow = agent != null && agent.userId === ctx.user.id;
@@ -246,6 +298,11 @@ export default async function AgencyProfilePage({
               />
             </article>
           )}
+
+          <TelegramCard
+            linked={telegramChat != null}
+            connectUrl={telegramConnectUrl(ctx.user.id)}
+          />
 
           {/* The login itself. */}
           <article className="panel-card">
