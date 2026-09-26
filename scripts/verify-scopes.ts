@@ -1218,6 +1218,22 @@ async function main() {
         !(await getPanelLeads(agencyBScope)).some((l) => l.id === joinLead.id),
     );
 
+    // An agent who later leaves (removeTeamMember, or moved to independent)
+    // is owner-scoped again. The listings stay with the agency, so owner scope
+    // must reach none of them — nor their leads — even though
+    // owner_user_id still names the agent who published them.
+    const leftIds = await idsIn(joinerOwnerScope);
+    check(
+      "after leaving: owner scope no longer reaches the agency's listings",
+      !leftIds.has(joinPubId) &&
+        !leftIds.has(joinDraftId) &&
+        (await getEditableListing(joinPubId, joinerOwnerScope)) === null,
+    );
+    check(
+      "after leaving: the agency's leads are not in their inbox",
+      !(await getPanelLeads(joinerOwnerScope)).some((l) => l.id === joinLead.id),
+    );
+
     const joinEvents = await db
       .select({ action: adminEvents.action, targetType: adminEvents.targetType, targetId: adminEvents.targetId })
       .from(adminEvents)
