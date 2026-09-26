@@ -5,13 +5,15 @@
  * three professionals for a directory seller lead, record the hand-off), and
  * sharing a lead with a partner so it shows in their /agencia/leads.
  *
- * Nothing here messages anybody. The WhatsApp link is the delivery, a human
+ * Matching messages nobody: the WhatsApp link is the delivery, a human
  * clicks it, and `markMatchSent` records that it happened — the same rule as
  * `alertOperator`/`sendOtp`: never write a line that pretends a message was
- * delivered.
+ * delivered. The one outbound message here is the share notice email (wave
+ * E1), sent after the response and only when email is configured.
  */
 import { isStaff } from "@/lib/auth/roles";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
@@ -20,7 +22,15 @@ import {
   MAX_MATCHES_PER_LEAD,
 } from "@/lib/matching";
 import { updateLeadFollowUp, type LeadFollowUp } from "@/lib/panel-queries";
-import { revokeShare, shareLeads, type ShareTarget } from "@/lib/lead-assignments";
+import {
+  revokeShare,
+  shareLeads,
+  shareRecipients,
+  type ShareTarget,
+} from "@/lib/lead-assignments";
+import { emailShareNotice } from "@/lib/lead-emails";
+import { BRAND_NAME } from "@/lib/brand";
+import { siteOrigin } from "@/lib/origin";
 import { recordAdminEvent } from "@/lib/admin-events";
 
 const FOLLOW_UP: readonly LeadFollowUp[] = ["new", "contacted", "closed"];
@@ -148,6 +158,32 @@ export async function shareLeadsAction(formData: FormData): Promise<void> {
   for (const leadId of shared) {
     await recordAdminEvent(user.id, "lead.share", "lead", leadId, {
       target: `${who.kind}:${who.id}`,
+    });
+  }
+
+  if (shared.length > 0) {
+    // A go-look email to the partner, after the redirect is on its way. The
+    // share is already saved; a failed or unconfigured email changes nothing.
+    // BRAND_NAME, not brandName(): /admin is a staff surface on one host.
+    const inboxUrl = `${await siteOrigin()}/agencia/leads`;
+    const count = shared.length;
+    after(async () => {
+      try {
+        const recipients = await shareRecipients(who);
+        await Promise.allSettled(
+          recipients.map((r) =>
+            emailShareNotice({
+              to: r.email,
+              locale: r.locale,
+              brand: BRAND_NAME,
+              count,
+              url: inboxUrl,
+            }),
+          ),
+        );
+      } catch {
+        /* the share row is the record; an unsent notice is not an incident */
+      }
     });
   }
 

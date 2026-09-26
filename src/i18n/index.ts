@@ -61,6 +61,7 @@ import {
   esRentalServices,
   esSearchBar,
   esVender,
+  esEmail,
 } from "./es";
 import { esA5 } from "./es-a5";
 import {
@@ -106,6 +107,7 @@ import {
   enRentalServices,
   enSearchBar,
   enVender,
+  enEmail,
 } from "./en";
 import { esA3 } from "./es-a3";
 import { enA3 } from "./en-a3";
@@ -174,6 +176,7 @@ const esDictionary = {
   agentJoin: esA5,
   a4: esA4,
   a1: esA1,
+  email: esEmail,
 } as const;
 
 /**
@@ -259,6 +262,7 @@ const enDictionary = {
   agentJoin: enA5,
   a4: enA4,
   a1: enA1,
+  email: enEmail,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

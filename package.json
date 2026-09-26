@@ -38,7 +38,8 @@
     "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",
     "backfill:images": "tsx --tsconfig scripts/tsconfig.json scripts/backfill-images.ts",
     "verify:scopes": "tsx --tsconfig scripts/tsconfig.json scripts/verify-scopes.ts",
-    "user:create": "tsx --tsconfig scripts/tsconfig.json scripts/create-user.ts"
+    "user:create": "tsx --tsconfig scripts/tsconfig.json scripts/create-user.ts",
+    "email:test": "tsx --tsconfig scripts/tsconfig.json scripts/email-test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

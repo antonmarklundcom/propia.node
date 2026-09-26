@@ -304,6 +304,17 @@ default, `--dry` first). It records itself as a revertible import job.
     sends there, otherwise the generic webhook — never both, never another
     door's key, never OTP. `npm run crm:backfill -- --dry` copies old rows;
     idempotent by `portal-lead-<leads.id>`. Keys live in hPanel only.
+14. **Email sending — code done, needs hPanel vars (wave E1, 2026-09-26).**
+    `src/lib/email.ts` → Cloudflare Email Sending REST API, from the verified
+    `mail.inmobiliaria.com.py` subdomain only (root is Email Routing's).
+    Silent no-op without `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_EMAIL_TOKEN`;
+    never throws, always in `after()`. Sends: operator alerts to
+    `OPERATOR_EMAIL` (inside `alertOperator()`), owner "new enquiry", seeker
+    confirmation (repeats nothing the visitor typed — the address is
+    unverified), partner "a lead was shared with you". Copy is `esEmail` /
+    `enEmail`. Check with `npm run email:test -- --to <addr> [--dry]`.
+    **Not built:** password reset (migration + founder decision), price alerts,
+    expiry reminders, E2 threaded replies, E3 inbox.
 
 ## Launch track — state as of 2026-09-22
 

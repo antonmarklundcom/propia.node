@@ -15,7 +15,7 @@
 import "server-only";
 import { and, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { agencies, agents, leadAssignments, leads, listings } from "@/db/schema";
+import { agencies, agents, leadAssignments, leads, listings, users } from "@/db/schema";
 
 export type ShareState = (typeof leadAssignments.$inferSelect)["state"];
 export const REALTOR_STATES: readonly ShareState[] = [
@@ -128,6 +128,35 @@ export async function shareLeads(params: {
       },
     });
   return leadIds;
+}
+
+/**
+ * Who to email when leads are shared with `target` (wave E1): the logged-in
+ * people who will actually see the share in `/agencia/leads`, and only those
+ * with an address on their account.
+ *
+ * - an agent → the user linked to that agent row;
+ * - an agency → its `agency_admin` users (linked through `agents.agency_id`,
+ *   the same link `sharedWithPanel()` reads). Not every agent of the agency:
+ *   deciding who works a shared lead is the agency's call, not a broadcast.
+ *
+ * `agencies.email` is not used: it is a public contact field, not a login,
+ * and nobody reading it has necessarily got a panel to open.
+ */
+export async function shareRecipients(
+  target: ShareTarget,
+): Promise<{ email: string; locale: "es" | "en" }[]> {
+  const rows = await db
+    .selectDistinct({ email: users.email, locale: users.locale })
+    .from(agents)
+    .innerJoin(users, eq(users.id, agents.userId))
+    .where(
+      target.kind === "agent"
+        ? eq(agents.id, target.id)
+        : and(eq(agents.agencyId, target.id), eq(users.role, "agency_admin")),
+    )
+    .limit(20);
+  return rows.filter((r): r is { email: string; locale: "es" | "en" } => Boolean(r.email));
 }
 
 /** Revoke one share. Returns its lead id, or null when nothing changed. */
