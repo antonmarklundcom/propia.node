@@ -16,6 +16,7 @@ import {
   updateOwnAccount,
 } from "@/lib/profile-queries";
 import { updateAgentProfile } from "@/lib/agent-profile-edit";
+import { clearTelegramForUser } from "@/lib/telegram-accounts";
 
 function finish(msg: string, agentId: number | null = null): never {
   revalidatePath("/agencia/perfil");
@@ -84,6 +85,17 @@ export async function updateAgentProfileAction(
   // A colleague's profile stays open after the save; a not-found one does not.
   const reopen = !own && (result.ok || result.error !== "not_found");
   finish(msg, reopen ? agentId : null);
+}
+
+/**
+ * "Desconectar" on the Telegram card: clears the chat of the session's own
+ * user and nobody else's — the form carries no id at all.
+ */
+export async function disconnectTelegramAction(): Promise<void> {
+  const { user } = await requireAgencyContext();
+  await clearTelegramForUser(user.id);
+  revalidatePath("/agencia/perfil");
+  redirect("/agencia/perfil?msg=telegram_off");
 }
 
 export async function updateAccountAction(formData: FormData): Promise<void> {

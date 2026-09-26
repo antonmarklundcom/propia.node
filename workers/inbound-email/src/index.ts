@@ -28,9 +28,15 @@ export interface Env {
   INBOUND_URL?: string;
   FALLBACK_FORWARD?: string;
   COPY_TO?: string;
+  /** Bearer for the app's `/api/cron/tick` — the same value as CRON_SECRET in hPanel. */
+  CRON_SECRET?: string;
+  CRON_URL?: string;
 }
 
 const DEFAULT_INBOUND_URL = "https://inmobiliaria.com.py/api/inbound-email";
+const DEFAULT_CRON_URL = "https://inmobiliaria.com.py/api/cron/tick";
+/** The tick runs the app's hourly jobs; they are small, but give them room. */
+const CRON_TIMEOUT_MS = 60_000;
 
 /** Decoded bytes per attachment sent inline; bigger files go as metadata only. */
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
@@ -257,5 +263,30 @@ export default {
     if (stored) return;
     // Neither the app nor the fallback took it: bounce, so the sender knows.
     message.setReject("Temporary problem receiving mail for this address. Please try again later.");
+  },
+
+  /**
+   * The hourly cron trigger (`[triggers]` in wrangler.toml; plan-agency batch
+   * 4): one authenticated POST to the app's `/api/cron/tick`, which runs the
+   * scheduled jobs (partner reminders, …). The Worker is just the clock —
+   * Hostinger has no scheduler that does not keep a process alive. Logs the
+   * status only; a failed tick is simply retried by the next hour's.
+   */
+  async scheduled(_controller: ScheduledController, env: Env, _ctx: ExecutionContext): Promise<void> {
+    const secret = env.CRON_SECRET?.trim();
+    if (!secret) {
+      console.log("cron: CRON_SECRET is not set");
+      return;
+    }
+    try {
+      const res = await fetch(env.CRON_URL || DEFAULT_CRON_URL, {
+        method: "POST",
+        headers: { authorization: `Bearer ${secret}`, "user-agent": "inbound-email-worker/1 cron" },
+        signal: AbortSignal.timeout(CRON_TIMEOUT_MS),
+      });
+      console.log(`cron: app answered ${res.status}`);
+    } catch (e) {
+      console.log(`cron: POST failed (${e instanceof Error ? e.name : "error"})`);
+    }
   },
 };

@@ -13,10 +13,12 @@ import { esA1 } from "@/i18n/es-a1";
 import { agencyTabs } from "../tabs";
 import {
   getSharedLeads,
+  PARTNER_NOTE_MAX,
   REALTOR_STATES,
   type PanelViewer,
 } from "@/lib/lead-assignments";
-import { leadEmailAction, setDealStageAction, setShareStateAction } from "./actions";
+import { leadEmailAction, setDealStageAction, setPartnerNoteAction, setShareStateAction } from "./actions";
+import { esTelegram } from "@/i18n/es-telegram";
 import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads, type InboxMessage } from "@/lib/inbox";
 import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
@@ -55,6 +57,8 @@ function formatWhen(d: Date): string {
 const FLASH: Record<string, { text: string; error?: boolean }> = {
   share_saved: { text: esPanel.sharedLeadSaved },
   share_invalid: { text: esPanel.sharedLeadInvalid, error: true },
+  note_saved: { text: esTelegram.note.saved },
+  note_invalid: { text: esTelegram.note.invalid, error: true },
   ...LEAD_EMAIL_FLASH,
   ...Object.fromEntries(
     Object.entries(esDeals.partnerFlash).map(([k, text]) => [k, { text, error: k !== "deal_saved" }]),
@@ -308,6 +312,30 @@ async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: st
               <DealStageForm leadId={lead.id} deal={dealStages.get(lead.id) ?? null} />
             </div>
           ) : null}
+
+          {/* The realtor's own note — theirs and the operator's to read, never the buyer's. */}
+          <form action={setPartnerNoteAction} className="panel-form">
+            <input type="hidden" name="assignmentId" value={lead.assignmentId} />
+            <label className="panel-form__field" style={{ flexBasis: "100%" }}>
+              <span className="auth-field__label">{esTelegram.note.label}</span>
+              <textarea
+                className="auth-field__input"
+                name="partnerNote"
+                rows={2}
+                maxLength={PARTNER_NOTE_MAX}
+                defaultValue={lead.partnerNote ?? ""}
+                aria-describedby={`partner-note-hint-${lead.assignmentId}`}
+              />
+              <span className="panel-card__meta" id={`partner-note-hint-${lead.assignmentId}`}>
+                {esTelegram.note.hint}
+              </span>
+            </label>
+            <div className="panel-form__field panel-form__field--action">
+              <button className="panel-btn" type="submit">
+                {esTelegram.note.save}
+              </button>
+            </div>
+          </form>
         </article>
       ))}
     </>

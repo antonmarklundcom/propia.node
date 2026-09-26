@@ -9,11 +9,38 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAgencyContext } from "@/lib/auth/guards";
-import { setShareState, REALTOR_STATES, type ShareState } from "@/lib/lead-assignments";
+import {
+  setPartnerNote,
+  setShareState,
+  REALTOR_STATES,
+  type ShareState,
+} from "@/lib/lead-assignments";
 import { handleLeadEmailForm } from "@/lib/inbox-access";
 import { parsePartnerStageForm } from "@/lib/deal-form";
 import { setPartnerDealStage } from "@/lib/deals";
 import { recordAdminEvent } from "@/lib/admin-events";
+
+/**
+ * The realtor's own note on a shared lead (plan-agency batch 2 column). Same
+ * rule as the answer: `setPartnerNote()` scopes the write with
+ * `sharedWithPanel()`, so a forged or revoked assignment id saves nothing.
+ */
+export async function setPartnerNoteAction(formData: FormData): Promise<void> {
+  const ctx = await requireAgencyContext();
+  const assignmentId = Number(formData.get("assignmentId"));
+
+  const ok =
+    Number.isInteger(assignmentId) &&
+    assignmentId > 0 &&
+    (await setPartnerNote({
+      assignmentId,
+      note: String(formData.get("partnerNote") ?? ""),
+      viewer: { agencyId: ctx.agencyId, userId: ctx.user.id },
+    })) > 0;
+
+  revalidatePath("/agencia/leads");
+  redirect(`/agencia/leads?msg=${ok ? "note_saved" : "note_invalid"}`);
+}
 
 export async function setShareStateAction(formData: FormData): Promise<void> {
   const ctx = await requireAgencyContext();

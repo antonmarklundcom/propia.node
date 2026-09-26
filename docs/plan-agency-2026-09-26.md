@@ -17,8 +17,8 @@ answers in the same session.
 | 1 | Fixes: `previous_json`, English copy, DeepL removed, this plan | no | merged (#220) |
 | 2 | Agency schema (0019), schema only | **yes — founder** | open (#222) |
 | 3 | Agency-mode switch + contact routing (copy: founder) + partner install page | no (`site_settings`) | built, off by default |
-| 4 | Partner alerts on Telegram + reminders + app install page | uses 2 | after 2 |
-| 5 | First-party analytics + `/admin/analitica` | uses 2 | built — merge after #222 is migrated |
+| 4 | Partner alerts on Telegram + reminders + app install page | uses 2 | built, in the combined features PR |
+| 5 | First-party analytics + `/admin/analitica` | uses 2 | built, in the combined features PR |
 | 6 | Deal and commission ledger | uses 2 | after 2 |
 | 7 | Later, once real inventory exists | — | backlog |
 
@@ -99,6 +99,52 @@ answered decision D1 below.**
   Share → Add to Home Screen) steps. **No web push**: it needs a service
   worker, which A4 rejected on purpose, and iPhone only allows it for
   installed apps; Telegram reaches both platforms without that.
+
+#### Batch 4 — what landed (branch `claude/bold-davinci-myybaw-telegram`)
+
+- **Linking.** `/agencia/perfil` → "Alertas por Telegram": a
+  `https://t.me/<TELEGRAM_BOT_USERNAME>?start=<userId>_<sig>` link, `sig` =
+  first 24 chars of base64url HMAC-SHA256(`TELEGRAM_WEBHOOK_SECRET`,
+  `"tg-link:"+userId`) (`src/lib/telegram.ts`). Linked → "Conectado" +
+  "Desconectar" (clears the session user's own chat only). Without
+  `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME` + a 16+ char
+  `TELEGRAM_WEBHOOK_SECRET` the card says the operator has not enabled it.
+- **Webhook** `app/api/telegram/route.ts`: secret-token header compared in
+  constant time (503 without a secret, 401 wrong), `/start <token>` stores the
+  chat (private chats only), `/stop` clears it, anything else gets one line of
+  help. Replies ride on the webhook response (`{"method":"sendMessage"}`), so
+  no outbound call. Rate-limited per chat; logs no text or ids.
+- **Alerts** (`src/lib/partner-alerts.ts`, never buyer data — what happened,
+  the listing title at most, the `/agencia/leads` link): a lead shared with
+  you (`shareLeadsAction`, in `after()`), a buyer's email reply to a lead you
+  hold an active share of (`/api/inbound-email`, in `after()`).
+- **Reminders** `npm run cron:reminders` (`src/lib/ops/partner-reminders.ts`,
+  also a card on `/admin/operaciones` and in the `/admin` health box): a share
+  still `pending` 4 h (`REMIND_AFTER_HOURS`) after it was made, not revoked,
+  never reminded → one Telegram message per partner chat, `reminded_at`
+  stamped, then one operator alert with the count. The 4 h is a constant, not
+  a setting yet.
+- **Scheduler** `POST /api/cron/tick` (`Authorization: Bearer CRON_SECRET`,
+  503 without it) runs `src/lib/cron-tick.ts`'s task list and records each job
+  in `ops_runs`. The clock is the inbound-email Worker's `scheduled` handler,
+  `crons = ["17 * * * *"]` (`workers/inbound-email/README.md`, "The hourly
+  cron"). Batch 5 adds its rollup to the same task list.
+- **Partner note** on each shared-lead card in `/agencia/leads` ("Tu nota",
+  `lead_assignments.partner_note`, ≤ 2000 chars), read and written through
+  `sharedWithPanel()`; the operator sees it read-only next to the share in
+  `/admin/leads`.
+
+**Founder, once:** in hPanel set `TELEGRAM_BOT_USERNAME`,
+`TELEGRAM_WEBHOOK_SECRET` (`openssl rand -hex 32`) and `CRON_SECRET` (a second
+`openssl rand -hex 32`), restart; register the webhook:
+
+```bash
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://inmobiliaria.com.py/api/telegram&secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
+
+then `npx wrangler secret put CRON_SECRET` and `npx wrangler deploy` in
+`workers/inbound-email/`. Needs migration 0019 applied first (the three
+columns).
 
 ### 5 — First-party analytics (no Google)
 

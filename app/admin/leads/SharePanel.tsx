@@ -1,4 +1,5 @@
 import { esPanel } from "@/i18n/es";
+import { esTelegram } from "@/i18n/es-telegram";
 import type { ShareRow, ShareTargetOption } from "@/lib/lead-assignments";
 import { waLink } from "@/lib/wa";
 import { revokeShareAction, shareLeadsAction } from "./actions";
@@ -102,6 +103,15 @@ export function SharePanel({
                 {s.note ? (
                   <span className="panel-card__meta" style={{ display: "block" }}>
                     {s.note}
+                  </span>
+                ) : null}
+                {/* The partner's own note (read-only here; theirs to edit in /agencia/leads). */}
+                {s.partnerNote ? (
+                  <span
+                    className="panel-card__meta"
+                    style={{ display: "block", whiteSpace: "pre-wrap" }}
+                  >
+                    <strong>{esTelegram.admin.partnerNote}</strong> {s.partnerNote}
                   </span>
                 ) : null}
               </li>
