@@ -25,6 +25,7 @@ import { inArray, like } from "drizzle-orm";
 import { canonPhone, contentHash, dedupKey, toPriceUsd } from "../src/lib/import/normalize";
 import { parseCsvRecords, recordToRaw } from "../src/lib/import/csv";
 import { readIntake } from "../src/lib/import/intake";
+import { parseSnapshot } from "../src/lib/import/snapshot";
 import type { RawListing } from "../src/lib/import/types";
 
 let failures = 0;
@@ -94,6 +95,15 @@ function pureChecks() {
   check("content hash moves with the price", h1 !== h3);
 
   check("PYG converts to USD", toPriceUsd(730_000_000, "PYG", 7300) === 100_000);
+
+  console.log("\nsnapshots (previous_json)");
+  // MySQL 8 hands back an object, MariaDB (production) a string: same result.
+  check("object snapshot passes through", parseSnapshot({ _sourceRowId: 7 })?._sourceRowId === 7);
+  check("MariaDB string snapshot is parsed", parseSnapshot('{"_sourceRowId":7}')?._sourceRowId === 7);
+  check("string price survives", parseSnapshot('{"priceUsd":"85000.00"}')?.priceUsd === "85000.00");
+  check("invalid JSON is null", parseSnapshot("{not json") === null);
+  check("array / scalar / null are null",
+    parseSnapshot("[1]") === null && parseSnapshot("3") === null && parseSnapshot(null) === null);
 
   console.log("\nparsing");
 
