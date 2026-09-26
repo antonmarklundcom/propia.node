@@ -11,6 +11,9 @@ import {
   type AgencyInviteRow,
 } from "@/lib/agency-invites";
 import { listAgencyTeam, type TeamMember } from "@/lib/team-queries";
+import { getAgencyProfile } from "@/lib/profile-queries";
+import { esA1 } from "@/i18n/es-a1";
+import { InviteWhatsApp } from "./InviteWhatsApp";
 import { agencyTabs } from "../tabs";
 import {
   createInviteAction,
@@ -93,10 +96,11 @@ export default async function AgencyTeamPage({
     redirect("/agencia");
   }
 
-  const [team, invites, origin] = await Promise.all([
+  const [team, invites, origin, agency] = await Promise.all([
     listAgencyTeam(ctx.agencyId),
     listAgencyInvites(ctx.agencyId),
     requestOrigin(),
+    getAgencyProfile(ctx.agencyId),
   ]);
 
   const flash = msg ? FLASH[msg] : undefined;
@@ -143,9 +147,17 @@ export default async function AgencyTeamPage({
           {openInvites.length === 0 ? (
             <p className="panel-card__meta">{esPanel.teamInvitesEmpty}</p>
           ) : (
-            openInvites.map((invite) => (
-              <InviteRow key={invite.id} invite={invite} origin={origin} />
-            ))
+            <>
+              {openInvites.map((invite) => (
+                <InviteRow
+                  key={invite.id}
+                  invite={invite}
+                  origin={origin}
+                  agencyName={agency?.name ?? ""}
+                />
+              ))}
+              <p className="panel-card__meta">{esA1.inviteWhatsappHint}</p>
+            </>
           )}
         </article>
 
@@ -190,9 +202,11 @@ export default async function AgencyTeamPage({
 function InviteRow({
   invite,
   origin,
+  agencyName,
 }: {
   invite: AgencyInviteRow;
   origin: string;
+  agencyName: string;
 }) {
   const url = `${origin}${invitePath(invite.token)}`;
   return (
@@ -210,6 +224,13 @@ function InviteRow({
             component — the panel has no client JS anywhere else either. */}
         <input className="auth-field__input" type="text" value={url} readOnly />
       </label>
+      <InviteWhatsApp
+        text={esA1.inviteWhatsappText(agencyName, url)}
+        label={esA1.inviteWhatsappLabel}
+        sendLabel={esA1.inviteWhatsappSend}
+        hint={esA1.inviteWhatsappHint}
+        placeholder={esA1.inviteWhatsappPlaceholder}
+      />
       <div className="panel-form__field panel-form__field--action">
         <form action={revokeInviteAction}>
           <input type="hidden" name="inviteId" value={invite.id} />

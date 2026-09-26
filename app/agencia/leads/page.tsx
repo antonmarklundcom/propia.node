@@ -6,7 +6,10 @@ import type { EditScope } from "@/lib/listing-edit";
 import { getPanelLeads } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
-import { waLink } from "@/lib/wa";
+import { leadReplyHref } from "@/lib/lead-reply";
+import { panelShowsOwnLeads } from "@/lib/lead-export";
+import { listingCanonicalOrigin } from "@/lib/origin";
+import { esA1 } from "@/i18n/es-a1";
 import { agencyTabs } from "../tabs";
 import {
   getSharedLeads,
@@ -33,11 +36,6 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
   question: "Consulta",
 };
 
-/** wa.me deep link to reply to the lead's own WhatsApp number. */
-function waReplyHref(whatsapp: string): string {
-  return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
-}
-
 function formatWhen(d: Date): string {
   return new Intl.DateTimeFormat("es-PY", {
     day: "2-digit",
@@ -57,7 +55,12 @@ export default async function AgencyLeadsPage({
 }: {
   searchParams: Promise<{ msg?: string }>;
 }) {
-  const [{ msg }, ctx] = await Promise.all([searchParams, requireAgencyContext()]);
+  const [{ msg }, ctx, origin] = await Promise.all([
+    searchParams,
+    requireAgencyContext(),
+    // The door that owns the detail page — the listing link in a reply.
+    listingCanonicalOrigin(),
+  ]);
   const { user, agencyId } = ctx;
   const scope = panelScope(ctx);
   const flash = msg ? FLASH[msg] : undefined;
@@ -75,21 +78,29 @@ export default async function AgencyLeadsPage({
           <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p>
         ) : null}
 
-        <SharedLeads viewer={{ agencyId, userId: user.id }} />
+        {/* Exactly what this page shows, as a spreadsheet (lead-export.ts). */}
+        <p className="panel-note">
+          <a className="panel-btn" href="/agencia/leads/export" download>
+            {esA1.exportCsv}
+          </a>{" "}
+          {esA1.exportHint}
+        </p>
+
+        <SharedLeads viewer={{ agencyId, userId: user.id }} origin={origin} />
 
         <h2 className="panel-section__title">{esPanel.agencyLeadsTitle}</h2>
 
-        {agencyId == null && user.role === "agency_admin" ? (
+        {!panelShowsOwnLeads(ctx) ? (
           <p className="panel-empty">{esPanel.agencyNoLink}</p>
         ) : (
-          <AgencyLeads scope={scope} />
+          <AgencyLeads scope={scope} origin={origin} />
         )}
       </main>
     </>
   );
 }
 
-async function AgencyLeads({ scope }: { scope: EditScope }) {
+async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string }) {
   const leads = await getPanelLeads(scope);
   if (leads.length === 0) {
     return <p className="panel-empty">{esPanel.agencyLeadsEmpty}</p>;
@@ -121,7 +132,7 @@ async function AgencyLeads({ scope }: { scope: EditScope }) {
             </div>
             <a
               className="panel-btn panel-btn--whatsapp"
-              href={waReplyHref(lead.whatsapp)}
+              href={leadReplyHref(lead, origin)}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -144,7 +155,7 @@ async function AgencyLeads({ scope }: { scope: EditScope }) {
  * they are a section of their own rather than rows of getPanelLeads(), whose
  * listing-ownership rule stays exactly as it was. Renders nothing when none.
  */
-async function SharedLeads({ viewer }: { viewer: PanelViewer }) {
+async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: string }) {
   const shared = await getSharedLeads(viewer);
   if (shared.length === 0) return null;
 
@@ -180,7 +191,7 @@ async function SharedLeads({ viewer }: { viewer: PanelViewer }) {
             </div>
             <a
               className="panel-btn panel-btn--whatsapp"
-              href={waReplyHref(lead.whatsapp)}
+              href={leadReplyHref(lead, origin)}
               target="_blank"
               rel="noopener noreferrer"
             >

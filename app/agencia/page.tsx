@@ -19,6 +19,8 @@ import { esPanel, listingStatusLabel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
+import { getAgentNumbers, TEAM_STATS_DAYS } from "@/lib/team-stats";
+import { esA1 } from "@/i18n/es-a1";
 import { agencyTabs } from "./tabs";
 import { setListingStatusAction } from "./actions";
 
@@ -75,6 +77,11 @@ export default async function AgencyListingsPage({
         ) : (
           <AgencyListings scope={scope} />
         )}
+
+        {/* Agency 4: only the responsable sees colleagues' numbers. */}
+        {canManageTeam(ctx) && agencyId != null ? (
+          <TeamNumbers agencyId={agencyId} />
+        ) : null}
       </main>
     </>
   );
@@ -203,5 +210,43 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
         </table>
       </div>
     </>
+  );
+}
+
+async function TeamNumbers({ agencyId }: { agencyId: number }) {
+  const rows = await getAgentNumbers(agencyId);
+  return (
+    <section style={{ marginTop: 32 }}>
+      <h2 className="panel-section__title">{esA1.teamNumbersTitle}</h2>
+      <p className="panel-note">{esA1.teamNumbersHint(TEAM_STATS_DAYS)}</p>
+      {rows.length === 0 ? (
+        <p className="panel-empty">{esA1.teamNumbersEmpty}</p>
+      ) : (
+        <div className="panel-table__wrap">
+          <table className="panel-table">
+            <thead>
+              <tr>
+                {esA1.teamNumbersHead.map((h) => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.agentId}>
+                  <td className="panel-table__name">{r.name}</td>
+                  <td className="panel-table__num">{r.published}</td>
+                  <td className="panel-table__num">{r.leads}</td>
+                  <td className="panel-table__num">{r.sharedAnswered}</td>
+                  <td className="panel-table__num">
+                    {r.medianHours?.toLocaleString("es-PY") ?? "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
