@@ -4,12 +4,14 @@ import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
+  countLeadsByStatus,
   countLeadsByType,
   countLeadsByVertical,
   countRecentLeads,
   countReviewQueue,
   listAllLeads,
   type AdminLeadRow,
+  type LeadFollowUp,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { listAgentMatchCandidates } from "@/lib/directory-queries";
@@ -24,6 +26,7 @@ import { VERTICALS } from "@/config/verticals";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
 import { MatchPanel } from "./MatchPanel";
+import { updateLeadAction } from "./actions";
 
 export const metadata: Metadata = {
   title: `Consultas`,
@@ -40,6 +43,8 @@ const LEAD_TYPES = [
   "valuation",
   "developer",
   "agent_signup",
+  "landlord",
+  "question",
 ] as const;
 
 const LEAD_TYPE_LABEL: Record<string, string> = {
@@ -50,6 +55,23 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
   valuation: "Tasación",
   developer: "Desarrolladora",
   agent_signup: "Alta de agente",
+  landlord: "Alquilar su propiedad",
+  question: "Consulta",
+};
+
+/** The operator's follow-up state, in the order a lead moves through it. */
+const FOLLOW_UP: readonly LeadFollowUp[] = ["new", "contacted", "closed"];
+
+const FOLLOW_UP_LABEL: Record<LeadFollowUp, string> = {
+  new: "Nueva",
+  contacted: "Contactada",
+  closed: "Cerrada",
+};
+
+const FOLLOW_UP_CHIP: Record<LeadFollowUp, string> = {
+  new: "Nuevas",
+  contacted: "Contactadas",
+  closed: "Cerradas",
 };
 
 /** Who the lead was routed to — 'internal' means it is yours to work. */
@@ -70,11 +92,17 @@ function siteLabel(vertical: string): string {
   return HOST_BY_VERTICAL[vertical] ?? vertical;
 }
 
-/** One filter URL, so the type chips, site chips and search keep each other. */
-function leadsHref(p: { tipo?: string; sitio?: string; q?: string }): string {
+/** One filter URL, so the chip rows and the search keep each other. */
+function leadsHref(p: {
+  tipo?: string;
+  sitio?: string;
+  estado?: string;
+  q?: string;
+}): string {
   const sp = new URLSearchParams();
   if (p.tipo && p.tipo !== "all") sp.set("tipo", p.tipo);
   if (p.sitio) sp.set("sitio", p.sitio);
+  if (p.estado) sp.set("estado", p.estado);
   if (p.q) sp.set("q", p.q);
   const qs = sp.toString();
   return qs ? `/admin/leads?${qs}` : "/admin/leads";
@@ -147,11 +175,12 @@ export default async function AdminLeadsPage({
   searchParams: Promise<{
     tipo?: string;
     sitio?: string;
+    estado?: string;
     q?: string;
     msg?: string;
   }>;
 }) {
-  const [{ tipo, sitio, q, msg }, user] = await Promise.all([
+  const [{ tipo, sitio, estado, q, msg }, user] = await Promise.all([
     searchParams,
     requireStaffOrAbove(),
   ]);
@@ -161,12 +190,17 @@ export default async function AdminLeadsPage({
     : "all";
 
   const internalOnly = isStaff(user.role);
-  const [reviewCount, recentLeads, counts, siteCounts] = await Promise.all([
-    countReviewQueue(),
-    countRecentLeads(24, internalOnly),
-    countLeadsByType(internalOnly),
-    countLeadsByVertical(internalOnly),
-  ]);
+  const [reviewCount, recentLeads, counts, siteCounts, statusCounts] =
+    await Promise.all([
+      countReviewQueue(),
+      countRecentLeads(24, internalOnly),
+      countLeadsByType(internalOnly),
+      countLeadsByVertical(internalOnly),
+      countLeadsByStatus(internalOnly),
+    ]);
+  const activeStatus = FOLLOW_UP.includes(estado as LeadFollowUp)
+    ? (estado as LeadFollowUp)
+    : undefined;
   // Only a value that some lead actually carries — never a free-text filter.
   const activeSite = siteCounts.some((s) => s.vertical === sitio)
     ? sitio
@@ -174,8 +208,16 @@ export default async function AdminLeadsPage({
   const rows = await listAllLeads({
     type: activeType,
     vertical: activeSite,
+    status: activeStatus,
     q,
     internalOnly,
+  });
+  // Where "Guardar" on a card sends the operator back to.
+  const backHref = leadsHref({
+    tipo: activeType,
+    sitio: activeSite,
+    estado: activeStatus,
+    q,
   });
 
   // D3 matching, loaded once for the page rather than per card: one candidate
@@ -221,7 +263,12 @@ export default async function AdminLeadsPage({
 
         <nav className="panel-chips">
           {LEAD_TYPES.map((t) => {
-            const href = leadsHref({ tipo: t, sitio: activeSite, q });
+            const href = leadsHref({
+              tipo: t,
+              sitio: activeSite,
+              estado: activeStatus,
+              q,
+            });
             const count = counts[t] ?? 0;
             return (
               <Link
@@ -241,7 +288,7 @@ export default async function AdminLeadsPage({
         {siteCounts.length > 1 ? (
           <nav className="panel-chips" aria-label="Sitio">
             <Link
-              href={leadsHref({ tipo: activeType, q })}
+              href={leadsHref({ tipo: activeType, estado: activeStatus, q })}
               className={`panel-chip${activeSite ? "" : " panel-chip--active"}`}
             >
               Todos los sitios
@@ -250,7 +297,12 @@ export default async function AdminLeadsPage({
             {siteCounts.map((s) => (
               <Link
                 key={s.vertical}
-                href={leadsHref({ tipo: activeType, sitio: s.vertical, q })}
+                href={leadsHref({
+                  tipo: activeType,
+                  sitio: s.vertical,
+                  estado: activeStatus,
+                  q,
+                })}
                 className={`panel-chip${s.vertical === activeSite ? " panel-chip--active" : ""}`}
               >
                 {siteLabel(s.vertical)}
@@ -260,6 +312,31 @@ export default async function AdminLeadsPage({
           </nav>
         ) : null}
 
+        {/* Follow-up state. "Nuevas" is the inbox: what nobody answered yet. */}
+        <nav className="panel-chips" aria-label="Estado">
+          <Link
+            href={leadsHref({ tipo: activeType, sitio: activeSite, q })}
+            className={`panel-chip${activeStatus ? "" : " panel-chip--active"}`}
+          >
+            Todos los estados
+          </Link>
+          {FOLLOW_UP.map((st) => (
+            <Link
+              key={st}
+              href={leadsHref({
+                tipo: activeType,
+                sitio: activeSite,
+                estado: st,
+                q,
+              })}
+              className={`panel-chip${st === activeStatus ? " panel-chip--active" : ""}`}
+            >
+              {FOLLOW_UP_CHIP[st]}
+              <span className="panel-tab__count">{statusCounts[st] ?? 0}</span>
+            </Link>
+          ))}
+        </nav>
+
         {/* Same shape as the listings search on /admin/propiedades. */}
         <form action="/admin/leads" className="panel-form">
           {activeType !== "all" ? (
@@ -267,6 +344,9 @@ export default async function AdminLeadsPage({
           ) : null}
           {activeSite ? (
             <input type="hidden" name="sitio" value={activeSite} />
+          ) : null}
+          {activeStatus ? (
+            <input type="hidden" name="estado" value={activeStatus} />
           ) : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">
@@ -297,6 +377,11 @@ export default async function AdminLeadsPage({
                     {lead.name ?? "Consulta"}
                   </h3>
                   <div className="panel-card__meta">
+                    <span
+                      className={`panel-chip${lead.status === "new" ? " panel-chip--active" : ""}`}
+                    >
+                      {FOLLOW_UP_LABEL[lead.status]}
+                    </span>
                     <span>
                       {LEAD_TYPE_LABEL[lead.leadType] ?? lead.leadType}
                     </span>
@@ -353,6 +438,43 @@ export default async function AdminLeadsPage({
               {lead.message ? (
                 <div className="panel-card__body">{lead.message}</div>
               ) : null}
+
+              <form action={updateLeadAction} className="panel-form">
+                <input type="hidden" name="leadId" value={lead.id} />
+                <input type="hidden" name="back" value={backHref} />
+                <label className="panel-form__field">
+                  <span className="auth-field__label">Estado</span>
+                  <select
+                    className="auth-field__input"
+                    name="status"
+                    defaultValue={lead.status}
+                  >
+                    {FOLLOW_UP.map((st) => (
+                      <option key={st} value={st}>
+                        {FOLLOW_UP_LABEL[st]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label
+                  className="panel-form__field"
+                  style={{ flexBasis: "320px", flexGrow: 1 }}
+                >
+                  <span className="auth-field__label">Nota interna</span>
+                  <textarea
+                    className="auth-field__input"
+                    name="note"
+                    rows={2}
+                    maxLength={2000}
+                    defaultValue={lead.note ?? ""}
+                  />
+                </label>
+                <div className="panel-form__field panel-form__field--action">
+                  <button className="panel-btn" type="submit">
+                    Guardar
+                  </button>
+                </div>
+              </form>
 
               {/* Directory leads belong to nobody yet: the operator proposes
                   up to three verified professionals and hands the lead over on

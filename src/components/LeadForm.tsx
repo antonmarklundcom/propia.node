@@ -9,7 +9,9 @@ export type LeadFormType =
   | "renter"
   | "seller"
   | "developer"
-  | "agent_signup";
+  | "agent_signup"
+  | "landlord"
+  | "question";
 
 export interface LeadFormReason {
   value: LeadFormType;

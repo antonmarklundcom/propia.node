@@ -90,7 +90,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
     dictKey: "administracionAirbnb",
     image: "/img/rental/administracion-airbnb.webp",
     oldPath: "/airbnb-management/",
-    leadType: "seller",
+    leadType: "landlord",
   },
   {
     slug: "administracion-de-departamentos",
@@ -98,7 +98,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
     dictKey: "administracionDepartamentos",
     image: "/img/rental/administracion-de-departamentos.webp",
     oldPath: "/apartment-management/",
-    leadType: "seller",
+    leadType: "landlord",
   },
   {
     slug: "inmobiliaria-asuncion",
@@ -114,7 +114,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
     dictKey: "residenciaParaguay",
     image: "/img/rental/residencia-paraguay.webp",
     oldPath: "/residency-paraguay/",
-    leadType: "renter",
+    leadType: "question",
   },
   {
     slug: "invertir-en-paraguay",
@@ -132,7 +132,7 @@ export const RENTAL_SERVICES: readonly RentalService[] = [
     dictKey: "domicilioVirtual",
     image: "/img/rental/domicilio-virtual.webp",
     oldPath: "/virtual-adress/", // the old site's own spelling — S1 redirects it verbatim
-    leadType: "renter",
+    leadType: "question",
   },
   {
     slug: "alquiler-de-autos",
