@@ -23,6 +23,7 @@ import { getAgentNumbers, TEAM_STATS_DAYS } from "@/lib/team-stats";
 import { esA1 } from "@/i18n/es-a1";
 import { agencyTabs } from "./tabs";
 import { setListingStatusAction } from "./actions";
+import { JoinedListingsNotice } from "./JoinedListingsNotice";
 
 export const metadata: Metadata = {
   title: `Tus propiedades`,
@@ -58,6 +59,7 @@ export default async function AgencyListingsPage({
         {msg === "joined" ? (
           <p className="panel-flash">{esPanel.teamJoined}</p>
         ) : null}
+        {agencyId != null ? <JoinedListingsNotice agencyId={agencyId} /> : null}
 
         <div className="panel-section__header">
           <h2 className="panel-section__title">{esPanel.agencyListingsTitle}</h2>
