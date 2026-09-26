@@ -8,18 +8,11 @@ it; none of them blocks a phase.
 
 - **Listing sidebar follow-up (2026-09-21): stored USD conversion.** Gs listings kept the `price_usd` of the rate they were written with (7300 on the demo rows). **Fixed in code 2026-09-22: `npm run cron:price-usd`** re-derives it from the latest `fx_rates` row (plan §4 rule); it still has to be run on production, between `cron:fx` and `cron:cuotas`. (The map pins' Spanish-only USD formatting noted here was fixed in #191: pins use the listing's own currency and the door's locale.)
 
-- **Two `previous_json` readers still assume MySQL 8's parsed JSON (MariaDB
-  only, 2026-09-23).** MariaDB stores `json` as `longtext`, so `mysql2` returns
-  `import_rows.previous_json` as a string. `rollbackImportJob`'s restore of
-  `updated`/`paused` rows parses it since #165 (`verify:import`'s "rollback
-  restored the old prices" passes on the local MariaDB 11.4 as of 2026-09-23),
-  but two readers do not: the `deduped` branch of the same rollback
-  (`src/lib/import/jobs.ts`, `_sourceRowId`) then finds no id and falls back to
-  its legacy best-effort delete, and `recentPriceChanges()`
-  (`src/lib/import/resync.ts`) finds no `priceUsd` and lists nothing. Production
-  is MySQL 8, where the column is native JSON, so neither is visible there.
-  Fix, if local MariaDB parity matters: one `parseSnapshot(previousJson)` helper
-  in `jobs.ts` used by all three readers.
+- **Resolved 2026-09-26: the two `previous_json` readers that assumed MySQL 8's
+  parsed JSON.** Production is MariaDB 11.8 (not MySQL 8, as this entry used to
+  say), so the rollback's `deduped` branch and `recentPriceChanges()` were
+  live bugs there. All three readers now go through `parseSnapshot()`
+  (`src/lib/import/snapshot.ts`), checked by `verify:import`.
 
 - **Resolved by #165 (2026-09-21), entries removed 2026-09-23:** the rollback
   restoring nothing on MariaDB (it now parses string JSON), and `planImport`
@@ -115,10 +108,10 @@ it; none of them blocks a phase.
   still demo data. Founder decision: set it back to unset/true and rebuild, or
   keep it off once `seed:sample-photos` has marked every demo listing.
 
-- **`db:status` crashes against MySQL 8.4 (found 2026-09-26, build A2).**
+- **Resolved in #219 (E2/E3): `db:status` crashed against MySQL 8.4 (found 2026-09-26, build A2).**
   `readDatabaseStatus()` (`src/lib/ops/migrations.ts`, the `liveCols` loop)
   reads `r.table_name`, but MySQL 8.x returns `information_schema` column
   names upper-case (`TABLE_NAME`) unless the query aliases them, so it throws
   `Cannot read properties of undefined (reading 'toLowerCase')`. Seen on the
   docker-compose `mysql:8.4` image; production is MariaDB 11.8, where it runs.
-  Fix is `AS table_name` aliases in that SELECT. Not fixed in A2 (out of scope).
+  Fixed with `AS table_name` aliases in that SELECT (`src/lib/ops/migrations.ts`).

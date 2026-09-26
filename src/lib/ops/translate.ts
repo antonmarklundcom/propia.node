@@ -2,13 +2,10 @@
  * Fill `listings.title_en` / `description_en` from the Spanish source (PLAN.md
  * D6, Batch 3 layer 3).
  *
- * Provider order: DeepL, then Gemini, then Claude — any subset of the three keys
- * may be set; a row falls through to the next configured provider if one throws.
- * See `src/lib/translate.ts` for why that order (DeepL's free "Developer" tier is
- * a ONE-TIME character credit, not a recurring monthly one).
+ * Provider order: Gemini, then Claude — either key may be set; a row falls
+ * through to the other if one throws. See `src/lib/translate.ts`.
  *
- * **Always pass a `limit`.** Every row is a paid API call against a credit that
- * does not refill on its own, which is why `/admin/operaciones` makes the field
+ * **Always pass a `limit`.** Every row is a paid API call, which is why `/admin/operaciones` makes the field
  * mandatory (§1.8 of `fable-plan-ops.md`). The CLI defaults to 50 attempted
  * rows; raise the cap explicitly with `--limit`.
  *
@@ -103,7 +100,7 @@ export async function runTranslate(opts: TranslateOptions): Promise<OpsResult> {
   return opsRun("cron:translate", opts.dry, async (out) => {
     if (!isTranslationConfigured() && !opts.dry) {
       throw new Error(
-        "None of DEEPL_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY is set — nothing was " +
+        "Neither GEMINI_API_KEY nor ANTHROPIC_API_KEY is set — nothing was " +
           "translated. This is a disabled feature, not a failure: the English door reads " +
           "title_en/description_en straight from the row and simply shows the Spanish " +
           "text until they are filled.",
@@ -122,8 +119,7 @@ export async function runTranslate(opts: TranslateOptions): Promise<OpsResult> {
       : 50;
     if (limit !== opts.limit) {
       out.note(
-        "Using the default cap of 50 attempted rows. Raise it with --limit <number>. " +
-          "DeepL's Developer credit is one-time.",
+        "Using the default cap of 50 attempted rows. Raise it with --limit <number>.",
       );
     }
 

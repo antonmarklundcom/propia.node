@@ -25,6 +25,7 @@ import { inArray, like } from "drizzle-orm";
 import { canonPhone, contentHash, dedupKey, toPriceUsd } from "../src/lib/import/normalize";
 import { parseCsvRecords, recordToRaw } from "../src/lib/import/csv";
 import { readIntake } from "../src/lib/import/intake";
+import { parseSnapshot } from "../src/lib/import/snapshot";
 import type { RawListing } from "../src/lib/import/types";
 
 let failures = 0;
@@ -94,6 +95,15 @@ function pureChecks() {
   check("content hash moves with the price", h1 !== h3);
 
   check("PYG converts to USD", toPriceUsd(730_000_000, "PYG", 7300) === 100_000);
+
+  console.log("\nsnapshots (previous_json)");
+  // MySQL 8 hands back an object, MariaDB (production) a string: same result.
+  check("object snapshot passes through", parseSnapshot({ _sourceRowId: 7 })?._sourceRowId === 7);
+  check("MariaDB string snapshot is parsed", parseSnapshot('{"_sourceRowId":7}')?._sourceRowId === 7);
+  check("string price survives", parseSnapshot('{"priceUsd":"85000.00"}')?.priceUsd === "85000.00");
+  check("invalid JSON is null", parseSnapshot("{not json") === null);
+  check("array / scalar / null are null",
+    parseSnapshot("[1]") === null && parseSnapshot("3") === null && parseSnapshot(null) === null);
 
   console.log("\nparsing");
 
@@ -171,6 +181,7 @@ async function dbChecks() {
     "../src/lib/import/jobs"
   );
   const { getUsdToPygRateRaw } = await import("../src/lib/fx");
+  const { recentPriceChanges } = await import("../src/lib/import/resync");
 
   /**
    * Passed to every plan/commit below instead of letting `planImport` reach for
@@ -295,6 +306,15 @@ async function dbChecks() {
     createdByUserId: null,
   });
   await recordImportRows(jobId, committedC);
+  // Read back through import_rows.previous_json — a string on MariaDB (what
+  // production runs), an object on MySQL 8. Both must list the change.
+  const ourIds = new Set(committedC.map((r) => r.listingId));
+  const changes = (await recentPriceChanges(500)).filter((c) => ourIds.has(c.listingId));
+  check(
+    "recentPriceChanges lists the price change",
+    changes.length === 3 && changes.every((c) => c.before === "85000.00"),
+    JSON.stringify(changes.map((c) => c.before)),
+  );
   const rollback = await rollbackImportJob(jobId);
   check("rollback reports success", rollback.ok, rollback.note);
 

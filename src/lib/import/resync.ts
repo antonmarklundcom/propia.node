@@ -20,6 +20,7 @@ import "server-only";
 import { and, eq, gt, inArray, lt, max, min, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { importJobs, importRows, listings, listingSources } from "@/db/schema";
+import { parseSnapshot } from "./snapshot";
 import type { ListingSource } from "./types";
 
 /** Sources that come from a feed, and can therefore go quiet. */
@@ -188,11 +189,15 @@ export async function recentPriceChanges(limit = 50): Promise<PriceChange[]> {
 
   return rows
     .map((r) => {
-      const before = (r.previousJson as { priceUsd?: string } | null)?.priceUsd;
+      const before = parseSnapshot(r.previousJson)?.priceUsd;
       return {
         listingId: r.listingId as number,
         title: r.title,
-        before: before ?? null,
+        // A decimal column snapshots as a string; tolerate a number too.
+        before:
+          typeof before === "string" || typeof before === "number"
+            ? String(before)
+            : null,
         after: r.after,
         at: r.at,
       };
