@@ -151,7 +151,7 @@ export default async function AdminInboxThreadPage({
               </label>
               <label className="panel-form__field">
                 <span className="auth-field__label">{t.convertName}</span>
-                <input className="auth-field__input" name="name" maxLength={140} defaultValue={firstIn.fromName ?? ""} />
+                <input className="auth-field__input" name="name" maxLength={140} defaultValue={(firstIn.fromName ?? "").slice(0, 140)} />
               </label>
               <label className="panel-form__field">
                 <span className="auth-field__label">{t.convertWhatsapp}</span>

@@ -14,6 +14,7 @@
  */
 import "server-only";
 import { and, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { isNotReportLead } from "@/lib/report-queries";
 import { db } from "@/db";
 import { agencies, agents, leadAssignments, leads, listings, users } from "@/db/schema";
 
@@ -97,6 +98,9 @@ export async function shareLeads(params: {
       and(
         inArray(leads.id, ids),
         params.internalOnly ? eq(leads.routedTo, "internal") : undefined,
+        // A listing report is about a publisher and names whoever reported
+        // it; it is never handed to a partner (who may be that publisher).
+        isNotReportLead(),
       ),
     );
   const leadIds = eligible.map((r) => r.id);

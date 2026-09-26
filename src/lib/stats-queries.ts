@@ -11,7 +11,7 @@ import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { leads, listings, listingViewsDaily } from "@/db/schema";
 import { listingScopeWhere, type EditScope } from "@/lib/listing-edit";
-import { isNotReportLead } from "@/lib/report-queries";
+import { isVisitorEnquiry } from "@/lib/report-queries";
 
 /** Rolling window the panel reports on. */
 export const STATS_WINDOW_DAYS = 30;
@@ -125,8 +125,9 @@ export async function getPanelListingStats(
         and(
           inArray(leads.listingId, ids),
           internalLeadsOnly ? eq(leads.routedTo, "internal") : undefined,
-          // A listing report (A3) is about the publisher, not an enquiry.
-          isNotReportLead(),
+          // A listing report (A3) is about the publisher, and an owner's own
+          // "sell it for me" request (A2) is from them: neither is an enquiry.
+          isVisitorEnquiry(),
           gte(leads.createdAt, new Date(`${since}T00:00:00Z`)),
         ),
       )
