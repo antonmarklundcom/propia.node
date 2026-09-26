@@ -106,6 +106,8 @@ import {
   enSearchBar,
   enVender,
 } from "./en";
+import { esA4 } from "./es-a4";
+import { enA4 } from "./en-a4";
 import { esA1 } from "./es-a1";
 import { enA1 } from "./en-a1";
 
@@ -161,6 +163,7 @@ const esDictionary = {
   vender: esVender,
   contactForm: esContactForm,
   leadForm: esLeadForm,
+  a4: esA4,
   a1: esA1,
 } as const;
 
@@ -242,6 +245,7 @@ const enDictionary = {
   vender: enVender,
   contactForm: enContactForm,
   leadForm: enLeadForm,
+  a4: enA4,
   a1: enA1,
 } satisfies Dictionary;
 
