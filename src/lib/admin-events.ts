@@ -23,7 +23,9 @@ export type AdminEventAction =
   | "user.delete"
   | "agent.join_agency"
   | "lead.from_email"
-  | "setting.change";
+  | "setting.change"
+  | "deal.update"
+  | "deal.stage";
 
 export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting";
 

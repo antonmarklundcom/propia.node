@@ -130,6 +130,38 @@ answered decision D1 below.**
   month, lost reasons, response time per partner (the existing response
   board).
 
+**What landed (2026-09-26, branch `claude/bold-davinci-myybaw-deals`, on top
+of 0019).** `src/lib/deals.ts` is the only module on `deals`; form parsing and
+es-PY formatting are pure in `src/lib/deal-form.ts`; copy in
+`src/i18n/es-deals.ts` (panel, Spanish only).
+- `/admin/leads`: each card (not reports) has a collapsed «Negocio» block —
+  stage, lost reason, partner (only targets the lead was shared with, revoked
+  shares included), sale price, commission %, your share %, your share US$,
+  paid date, note. Super-admin only (`saveDealAction` → `requireSuperAdmin()`,
+  and `upsertOperatorDeal()` refuses any other role itself). Staff see the
+  stage read-only; their query selects no money column. The «≈ US$» beside
+  "Tu parte" is a display estimate from the stored values, never saved. Every
+  save that changes something writes `deal.update` to `admin_events`.
+- `/agencia/leads`: a stage selector (visita / oferta / reservado / ganado /
+  perdido + motivo) on each shared lead. `setPartnerDealStage()` uses
+  `sharedWithPanel()` (now exported from `lead-assignments.ts`) for the read
+  and in the UPDATE's own WHERE, creates the deal when missing (partner =
+  that share's target, `created_by_user_id` = the partner), claims a deal with
+  no partner, refuses another partner's deal, and writes no money column.
+  Logged as `deal.stage`.
+- `/admin/negocios` (main tab row, next to Consultas; super-admin only): KPI
+  table (deals per open stage, won this month / total, your share won-unpaid
+  and paid, this month / total — sums of `my_share_usd` as typed), the deals
+  table with a link back to each lead card, per-partner rows, lost reasons.
+  The response board stays on /admin/leads (linked).
+- `scripts/verify-scopes.ts` covers it: form validation, the money writer
+  refusing staff/agency/agent/consumer/developer roles, a partner moving a
+  stage only on an actively shared lead (not another agency's, not after a
+  revoke, not another partner's deal), and a partner write leaving every money
+  field unchanged.
+- Not built: a default split prefilled from D2 (founder decision), deleting a
+  deal, a CSV export of the ledger.
+
 ### 7 — Later (after real inventory)
 
 Monthly owner performance email (E1), "tell us what you want" brief when a

@@ -16,11 +16,14 @@ import {
   REALTOR_STATES,
   type PanelViewer,
 } from "@/lib/lead-assignments";
-import { leadEmailAction, setShareStateAction } from "./actions";
+import { leadEmailAction, setDealStageAction, setShareStateAction } from "./actions";
 import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads, type InboxMessage } from "@/lib/inbox";
 import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
 import { LeadEmailThread } from "@/components/panel/EmailThread";
+import { getPartnerDealStages, type PartnerDealStage } from "@/lib/deals";
+import { LOST_REASONS, PARTNER_STAGES } from "@/lib/deal-form";
+import { esDeals } from "@/i18n/es-deals";
 
 export const metadata: Metadata = {
   title: `Consultas`,
@@ -53,7 +56,58 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   share_saved: { text: esPanel.sharedLeadSaved },
   share_invalid: { text: esPanel.sharedLeadInvalid, error: true },
   ...LEAD_EMAIL_FLASH,
+  ...Object.fromEntries(
+    Object.entries(esDeals.partnerFlash).map(([k, text]) => [k, { text, error: k !== "deal_saved" }]),
+  ),
 };
+
+/**
+ * The deal stage selector on a shared lead (plan-agency batch 6). Stage and
+ * lost reason only: the partner never sees or sends a money field, nor the
+ * operator's share. Rendered only when `getPartnerDealStages()` says this
+ * viewer may move the deal (it is theirs, or nobody's yet).
+ */
+function DealStageForm({ leadId, deal }: { leadId: number; deal: PartnerDealStage | null }) {
+  return (
+    <form action={setDealStageAction} className="panel-form">
+      <input type="hidden" name="leadId" value={leadId} />
+      <label className="panel-form__field">
+        <span className="auth-field__label">{esDeals.partnerTitle}</span>
+        <select
+          className="auth-field__input"
+          name="stage"
+          defaultValue={deal && deal.stage !== "open" ? deal.stage : ""}
+          required
+        >
+          <option value="" disabled>
+            {deal ? esDeals.stage[deal.stage] : esDeals.blockNone}
+          </option>
+          {PARTNER_STAGES.map((st) => (
+            <option key={st} value={st}>
+              {esDeals.stage[st]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="panel-form__field">
+        <span className="auth-field__label">{esDeals.lostReasonLabel}</span>
+        <select className="auth-field__input" name="lostReason" defaultValue={deal?.lostReason ?? ""}>
+          <option value="">{esDeals.lostReasonNone}</option>
+          {LOST_REASONS.map((r) => (
+            <option key={r} value={r}>
+              {esDeals.lostReason[r]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="panel-form__field panel-form__field--action">
+        <button className="panel-btn" type="submit">
+          {esDeals.partnerSave}
+        </button>
+      </div>
+    </form>
+  );
+}
 
 /** A lead's email thread (wave E2) under its card; nothing when there is none and no way to start one. */
 function EmailBlock({ leadId, email, threads }: { leadId: number; email: string | null; threads: Map<number, InboxMessage[]> }) {
@@ -180,14 +234,17 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
 async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: string }) {
   const shared = await getSharedLeads(viewer);
   if (shared.length === 0) return null;
-  const threads = await listLeadThreads(shared.map((l) => l.id));
+  const [threads, dealStages] = await Promise.all([
+    listLeadThreads(shared.map((l) => l.id)),
+    getPartnerDealStages(viewer, shared.map((l) => l.id)),
+  ]);
 
   return (
     <>
       <h2 className="panel-section__title">{esPanel.sharedLeadsTitle}</h2>
       <p className="panel-note">{esPanel.sharedLeadsHint}</p>
       {shared.map((lead) => (
-        <article className="panel-card" key={`share-${lead.assignmentId}`}>
+        <article className="panel-card" key={`share-${lead.assignmentId}`} id={`shared-${lead.id}`}>
           <div className="panel-card__head">
             <div>
               <h3 className="panel-card__title">{lead.name ?? "Consulta"}</h3>
@@ -246,6 +303,11 @@ async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: st
               </button>
             ))}
           </form>
+          {dealStages.has(lead.id) ? (
+            <div className="panel-card__body">
+              <DealStageForm leadId={lead.id} deal={dealStages.get(lead.id) ?? null} />
+            </div>
+          ) : null}
         </article>
       ))}
     </>
