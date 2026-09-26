@@ -135,7 +135,8 @@ export async function convertToLeadAction(formData: FormData): Promise<void> {
   const [res] = await db.insert(leads).values({
     leadType: parsed.data.leadType,
     vertical,
-    name: parsed.data.name ?? firstIn.fromName ?? null,
+    // leads.name is varchar(140); a sender's display name can be longer.
+    name: (parsed.data.name ?? firstIn.fromName)?.slice(0, 140) || null,
     whatsapp: parsed.data.whatsapp,
     email: email && email.length <= 190 ? email : null,
     message: message || null,

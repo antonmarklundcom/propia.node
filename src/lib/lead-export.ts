@@ -213,10 +213,14 @@ export function adminLeadsCsv(rows: readonly AdminLeadRow[], origin: string): st
       l.email,
       l.message,
       HOST_BY_VERTICAL[l.vertical] ?? l.vertical,
-      l.agencyName ??
-        (l.ownerWhatsapp
-          ? `${t.csvRouted.owner}: ${l.ownerName ?? l.ownerWhatsapp}`
-          : (t.csvRouted[l.routedTo] ?? l.routedTo)),
+      // Same rule as the /admin/leads card: an internal lead (a report, an
+      // owner's own request, anything in agency mode) is the operator's.
+      l.routedTo === "internal"
+        ? (t.csvRouted.internal ?? l.routedTo)
+        : l.agencyName ??
+          (l.ownerWhatsapp
+            ? `${t.csvRouted.owner}: ${l.ownerName ?? l.ownerWhatsapp}`
+            : (t.csvRouted[l.routedTo] ?? l.routedTo)),
       ...propertyCells(l, origin),
       l.note,
       l.utm?.source ?? null,

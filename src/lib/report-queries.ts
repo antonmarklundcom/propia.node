@@ -41,3 +41,15 @@ export async function countReportLeads(internalOnly = false): Promise<number> {
     );
   return Number(row?.n ?? 0);
 }
+
+/** `utm.source` of an owner's own "quiero que una inmobiliaria lo venda" request (A2). */
+const OWNER_REQUEST_SOURCE = "owner:panel";
+
+/**
+ * WHERE fragment: a lead a visitor sent about the listing — neither a report
+ * (about the publisher) nor the owner's own request to be put in touch with a
+ * realtor (from the publisher). For the "consultas" counts a publisher sees.
+ */
+export function isVisitorEnquiry(): SQL {
+  return sql`coalesce(JSON_UNQUOTE(JSON_EXTRACT(${leads.utm}, '$.source')), '') NOT IN (${REPORT_SOURCE}, ${OWNER_REQUEST_SOURCE})`;
+}
