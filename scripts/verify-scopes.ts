@@ -727,7 +727,16 @@ async function main() {
         (await getDealByLead(sharedLeadId))?.stage === "offer",
     );
     check("…nor see its stage", !(await getPartnerDealStages(viewerA, [sharedLeadId])).has(sharedLeadId));
-    // Restore the share for the export checks below.
+    // Restore the share for the checks below (partner note, reminders, exports).
+    await shareLeads({
+      leadIds: [sharedLeadId],
+      target: { kind: "agency", id: agencyId },
+      note: null,
+      byUserId: agencyOwner.userId,
+      internalOnly: false,
+    });
+
+    /* ---------------------------------------------------------------- */
     /* Partner note, reminders, Telegram recipients (plan-agency b4)    */
     /* ---------------------------------------------------------------- */
     /**
