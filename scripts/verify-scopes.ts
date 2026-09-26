@@ -49,10 +49,12 @@ import { isStaff, isStaffOrAbove, isSuperAdmin, isAgencyRole } from "../src/lib/
 import { proposeMatches, markMatchSent } from "../src/lib/matching";
 import {
   getSharedLeads,
+  isLeadSharedWithPanel,
   revokeShare,
   setShareState,
   shareLeads,
 } from "../src/lib/lead-assignments";
+import { userMaySeeLead } from "../src/lib/inbox-access";
 import { verifyPassword } from "../src/lib/auth/password";
 import { createAgencyInvite, getUsableInvite } from "../src/lib/agency-invites";
 import { listAgencyJoinEvents } from "../src/lib/admin-events";
@@ -598,6 +600,64 @@ async function main() {
     check("staff export lacks the agency-lane lead", staffRows.every((l) => l.id !== agencyLaneLeadId));
     const adminRows = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared` }, []), false);
     check("admin export includes the agency-lane lead", adminRows.some((l) => l.id === agencyLaneLeadId));
+
+    /* ---------------------------------------------------------------- */
+    /* Email threads (waves E2 + E3): "may this user see lead N?"       */
+    /* ---------------------------------------------------------------- */
+    /**
+     * The reply actions and the attachment route ask one lead at a time. The
+     * answer must be exactly list membership on that user's own lead page —
+     * the single-lead forms reuse the list predicates, never a new rule.
+     */
+    const [internalLeadRow] = await db
+      .select({ id: leads.id })
+      .from(leads)
+      .where(eq(leads.name, "Verify internal lead"))
+      .limit(1);
+    const ownerLead = (await getPanelLeads(ownerScope)).find((l) => l.name === "Verify buyer lead");
+    // An agency-lane lead on the agency's own listing, so the "own inbox"
+    // checks below are about a real row (cleaned up with the listing).
+    const [agencyInboxRes] = await db.insert(leads).values({
+      leadType: "buyer",
+      vertical: "verify",
+      whatsapp: "0986000009",
+      name: `Verify email agency lead ${stamp}`,
+      listingId: agencyRows[0].id,
+      routedTo: "agency",
+    });
+    const agencyInboxLeadId = Number((agencyInboxRes as unknown as { insertId: number }).insertId);
+    const emailPageOwnA = await getPanelLeads(agencyScope);
+    check(
+      "fixtures for the email checks exist",
+      !!internalLeadRow && !!ownerLead && emailPageOwnA.some((l) => l.id === agencyInboxLeadId),
+    );
+    if (!internalLeadRow || !ownerLead) return;
+
+    for (const l of emailPageOwnA) {
+      const one = await getPanelLeads(agencyScope, l.id);
+      check(`single-lead read = list row (agency lead ${l.id})`, one.length === 1 && one[0].id === l.id);
+    }
+    check("single-lead read: the agency cannot fetch the owner's lead", (await getPanelLeads(agencyScope, ownerLead.id)).length === 0);
+    check("single-lead read: the owner fetches their own lead", (await getPanelLeads(ownerScope, ownerLead.id)).length === 1);
+    check("single-lead read: the owner cannot fetch an internal lead", (await getPanelLeads(ownerScope, internalLeadRow.id)).length === 0);
+    check("isLeadSharedWithPanel: the agency it was shared with", await isLeadSharedWithPanel(viewerA, sharedLeadId));
+    check("isLeadSharedWithPanel: not another agency", !(await isLeadSharedWithPanel(viewerB, sharedLeadId)));
+
+    const asUser = (id: number, role: Parameters<typeof isStaff>[0]) => ({ id, name: null, email: null, role });
+    const agencyUser = asUser(agencyOwner.userId, "agency_admin");
+    const otherUser = asUser(otherOwner.userId, "agency_admin");
+    const indepAsUser = asUser(independent.userId, "agent");
+    check("thread access: agency sees its own inbox lead", await userMaySeeLead(agencyUser, agencyInboxLeadId));
+    check("thread access: agency sees a lead shared with it", await userMaySeeLead(agencyUser, sharedLeadId));
+    check("thread access: another agency does not", !(await userMaySeeLead(otherUser, sharedLeadId)));
+    check("thread access: another agency not the agency's own lead", !(await userMaySeeLead(otherUser, agencyInboxLeadId)));
+    check("thread access: staff does not see the agency's own lead", !(await userMaySeeLead(asUser(0, "staff"), agencyInboxLeadId)));
+    check("thread access: the owner sees their lead", await userMaySeeLead(indepAsUser, ownerLead.id));
+    check("thread access: the owner does not see an internal lead", !(await userMaySeeLead(indepAsUser, internalLeadRow.id)));
+    check("thread access: staff sees an internal lead", await userMaySeeLead(asUser(0, "staff"), internalLeadRow.id));
+    check("thread access: staff does not see an agency-lane lead", !(await userMaySeeLead(asUser(0, "staff"), agencyLaneLeadId)));
+    check("thread access: super-admin sees every lane", await userMaySeeLead(asUser(0, "admin"), agencyLaneLeadId));
+    check("thread access: a bad id is nobody's", !(await userMaySeeLead(asUser(0, "admin"), 0)));
     const telRows = await adminLeadRows(parseAdminLeadFilter({ tel: "986000002" }, []), false);
     check("admin export honours the same-number filter", telRows.length > 0 && telRows.every((l) => l.whatsapp.endsWith("986000002")));
     check(

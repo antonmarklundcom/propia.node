@@ -371,6 +371,19 @@ export async function getSharedLeads(viewer: PanelViewer): Promise<SharedLeadRow
     .limit(300);
 }
 
+/**
+ * Is this lead currently shared with this viewer? `sharedWithPanel()` plus
+ * `lead_id =` — the email thread's reply action (wave E2) asks exactly this.
+ */
+export async function isLeadSharedWithPanel(viewer: PanelViewer, leadId: number): Promise<boolean> {
+  const [row] = await db
+    .select({ id: leadAssignments.id })
+    .from(leadAssignments)
+    .where(and(eq(leadAssignments.leadId, leadId), sharedWithPanel(viewer)))
+    .limit(1);
+  return !!row;
+}
+
 /** The realtor's answer. Returns rows affected: 0 = not theirs, or revoked. */
 export async function setShareState(params: {
   assignmentId: number;

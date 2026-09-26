@@ -16,6 +16,7 @@
 import "server-only";
 import {
   DeleteObjectsCommand,
+  GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -107,6 +108,66 @@ export async function deleteObjects(keys: string[]): Promise<void> {
   await conn.client.send(
     new DeleteObjectsCommand({
       Bucket: conn.bucket,
+      Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: true },
+    }),
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Private objects — email attachments (waves E2 + E3)                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Email attachments are somebody's private documents, not listing photos. The
+ * photo bucket is public-read (R2_PUBLIC_BASE_URL), so an attachment written
+ * there is reachable by anyone who learns its key. Two layers keep that from
+ * mattering: `R2_INBOX_BUCKET`, when set, is a separate bucket with no public
+ * access at all (recommended); and either way the key is 128 random bits under
+ * `inbox/`, never rendered into a page — the panel streams the bytes through
+ * an authenticated route (`getPrivateObject`), never a public URL.
+ */
+function privateBucket(conn: { bucket: string }): string {
+  return process.env.R2_INBOX_BUCKET?.trim() || conn.bucket;
+}
+
+export async function putPrivateObject(
+  key: string,
+  body: Buffer,
+  contentType: string,
+): Promise<void> {
+  const conn = connect();
+  if (!conn) throw new R2NotConfiguredError();
+  await conn.client.send(
+    new PutObjectCommand({
+      Bucket: privateBucket(conn),
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      CacheControl: "private, no-store",
+    }),
+  );
+}
+
+/** The object's bytes, or null when R2 is off or the key is gone. */
+export async function getPrivateObject(key: string): Promise<Uint8Array | null> {
+  const conn = connect();
+  if (!conn) return null;
+  try {
+    const res = await conn.client.send(
+      new GetObjectCommand({ Bucket: privateBucket(conn), Key: key }),
+    );
+    return res.Body ? await res.Body.transformToByteArray() : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deletePrivateObjects(keys: string[]): Promise<void> {
+  const conn = connect();
+  if (!conn || keys.length === 0) return;
+  await conn.client.send(
+    new DeleteObjectsCommand({
+      Bucket: privateBucket(conn),
       Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: true },
     }),
   );

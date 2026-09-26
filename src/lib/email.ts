@@ -22,9 +22,14 @@
  * (founder decision 2026-09-26): the root is Email Routing's (hola@, anton@),
  * and its DMARC must not depend on this app. The sender is `EMAIL_FROM`; a
  * caller may swap the *display name* (a door's brand) but never the address.
+ * The one exception is a person's reply from /admin/inbox (wave E3), sent as
+ * hola@/anton@ — and only once the founder has onboarded the root domain and
+ * set `EMAIL_ROOT_SENDING=true` (`senderFor()`).
  *
  * Pure: no `next/*`, no database — `npm run email:test` imports it unchanged.
  */
+
+import { messageIdsIn, normalizeAddress, rootMailboxLocal } from "./inbox-address";
 
 /** Same ceiling as crm.ts's webhook: strictly faster than the DB's 8 s connect timeout. */
 const EMAIL_TIMEOUT_MS = 5_000;
@@ -43,6 +48,19 @@ export interface EmailMessage {
    * The address stays `EMAIL_FROM`'s: only the verified subdomain may send.
    */
   fromName?: string;
+  /**
+   * A root-domain mailbox (hola@inmobiliaria.com.py) to send *as*, for
+   * /admin/inbox replies (wave E3). Honoured only when `EMAIL_ROOT_SENDING`
+   * is `true` — the founder has onboarded the root domain in Email Sending —
+   * and only for an address on that root domain; otherwise the message goes
+   * from `EMAIL_FROM` and this mailbox becomes its Reply-To (unless the
+   * caller set one). See `senderFor()`.
+   */
+  fromMailbox?: string;
+  cc?: string[];
+  /** Threading (wave E2/E3): the Message-ID being answered, and the chain before it. */
+  inReplyTo?: string;
+  references?: string[];
 }
 
 export interface EmailResult {
@@ -102,6 +120,33 @@ export function senderAddress(fromName?: string): Address | null {
   return name ? { address: from.address, name } : { address: from.address };
 }
 
+/** `EMAIL_ROOT_SENDING=true`: the root domain is onboarded in Email Sending too. */
+export function isRootSendingEnabled(): boolean {
+  return process.env.EMAIL_ROOT_SENDING?.trim().toLowerCase() === "true";
+}
+
+/**
+ * Who a message is really sent from, and the Reply-To that goes with it.
+ * The only place the root-mailbox rule lives: `fromMailbox` is used as the
+ * sender when root sending is on and the address is on the root domain;
+ * otherwise the sender is `EMAIL_FROM` and the mailbox is where replies go.
+ */
+export function senderFor(msg: Pick<EmailMessage, "fromName" | "fromMailbox" | "replyTo">): {
+  from: Address | null;
+  replyTo: string | undefined;
+} {
+  const mailbox = msg.fromMailbox ? rootMailboxLocal(msg.fromMailbox) : null;
+  if (msg.fromMailbox && mailbox && isRootSendingEnabled()) {
+    const name = oneLine(msg.fromName ?? "");
+    const address = normalizeAddress(msg.fromMailbox);
+    return { from: name ? { address, name } : { address }, replyTo: msg.replyTo };
+  }
+  return {
+    from: senderAddress(msg.fromName),
+    replyTo: msg.replyTo ?? (mailbox && msg.fromMailbox ? normalizeAddress(msg.fromMailbox) : undefined),
+  };
+}
+
 /** Header values are one line: a CR/LF in a subject or name is refused, not passed on. */
 function oneLine(s: string): string {
   return s.replace(/[\r\n]+/g, " ").trim();
@@ -113,17 +158,29 @@ function oneLine(s: string): string {
  * message cannot be sent at all (bad recipient, bad `EMAIL_FROM`).
  */
 export function emailRequestBody(msg: EmailMessage): Record<string, unknown> | null {
-  const from = senderAddress(msg.fromName);
+  const sender = senderFor(msg);
+  const from = sender.from;
   const to = msg.to.trim();
   if (!from || !isPlausibleEmail(to)) return null;
-  const replyTo = msg.replyTo ? parseAddress(msg.replyTo) : null;
+  const replyTo = sender.replyTo ? parseAddress(sender.replyTo) : null;
+  const cc = (msg.cc ?? []).map((a) => a.trim()).filter(isPlausibleEmail).slice(0, 20);
+  // Threading headers are on Cloudflare's allowlist; values are Message-IDs
+  // only (`<…>`), which is also what keeps a CR/LF out of them.
+  const inReplyTo = messageIdsIn(msg.inReplyTo)[0];
+  const references = messageIdsIn((msg.references ?? []).join(" ")).slice(-20).join(" ");
+  const headers = {
+    ...(inReplyTo ? { "In-Reply-To": inReplyTo } : {}),
+    ...(references ? { References: references } : {}),
+  };
   return {
     from,
     to,
+    ...(cc.length ? { cc } : {}),
     subject: oneLine(msg.subject).slice(0, 250),
     html: msg.html,
     text: msg.text,
     ...(replyTo ? { reply_to: replyTo } : {}),
+    ...(Object.keys(headers).length ? { headers } : {}),
   };
 }
 

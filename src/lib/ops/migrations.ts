@@ -173,7 +173,9 @@ export async function readDatabaseStatus(
     /* ---------------- migration tracking ---------------- */
 
     const [tracking] = (await c.query(
-      `SELECT table_schema FROM information_schema.tables
+      // Aliased: MySQL 8 returns information_schema columns upper-case
+      // (TABLE_SCHEMA), MariaDB as written — the alias pins the key.
+      `SELECT table_schema AS table_schema FROM information_schema.tables
         WHERE table_name = '__drizzle_migrations'`,
     )) as [Array<{ table_schema: string }>, unknown];
 
@@ -226,7 +228,9 @@ export async function readDatabaseStatus(
       .map((t) => getTableConfig(t as MySqlTable));
 
     const [liveCols] = (await c.query(
-      `SELECT table_name, column_name, column_type FROM information_schema.columns
+      `SELECT table_name AS table_name, column_name AS column_name,
+              column_type AS column_type
+         FROM information_schema.columns
         WHERE table_schema = DATABASE()`,
     )) as [
       Array<{ table_name: string; column_name: string; column_type: string }>,
@@ -284,7 +288,8 @@ export async function readDatabaseStatus(
     /* ---------------- the D8 owner lane ---------------- */
 
     const [routed] = (await c.query(
-      `SELECT table_schema, column_type FROM information_schema.columns
+      `SELECT table_schema AS table_schema, column_type AS column_type
+         FROM information_schema.columns
         WHERE column_name = 'routed_to' AND table_name = 'leads'
           AND table_schema = DATABASE()`,
     )) as [Array<{ table_schema: string; column_type: string }>, unknown];
