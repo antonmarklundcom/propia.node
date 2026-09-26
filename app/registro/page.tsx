@@ -38,7 +38,9 @@ export default async function RegisterPage({
     whatsapp?: string;
   }>;
 }) {
-  const t = (await dict()).publicAuth;
+  const d = await dict();
+  const t = d.publicAuth;
+  const a2 = d.a2;
   const ERRORS: Record<string, string> = {
   name: t.registerErrorName,
   email: t.registerErrorEmail,
@@ -70,8 +72,12 @@ export default async function RegisterPage({
 
   // Keep the chosen account type across a failed submit, so an agency that
   // mistyped its email doesn't come back as an independent agent.
-  const isInvite = invitation != null && kind !== "agency" && kind !== "independent";
-  const isAgency = !isInvite && kind !== "independent";
+  const isInvite =
+    invitation != null && kind !== "agency" && kind !== "independent" && kind !== "owner";
+  // Someone sent here from /publicar is almost always a private owner.
+  const isOwner =
+    !isInvite && (kind === "owner" || (!kind && Boolean(next?.startsWith("/publicar"))));
+  const isAgency = !isInvite && !isOwner && kind !== "independent";
 
   return (
     <main className="site-main">
@@ -136,9 +142,18 @@ export default async function RegisterPage({
                   type="radio"
                   name="kind"
                   value="independent"
-                  defaultChecked={!isAgency && !isInvite}
+                  defaultChecked={!isAgency && !isInvite && !isOwner}
                 />
                 <span>{t.registerKindIndependent}</span>
+              </label>
+              <label className="auth-choice__option">
+                <input
+                  type="radio"
+                  name="kind"
+                  value="owner"
+                  defaultChecked={isOwner}
+                />
+                <span>{a2.registerKindOwner}</span>
               </label>
             </fieldset>
 
@@ -157,6 +172,7 @@ export default async function RegisterPage({
                 maxLength={160}
                 autoComplete="organization"
               />
+              <p className="auth-field__hint">{a2.registerOwnerNote}</p>
             </div>
 
             <div className="auth-field">

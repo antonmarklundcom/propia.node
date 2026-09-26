@@ -23,12 +23,21 @@
  *   If the founder wants the opposite (listings follow the agent), it is one
  *   extra UPDATE in removeTeamMember() and moveAgentToAgency() — the same one
  *   in both places, so the two paths never disagree.
+ *
+ * The mirror image — what an independent's own listings do when they JOIN an
+ * agency — follows the same principle: they move in with them
+ * (moveIndependentListingsToAgency(), bug 6), on the invite accept and on the
+ * super-admin move alike.
  */
 import "server-only";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { agencies, agents, users } from "@/db/schema";
+import { agencies, agents, listings, users } from "@/db/schema";
+import { recordAdminEvent } from "@/lib/admin-events";
+import { consumeInvite, stampInviteUser } from "@/lib/agency-invites";
 import type { UserRole } from "@/lib/auth/roles";
+
+type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** The two roles a member of an agency can hold. */
 export type TeamRole = "agent" | "agency_admin";
@@ -192,8 +201,11 @@ export type JoinResult =
  * consumed, so an account that cannot join doesn't burn a single-use link, and
  * again inside the join itself as the real check.
  */
-export async function joinPreflight(userId: number): Promise<JoinResult> {
-  const [me] = await db
+export async function joinPreflight(
+  userId: number,
+  conn: DbConn = db,
+): Promise<JoinResult> {
+  const [me] = await conn
     .select({ role: users.role })
     .from(users)
     .where(eq(users.id, userId))
@@ -202,7 +214,7 @@ export async function joinPreflight(userId: number): Promise<JoinResult> {
   // Portal operators are not agency employees.
   if (me.role === "admin" || me.role === "staff") return "protected";
 
-  const [agent] = await db
+  const [agent] = await conn
     .select({ id: agents.id, agencyId: agents.agencyId })
     .from(agents)
     .where(eq(agents.userId, userId))
@@ -212,34 +224,148 @@ export async function joinPreflight(userId: number): Promise<JoinResult> {
   return "ok";
 }
 
-export async function joinAgencyWithExistingAccount(params: {
-  userId: number;
-  agencyId: number;
-  role: TeamRole;
-}): Promise<JoinResult> {
-  const pre = await joinPreflight(params.userId);
-  if (pre !== "ok") return pre;
+/**
+ * Bug 6 (plan-build-2026-09-26 §3 A5, founder default §8.3): an independent
+ * agent's own listings move INTO the agency they join.
+ *
+ * Before joining, their panel is scoped on `owner_user_id` (panelScope() in
+ * auth/guards.ts); after, on `agency_id`. Without this UPDATE every listing
+ * they published as an independent would drop out of the panel the moment
+ * they joined — still live on the site, but editable by nobody but /admin.
+ *
+ * Only rows that are theirs AND agency-less move: a listing another agency
+ * already owns is never re-scoped by an invite. `agent_id` is set to their
+ * agents row, so the card and new leads name them within the agency. Leads
+ * already on those listings need no write: /agencia/leads joins a lead to its
+ * listing and applies the same ownership predicate (getPanelLeads()), so they
+ * follow the listing.
+ *
+ * Must run inside the caller's transaction; returns the ids it moved so the
+ * caller can write them to admin_events in that same transaction.
+ */
+export async function moveIndependentListingsToAgency(
+  conn: DbConn,
+  params: { userId: number; agentId: number; agencyId: number },
+): Promise<number[]> {
+  const mine = and(
+    eq(listings.ownerUserId, params.userId),
+    isNull(listings.agencyId),
+  );
+  // Lock the rows so the id list written to the history is exactly the set
+  // the UPDATE touches, even if a publish lands concurrently.
+  const rows = await conn
+    .select({ id: listings.id })
+    .from(listings)
+    .where(mine)
+    .for("update");
+  const ids = rows.map((r) => r.id);
+  if (ids.length === 0) return [];
 
-  const [agent] = await db
-    .select({ id: agents.id })
+  await conn
+    .update(listings)
+    .set({ agencyId: params.agencyId, agentId: params.agentId })
+    .where(and(inArray(listings.id, ids), mine));
+  return ids;
+}
+
+export interface JoinOutcome {
+  result: JoinResult;
+  /** Listings that moved into the agency with them (empty unless "ok"). */
+  movedListingIds: number[];
+}
+
+/**
+ * The membership writes of accepting an invite. Pass the transaction the
+ * invite was claimed in: the claim, the membership, the listing move and the
+ * history line commit together or not at all.
+ */
+export async function joinAgencyWithExistingAccount(
+  params: {
+    userId: number;
+    agencyId: number;
+    role: TeamRole;
+  },
+  conn: DbConn = db,
+): Promise<JoinOutcome> {
+  const refused = (result: JoinResult): JoinOutcome => ({ result, movedListingIds: [] });
+
+  const pre = await joinPreflight(params.userId, conn);
+  if (pre !== "ok") return refused(pre);
+
+  const [agent] = await conn
+    .select({ id: agents.id, name: agents.name })
     .from(agents)
     .where(eq(agents.userId, params.userId))
     .limit(1);
-  if (!agent) return "no_profile";
+  if (!agent) return refused("no_profile");
 
   // Scoped on "still independent" so two open tabs can't fight over it.
-  const [res] = await db
+  const [res] = await conn
     .update(agents)
     .set({ agencyId: params.agencyId })
     .where(and(eq(agents.id, agent.id), isNull(agents.agencyId)));
-  if (res.affectedRows !== 1) return "already_in_agency";
+  if (res.affectedRows !== 1) return refused("already_in_agency");
 
-  await db
+  await conn
     .update(users)
     .set({ role: params.role })
     .where(eq(users.id, params.userId));
 
-  return "ok";
+  const movedListingIds = await moveIndependentListingsToAgency(conn, {
+    userId: params.userId,
+    agentId: agent.id,
+    agencyId: params.agencyId,
+  });
+
+  await recordAdminEvent(
+    params.userId,
+    "agent.join_agency",
+    "agency",
+    params.agencyId,
+    { agentId: agent.id, agentName: agent.name, listingIds: movedListingIds },
+    conn,
+  );
+
+  return { result: "ok", movedListingIds };
+}
+
+/** Thrown inside the transaction so a refused join rolls the claim back. */
+class JoinRefused extends Error {
+  constructor(readonly code: RedeemResult) {
+    super(code);
+  }
+}
+
+export type RedeemResult = JoinResult | "invalid";
+
+/**
+ * Accept an invite with an existing account: claim the invite, join, move the
+ * agent's own listings in (bug 6), write the history line, stamp who redeemed
+ * it — ONE transaction. A join refused after the claim rolls the claim back
+ * instead of burning a single-use link, and no half-joined state (a member
+ * whose listings stayed behind) can be committed.
+ */
+export async function redeemInviteForExistingAccount(params: {
+  inviteId: number;
+  userId: number;
+  agencyId: number;
+  role: TeamRole;
+}): Promise<{ result: RedeemResult; movedListingIds: number[] }> {
+  try {
+    return await db.transaction(async (tx) => {
+      if (!(await consumeInvite(params.inviteId, tx))) throw new JoinRefused("invalid");
+      const outcome = await joinAgencyWithExistingAccount(
+        { userId: params.userId, agencyId: params.agencyId, role: params.role },
+        tx,
+      );
+      if (outcome.result !== "ok") throw new JoinRefused(outcome.result);
+      await stampInviteUser(params.inviteId, params.userId, tx);
+      return outcome;
+    });
+  } catch (e) {
+    if (e instanceof JoinRefused) return { result: e.code, movedListingIds: [] };
+    throw e;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -327,10 +453,13 @@ export async function moveAgentToAgency(params: {
   agencyId: number | null;
   /** Role to apply at the destination; ignored when the row has no login. */
   role: TeamRole;
+  /** The operator making the move — the actor on the admin_events line. */
+  actorUserId: number;
 }): Promise<AdminMoveResult> {
   const [row] = await db
     .select({
       id: agents.id,
+      name: agents.name,
       userId: agents.userId,
       agencyId: agents.agencyId,
       role: users.role,
@@ -352,16 +481,54 @@ export async function moveAgentToAgency(params: {
     return "last_admin";
   }
 
-  await db
-    .update(agents)
-    .set({ agencyId: params.agencyId })
-    .where(eq(agents.id, params.agentId));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(agents)
+      .set({ agencyId: params.agencyId })
+      .where(eq(agents.id, params.agentId));
 
-  if (row.userId != null) {
-    // Nobody administers "independent": that destination is always an agent.
-    const role: TeamRole = params.agencyId == null ? "agent" : params.role;
-    await db.update(users).set({ role }).where(eq(users.id, row.userId));
-  }
+    if (row.userId != null) {
+      // Nobody administers "independent": that destination is always an agent.
+      const role: TeamRole = params.agencyId == null ? "agent" : params.role;
+      await tx.update(users).set({ role }).where(eq(users.id, row.userId));
+
+      // Independent → agency: their own listings join with them (bug 6), the
+      // same rule as accepting an invite.
+      if (row.agencyId == null && params.agencyId != null) {
+        const listingIds = await moveIndependentListingsToAgency(tx, {
+          userId: row.userId,
+          agentId: row.id,
+          agencyId: params.agencyId,
+        });
+        await recordAdminEvent(
+          params.actorUserId,
+          "agent.join_agency",
+          "agency",
+          params.agencyId,
+          { agentId: row.id, agentName: row.name, listingIds },
+          tx,
+        );
+      }
+    }
+  });
 
   return "ok";
+}
+
+/**
+ * Titles for the /agencia "listings that moved in" notice. Scoped on the
+ * agency in the WHERE clause, so an id list read from the history can never
+ * name a listing that has since left (or never belonged to) this agency.
+ */
+export async function listAgencyListingTitles(
+  agencyId: number,
+  ids: number[],
+): Promise<{ id: number; title: string }[]> {
+  if (ids.length === 0) return [];
+  return db
+    .select({ id: listings.id, title: listings.title })
+    .from(listings)
+    .where(and(eq(listings.agencyId, agencyId), inArray(listings.id, ids)))
+    .orderBy(asc(listings.id))
+    .limit(50);
 }

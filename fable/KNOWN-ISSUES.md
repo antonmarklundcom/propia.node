@@ -114,3 +114,11 @@ it; none of them blocks a phase.
   hPanel has `NEXT_PUBLIC_UNDER_CONSTRUCTION=false` while the listings are
   still demo data. Founder decision: set it back to unset/true and rebuild, or
   keep it off once `seed:sample-photos` has marked every demo listing.
+
+- **`db:status` crashes against MySQL 8.4 (found 2026-09-26, build A2).**
+  `readDatabaseStatus()` (`src/lib/ops/migrations.ts`, the `liveCols` loop)
+  reads `r.table_name`, but MySQL 8.x returns `information_schema` column
+  names upper-case (`TABLE_NAME`) unless the query aliases them, so it throws
+  `Cannot read properties of undefined (reading 'toLowerCase')`. Seen on the
+  docker-compose `mysql:8.4` image; production is MariaDB 11.8, where it runs.
+  Fix is `AS table_name` aliases in that SELECT. Not fixed in A2 (out of scope).
