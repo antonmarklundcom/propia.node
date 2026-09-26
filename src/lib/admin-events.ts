@@ -21,7 +21,8 @@ export type AdminEventAction =
   | "user.role"
   | "user.password"
   | "user.delete"
-  | "agent.join_agency";
+  | "agent.join_agency"
+  | "lead.from_email";
 
 export type AdminEventTarget = "lead" | "listing" | "user" | "agency";
 

@@ -1,5 +1,6 @@
 import type { PanelTab } from "@/components/panel/PanelBar";
 import { esPanel } from "@/i18n/es";
+import { esInbox } from "@/i18n/es-e2";
 
 /**
  * The /admin tabs, with the active one flagged and the review count badged.
@@ -17,6 +18,7 @@ export function adminTabs(
     | "users"
     | "listings"
     | "leads"
+    | "inbox"
     | "posts"
     | "import"
     | "operations"
@@ -31,6 +33,8 @@ export function adminTabs(
    * a query for.
    */
   recentLeadCount?: number,
+  /** Unread inbox emails (wave E3), badged on the Correo tab; omitted where not loaded. */
+  unreadEmailCount?: number,
 ): PanelTab[] {
   return [
     {
@@ -49,6 +53,12 @@ export function adminTabs(
       label: esPanel.adminLeadsTitle,
       count: recentLeadCount,
       active: active === "leads",
+    },
+    {
+      href: "/admin/inbox",
+      label: esInbox.admin.tab,
+      count: unreadEmailCount,
+      active: active === "inbox",
     },
     {
       href: "/admin/guias",

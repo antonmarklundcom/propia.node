@@ -25,6 +25,7 @@ import { setPanelListingStatus } from "@/lib/panel-queries";
 import { listingUrl } from "@/lib/urls";
 import { esPanel } from "@/i18n/es";
 import { esA2 } from "@/i18n/es-a2";
+import { handleLeadEmailForm } from "@/lib/inbox-access";
 
 export async function setOwnerListingStatusAction(
   formData: FormData,
@@ -125,4 +126,16 @@ export async function requestRealtorAction(formData: FormData): Promise<void> {
 
   revalidatePath("/mis-avisos");
   redirect("/mis-avisos?msg=realtor_sent");
+}
+
+/**
+ * A lead's email thread (wave E2), from /mis-avisos/consultas — reply or
+ * mark read. Only a lead on the owner's own listings passes
+ * `handleLeadEmailForm()`'s check (`getPanelLeads()` under the owner scope).
+ */
+export async function ownerLeadEmailAction(formData: FormData): Promise<void> {
+  const { user } = await requireOwnerContext();
+  const code = await handleLeadEmailForm(user, formData);
+  revalidatePath("/mis-avisos/consultas");
+  redirect(`/mis-avisos/consultas?msg=${code}`);
 }

@@ -32,6 +32,7 @@ import { emailShareNotice } from "@/lib/lead-emails";
 import { BRAND_NAME } from "@/lib/brand";
 import { siteOrigin } from "@/lib/origin";
 import { recordAdminEvent } from "@/lib/admin-events";
+import { handleLeadEmailForm } from "@/lib/inbox-access";
 
 const FOLLOW_UP: readonly LeadFollowUp[] = ["new", "contacted", "closed"];
 const NOTE_MAX = 2000;
@@ -207,4 +208,17 @@ export async function revokeShareAction(formData: FormData): Promise<void> {
 
   revalidatePath(ROUTE);
   redirect(withMsg(target, leadId ? "share_revoked" : "share_invalid"));
+}
+
+/**
+ * A lead's email thread (wave E2): reply to the buyer, or mark their replies
+ * read. `handleLeadEmailForm()` re-checks the lead against this user's own
+ * visibility (staff: internal lane) before touching it.
+ */
+export async function leadEmailAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const code = await handleLeadEmailForm(user, formData);
+  const target = backTarget(formData);
+  revalidatePath(ROUTE);
+  redirect(`${target}${target.includes("?") ? "&" : "?"}msg=${code}`);
 }

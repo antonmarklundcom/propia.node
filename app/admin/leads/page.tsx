@@ -48,6 +48,11 @@ import { isSuperAdmin } from "@/lib/auth/roles";
 import { updateLeadAction } from "./actions";
 import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
 import { esA3, type ReportReason } from "@/i18n/es-a3";
+import { esInbox } from "@/i18n/es-e2";
+import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
+import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
+import { LeadEmailThread } from "@/components/panel/EmailThread";
+import { leadEmailAction } from "./actions";
 
 /** A listing report (A3): a `question` lead marked `utm.source`. */
 function isReport(lead: AdminLeadRow): boolean {
@@ -182,6 +187,8 @@ const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
   share_none: { text: esPanel.shareFlashNone, error: true },
   share_invalid: { text: esPanel.shareFlashInvalid, error: true },
   share_revoked: { text: esPanel.shareFlashRevoked },
+  ...LEAD_EMAIL_FLASH,
+  converted: { text: esInbox.flash.converted },
 };
 
 /** The bulk share bar's <form>; each card's checkbox points at it by id. */
@@ -264,7 +271,7 @@ export default async function AdminLeadsPage({
   // Which numbers on this page wrote more than once (one GROUP BY), who each
   // lead is shared with, the partners it could be shared with, and — for the
   // super-admin — how those partners answer. One query each for the page.
-  const [repeats, sharesByLead, shareTargets, board, origin] = await Promise.all([
+  const [repeats, sharesByLead, shareTargets, board, origin, threads] = await Promise.all([
     countLeadsByPhoneKey(
       rows.map((r) => leadPhoneKey(r.whatsapp)),
       internalOnly,
@@ -273,7 +280,11 @@ export default async function AdminLeadsPage({
     listShareTargets(),
     isSuperAdmin(user.role) ? listShareBoard() : Promise.resolve([]),
     siteOrigin(),
+    // Email threads (wave E2) of exactly the rows this page lists — the
+    // rows already carry the staff rule, so the threads inherit it.
+    listLeadThreads(rows.map((r) => r.id)),
   ]);
+  const replyAvailable = leadEmailReplyAvailable();
   const partnerPanelUrl = `${origin}/agencia/leads`;
   // Where "Guardar" on a card sends the operator back to.
   const backHref = leadsHref({
@@ -403,6 +414,14 @@ export default async function AdminLeadsPage({
       {lead.message ? (
         <div className="panel-card__body">{lead.message}</div>
       ) : null}
+
+      <LeadEmailThread
+        messages={threads.get(lead.id) ?? []}
+        action={leadEmailAction}
+        hidden={{ leadId: lead.id, back: backHref }}
+        replyTo={leadReplyRecipient(threads.get(lead.id) ?? [], lead.email)}
+        unavailable={replyAvailable ? null : esInbox.thread.replyUnavailable}
+      />
 
       <form action={updateLeadAction} className="panel-form">
         <input type="hidden" name="leadId" value={lead.id} />

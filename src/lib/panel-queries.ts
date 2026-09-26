@@ -831,7 +831,15 @@ export async function countLeadsByType(internalOnly = false): Promise<Record<str
   return out;
 }
 
-export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
+export async function getPanelLeads(
+  scope: EditScope,
+  /**
+   * Narrow to one lead — "may this panel see lead N?" (the email thread's
+   * reply action, wave E2). The same predicate as the list, plus `id =`, so
+   * the answer can never differ from what the page shows.
+   */
+  onlyLeadId?: number,
+): Promise<LeadRow[]> {
   // One join with the ownership predicate applied to the joined listing —
   // the previous shape read every owned listing id into Node first and then
   // sent them back as an IN(...) list, which grows with the agency's inventory.
@@ -862,6 +870,12 @@ export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
     .from(leads)
     // INNER join: a lead with no listing belongs to no agency panel.
     .innerJoin(listings, eq(leads.listingId, listings.id))
-    .where(guard ? and(routed, guard) : routed)
+    .where(
+      and(
+        routed,
+        guard,
+        onlyLeadId !== undefined ? eq(leads.id, onlyLeadId) : undefined,
+      ),
+    )
     .orderBy(desc(leads.createdAt));
 }

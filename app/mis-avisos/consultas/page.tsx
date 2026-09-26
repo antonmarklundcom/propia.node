@@ -8,6 +8,11 @@ import { listingUrl } from "@/lib/urls";
 import { leadReplyHref } from "@/lib/lead-reply";
 import { listingCanonicalOrigin } from "@/lib/origin";
 import { ownerTabs } from "../tabs";
+import { esInbox } from "@/i18n/es-e2";
+import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
+import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
+import { LeadEmailThread } from "@/components/panel/EmailThread";
+import { ownerLeadEmailAction } from "../actions";
 
 export const metadata: Metadata = {
   title: `Consultas`,
@@ -36,8 +41,13 @@ function formatWhen(d: Date): string {
   }).format(d);
 }
 
-export default async function OwnerLeadsPage() {
-  const { user, scope } = await requireOwnerContext();
+export default async function OwnerLeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ msg?: string }>;
+}) {
+  const [{ user, scope }, { msg }] = await Promise.all([requireOwnerContext(), searchParams]);
+  const flash = msg ? LEAD_EMAIL_FLASH[msg] : undefined;
   // Scope-guarded: the WHERE clause joins through the caller's own listings,
   // so this reads their leads and cannot read anyone else's.
   const [leads, origin] = await Promise.all([
@@ -45,6 +55,9 @@ export default async function OwnerLeadsPage() {
     // The door that owns the detail page — the listing link in a reply.
     listingCanonicalOrigin(),
   ]);
+  // Email threads (wave E2) of exactly these leads.
+  const threads = await listLeadThreads(leads.map((l) => l.id));
+  const replyAvailable = leadEmailReplyAvailable();
 
   return (
     <>
@@ -55,6 +68,9 @@ export default async function OwnerLeadsPage() {
         tabs={ownerTabs("leads")}
       />
       <main className="panel site-main">
+        {flash ? (
+          <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p>
+        ) : null}
         <h2 className="panel-section__title">{esOwner.leadsTitle}</h2>
 
         {leads.length === 0 ? (
@@ -103,6 +119,13 @@ export default async function OwnerLeadsPage() {
                 {lead.message ? (
                   <div className="panel-card__body">{lead.message}</div>
                 ) : null}
+                <LeadEmailThread
+                  messages={threads.get(lead.id) ?? []}
+                  action={ownerLeadEmailAction}
+                  hidden={{ leadId: lead.id }}
+                  replyTo={leadReplyRecipient(threads.get(lead.id) ?? [], lead.email)}
+                  unavailable={replyAvailable ? null : esInbox.thread.replyUnavailable}
+                />
               </article>
             ))}
           </>

@@ -1021,3 +1021,99 @@ export const adminEvents = mysqlTable(
     index("idx_created").on(t.createdAt),
   ],
 );
+
+/* ------------------------------------------------------------------ */
+/* Email inbox (plan-build-2026-09-26 §6, waves E2 + E3)               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Every email the portal received (through the Cloudflare Email Worker in
+ * `workers/inbound-email/`) or sent from a panel reply box. E1's machine
+ * mail (confirmations, alerts) is not stored here except the seeker
+ * confirmation of a lead, which opens that lead's thread.
+ *
+ * Two kinds of thread share the table:
+ * - **Lead thread** — `lead_id` set. Replies to `lead-<id>-<sig>@mail.…`
+ *   (the Reply-To of every lead email to a buyer) land here and show under
+ *   the lead in /admin/leads, /agencia/leads and /mis-avisos/consultas, for
+ *   whoever may already see that lead. No new visibility rule: the lead's.
+ * - **Inbox thread** — `lead_id` NULL. hola@ / anton@ on the root domain,
+ *   read in /admin/inbox.
+ *
+ * Addresses are plain comma-separated text, not `json`: production is
+ * MariaDB, which stores `json` as longtext and hands it back to mysql2 as a
+ * string (fable/KNOWN-ISSUES.md). `html_body` is stored already sanitized
+ * (src/lib/inbox-html.ts); the raw HTML is never kept.
+ */
+export const emailMessages = mysqlTable(
+  "email_messages",
+  {
+    id: id(),
+    /** Lower-cased address this message belongs to: the envelope recipient in, the sending mailbox out. */
+    mailbox: varchar("mailbox", { length: 190 }).notNull(),
+    direction: mysqlEnum("direction", ["in", "out"]).notNull(),
+    fromAddress: varchar("from_address", { length: 254 }).notNull(),
+    fromName: varchar("from_name", { length: 190 }),
+    /** Inbound: the sender's Reply-To, when it differs from From — where a reply goes. */
+    replyTo: varchar("reply_to", { length: 254 }),
+    /** Comma-separated addresses. */
+    toAddresses: text("to_addresses"),
+    ccAddresses: text("cc_addresses"),
+    subject: varchar("subject", { length: 500 }).notNull().default(""),
+    textBody: mediumtext("text_body"),
+    /** Sanitized: no scripts, no event handlers, no forms; remote images are blocked again at render time. */
+    htmlBody: mediumtext("html_body"),
+    /** RFC 5322 Message-ID, angle brackets included. NULL for an outbound message whose id the provider did not return. */
+    messageId: varchar("message_id", { length: 512 }),
+    inReplyTo: varchar("in_reply_to", { length: 512 }),
+    /** Space-separated Message-IDs, as the header carries them. */
+    referencesHeader: text("references_header"),
+    /** `lead-<id>` for a lead thread, `m-<hex>` for an inbox thread. URL-safe: /admin/inbox/<thread_key>. */
+    threadKey: varchar("thread_key", { length: 64 }).notNull(),
+    leadId: fk("lead_id"),
+    /**
+     * sha256(mailbox | Message-ID) for inbound mail — what makes a Worker
+     * retry, or the same message routed twice, one row. NULL outbound
+     * (MySQL lets a unique index hold any number of NULLs).
+     */
+    dedupKey: char("dedup_key", { length: 64 }),
+    /** Outbound: the panel user who wrote it. */
+    sentByUserId: fk("sent_by_user_id"),
+    /** Outbound: why the provider did not accept it; NULL = accepted. Never the address or the body. */
+    sendError: varchar("send_error", { length: 120 }),
+    /** Inbound: first opened. NULL = unread. */
+    readAt: datetime("read_at"),
+    archivedAt: datetime("archived_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("uq_dedup").on(t.dedupKey),
+    index("idx_thread").on(t.threadKey, t.createdAt),
+    index("idx_lead").on(t.leadId, t.createdAt),
+    index("idx_mailbox").on(t.mailbox, t.createdAt),
+    // In-Reply-To / References lookups when a reply arrives.
+    index("idx_message_id").on(t.messageId),
+    // The /admin unread badge.
+    index("idx_unread").on(t.direction, t.readAt),
+  ],
+);
+
+/**
+ * Attachments of an inbound email. The bytes live in R2 (under a random key,
+ * never rendered as a public URL — /admin/inbox/adjunto/[id] streams them to
+ * a user who may see the message). `r2_key` NULL = metadata only: R2 was not
+ * configured, or the file was above the Worker's inline size cap.
+ */
+export const emailAttachments = mysqlTable(
+  "email_attachments",
+  {
+    id: id(),
+    emailId: fk("email_id").notNull(),
+    filename: varchar("filename", { length: 255 }).notNull(),
+    contentType: varchar("content_type", { length: 127 }).notNull(),
+    sizeBytes: int("size_bytes", { unsigned: true }).notNull(),
+    r2Key: varchar("r2_key", { length: 255 }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("idx_email").on(t.emailId)],
+);

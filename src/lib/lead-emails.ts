@@ -14,6 +14,8 @@
 import "server-only";
 import { getDictionary, type Locale } from "@/i18n";
 import { renderEmail, sendEmail, type EmailResult } from "@/lib/email";
+import { leadReplyAddress } from "@/lib/inbox-address";
+import { recordLeadConfirmation } from "@/lib/inbox";
 
 export async function emailOwnerNewLead(p: {
   to: string;
@@ -46,6 +48,13 @@ export async function emailSeekerConfirmation(p: {
   listingTitle: string | null;
   /** Absolute canonical URL of the listing, when the enquiry had one. */
   listingUrl: string | null;
+  /**
+   * The lead this confirms (wave E2). Its signed `lead-<id>-<sig>@` address
+   * becomes the Reply-To — once inbound mail is configured — so a buyer who
+   * answers lands in that lead's thread, and the sent message is recorded
+   * there as the thread's first line.
+   */
+  leadId: number;
 }): Promise<EmailResult> {
   const t = getDictionary(p.locale).email;
   const { html, text } = renderEmail({
@@ -54,7 +63,16 @@ export async function emailSeekerConfirmation(p: {
     cta: p.listingUrl ? { label: t.seekerCta, url: p.listingUrl } : undefined,
     footer: t.footerAutomatic(p.brand),
   });
-  return sendEmail({ to: p.to, subject: t.seekerSubject(p.brand), html, text, fromName: p.brand });
+  const subject = t.seekerSubject(p.brand);
+  const replyTo = leadReplyAddress(p.leadId) ?? undefined;
+  const result = await sendEmail({ to: p.to, subject, html, text, fromName: p.brand, replyTo });
+  if (result.sent && replyTo) {
+    // The thread's context, not the record: a failure here loses nothing.
+    await recordLeadConfirmation({ leadId: p.leadId, to: p.to, fromName: p.brand, subject, text, html, result }).catch(
+      () => {},
+    );
+  }
+  return result;
 }
 
 /**

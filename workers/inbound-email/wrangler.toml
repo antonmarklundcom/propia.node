@@ -1,0 +1,20 @@
+# Cloudflare Email Worker for the portal's inbox (plan-build-2026-09-26 §6,
+# waves E2 + E3). Deploy steps: README.md in this folder.
+name = "inbound-email"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+workers_dev = false
+
+[vars]
+# Where parsed messages are POSTed. Only ever the marketplace primary.
+INBOUND_URL = "https://inmobiliaria.com.py/api/inbound-email"
+
+# Secrets — set with `npx wrangler secret put <NAME>`, never written here:
+#   INBOUND_EMAIL_SECRET  the same value as INBOUND_EMAIL_SECRET in hPanel
+#   FALLBACK_FORWARD      a verified Email Routing destination (the founder's
+#                         Gmail): every message the app does not accept goes there
+#   COPY_TO               optional: a copy of EVERY message also goes here (keep
+#                         the Gmail safety net while the inbox is new)
+
+[observability]
+enabled = true

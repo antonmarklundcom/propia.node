@@ -16,7 +16,11 @@ import {
   REALTOR_STATES,
   type PanelViewer,
 } from "@/lib/lead-assignments";
-import { setShareStateAction } from "./actions";
+import { leadEmailAction, setShareStateAction } from "./actions";
+import { esInbox } from "@/i18n/es-e2";
+import { leadReplyRecipient, listLeadThreads, type InboxMessage } from "@/lib/inbox";
+import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
+import { LeadEmailThread } from "@/components/panel/EmailThread";
 
 export const metadata: Metadata = {
   title: `Consultas`,
@@ -48,7 +52,22 @@ function formatWhen(d: Date): string {
 const FLASH: Record<string, { text: string; error?: boolean }> = {
   share_saved: { text: esPanel.sharedLeadSaved },
   share_invalid: { text: esPanel.sharedLeadInvalid, error: true },
+  ...LEAD_EMAIL_FLASH,
 };
+
+/** A lead's email thread (wave E2) under its card; nothing when there is none and no way to start one. */
+function EmailBlock({ leadId, email, threads }: { leadId: number; email: string | null; threads: Map<number, InboxMessage[]> }) {
+  const messages = threads.get(leadId) ?? [];
+  return (
+    <LeadEmailThread
+      messages={messages}
+      action={leadEmailAction}
+      hidden={{ leadId }}
+      replyTo={leadReplyRecipient(messages, email)}
+      unavailable={leadEmailReplyAvailable() ? null : esInbox.thread.replyUnavailable}
+    />
+  );
+}
 
 export default async function AgencyLeadsPage({
   searchParams,
@@ -105,6 +124,8 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
   if (leads.length === 0) {
     return <p className="panel-empty">{esPanel.agencyLeadsEmpty}</p>;
   }
+  // Threads of exactly the leads this list shows (wave E2).
+  const threads = await listLeadThreads(leads.map((l) => l.id));
 
   return (
     <>
@@ -143,6 +164,7 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
           {lead.message ? (
             <div className="panel-card__body">{lead.message}</div>
           ) : null}
+          <EmailBlock leadId={lead.id} email={lead.email} threads={threads} />
         </article>
       ))}
     </>
@@ -158,6 +180,7 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
 async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: string }) {
   const shared = await getSharedLeads(viewer);
   if (shared.length === 0) return null;
+  const threads = await listLeadThreads(shared.map((l) => l.id));
 
   return (
     <>
@@ -207,6 +230,7 @@ async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: st
           {lead.message ? (
             <div className="panel-card__body">{lead.message}</div>
           ) : null}
+          <EmailBlock leadId={lead.id} email={lead.email} threads={threads} />
 
           <form action={setShareStateAction} className="panel-form">
             <input type="hidden" name="assignmentId" value={lead.assignmentId} />

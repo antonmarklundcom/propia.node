@@ -515,6 +515,7 @@ export const esPanel = {
     "user.role": "Cambió un rol",
     "user.password": "Puso una contraseña nueva",
     "user.delete": "Borró un usuario",
+    "lead.from_email": "Convirtió un email en consulta",
   } as Record<string, string>,
   staffCannotPublish:
     "Publicar y borrar definitivamente quedan para el superadmin. Podés dejarlo en revisión.",

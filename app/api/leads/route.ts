@@ -411,6 +411,7 @@ export async function POST(req: NextRequest) {
             brand: door.brand,
             listingTitle,
             listingUrl: payload.listing?.url ?? null,
+            leadId,
           })
         : null,
     ]);

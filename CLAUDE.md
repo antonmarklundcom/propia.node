@@ -314,7 +314,29 @@ default, `--dry` first). It records itself as a revertible import job.
     unverified), partner "a lead was shared with you". Copy is `esEmail` /
     `enEmail`. Check with `npm run email:test -- --to <addr> [--dry]`.
     **Not built:** password reset (migration + founder decision), price alerts,
-    expiry reminders, E2 threaded replies, E3 inbox.
+    expiry reminders.
+15. **Inbound email — E2 lead threads + E3 `/admin/inbox` (2026-09-26,
+    migration 0018, `docs/log/e2e3.md`).** A Cloudflare Email Worker
+    (`workers/inbound-email/`, deployed by hand with wrangler — its README has
+    the steps) POSTs each message, HMAC-signed with `INBOUND_EMAIL_SECRET`, to
+    `/api/inbound-email`; anything the app does not 2xx goes to the Worker's
+    `FALLBACK_FORWARD`, so no mail is lost. `src/lib/inbox.ts` is the only
+    module on `email_messages` / `email_attachments`. **A lead thread shows to
+    exactly who may see the lead** — `userMaySeeLead()` in
+    `src/lib/inbox-access.ts` is the page predicates asked for one id
+    (`getPanelLeads(scope, id)`, `isLeadSharedWithPanel()`, staff = internal);
+    do not add a visibility rule there. The one new rule is the inbox's:
+    staff read `SHARED_MAILBOXES` (hola@, contacto@) only, the super-admin all.
+    Buyer emails carry Reply-To `lead-<id>-<sig>@mail.…` (signed, so a guessed
+    `lead-123@` lands unthreaded in the inbox) **only while
+    `INBOUND_EMAIL_SECRET` is set** — never set it before the Worker and the
+    Email Routing catch-all exist. Received HTML is sanitized at storage
+    (`src/lib/inbox-html.ts`) and shown only in a sandboxed `srcdoc` frame,
+    remote images off by default. Attachments: private R2 (`R2_INBOX_BUCKET`
+    recommended), streamed by `/api/email-attachment/[id]` after the same
+    visibility check, never a public URL. Sending as hola@ needs
+    `EMAIL_ROOT_SENDING=true` after the founder onboards the root domain.
+    `npm run verify:inbox` (pure) is in `verify:local` and the pre-push hook.
 
 ## Launch track — state as of 2026-09-22
 
@@ -589,8 +611,9 @@ shared quota on a deploy path that does not use it.
   — explicit yes first.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
-  `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`.
-  Same thing by hand: `npm run verify:local`. The last five are pure — no database, no network —
+  `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
+  `npm run verify:inbox`.
+  Same thing by hand: `npm run verify:local`. The last six are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath
@@ -631,6 +654,7 @@ that section no longer lists everything:
 | `drizzle/0015_broad_kulan_gath.sql` | the `staff` member of `users.role` (#171) | **yes, 2026-09-23** |
 | `drizzle/0016_light_post.sql` | `leads.status`, `leads.note`, lead types `landlord` / `question` (#210) | **no — apply before the PR that carries it deploys** |
 | `drizzle/0017_mushy_madrox.sql` | the `lead_assignments` and `admin_events` tables (lead sharing, history) | **no — same** |
+| `drizzle/0018_hard_deathstrike.sql` | the `email_messages` and `email_attachments` tables (E2/E3 inbox) | **no — apply before the PR that carries it deploys** |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a
