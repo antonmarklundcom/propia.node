@@ -56,6 +56,12 @@ const nextConfig: NextConfig = {
   // Shared-hosting friendly: standalone output keeps the deployed footprint small.
   output: "standalone",
   experimental: {
+    // Next sizes the image optimizer's sharp thread pool from the host CPU count;
+    // on Hostinger shared hosting every thread counts against the account's 200 Max Processes, so pin it to 1.
+    imgOptConcurrency: 1,
+    // Next defaults build workers to os.cpus().length - 1, which on Hostinger is the physical host core count;
+    // each worker is a process against the shared 200 limit.
+    cpus: 1,
     /**
      * The import upload posts the spreadsheet itself to a server action, twice
      * — once to preview, once to commit — so the bytes the operator approved
