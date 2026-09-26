@@ -52,6 +52,13 @@ import {
   shareLeads,
 } from "../src/lib/lead-assignments";
 import { verifyPassword } from "../src/lib/auth/password";
+import {
+  getEditableAgent,
+  listEditableAgents,
+  updateAgentProfile,
+  type AgentEditor,
+  type AgentProfileEdit,
+} from "../src/lib/agent-profile-edit";
 
 const url = process.env.DATABASE_URL ?? "";
 if (!/@(localhost|127\.0\.0\.1|mysql)[:/]/.test(url)) {
@@ -579,6 +586,148 @@ async function main() {
       (await getOwnAgentProfile(agencyOwner.userId))?.name ===
         "Verify Agency Owner",
     );
+
+    /* ---------------------------------------------------------------- */
+    /* Agent profile editing — who may write which agents row (A4)      */
+    /* ---------------------------------------------------------------- */
+    /**
+     * `agentEditWhere()` is the whole boundary: an agent edits only their own
+     * row, an agency admin also their own agency's agents, nobody else's. A
+     * colleague joins the first agency the way an accepted invite leaves them:
+     * an agents row with that agency_id and the `agent` role.
+     */
+    const colleague = await registerAccount({
+      kind: "independent",
+      name: "Verify Colleague",
+      email: mail("colleague"),
+      password: "secreto123",
+      whatsapp: null,
+      agencyName: null,
+    });
+    check("colleague signup succeeds", colleague.ok);
+    if (!colleague.ok) return;
+    createdUserIds.push(colleague.userId);
+    await db.update(agents).set({ agencyId }).where(eq(agents.userId, colleague.userId));
+    const [colleagueAgent] = await db.select().from(agents).where(eq(agents.userId, colleague.userId));
+    const [ownerAgent] = await db.select().from(agents).where(eq(agents.userId, agencyOwner.userId));
+
+    const [city] = await db
+      .select({ slug: locations.slug })
+      .from(locations)
+      .where(eq(locations.level, "ciudad"))
+      .limit(1);
+    const citySlug = city?.slug ?? "";
+
+    const adminEd: AgentEditor = { userId: agencyOwner.userId, role: "agency_admin", agencyId };
+    const colleagueEd: AgentEditor = { userId: colleague.userId, role: "agent", agencyId };
+    const indepEd: AgentEditor = { userId: independent.userId, role: "agent", agencyId: null };
+    const otherAdminEd: AgentEditor = { userId: otherOwner.userId, role: "agency_admin", agencyId: otherAgencyId };
+    // An agency_admin with no agency (a company account later unlinked).
+    const looseAdminEd: AgentEditor = { userId: independent.userId, role: "agency_admin", agencyId: null };
+
+    const edit = (over: Partial<AgentProfileEdit>): AgentProfileEdit => ({
+      name: "Verify Profile",
+      whatsapp: "",
+      photoUrl: "",
+      bio: "",
+      licenseNo: "",
+      yearsActive: "",
+      zones: [],
+      ...over,
+    });
+    const nameOf = async (agentId: number) =>
+      (await db.select({ name: agents.name }).from(agents).where(eq(agents.id, agentId)))[0]?.name;
+
+    const ownSave = await updateAgentProfile(colleagueEd, colleagueAgent.id, edit({
+      name: "Verify Colleague Edited",
+      bio: "Vendo casas en Asunción.",
+      licenseNo: "MAT-123",
+      yearsActive: "7",
+      zones: [citySlug, "no-es-una-ciudad", citySlug],
+    }));
+    const [colleagueAfter] = await db.select().from(agents).where(eq(agents.id, colleagueAgent.id));
+    check("agent edits their own profile", ownSave.ok && colleagueAfter.name === "Verify Colleague Edited");
+    check(
+      "bio, licence and years are stored",
+      colleagueAfter.bio === "Vendo casas en Asunción." &&
+        colleagueAfter.licenseNo === "MAT-123" &&
+        colleagueAfter.yearsActive === 7,
+    );
+    const storedZones = (await getEditableAgent(colleagueEd, colleagueAgent.id))?.zones ?? [];
+    check(
+      "zones keep real ciudad slugs only, deduplicated",
+      citySlug !== "" && storedZones.length === 1 && storedZones[0] === citySlug,
+      JSON.stringify(storedZones),
+    );
+
+    check(
+      "agent cannot edit their agency admin's profile",
+      !(await updateAgentProfile(colleagueEd, ownerAgent.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(ownerAgent.id)) !== "Hijacked",
+    );
+    check(
+      "agent cannot read a colleague's profile for editing",
+      (await getEditableAgent(colleagueEd, ownerAgent.id)) === null,
+    );
+    check(
+      "agent cannot edit another agency's agent",
+      !(await updateAgentProfile(colleagueEd, otherAgentRow.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(otherAgentRow.id)) !== "Hijacked",
+    );
+    check(
+      "independent cannot edit an agency's agent",
+      !(await updateAgentProfile(indepEd, colleagueAgent.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(colleagueAgent.id)) !== "Hijacked",
+    );
+
+    const adminSave = await updateAgentProfile(adminEd, colleagueAgent.id, edit({
+      name: "Verify Colleague By Admin",
+      zones: [citySlug],
+    }));
+    check(
+      "agency admin edits their own agency's agent",
+      adminSave.ok && (await nameOf(colleagueAgent.id)) === "Verify Colleague By Admin",
+    );
+    check(
+      "another agency's admin cannot edit that agent",
+      !(await updateAgentProfile(otherAdminEd, colleagueAgent.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(colleagueAgent.id)) === "Verify Colleague By Admin",
+    );
+    check(
+      "agency admin cannot edit an independent agent",
+      !(await updateAgentProfile(adminEd, indepAgent.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(indepAgent.id)) !== "Hijacked",
+    );
+    check(
+      "an agency_admin with no agency reaches only their own row",
+      (await listEditableAgents(looseAdminEd)).every((a) => a.userId === independent.userId),
+    );
+
+    const adminList = (await listEditableAgents(adminEd)).map((a) => a.id);
+    check(
+      "admin's editable list is exactly their agency's agents",
+      adminList.includes(ownerAgent.id) &&
+        adminList.includes(colleagueAgent.id) &&
+        !adminList.includes(otherAgentRow.id) &&
+        !adminList.includes(indepAgent.id),
+      JSON.stringify(adminList),
+    );
+    const colleagueList = (await listEditableAgents(colleagueEd)).map((a) => a.id);
+    check(
+      "agent's editable list is only their own row",
+      colleagueList.length === 1 && colleagueList[0] === colleagueAgent.id,
+      JSON.stringify(colleagueList),
+    );
+
+    const badYears = await updateAgentProfile(colleagueEd, colleagueAgent.id, edit({ yearsActive: "200" }));
+    check("years out of range refused", !badYears.ok && badYears.error === "years");
+    const badPhoto = await updateAgentProfile(colleagueEd, colleagueAgent.id, edit({ photoUrl: "http://127.0.0.1/x.png" }));
+    check("unsafe photo URL refused", !badPhoto.ok && badPhoto.error === "photo");
+    const [slugAfter] = await db
+      .select({ slug: agents.slug })
+      .from(agents)
+      .where(eq(agents.id, colleagueAgent.id));
+    check("agent slug is never rewritten on edit", slugAfter.slug === colleagueAgent.slug);
 
     const collision = await updateOwnAccount(independent.userId, {
       name: "Verify Independent",

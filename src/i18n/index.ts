@@ -106,6 +106,8 @@ import {
   enSearchBar,
   enVender,
 } from "./en";
+import { esA4 } from "./es-a4";
+import { enA4 } from "./en-a4";
 
 export type Locale = "es" | "en";
 
@@ -159,6 +161,7 @@ const esDictionary = {
   vender: esVender,
   contactForm: esContactForm,
   leadForm: esLeadForm,
+  a4: esA4,
 } as const;
 
 /**
@@ -239,6 +242,7 @@ const enDictionary = {
   vender: enVender,
   contactForm: enContactForm,
   leadForm: enLeadForm,
+  a4: enA4,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

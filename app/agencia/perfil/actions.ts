@@ -14,14 +14,16 @@ import { createSession } from "@/lib/auth/session";
 import {
   updateAgencyProfile,
   updateOwnAccount,
-  updateOwnAgentProfile,
 } from "@/lib/profile-queries";
+import { updateAgentProfile } from "@/lib/agent-profile-edit";
 
-function finish(msg: string): never {
+function finish(msg: string, agentId: number | null = null): never {
   revalidatePath("/agencia/perfil");
   revalidatePath("/agencia");
   revalidateDirectory();
-  redirect(`/agencia/perfil?msg=${msg}`);
+  redirect(
+    `/agencia/perfil?${agentId != null ? `agente=${agentId}&` : ""}msg=${msg}`,
+  );
 }
 
 export async function updateAgencyProfileAction(
@@ -40,17 +42,48 @@ export async function updateAgencyProfileAction(
   finish(ok ? "agency_saved" : "invalid");
 }
 
+/**
+ * Save a public agent profile. The target row is the form's `agentId`, but the
+ * editor is the session: `updateAgentProfile()` scopes the write with
+ * `agentEditWhere()`, so a forged id outside the caller's reach (another
+ * agency's agent, or a colleague's when the caller is not the agency admin)
+ * matches nothing and comes back `not_found`.
+ */
 export async function updateAgentProfileAction(
   formData: FormData,
 ): Promise<void> {
-  const { user } = await requireAgencyContext();
+  const { user, agencyId } = await requireAgencyContext();
+  const editor = { userId: user.id, role: user.role, agencyId };
 
-  const ok = await updateOwnAgentProfile(user.id, {
+  const agentId = Number(formData.get("agentId"));
+  if (!Number.isInteger(agentId) || agentId <= 0) finish("invalid");
+
+  const result = await updateAgentProfile(editor, agentId, {
     name: String(formData.get("name") ?? ""),
     photoUrl: String(formData.get("photoUrl") ?? ""),
     whatsapp: String(formData.get("whatsapp") ?? ""),
+    bio: String(formData.get("bio") ?? ""),
+    licenseNo: String(formData.get("licenseNo") ?? ""),
+    yearsActive: String(formData.get("yearsActive") ?? ""),
+    zones: formData.getAll("zones").map((z) => String(z)),
   });
-  finish(ok ? "saved" : "invalid");
+
+  // Only picks the flash text and where to land — never a permission.
+  const own = formData.get("own") === "1";
+  const msg = result.ok
+    ? own
+      ? "saved"
+      : "agent_saved"
+    : result.error === "photo"
+      ? "photo"
+      : result.error === "years"
+        ? "years"
+        : result.error === "not_found"
+          ? "agent_not_found"
+          : "invalid";
+  // A colleague's profile stays open after the save; a not-found one does not.
+  const reopen = !own && (result.ok || result.error !== "not_found");
+  finish(msg, reopen ? agentId : null);
 }
 
 export async function updateAccountAction(formData: FormData): Promise<void> {

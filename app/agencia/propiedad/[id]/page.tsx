@@ -5,6 +5,8 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { ListingForm } from "@/components/panel/ListingForm";
 import { PhotoManager } from "@/components/panel/PhotoManager";
 import { ListingStats } from "@/components/panel/ListingStats";
+import { ListingQualityCheck } from "@/components/panel/ListingQualityCheck";
+import { getListingMapPosition } from "@/lib/listing-quality-server";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import {
   agencyStatusOptions,
@@ -70,13 +72,14 @@ export default async function AgencyListingEditPage({
   // own rows (panelScope) — so this page serves both without a special case.
   const scope: EditScope = panelScope(ctx);
 
-  const [listing, locations, images, daily, stats] = await Promise.all([
+  const [listing, locations, images, daily, stats, mapPosition] = await Promise.all([
     getEditableListing(listingId, scope),
     listPublishLocations(),
     // Same scope the listing was loaded with — an agency reaches only its own.
     listListingImages(listingId, scope),
     getListingDailyViews(listingId, scope),
     getPanelListingStats(scope),
+    getListingMapPosition(listingId, scope),
   ]);
   if (!listing) notFound();
 
@@ -124,6 +127,20 @@ export default async function AgencyListingEditPage({
             locations={locations}
             statuses={agencyStatusOptions(listing.status)}
             action={agencyUpdateListingAction}
+            beforeSubmit={
+              <ListingQualityCheck
+                photoCount={images.length}
+                map={mapPosition ?? "none"}
+                initial={{
+                  title: listing.title,
+                  description: listing.descriptionEs ?? "",
+                  priceAmount: listing.priceAmount,
+                  propertyType: listing.propertyType,
+                  areaM2: listing.areaM2,
+                  landM2: listing.landM2,
+                }}
+              />
+            }
           />
         </article>
 
