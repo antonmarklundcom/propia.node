@@ -109,6 +109,8 @@ import {
   enVender,
   enEmail,
 } from "./en";
+import { esA3 } from "./es-a3";
+import { enA3 } from "./en-a3";
 import { esA2 } from "./es-a2";
 import { enA2 } from "./en-a2";
 import { enA5 } from "./en-a5";
@@ -169,6 +171,7 @@ const esDictionary = {
   vender: esVender,
   contactForm: esContactForm,
   leadForm: esLeadForm,
+  a3: esA3,
   a2: esA2,
   agentJoin: esA5,
   a4: esA4,
@@ -254,6 +257,7 @@ const enDictionary = {
   vender: enVender,
   contactForm: enContactForm,
   leadForm: enLeadForm,
+  a3: enA3,
   a2: enA2,
   agentJoin: enA5,
   a4: enA4,

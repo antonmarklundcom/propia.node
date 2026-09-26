@@ -14,7 +14,7 @@
  * site key, and several doors may one day share one site.
  */
 import "server-only";
-import { asc, eq, gte } from "drizzle-orm";
+import { and, asc, eq, gte } from "drizzle-orm";
 import { db } from "@/db";
 import { leads, listings } from "@/db/schema";
 import { CANONICAL_HOST, VERTICALS } from "@/config/verticals";
@@ -26,6 +26,7 @@ import {
   type LeadPayload,
 } from "@/lib/crm";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
+import { isNotReportLead } from "@/lib/report-queries";
 
 const PACE_MS = 1_100;
 
@@ -94,7 +95,8 @@ export async function runCrmBackfill(opts: CrmBackfillOptions): Promise<OpsResul
       })
       .from(leads)
       .leftJoin(listings, eq(listings.id, leads.listingId))
-      .where(opts.fromId ? gte(leads.id, opts.fromId) : undefined)
+      // Listing reports (A3) are not sales leads; the live path never sends them.
+      .where(and(opts.fromId ? gte(leads.id, opts.fromId) : undefined, isNotReportLead()))
       .orderBy(asc(leads.id))
       .limit(opts.limit && opts.limit > 0 ? Math.floor(opts.limit) : 100_000);
 

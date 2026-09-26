@@ -181,7 +181,7 @@ export default async function AgentProfilePage({ params }: Params) {
               <h1 className="dir-profile__name">
                 {agent.name}
                 {agent.isVerified && (
-                  <span className="dir-profile__verified">{d.directory.listVerified}</span>
+                  <Link className="dir-profile__verified" href="/como-funciona#verificado" title={d.a3.verified.linkLabel}>{d.directory.listVerified}</Link>
                 )}
               </h1>
               <p className="dir-profile__meta">
@@ -255,9 +255,9 @@ export default async function AgentProfilePage({ params }: Params) {
             <h1 className="agent-profile__name">
               {agent.name}
               {agent.isVerified && (
-                <span className="agent-profile__verified" title={d.agentProfile.verified}>
+                <Link className="agent-profile__verified" href="/como-funciona#verificado" title={d.a3.verified.linkLabel} aria-label={d.a3.verified.linkLabel}>
                   <Glyph name="check" />
-                </span>
+                </Link>
               )}
             </h1>
             <p className="agent-profile__meta">

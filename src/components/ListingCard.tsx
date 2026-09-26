@@ -7,6 +7,7 @@ import { dict, currentLocale } from "@/i18n/server";
 import { numberLocaleFor } from "@/i18n";
 import { currentVertical } from "@/lib/vertical-context";
 import { showCuota, cardVariant, secondaryAreaUnit } from "@/design/sections";
+import { CardSaveActions } from "@/components/SavedListings";
 
 /**
  * Category-grid / homepage card, in the editorial system: **the photo is the
@@ -21,11 +22,26 @@ import { showCuota, cardVariant, secondaryAreaUnit } from "@/design/sections";
  * "Foto próximamente" stays on top of it.
  */
 export async function ListingCard({ card }: { card: Card }) {
+  // Save / compare sit under the card, never inside its <Link>: a button
+  // nested in an anchor is invalid HTML and steals the card's click (A3).
+  const locale = await currentLocale();
+  return (
+    <div className="listing-card-wrap">
+      <ListingCardBody card={card} />
+      <CardSaveActions publicId={card.publicId} locale={locale} />
+    </div>
+  );
+}
+
+async function ListingCardBody({ card }: { card: Card }) {
   const [t, locale, vertical] = await Promise.all([
     dict().then((d) => d.card),
     currentLocale(),
     currentVertical(),
   ]);
+  // Tooltip on the verified mark: the card is one <Link>, so it cannot also
+  // link to the explainer on /como-funciona#verificado (A3, Seeker 9).
+  const verifiedTip = (await dict()).a3.verified.points[0].text;
   // English requests fall back to the Spanish title when cron:translate
   // hasn't produced titleEn yet — never render blank.
   const title = locale === "en" ? (card.titleEn ?? card.title) : card.title;
@@ -61,6 +77,7 @@ export async function ListingCard({ card }: { card: Card }) {
         specs={specs}
         numberLocale={numberLocale}
         t={t}
+        verifiedTip={verifiedTip}
       />
     );
   }
@@ -74,6 +91,7 @@ export async function ListingCard({ card }: { card: Card }) {
         specs={specs}
         area={area}
         t={t}
+        verifiedTip={verifiedTip}
       />
     );
   }
@@ -106,7 +124,7 @@ export async function ListingCard({ card }: { card: Card }) {
         {(card.isVerified || isFeatured) && (
           <span className="listing-card__flags">
             {card.isVerified && (
-              <span className="listing-card__flag listing-card__flag--verified">
+              <span className="listing-card__flag listing-card__flag--verified" title={verifiedTip}>
                 {t.verified}
               </span>
             )}
@@ -161,6 +179,7 @@ function FramedPillCard({
   specs,
   numberLocale,
   t,
+  verifiedTip,
 }: {
   card: Card;
   title: string;
@@ -170,6 +189,7 @@ function FramedPillCard({
   specs: string[];
   numberLocale: string;
   t: Awaited<ReturnType<typeof dict>>["card"];
+  verifiedTip: string;
 }) {
   return (
     <Link className="listing-card listing-card--framed" href={listingUrl(card)}>
@@ -218,7 +238,7 @@ function FramedPillCard({
         {(card.isVerified || card.foreignExposure || isFeatured) && (
           <div className="listing-card__pill-row">
             {card.isVerified && (
-              <span className="listing-card__pill listing-card__pill--verified">
+              <span className="listing-card__pill listing-card__pill--verified" title={verifiedTip}>
                 {t.verified}
               </span>
             )}
@@ -258,6 +278,7 @@ function FramedFactCard({
   specs,
   area,
   t,
+  verifiedTip,
 }: {
   card: Card;
   title: string;
@@ -265,6 +286,7 @@ function FramedFactCard({
   specs: string[];
   area: string | number | null;
   t: Awaited<ReturnType<typeof dict>>["card"];
+  verifiedTip: string;
 }) {
   const areaNum = area != null ? Number(area) : null;
   // US$/m² is a purchase-price figure — dividing a monthly rent by area
@@ -291,7 +313,7 @@ function FramedFactCard({
           {t.operationBadge[card.operation]}
         </span>
         {card.isVerified && (
-          <span className="listing-card__badge listing-card__badge--fact listing-card__badge--verified">
+          <span className="listing-card__badge listing-card__badge--fact listing-card__badge--verified" title={verifiedTip}>
             {t.verified}
           </span>
         )}

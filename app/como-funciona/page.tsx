@@ -3,6 +3,7 @@ import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
+import { dict } from "@/i18n/server";
 import {
   CtaBand,
   FeatureGrid,
@@ -88,6 +89,10 @@ const RENT_TIPS = [
 
 export default async function ComoFuncionaPage() {
   const origin = await siteOrigin();
+  // What the "Verificado" mark means (A3, Seeker 9) — every verified badge
+  // links to #verificado. From the dictionary, so it reads in the door's
+  // language even though the rest of this page is still Spanish-only.
+  const verified = (await dict()).a3.verified;
 
   return (
     <main>
@@ -129,6 +134,21 @@ export default async function ComoFuncionaPage() {
         subtitle="Para propietarios particulares. Si sos inmobiliaria o agente, tenés cuenta profesional con carga masiva y perfil público."
       >
         <StepList steps={SELL_STEPS} />
+      </Section>
+
+      <Section
+        id="verificado"
+        tone="muted"
+        title={verified.sectionTitle}
+        subtitle={verified.sectionSubtitle}
+      >
+        <FeatureGrid
+          items={verified.points.map((p, i) => ({
+            icon: i === 2 ? "doc" : "check",
+            title: p.title,
+            text: p.text,
+          }))}
+        />
       </Section>
 
       <CtaBand

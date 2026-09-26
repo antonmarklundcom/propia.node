@@ -28,6 +28,7 @@ export function ContactForm({
   prefillMessage,
   variant = "card",
   locale = "es",
+  recipients,
 }: {
   id?: string;
   /** Omit for non-listing inquiries (e.g. a project page). */
@@ -41,6 +42,13 @@ export function ContactForm({
    * for the two existing call sites that don't pass it yet, both of which
    * only ever render on the Spanish door today. */
   locale?: Locale;
+  /**
+   * Who a lead on this listing can reach, for the "who receives it" line
+   * after sending (A3, Seeker 4). Which one applies comes back from
+   * /api/leads as `routedTo` — the same decision the row was stored with —
+   * so this only supplies the names. Omit it and no line is shown.
+   */
+  recipients?: { agent: string | null; agency: string | null; brand: string };
 }) {
   const d = getDictionary(locale);
   const t = d.contactForm;
@@ -52,6 +60,7 @@ export function ContactForm({
   const [state, setState] = useState<"idle" | "sending" | "sent" | "fallback" | "error">(
     "idle",
   );
+  const [routedTo, setRoutedTo] = useState<string | null>(null);
 
   function toggleQuestion(q: string) {
     setQuestions((prev) => {
@@ -84,6 +93,10 @@ export function ContactForm({
         }),
       });
       captured = res.ok;
+      if (res.ok) {
+        const body = (await res.json().catch(() => null)) as { routedTo?: unknown } | null;
+        setRoutedTo(typeof body?.routedTo === "string" ? body.routedTo : null);
+      }
     } catch {
       // Network failure — handled below; WhatsApp may still reach the seller.
     }
@@ -176,6 +189,12 @@ export function ContactForm({
       </button>
 
       {state === "fallback" && <p className="contact-form__fallback" role="status">{t.fallbackText}</p>}
+      {state === "sent" && recipients && routedTo && (
+        <p className="contact-form__recipient" role="status">
+          {recipientLine(d.a3.enquiry, routedTo, recipients)}
+          {waHref && <> {d.a3.enquiry.waFallback}</>}
+        </p>
+      )}
       {(state === "sent" || state === "fallback") && waHref && (
         <a
           className="contact-form__submit contact-form__submit--wa"
@@ -223,6 +242,24 @@ export function ContactForm({
       </div>
     </form>
   );
+}
+
+/** The success line for the lane /api/leads chose. No response time: none is promised. */
+function recipientLine(
+  t: ReturnType<typeof getDictionary>["a3"]["enquiry"],
+  routedTo: string,
+  who: { agent: string | null; agency: string | null; brand: string },
+): string {
+  switch (routedTo) {
+    case "agent":
+      return who.agent ? t.toAgent(who.agent) : t.toAgentUnnamed;
+    case "agency":
+      return who.agency ? t.toAgency(who.agency) : t.toAgencyUnnamed;
+    case "owner":
+      return t.toOwner;
+    default:
+      return t.toInternal(who.brand);
+  }
 }
 
 function readUtm(): Record<string, string> {

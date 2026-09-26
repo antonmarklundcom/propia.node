@@ -620,6 +620,8 @@ export async function listAllLeads(params: {
   status?: LeadFollowUp;
   /** A `leadPhoneKey()` — every lead from the same WhatsApp number. */
   phoneKey?: string;
+  /** Listing reports only (A3) — a `utm.source` marker, see report-queries.ts. */
+  where?: SQL;
   q?: string;
   limit?: number;
 }): Promise<AdminLeadRow[]> {
@@ -629,6 +631,7 @@ export async function listAllLeads(params: {
     filters.push(eq(leads.leadType, params.type));
   }
   if (params.vertical) filters.push(eq(leads.vertical, params.vertical));
+  if (params.where) filters.push(params.where);
   if (params.status) filters.push(eq(leads.status, params.status));
   if (params.phoneKey && /^\d{6,9}$/.test(params.phoneKey)) {
     filters.push(sql`${PHONE_KEY_SQL} = ${params.phoneKey}`);
