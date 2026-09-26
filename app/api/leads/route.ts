@@ -20,6 +20,7 @@ import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { currentVertical } from "@/lib/vertical-context";
 import { emailOwnerNewLead, emailSeekerConfirmation } from "@/lib/lead-emails";
 import { isAgencyMode } from "@/lib/site-settings";
+import { recordAnalyticsEvent } from "@/lib/analytics";
 import { esA3, REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
 
 const bodySchema = z.object({
@@ -278,6 +279,26 @@ export async function POST(req: NextRequest) {
     routedTo,
   });
   const leadId = Number((res as unknown as { insertId: number }).insertId);
+
+  // The funnel's last step for /admin/analitica. In-memory only (written in
+  // batches by src/lib/analytics.ts); a report is not an enquiry.
+  if (!report) {
+    const refererPath = (() => {
+      try {
+        return new URL(req.headers.get("referer") ?? "").pathname;
+      } catch {
+        return null;
+      }
+    })();
+    recordAnalyticsEvent({
+      event: "lead_submit",
+      path: listing ? listingUrl(listing) : (refererPath ?? "/"),
+      listingId: listing?.id ?? null,
+      vertical,
+      ip,
+      userAgent: req.headers.get("user-agent"),
+    });
+  }
 
   // 2. The payload for the deferred push below.
   const payload: LeadPayload & { leadId: number } = {

@@ -112,7 +112,8 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
       <p className="panel-stats-summary">
         {esPanel.statsSummary}:{" "}
         <strong>{totals.views}</strong> {esPanel.statsViews.toLowerCase()} ·{" "}
-        <strong>{totals.leads}</strong> {esPanel.statsLeads.toLowerCase()}{" "}
+        <strong>{totals.leads}</strong> {esPanel.statsLeads.toLowerCase()} ·{" "}
+        <strong>{totals.waClicks}</strong> {esPanel.statsWaClicksSummary}{" "}
         <span className="panel-stats-summary__hint">
           ({STATS_WINDOW_DAYS} días — {esPanel.statsViewsHint})
         </span>
@@ -128,6 +129,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
             <th>{esPanel.statusLabel}</th>
             <th title={esPanel.statsViewsHint}>{esPanel.statsViews}</th>
             <th>{esPanel.statsLeads}</th>
+            <th title={esPanel.statsWaClicksHint}>{esPanel.statsWaClicks}</th>
             <th>Cambiar estado</th>
           </tr>
         </thead>
@@ -158,6 +160,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
               {/* A listing with no activity is absent from the map, not 0 in it. */}
               <td className="panel-table__num">{stats.get(row.id)?.views ?? 0}</td>
               <td className="panel-table__num">{stats.get(row.id)?.leads ?? 0}</td>
+              <td className="panel-table__num">{stats.get(row.id)?.waClicks ?? 0}</td>
               <td>
                 <div className="panel-actions">
                   {/* pending_review / removed are admin-owned states: no

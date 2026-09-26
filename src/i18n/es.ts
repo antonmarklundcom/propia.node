@@ -612,6 +612,9 @@ export const esPanel = {
   // Estadísticas por aviso (3.3)
   statsViews: "Visitas",
   statsLeads: "Consultas",
+  statsWaClicks: "Clics en WhatsApp",
+  statsWaClicksSummary: "clics en WhatsApp",
+  statsWaClicksHint: "Toques en el botón de WhatsApp: muestran interés, no garantizan que escribieron.",
   statsWindow: "Últimos 30 días",
   statsSummary: "En los últimos 30 días",
   statsNoData:

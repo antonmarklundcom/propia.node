@@ -205,3 +205,15 @@ commission needs a licence or a registered company), so no agent invents it:
 
 Also decide: D4 — does a partner see the buyer's name and phone only after
 pressing "La tomo"? Today a shared lead shows them immediately.
+
+## 2026-09-26 — Privacy policy sentence for first-party statistics
+
+`/admin/analitica` (plan-agency batch 5) counts page views and WhatsApp taps
+without cookies: each event stores the path, the referring site, utm tags, the
+device type and a 16-character hash of IP + browser + day that changes every
+day (the IP itself is never stored). Raw events are kept 365 days
+(/admin/ajustes), daily totals indefinitely. `/privacidad` says nothing about
+this yet. Proposed line, for the founder to approve or reword: "Contamos
+visitas de forma anónima, sin cookies ni servicios de terceros: guardamos la
+página visitada, el sitio de origen y el tipo de dispositivo, nunca tu
+dirección IP."

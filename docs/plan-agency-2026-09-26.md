@@ -18,7 +18,7 @@ answers in the same session.
 | 2 | Agency schema (0019), schema only | **yes — founder** | open (#222) |
 | 3 | Agency-mode switch + contact routing (copy: founder) + partner install page | no (`site_settings`) | built, off by default |
 | 4 | Partner alerts on Telegram + reminders + app install page | uses 2 | after 2 |
-| 5 | First-party analytics + `/admin/analitica` | uses 2 | after 2 |
+| 5 | First-party analytics + `/admin/analitica` | uses 2 | built — merge after #222 is migrated |
 | 6 | Deal and commission ledger | uses 2 | after 2 |
 | 7 | Later, once real inventory exists | — | backlog |
 
@@ -119,6 +119,19 @@ answered decision D1 below.**
   contact. Per-listing views for owners and agencies already exist
   (`listing_views_daily`, `/mis-avisos`, `/agencia`); this adds WhatsApp clicks
   to those panels.
+
+**What landed (batch 5):** `src/lib/analytics.ts` (in-memory buffer, one
+INSERT a minute, daily-rotating visitor hash, bots and staff pages dropped),
+`app/api/a` (the beacon, never touches the database), `AnalyticsBeacon` in the
+root layout (about one request per visit: sent when the tab hides or ten
+events queue; the visit's referrer and utm ride on every event, so a WhatsApp
+tap is credited to the campaign that brought the visitor), form leads counted
+server-side in `/api/leads`, `cron:analytics` (rollup + retention prune, also in
+`/admin/operaciones`), `/admin/analitica`, and a "Clics en WhatsApp" column in
+`/agencia` and `/mis-avisos`. Deviation from the plan above: page views are
+sent by a batched beacon rather than recorded inside the page render — root
+layouts do not re-render on client navigation, so server-side counting would
+miss most page views.
 
 ### 6 — Deal and commission ledger
 

@@ -23,6 +23,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CompareBar } from "@/components/SavedListings";
 import { SiteNotice } from "@/components/SiteNotice";
+import { AnalyticsBeacon } from "@/components/AnalyticsBeacon";
 import { brandMeta } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { currentVertical } from "@/lib/vertical-context";
@@ -112,6 +113,7 @@ export default async function RootLayout({
         <div className="site-main">{children}</div>
         <SiteFooter />
         <CompareBar locale={vertical.locale} />
+        <AnalyticsBeacon />
       </body>
     </html>
   );

@@ -2,6 +2,7 @@ import type { PanelTab } from "@/components/panel/PanelBar";
 import { esPanel } from "@/i18n/es";
 import { esInbox } from "@/i18n/es-e2";
 import { esAgency } from "@/i18n/es-agency";
+import { esAnalytics } from "@/i18n/es-analytics";
 
 /**
  * The /admin tabs, with the active one flagged and the review count badged.
@@ -25,6 +26,7 @@ export function adminTabs(
     | "operations"
     | "history"
     | "settings"
+    | "analytics"
     | "account",
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
@@ -61,6 +63,11 @@ export function adminTabs(
       label: esInbox.admin.tab,
       count: unreadEmailCount,
       active: active === "inbox",
+    },
+    {
+      href: "/admin/analitica",
+      label: esAnalytics.tab,
+      active: active === "analytics",
     },
     {
       href: "/admin/guias",

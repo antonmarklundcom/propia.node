@@ -83,6 +83,7 @@ export default async function OwnerListingsPage({
                     <th>{esOwner.statusLabel}</th>
                     <th title={esPanel.statsViewsHint}>{esPanel.statsViews}</th>
                     <th>{esPanel.statsLeads}</th>
+                    <th title={esPanel.statsWaClicksHint}>{esPanel.statsWaClicks}</th>
                     <th>Cambiar estado</th>
                   </tr>
                 </thead>
@@ -117,6 +118,7 @@ export default async function OwnerListingsPage({
                       <td className="panel-table__num">
                         {stats.get(row.id)?.leads ?? 0}
                       </td>
+                      <td className="panel-table__num">{stats.get(row.id)?.waClicks ?? 0}</td>
                       <td>
                         <div className="panel-actions">
                           {/* pending_review / removed are ours to move, not
