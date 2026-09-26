@@ -3732,6 +3732,41 @@ body {
   font-weight: 700;
 }
 
+/* /mis-avisos: the per-listing "want a realtor" request (A2 Owner 4). */
+.owner-realtor {
+  flex-basis: 100%;
+}
+.owner-realtor > summary {
+  list-style: none;
+}
+.owner-realtor > summary::-webkit-details-marker {
+  display: none;
+}
+.owner-realtor[open] > .panel-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 8px;
+  min-width: min(280px, 100%);
+}
+
+/* /mis-avisos/aviso/[id]: price per m² against the zone median (A2 Owner 6). */
+.owner-price__figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0 0 12px;
+}
+.owner-price__figures dd {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.owner-price__meta {
+  color: var(--color-ink-secondary);
+  font-size: 13px;
+}
+
 /* Card list (review queue rows, lead rows) */
 .panel-card {
   background: var(--color-surface);

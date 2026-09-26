@@ -75,7 +75,9 @@ export async function registerAction(formData: FormData): Promise<void> {
       ? "invite"
       : rawKind === "agency"
         ? "agency"
-        : "independent";
+        : rawKind === "owner"
+          ? "owner"
+          : "independent";
 
   // Before any hashing or insert: a refused attempt must cost nothing but this
   // Map lookup. `clientIpFrom` reads the proxy's own last hop, so the key
@@ -91,12 +93,14 @@ export async function registerAction(formData: FormData): Promise<void> {
     email: values.email,
     password: String(formData.get("password") ?? ""),
     whatsapp: values.whatsapp || null,
-    agencyName: values.agencyName || null,
+    // An owner has no agency; never let a filled-in field suggest one.
+    agencyName: kind === "owner" ? null : values.agencyName || null,
     inviteToken: invite || null,
   });
 
   if (!result.ok) bounce(result.error, kind, invite, next, values);
 
   await createSession(result.userId);
-  redirect(next ?? "/agencia?msg=welcome");
+  // An owner's only panel is /mis-avisos (homeForRole for `consumer`).
+  redirect(next ?? (kind === "owner" ? "/mis-avisos?msg=welcome" : "/agencia?msg=welcome"));
 }

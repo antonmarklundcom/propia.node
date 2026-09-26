@@ -5,6 +5,8 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { ListingForm } from "@/components/panel/ListingForm";
 import { PhotoManager } from "@/components/panel/PhotoManager";
 import { ListingStats } from "@/components/panel/ListingStats";
+import { OwnerPriceContext } from "@/components/panel/OwnerPriceContext";
+import { getOwnerPriceContext } from "@/lib/owner-price-context";
 import { requireOwnerContext } from "@/lib/auth/guards";
 import { agencyStatusOptions, getEditableListing } from "@/lib/listing-edit";
 import { listListingImages } from "@/lib/listing-images";
@@ -58,13 +60,15 @@ export default async function OwnerListingEditPage({
   const listingId = Number(id);
   if (!Number.isInteger(listingId) || listingId <= 0) notFound();
 
-  const [listing, locations, images, daily, stats] = await Promise.all([
+  const [listing, locations, images, daily, stats, priceContext] = await Promise.all([
     getEditableListing(listingId, scope),
     listPublishLocations(),
     // Same scope the listing was loaded with — owner rows only.
     listListingImages(listingId, scope),
     getListingDailyViews(listingId, scope),
     getPanelListingStats(scope),
+    // Scope-guarded too; null unless a median with enough samples exists.
+    getOwnerPriceContext(listingId, scope),
   ]);
   // Not theirs, or not a listing: a 404, not a 403 — a stranger should not be
   // able to tell the difference between a row that is missing and one that is
@@ -110,6 +114,8 @@ export default async function OwnerListingEditPage({
           leads={stats.get(listing.id)?.leads ?? 0}
           daily={daily}
         />
+
+        {priceContext ? <OwnerPriceContext context={priceContext} /> : null}
 
         <article className="panel-card">
           <ListingForm

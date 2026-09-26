@@ -1,6 +1,6 @@
 /**
- * Self-service sign-up for agencies and independent agents (ARCHITECTURE.md
- * M5). Until now every account was founder-created — a `users` row typed into
+ * Self-service sign-up for agencies, independent agents and private owners
+ * (ARCHITECTURE.md M5; owners since plan-build 2026-09-26 A2). Until now every account was founder-created — a `users` row typed into
  * phpMyAdmin, then an `agents` row to link it. This is that sequence, done
  * atomically in one database transaction.
  *
@@ -26,8 +26,14 @@ import {
  * Registering as a company creates an agencies row; an agent stands alone;
  * "invite" joins an agency that already exists, and is the only kind whose
  * agency and role come from somewhere other than the form.
+ *
+ * "owner" is the private seller (plan-build 2026-09-26, A2 Owner 1): a
+ * `consumer` login with no agency and no `agents` row — the same account
+ * /publicar already creates, reached without publishing first. No agents row
+ * on purpose: it would put a private seller into /agente/[slug] with a
+ * professional's trust signal (CLAUDE.md, FSBO loop).
  */
-export type AccountKind = "agency" | "independent" | "invite";
+export type AccountKind = "agency" | "independent" | "invite" | "owner";
 
 export interface RegistrationInput {
   kind: AccountKind;
@@ -117,8 +123,12 @@ export async function registerAccount(
 
   try {
     return await db.transaction(async (tx): Promise<RegistrationResult> => {
-      let role: "agency_admin" | "agent" =
-        input.kind === "agency" ? "agency_admin" : "agent";
+      let role: "agency_admin" | "agent" | "consumer" =
+        input.kind === "agency"
+          ? "agency_admin"
+          : input.kind === "owner"
+            ? "consumer"
+            : "agent";
       let agencyId: number | null = null;
       let inviteId: number | null = null;
       if (input.kind === "invite") {
@@ -161,6 +171,10 @@ export async function registerAccount(
         if (!agency) throw new Error("Agency insert did not produce a row");
         agencyId = agency.id;
       }
+
+      // A private owner is a login and nothing more: /mis-avisos scopes on
+      // owner_user_id, which needs no profile row.
+      if (input.kind === "owner") return { ok: true, userId };
 
       await tx.insert(agents).values({
         agencyId,
