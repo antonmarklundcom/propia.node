@@ -184,3 +184,24 @@ say if any should change:
    email.** The operator gets Telegram; the others see it next time they open
    their leads page. Say if they should get an email too (one function in
    `lead-emails.ts`).
+
+## 2026-09-26 — Agency mode: public copy that becomes false (founder wording)
+
+The switch is built (`/admin/ajustes`, `docs/plan-agency-2026-09-26.md` batch 3)
+and **off** until the founder turns it on. In agency mode every enquiry reaches
+the operator, so these visitor-facing claims stop being true. Rewording them is
+a statement about what the business is, and depends on D1 (whether taking
+commission needs a licence or a registered company), so no agent invents it:
+
+| Where (es.ts, with its en.ts peer) | Says today |
+|---|---|
+| `limitsBody` (`/nosotros`) | "No somos una inmobiliaria y no representamos a ninguna de las partes…" |
+| home values "Contacto directo" (`esHome.values`) | "Hablás directo con el vendedor o la inmobiliaria, sin intermediarios." |
+| home how-it-works step 3 | "Escribile por WhatsApp a quien publicó… sin intermediarios ni costo." |
+| premium home `aboutText` | "…el contacto directo de quien lo publica, sin intermediarios ni comisión para vos." |
+| rental hub guide paragraph | "…canal de contacto directo por WhatsApp, sin intermediarios…" |
+| `/nosotros` `principleDirect` | "Contacto directo, sin peaje" |
+| `/agentes`, `/inmobiliarias` subtitles | "…su contacto directo" |
+
+Also decide: D4 — does a partner see the buyer's name and phone only after
+pressing "La tomo"? Today a shared lead shows them immediately.

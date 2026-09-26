@@ -389,3 +389,25 @@ export function rentalSitemapPaths(locale: "es" | "en"): string[] {
     "/privacidad",
   ];
 }
+
+/**
+ * Pages that close in agency mode (docs/plan-agency-2026-09-26.md batch 3):
+ * self-publishing and the realtor sign-up pitch. Menus, the footer and the
+ * sitemap drop links to them rather than pointing at a redirect. `/registro`
+ * stays reachable (partners arrive through invitation links to it); only the
+ * public "create account" link goes.
+ */
+export const AGENCY_MODE_HIDDEN_PATHS: readonly string[] = [
+  "/publicar",
+  "/para-inmobiliarias",
+  "/planes",
+  "/registro",
+];
+
+export function withoutAgencyModePages<T extends { href: string }>(
+  links: readonly T[],
+  agencyMode: boolean,
+): T[] {
+  if (!agencyMode) return [...links];
+  return links.filter((l) => !AGENCY_MODE_HIDDEN_PATHS.includes(l.href.split(/[?#]/)[0]));
+}

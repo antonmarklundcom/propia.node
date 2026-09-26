@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { isAgencyMode } from "@/lib/site-settings";
 import { numberLocaleFor } from "@/i18n";
 import { dict, currentLocale } from "@/i18n/server";
 import type { Metadata } from "next";
@@ -33,6 +35,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ParaInmobiliariasPage() {
+  // Agency mode: realtors join as partners by invitation, not by signing up
+  // from a pitch page (docs/plan-agency-2026-09-26.md batch 3).
+  if (await isAgencyMode()) redirect("/contacto");
   const c = (await dict()).paraInmobiliarias;
   const locale = await currentLocale();
   const numberLocale = numberLocaleFor(locale);

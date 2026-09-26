@@ -1,6 +1,7 @@
 import type { PanelTab } from "@/components/panel/PanelBar";
 import { esPanel } from "@/i18n/es";
 import { esInbox } from "@/i18n/es-e2";
+import { esAgency } from "@/i18n/es-agency";
 
 /**
  * The /admin tabs, with the active one flagged and the review count badged.
@@ -23,6 +24,7 @@ export function adminTabs(
     | "import"
     | "operations"
     | "history"
+    | "settings"
     | "account",
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
@@ -102,6 +104,12 @@ export function adminTabs(
       group: "manage",
       label: esPanel.historyTitle,
       active: active === "history",
+    },
+    {
+      href: "/admin/ajustes",
+      group: "manage",
+      label: esAgency.tab,
+      active: active === "settings",
     },
     {
       href: "/admin/cuenta",

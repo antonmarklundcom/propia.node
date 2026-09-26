@@ -52,6 +52,8 @@ import { RecentlyViewedRecorder } from "@/components/RecentlyViewed";
 import { FavoriteButton, CompareButton } from "@/components/SavedListings";
 import { ReportListing } from "@/components/ReportListing";
 import { safeImageUrl } from "@/lib/external-image";
+import { isAgencyMode } from "@/lib/site-settings";
+import { CONTACT_WHATSAPP } from "@/config/contact";
 
 // Canonical URLs are derived from the Host header (one deployment, several
 // domains — src/lib/origin.ts), which is a dynamic API, so this route can no
@@ -163,7 +165,18 @@ export default async function ListingPage({ params }: Params) {
   const detail = await load(slug);
   if (!detail) notFound();
 
-  const { listing, images, chain, agency, agent, ownerUser } = detail;
+  const { listing, images, chain } = detail;
+  /**
+   * Agency mode (docs/plan-agency-2026-09-26.md batch 3): the listing is
+   * presented as the operator's — no lister name, logo or number — and every
+   * contact reaches the operator, who shares the lead with a partner. With
+   * the lister cleared here, the seller card, the form's recipient line and
+   * the verified tick below all fall through to the door's brand.
+   */
+  const agencyMode = await isAgencyMode();
+  const agency = agencyMode ? null : detail.agency;
+  const agent = agencyMode ? null : detail.agent;
+  const ownerUser = agencyMode ? null : detail.ownerUser;
   const [d, locale] = await Promise.all([dict(), currentLocale()]);
   const t: Dictionary["listing"] = d.listing;
   const numberLocale = locale === "en" ? "en-US" : "es-PY";
@@ -200,8 +213,9 @@ export default async function ListingPage({ params }: Params) {
    * and without this link the card, the panel form and the mobile CTA bar all
    * rendered with no way to reach the seller (audit F4).
    */
-  const contactWhatsapp =
-    agent?.whatsapp ?? agency?.whatsapp ?? ownerUser?.whatsapp ?? null;
+  const contactWhatsapp = agencyMode
+    ? CONTACT_WHATSAPP
+    : (agent?.whatsapp ?? agency?.whatsapp ?? ownerUser?.whatsapp ?? null);
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
   const area = listing.areaM2 ?? listing.landM2;
   // English door only (guide §3/§6): "sq ft" next to every m² figure, and a
@@ -297,7 +311,9 @@ export default async function ListingPage({ params }: Params) {
           vertical,
         })
       : Promise.resolve([]),
-    listing.agencyId
+    // Agency mode presents every listing as the operator's, so "more from
+    // this agency" would only point at the partner behind it.
+    listing.agencyId && !agencyMode
       ? getAgencyListings({ agencyId: listing.agencyId, excludeId: listing.id, limit: 4, vertical })
       : Promise.resolve([]),
     listing.operation === "venta" && cuota

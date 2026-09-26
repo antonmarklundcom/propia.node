@@ -31,6 +31,7 @@ import { listingUrl } from "@/lib/urls";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { waLink } from "@/lib/wa";
+import { isAgencyMode } from "@/lib/site-settings";
 import { safeImageUrl } from "@/lib/external-image";
 
 // Same shape as the listing detail page: DB-backed, so no static caching —
@@ -118,6 +119,7 @@ export default async function AgencyProfilePage({ params }: Params) {
   // The ItemList's entries are listing detail URLs, which may be canonical on
   // a different host than the one serving this profile (audit F9).
   const listingOrigin = await listingCanonicalOrigin();
+  const agencyMode = await isAgencyMode();
   const logo = safeImageUrl(agency.logoUrl) ?? undefined;
   const initials = agency.name
     .split(/\s+/)
@@ -285,7 +287,9 @@ export default async function AgencyProfilePage({ params }: Params) {
                 ? d.agencyProfile.listingCount(listingCount)
                 : d.profile.emptyState}
             </p>
-            {(agency.whatsapp || agency.email) && (
+            {/* Agency mode: every enquiry reaches the operator first, so the
+                partner's own number and address are not published. */}
+            {!agencyMode && (agency.whatsapp || agency.email) && (
               <div className="agency-profile__contact">
                 {waLink(agency.whatsapp) && (
                   <a

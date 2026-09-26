@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AccountForm } from "@/components/panel/AccountForm";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { canManageTeam, requireAgencyContext } from "@/lib/auth/guards";
@@ -11,6 +12,7 @@ import {
 import { listCities } from "@/lib/queries";
 import { AgentPicker, AgentProfileForm } from "@/components/panel/AgentProfileForm";
 import { esA4 } from "@/i18n/es-a4";
+import { esAgency } from "@/i18n/es-agency";
 import { BRAND_NAME } from "@/lib/brand";
 import { esPanel } from "@/i18n/es";
 import { agencyTabs } from "../tabs";
@@ -105,6 +107,10 @@ export default async function AgencyProfilePage({
             {flash.text}
           </p>
         ) : null}
+
+        <p className="panel-note">
+          <Link href="/agencia/app">{esAgency.install.profileLink}</Link>
+        </p>
 
         <div className="panel-profile">
           {/* The company record — agency-admin only. */}

@@ -21,6 +21,8 @@
  * resubmitted, and `robots.txt` keeps pointing at the one address.
  */
 import "server-only";
+import { AGENCY_MODE_HIDDEN_PATHS } from "@/config/site-nav";
+import { isAgencyMode } from "@/lib/site-settings";
 import { unstable_cache } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache";
 import { buildSitemapEntries, type SitemapEntry } from "@/lib/sitemap";
@@ -78,12 +80,16 @@ export async function sitemapEntries(
   includeDirectory: boolean,
   verticalKey: VerticalKey,
 ): Promise<SitemapEntry[]> {
-  const entries = await cachedEntries(
-    includeListingDetail,
-    includeDirectory,
-    verticalKey,
-  );
-  return [...entries].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  const [entries, agencyMode] = await Promise.all([
+    cachedEntries(includeListingDetail, includeDirectory, verticalKey),
+    isAgencyMode(),
+  ]);
+  // Agency mode redirects these pages (AGENCY_MODE_HIDDEN_PATHS); a sitemap
+  // must not submit a redirect. Filtered here, outside the cache, so the mode
+  // needs no place in its key.
+  return entries
+    .filter((e) => !agencyMode || !AGENCY_MODE_HIDDEN_PATHS.includes(e.path))
+    .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
 
 /** 1-based, matching the `/sitemap/1.xml` in the index. */
