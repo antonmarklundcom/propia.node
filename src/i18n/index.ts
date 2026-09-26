@@ -107,6 +107,8 @@ import {
   enSearchBar,
   enVender,
 } from "./en";
+import { esA2 } from "./es-a2";
+import { enA2 } from "./en-a2";
 import { enA5 } from "./en-a5";
 import { esA4 } from "./es-a4";
 import { enA4 } from "./en-a4";
@@ -165,6 +167,7 @@ const esDictionary = {
   vender: esVender,
   contactForm: esContactForm,
   leadForm: esLeadForm,
+  a2: esA2,
   agentJoin: esA5,
   a4: esA4,
   a1: esA1,
@@ -248,6 +251,7 @@ const enDictionary = {
   vender: enVender,
   contactForm: enContactForm,
   leadForm: enLeadForm,
+  a2: enA2,
   agentJoin: enA5,
   a4: enA4,
   a1: enA1,
