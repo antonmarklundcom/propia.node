@@ -181,6 +181,7 @@ async function dbChecks() {
     "../src/lib/import/jobs"
   );
   const { getUsdToPygRateRaw } = await import("../src/lib/fx");
+  const { recentPriceChanges } = await import("../src/lib/import/resync");
 
   /**
    * Passed to every plan/commit below instead of letting `planImport` reach for
@@ -305,6 +306,15 @@ async function dbChecks() {
     createdByUserId: null,
   });
   await recordImportRows(jobId, committedC);
+  // Read back through import_rows.previous_json — a string on MariaDB (what
+  // production runs), an object on MySQL 8. Both must list the change.
+  const ourIds = new Set(committedC.map((r) => r.listingId));
+  const changes = (await recentPriceChanges(500)).filter((c) => ourIds.has(c.listingId));
+  check(
+    "recentPriceChanges lists the price change",
+    changes.length === 3 && changes.every((c) => c.before === "85000.00"),
+    JSON.stringify(changes.map((c) => c.before)),
+  );
   const rollback = await rollbackImportJob(jobId);
   check("rollback reports success", rollback.ok, rollback.note);
 
