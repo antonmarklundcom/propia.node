@@ -338,6 +338,19 @@ default, `--dry` first). It records itself as a revertible import job.
     `EMAIL_ROOT_SENDING=true` after the founder onboards the root domain.
     `npm run verify:inbox` (pure) is in `verify:local` and the pre-push hook.
 
+15. **Agency mode — built, off until the founder flips it (2026-09-26).**
+    `/admin/ajustes` (super-admin) writes `site_settings.business_mode`;
+    `isAgencyMode()` in `src/lib/site-settings.ts` is the only reader (cached,
+    tag `settings`, writer `setSiteSetting()`). Unset = `marketplace`, the site
+    as it was. In `agency`: every lead is `internal` (`app/api/leads/route.ts`),
+    `/propiedad` and the profile pages show the brand and
+    `NEXT_PUBLIC_CONTACT_WHATSAPP` instead of the lister, `/publicar` is for
+    partners and staff only (`publishingClosedFor()`, page and every action),
+    `/planes` and `/para-inmobiliarias` redirect, and menus / footer / sitemap
+    drop `AGENCY_MODE_HIDDEN_PATHS`. Copy that becomes false in agency mode is
+    listed in `docs/decisions-needed.md` for the founder's wording. Partners
+    install the panel from `/agencia/app`. Plan: `docs/plan-agency-2026-09-26.md`.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

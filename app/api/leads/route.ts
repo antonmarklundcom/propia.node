@@ -19,6 +19,7 @@ import { rawHostFrom } from "@/lib/host";
 import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { currentVertical } from "@/lib/vertical-context";
 import { emailOwnerNewLead, emailSeekerConfirmation } from "@/lib/lead-emails";
+import { isAgencyMode } from "@/lib/site-settings";
 import { esA3, REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
 
 const bodySchema = z.object({
@@ -243,8 +244,12 @@ export async function POST(req: NextRequest) {
         }
       : parsed.utm;
 
-  // A report is the operator's to review — never the publisher's inbox.
-  const routedTo: LeadPayload["routedTo"] = report
+  // A report is the operator's to review — never the publisher's inbox. In
+  // agency mode (docs/plan-agency-2026-09-26.md batch 3) every enquiry comes to
+  // the operator, who shares it with a partner through lead_assignments; the
+  // utm markers above still say which agent or agency it was addressed to.
+  const agencyMode = await isAgencyMode();
+  const routedTo: LeadPayload["routedTo"] = report || agencyMode
     ? "internal"
     : explicitAgent
     ? "agent"

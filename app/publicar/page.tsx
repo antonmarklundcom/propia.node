@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { homeForRole, requireUser } from "@/lib/auth/guards";
+import { getSessionUser } from "@/lib/auth/session";
+import { publishingClosedFor } from "@/lib/site-settings";
+import { sellerLandingEnabled } from "@/design/sections";
+import { currentVertical } from "@/lib/vertical-context";
 import {
   getUserDraft,
   getPublishContact,
@@ -88,7 +93,13 @@ export default async function PublishPage({
   const query = new URLSearchParams(
     Object.entries(params).filter(([, v]) => typeof v === "string") as [string, string][],
   ).toString();
+  // Agency mode: the public sells through the seller form, not self-service.
+  // Checked before the login bounce, so a visitor is not asked to sign in to
+  // reach a page that would then send them away.
+  const sellerLanding = sellerLandingEnabled((await currentVertical()).key) ? "/vender" : "/contacto";
+  if (await publishingClosedFor((await getSessionUser())?.role)) redirect(sellerLanding);
   const user = await requireUser(query ? `/publicar?${query}` : "/publicar");
+  if (await publishingClosedFor(user.role)) redirect(sellerLanding);
 
   const [locations, projects, programs, usdToPyg] = await Promise.all([
     listPublishLocations(),

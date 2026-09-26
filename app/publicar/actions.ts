@@ -12,6 +12,7 @@ import { db } from "@/db";
 import { listings, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth/guards";
 import { alertOperator, getCrm, isMessagingConfigured } from "@/lib/crm";
+import { publishingClosedFor } from "@/lib/site-settings";
 import { canonPhone } from "@/lib/import/normalize";
 import {
   OPERATIONS,
@@ -74,6 +75,7 @@ export async function saveDraftAction(
   payload: DraftPayload,
 ): Promise<SaveDraftResult> {
   const user = await requireUser("/publicar");
+  if (await publishingClosedFor(user.role)) return { ok: false, error: "closed" };
 
   const operation = payload.operation as Operation;
   const propertyType = payload.propertyType as PropertyType;
@@ -129,7 +131,7 @@ export type RequestOtpResult =
   | { ok: true }
   | {
       ok: false;
-      error: "invalid_number" | "cooldown" | "undeliverable";
+      error: "invalid_number" | "cooldown" | "undeliverable" | "closed";
       cooldownMs?: number;
     };
 
@@ -159,6 +161,7 @@ export async function requestOtpAction(
   rawWhatsapp: string,
 ): Promise<RequestOtpResult> {
   const user = await requireUser("/publicar");
+  if (await publishingClosedFor(user.role)) return { ok: false, error: "closed" };
   const whatsapp = canonPhone(rawWhatsapp);
   if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
 
@@ -216,7 +219,7 @@ export type PublishResult =
   | { ok: true }
   | {
       ok: false;
-      error: "invalid_number" | "otp" | "too_many" | "not_found" | "otp_required" | "public_contact";
+      error: "invalid_number" | "otp" | "too_many" | "not_found" | "otp_required" | "public_contact" | "closed";
     };
 
 async function validatePublicContact(
@@ -251,6 +254,7 @@ export async function verifyAndPublishAction(params: {
   publicWhatsapp?: string | null;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
+  if (await publishingClosedFor(user.role)) return { ok: false, error: "closed" };
   if (!isMessagingConfigured()) return { ok: false, error: "otp_required" };
 
   const whatsapp = canonPhone(params.whatsapp);
@@ -300,6 +304,7 @@ export async function publishDraftAction(params: {
   publicWhatsapp?: string | null;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
+  if (await publishingClosedFor(user.role)) return { ok: false, error: "closed" };
   if (isMessagingConfigured()) return { ok: false, error: "otp_required" };
 
   const contactError = await validatePublicContact(user.id, params.draftId, params.publicWhatsapp);

@@ -14,9 +14,9 @@ answers in the same session.
 
 | # | Batch | Migration | Status |
 |---|---|---|---|
-| 1 | Fixes: `previous_json`, English copy, DeepL removed, this plan | no | this PR |
-| 2 | Agency schema (0019), schema only | **yes — founder** | next |
-| 3 | Agency-mode switch + contact routing + copy | no (`site_settings`) | after 2 is migrated |
+| 1 | Fixes: `previous_json`, English copy, DeepL removed, this plan | no | merged (#220) |
+| 2 | Agency schema (0019), schema only | **yes — founder** | open (#222) |
+| 3 | Agency-mode switch + contact routing (copy: founder) + partner install page | no (`site_settings`) | built, off by default |
 | 4 | Partner alerts on Telegram + reminders + app install page | uses 2 | after 2 |
 | 5 | First-party analytics + `/admin/analitica` | uses 2 | after 2 |
 | 6 | Deal and commission ledger | uses 2 | after 2 |

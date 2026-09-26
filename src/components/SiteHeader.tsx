@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { BRAND_KICKER } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
-import { HEADER_NAV, type NavLink } from "@/config/site-nav";
+import { HEADER_NAV, withoutAgencyModePages, type NavLink } from "@/config/site-nav";
+import { isAgencyMode } from "@/lib/site-settings";
 import { MobileMenu } from "@/components/MobileMenu";
 import { FavoritesHeaderLink } from "@/components/SavedListings";
 import { currentVertical } from "@/lib/vertical-context";
@@ -114,9 +115,12 @@ export async function SiteHeader() {
         : HEADER_NAV;
   // Dropdown items that point at an empty city/type category (404 or redirect
   // on this door) are left out; top-level entries always stay.
-  const nav = chosenNav.map((group) => ({
+  // Agency mode also drops the self-publish and realtor sign-up pages, which
+  // redirect there (docs/plan-agency-2026-09-26.md batch 3).
+  const agencyMode = await isAgencyMode();
+  const nav = withoutAgencyModePages(chosenNav, agencyMode).map((group) => ({
     ...group,
-    links: withoutEmptyCategoryLinks(group.links, stocked),
+    links: withoutAgencyModePages(withoutEmptyCategoryLinks(group.links, stocked), agencyMode),
   }));
   const ctaLabelFull = isDirectory
     ? d.directory.chromeCtaLabel
@@ -140,7 +144,12 @@ export async function SiteHeader() {
     : isRental
       ? d.rental.chromeCtaHref
       : ctaHref;
-  const showHeaderCta = isDirectory || isRental || showPublishCta;
+  const showHeaderCta =
+    isDirectory ||
+    isRental ||
+    // A door whose CTA is the /publicar wizard loses it in agency mode; the
+    // Spanish door's points at /vender and stays.
+    (showPublishCta && !(agencyMode && ctaHref === "/publicar"));
   return (
     <header className="site-header">
       <div className="site-header__inner">

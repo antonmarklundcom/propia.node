@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { isAgencyMode } from "@/lib/site-settings";
 import {
   FOOTER_BUY,
   FOOTER_COMPANY,
   FOOTER_LOCATIONS,
   FOOTER_PRO,
+  withoutAgencyModePages,
   FOOTER_TOOLS,
   FOOTER_TYPES,
 } from "@/config/site-nav";
@@ -349,7 +351,11 @@ export async function SiteFooter() {
 
         <Column stocked={stocked} title="Comprar y alquilar" links={FOOTER_BUY} />
         <Column stocked={stocked} title="Herramientas" links={FOOTER_TOOLS} />
-        <Column stocked={stocked} title="Para profesionales" links={FOOTER_PRO} />
+        <Column
+          stocked={stocked}
+          title="Para profesionales"
+          links={withoutAgencyModePages(FOOTER_PRO, await isAgencyMode())}
+        />
         <Column stocked={stocked} title="Ubicaciones" links={FOOTER_LOCATIONS} />
         <Column stocked={stocked} title="Por tipo" links={FOOTER_TYPES} />
       </div>

@@ -22,9 +22,10 @@ export type AdminEventAction =
   | "user.password"
   | "user.delete"
   | "agent.join_agency"
-  | "lead.from_email";
+  | "lead.from_email"
+  | "setting.change";
 
-export type AdminEventTarget = "lead" | "listing" | "user" | "agency";
+export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting";
 
 type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
