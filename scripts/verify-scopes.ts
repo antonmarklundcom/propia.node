@@ -52,6 +52,16 @@ import {
   shareLeads,
 } from "../src/lib/lead-assignments";
 import { verifyPassword } from "../src/lib/auth/password";
+import {
+  adminLeadRows,
+  adminLeadsCsv,
+  panelLeadSet,
+  panelLeadsCsv,
+  panelShowsOwnLeads,
+  parseAdminLeadFilter,
+} from "../src/lib/lead-export";
+import { toCsv } from "../src/lib/csv";
+import { getAgentNumbers } from "../src/lib/team-stats";
 
 const url = process.env.DATABASE_URL ?? "";
 if (!/@(localhost|127\.0\.0\.1|mysql)[:/]/.test(url)) {
@@ -524,6 +534,131 @@ async function main() {
       "re-sharing a revoked lead restores it as pending, same row",
       reshared.revokedAt === null && reshared.state === "pending" && reshared.stateAt === null,
       `${reshared.state} ${String(reshared.revokedAt)}`,
+    );
+
+    /* ---------------------------------------------------------------- */
+    /* Lead exports and per-agent numbers (build A1)                    */
+    /* ---------------------------------------------------------------- */
+    /**
+     * The CSV must hold exactly what the panel shows: the same two reads
+     * under the same scope, never another agency's row, and for staff never a
+     * lane outside `internal`.
+     */
+    const setA = await panelLeadSet({ scope: agencyScope, viewer: viewerA, showOwn: true });
+    const pageOwnA = await getPanelLeads(agencyScope);
+    const pageSharedA = await getSharedLeads(viewerA);
+    const ids = (rows: { id: number }[]) => rows.map((r) => r.id).join(",");
+    check("export (own) = the page's own inbox", ids(setA.own) === ids(pageOwnA), `${setA.own.length} row(s)`);
+    check("export (shared) = the page's shared list", ids(setA.shared) === ids(pageSharedA), `${setA.shared.length} row(s)`);
+    check("export carries the lead shared with the agency", setA.shared.some((l) => l.id === sharedLeadId));
+    const setB = await panelLeadSet({
+      scope: { kind: "agency", agencyId: otherAgencyId },
+      viewer: viewerB,
+      showOwn: true,
+    });
+    check("another agency's export lacks the share", setB.shared.every((l) => l.id !== sharedLeadId));
+    check(
+      "another agency's export lacks the agency's own leads",
+      setB.own.every((l) => !pageOwnA.some((a) => a.id === l.id)),
+    );
+    const setOwner = await panelLeadSet({ scope: ownerScope, viewer: viewerIndep, showOwn: true });
+    check(
+      "the independent's export has their owner-lane lead and no internal one",
+      setOwner.own.some((l) => l.name === "Verify buyer lead") &&
+        !setOwner.own.some((l) => l.name === "Verify internal lead"),
+    );
+    check(
+      "an agency_admin with no agency exports no own inbox",
+      !panelShowsOwnLeads({ agencyId: null, user: { role: "agency_admin" } }) &&
+        panelShowsOwnLeads({ agencyId: null, user: { role: "agent" } }),
+    );
+    const csvA = panelLeadsCsv(setA, "http://localhost:3000");
+    check("panel CSV starts with a UTF-8 BOM", csvA.startsWith("\uFEFF"));
+    check("panel CSV holds the shared lead", csvA.includes(`Verify shared internal ${stamp}`));
+    check("panel CSV has one line per row plus the header", csvA.trimEnd().split("\r\n").length === 1 + setA.own.length + setA.shared.length);
+
+    const staffRows = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared` }, []), isStaff("staff"));
+    check("staff export: internal lane only", staffRows.length > 0 && staffRows.every((l) => l.routedTo === "internal"));
+    check("staff export lacks the agency-lane lead", staffRows.every((l) => l.id !== agencyLaneLeadId));
+    const adminRows = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared` }, []), false);
+    check("admin export includes the agency-lane lead", adminRows.some((l) => l.id === agencyLaneLeadId));
+    const telRows = await adminLeadRows(parseAdminLeadFilter({ tel: "986000002" }, []), false);
+    check("admin export honours the same-number filter", telRows.length > 0 && telRows.every((l) => l.whatsapp.endsWith("986000002")));
+    check(
+      "admin export ignores a site that no lead carries",
+      parseAdminLeadFilter({ sitio: "nope" }, ["verify"]).vertical === undefined &&
+        parseAdminLeadFilter({ sitio: "verify" }, ["verify"]).vertical === "verify",
+    );
+    check("admin CSV starts with a UTF-8 BOM", adminLeadsCsv(adminRows, "http://localhost:3000").startsWith("\uFEFF"));
+    const injected = toCsv(["a", "b", "c"], [["=HYPERLINK(\"x\")", "+595 981 000 001", "-1+cmd"]]);
+    check(
+      "CSV neutralises formulas but keeps phone numbers",
+      injected.includes(`"'=HYPERLINK(""x"")"`) && injected.includes(",+595 981 000 001,") && injected.includes("'-1+cmd"),
+      JSON.stringify(injected),
+    );
+
+    // Per-agent numbers: one agent-owned published listing with a recent
+    // lead, and one answered share, all inside agency A.
+    await db.update(agents).set({ isVerified: true }).where(eq(agents.id, agentRow.id));
+    const [teamListingRes] = await db.insert(listings).values({
+      ...base,
+      publicId: `vft${String(stamp).slice(-7)}`,
+      slug: `verify-team-${stamp}`,
+      title: "Verify team listing",
+      priceAmount: "80000",
+      priceUsd: "80000",
+      agencyId,
+      agentId: agentRow.id,
+    });
+    const teamListingId = Number((teamListingRes as unknown as { insertId: number }).insertId);
+    createdListingIds.push(teamListingId);
+    await db.insert(leads).values({
+      leadType: "buyer",
+      vertical: "verify",
+      listingId: teamListingId,
+      whatsapp: "0986000003",
+      name: "Verify team lead",
+      routedTo: "agency",
+    });
+    const ownAfter = (await panelLeadSet({ scope: agencyScope, viewer: viewerA, showOwn: true })).own;
+    check(
+      "the agency's export gains the new lead, exactly as its page does",
+      ownAfter.some((l) => l.name === "Verify team lead") &&
+        ids(ownAfter) === ids(await getPanelLeads(agencyScope)),
+    );
+    check(
+      "another agency's export does not",
+      (await panelLeadSet({ scope: { kind: "agency", agencyId: otherAgencyId }, viewer: viewerB, showOwn: true }))
+        .own.every((l) => l.name !== "Verify team lead"),
+    );
+    await shareLeads({
+      leadIds: [sharedLeadId],
+      target: { kind: "agent", id: agentRow.id },
+      note: null,
+      byUserId: agencyOwner.userId,
+      internalOnly: false,
+    });
+    const agentShare = (await getSharedLeads(viewerA)).find(
+      (l) => l.id === sharedLeadId && l.assignmentId !== shareA.assignmentId,
+    );
+    check("an agent-of-the-agency share reaches the agency panel", Boolean(agentShare));
+    if (agentShare) {
+      await setShareState({ assignmentId: agentShare.assignmentId, state: "contacted", viewer: viewerA });
+    }
+    const numbersA = await getAgentNumbers(agencyId);
+    const mine = numbersA.find((n) => n.agentId === agentRow.id);
+    check(
+      "team numbers count the agent's listing, lead and answer",
+      mine?.published === 1 && mine.leads === 1 && mine.sharedAnswered === 1 && mine.medianHours != null,
+      JSON.stringify(mine),
+    );
+    check(
+      "team numbers stay inside the agency",
+      numbersA.every((n) => n.agentId !== otherAgentRow.id && n.agentId !== indepAgent.id),
+    );
+    check(
+      "another agency's numbers never list this agency's agent",
+      (await getAgentNumbers(otherAgencyId)).every((n) => n.agentId !== agentRow.id),
     );
 
     /* ---------------------------------------------------------------- */
