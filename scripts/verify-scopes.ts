@@ -1170,10 +1170,10 @@ async function main() {
         joinEvents[0].targetId === agencyId,
     );
     const notice = await listAgencyJoinEvents({ agencyId, afterId: 0 });
-    const mine = notice.find((e) => e.agentName === "Verify Joiner");
+    const joinEvent = notice.find((e) => e.agentName === "Verify Joiner");
     check(
       "the /agencia notice lists what moved",
-      !!mine && mine.listingIds.length === 2 && mine.listingIds.includes(joinPubId),
+      !!joinEvent && joinEvent.listingIds.length === 2 && joinEvent.listingIds.includes(joinPubId),
     );
     check(
       "the notice is not shown to another agency",
@@ -1183,9 +1183,9 @@ async function main() {
     );
     check(
       "the notice is gone once dismissed",
-      !!mine &&
-        !(await listAgencyJoinEvents({ agencyId, afterId: mine.id })).some(
-          (e) => e.id === mine.id,
+      !!joinEvent &&
+        !(await listAgencyJoinEvents({ agencyId, afterId: joinEvent.id })).some(
+          (e) => e.id === joinEvent.id,
         ),
     );
     const titles = await listAgencyListingTitles(agencyBId, [joinPubId, joinDraftId]);
