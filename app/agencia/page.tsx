@@ -21,6 +21,7 @@ import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
 import { agencyTabs } from "./tabs";
 import { setListingStatusAction } from "./actions";
+import { JoinedListingsNotice } from "./JoinedListingsNotice";
 
 export const metadata: Metadata = {
   title: `Tus propiedades`,
@@ -56,6 +57,7 @@ export default async function AgencyListingsPage({
         {msg === "joined" ? (
           <p className="panel-flash">{esPanel.teamJoined}</p>
         ) : null}
+        {agencyId != null ? <JoinedListingsNotice agencyId={agencyId} /> : null}
 
         <div className="panel-section__header">
           <h2 className="panel-section__title">{esPanel.agencyListingsTitle}</h2>

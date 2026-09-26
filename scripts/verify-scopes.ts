@@ -18,7 +18,9 @@
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../src/db";
 import {
+  adminEvents,
   agencies,
+  agencyInvites,
   agents,
   leadAssignments,
   leads,
@@ -52,6 +54,13 @@ import {
   shareLeads,
 } from "../src/lib/lead-assignments";
 import { verifyPassword } from "../src/lib/auth/password";
+import { createAgencyInvite, getUsableInvite } from "../src/lib/agency-invites";
+import { listAgencyJoinEvents } from "../src/lib/admin-events";
+import {
+  listAgencyListingTitles,
+  moveAgentToAgency,
+  redeemInviteForExistingAccount,
+} from "../src/lib/team-queries";
 
 const url = process.env.DATABASE_URL ?? "";
 if (!/@(localhost|127\.0\.0\.1|mysql)[:/]/.test(url)) {
@@ -666,6 +675,292 @@ async function main() {
       "old password stops working",
       !(await verifyPassword("secreto123", afterPw.passwordHash)),
     );
+
+    /* ---------------------------------------------------------------- */
+    /* Bug 6: an independent's listings move in when they join          */
+    /* ---------------------------------------------------------------- */
+    // Agency A is the one they join; agency B is a bystander that must never
+    // see the moved rows, and that owns one row the joiner also "owns" (an
+    // imported listing, say) which must NOT be re-scoped by the join.
+    const agencyB = await registerAccount({
+      kind: "agency",
+      name: "Verify Bystander Owner",
+      email: mail("agency-b"),
+      password: "secreto123",
+      whatsapp: null,
+      agencyName: `Verify Bystander ${stamp}`,
+    });
+    check("bystander agency signup succeeds", agencyB.ok);
+    if (!agencyB.ok) return;
+    createdUserIds.push(agencyB.userId);
+    const [agencyBAgent] = await db
+      .select({ agencyId: agents.agencyId })
+      .from(agents)
+      .where(eq(agents.userId, agencyB.userId));
+    const agencyBId = agencyBAgent.agencyId!;
+    createdAgencyIds.push(agencyBId);
+
+    const joiner = await registerAccount({
+      kind: "independent",
+      name: "Verify Joiner",
+      email: mail("joiner"),
+      password: "secreto123",
+      whatsapp: null,
+      agencyName: null,
+    });
+    check("joiner signup succeeds", joiner.ok);
+    if (!joiner.ok) return;
+    createdUserIds.push(joiner.userId);
+    const [joinerAgent] = await db
+      .select({ id: agents.id })
+      .from(agents)
+      .where(eq(agents.userId, joiner.userId));
+
+    const tail = String(stamp).slice(-6);
+    await db.insert(listings).values([
+      {
+        ...base,
+        publicId: `vj1${tail}`,
+        slug: `verify-joiner-pub-${stamp}`,
+        title: "Verify joiner published",
+        priceAmount: "80000",
+        priceUsd: "80000",
+        ownerUserId: joiner.userId,
+      },
+      {
+        ...base,
+        publicId: `vj2${tail}`,
+        slug: `verify-joiner-draft-${stamp}`,
+        title: "Verify joiner draft",
+        priceAmount: "70000",
+        priceUsd: "70000",
+        ownerUserId: joiner.userId,
+        status: "draft" as const,
+      },
+      {
+        ...base,
+        publicId: `vj3${tail}`,
+        slug: `verify-joiner-b-${stamp}`,
+        title: "Verify joiner row owned by B",
+        priceAmount: "60000",
+        priceUsd: "60000",
+        ownerUserId: joiner.userId,
+        agencyId: agencyBId,
+      },
+    ]);
+    const joinerRows = await db
+      .select({ id: listings.id, title: listings.title })
+      .from(listings)
+      .where(eq(listings.ownerUserId, joiner.userId));
+    createdListingIds.push(...joinerRows.map((r) => r.id));
+    const idOf = (title: string) => joinerRows.find((r) => r.title === title)!.id;
+    const joinPubId = idOf("Verify joiner published");
+    const joinDraftId = idOf("Verify joiner draft");
+    const joinBId = idOf("Verify joiner row owned by B");
+
+    const [joinLead] = await db
+      .insert(leads)
+      .values({
+        leadType: "buyer",
+        listingId: joinPubId,
+        vertical: "verify",
+        name: "Verify Joiner Buyer",
+        whatsapp: "+595981000111",
+        routedTo: "owner",
+      })
+      .$returningId();
+    createdLeadIds.push(joinLead.id);
+
+    const joinerOwnerScope = { kind: "owner", userId: joiner.userId } as const;
+    const agencyBScope = { kind: "agency", agencyId: agencyBId } as const;
+    const idsIn = async (scope: Parameters<typeof getPanelListings>[0]) =>
+      new Set((await getPanelListings(scope)).map((r) => r.id));
+
+    const beforeOwner = await idsIn(joinerOwnerScope);
+    const beforeA = await idsIn(agencyScope);
+    check(
+      "before join: the independent sees their own listings",
+      beforeOwner.has(joinPubId) && beforeOwner.has(joinDraftId),
+    );
+    check(
+      "before join: the agency they will join does not",
+      !beforeA.has(joinPubId) && !beforeA.has(joinDraftId),
+    );
+
+    const refusedToken = await createAgencyInvite({
+      agencyId,
+      invitedByUserId: agencyOwner.userId,
+      role: "agent",
+    });
+    const refusedInvite = await getUsableInvite(refusedToken);
+    const refused = await redeemInviteForExistingAccount({
+      inviteId: refusedInvite!.id,
+      userId: agencyB.userId,
+      agencyId,
+      role: "agent",
+    });
+    check(
+      "a member of another agency cannot redeem an invite",
+      refused.result === "already_in_agency",
+      refused.result,
+    );
+    check(
+      "a refused join rolls the claim back (the link is not burned)",
+      (await getUsableInvite(refusedToken)) !== null,
+    );
+
+    const joined = await redeemInviteForExistingAccount({
+      inviteId: refusedInvite!.id,
+      userId: joiner.userId,
+      agencyId,
+      role: "agent",
+    });
+    check("independent redeems the invite", joined.result === "ok", joined.result);
+    const moved = new Set(joined.movedListingIds);
+    check(
+      "exactly their agency-less listings moved",
+      moved.size === 2 && moved.has(joinPubId) && moved.has(joinDraftId),
+      `moved: ${[...moved].join(",")}`,
+    );
+    check(
+      "the invite is spent after a successful join",
+      (await getUsableInvite(refusedToken)) === null,
+    );
+
+    const movedRows = await db
+      .select({ id: listings.id, agencyId: listings.agencyId, agentId: listings.agentId, status: listings.status })
+      .from(listings)
+      .where(inArray(listings.id, [joinPubId, joinDraftId, joinBId]));
+    const byId = new Map(movedRows.map((r) => [r.id, r]));
+    check(
+      "moved listings carry the agency and the agent's row",
+      [joinPubId, joinDraftId].every(
+        (id) => byId.get(id)?.agencyId === agencyId && byId.get(id)?.agentId === joinerAgent.id,
+      ),
+    );
+    check(
+      "moved listings keep their status",
+      byId.get(joinPubId)?.status === "published" && byId.get(joinDraftId)?.status === "draft",
+    );
+    check(
+      "a row another agency owns is not re-scoped by the join",
+      byId.get(joinBId)?.agencyId === agencyBId,
+    );
+
+    // After the join, the agent's panel scope is the agency's (panelScope()).
+    const afterA = await idsIn(agencyScope);
+    const afterB = await idsIn(agencyBScope);
+    check(
+      "after join: the agent (agency scope) still sees their listings",
+      afterA.has(joinPubId) && afterA.has(joinDraftId),
+    );
+    check(
+      "after join: their colleagues' agency panel sees them",
+      (await getEditableListing(joinDraftId, agencyScope)) !== null,
+    );
+    check(
+      "after join: another agency cannot see or edit them",
+      !afterB.has(joinPubId) &&
+        !afterB.has(joinDraftId) &&
+        (await getEditableListing(joinPubId, agencyBScope)) === null,
+    );
+    check(
+      "after join: the bystander still has its own row",
+      afterB.has(joinBId) && !afterA.has(joinBId),
+    );
+    check(
+      "leads follow the listing into the agency inbox",
+      (await getPanelLeads(agencyScope)).some((l) => l.id === joinLead.id) &&
+        !(await getPanelLeads(agencyBScope)).some((l) => l.id === joinLead.id),
+    );
+
+    const joinEvents = await db
+      .select({ action: adminEvents.action, targetType: adminEvents.targetType, targetId: adminEvents.targetId })
+      .from(adminEvents)
+      .where(eq(adminEvents.actorUserId, joiner.userId));
+    check(
+      "the move is written to admin_events",
+      joinEvents.length === 1 &&
+        joinEvents[0].action === "agent.join_agency" &&
+        joinEvents[0].targetType === "agency" &&
+        joinEvents[0].targetId === agencyId,
+    );
+    const notice = await listAgencyJoinEvents({ agencyId, afterId: 0 });
+    const mine = notice.find((e) => e.agentName === "Verify Joiner");
+    check(
+      "the /agencia notice lists what moved",
+      !!mine && mine.listingIds.length === 2 && mine.listingIds.includes(joinPubId),
+    );
+    check(
+      "the notice is not shown to another agency",
+      !(await listAgencyJoinEvents({ agencyId: agencyBId, afterId: 0 })).some(
+        (e) => e.agentName === "Verify Joiner",
+      ),
+    );
+    check(
+      "the notice is gone once dismissed",
+      !!mine &&
+        !(await listAgencyJoinEvents({ agencyId, afterId: mine.id })).some(
+          (e) => e.id === mine.id,
+        ),
+    );
+    const titles = await listAgencyListingTitles(agencyBId, [joinPubId, joinDraftId]);
+    check("the notice's titles are scoped to the agency", titles.length === 0);
+
+
+    // The super-admin move (/admin/agentes) follows the same rule.
+    const moved2 = await registerAccount({
+      kind: "independent",
+      name: "Verify Admin Moved",
+      email: mail("admin-moved"),
+      password: "secreto123",
+      whatsapp: null,
+      agencyName: null,
+    });
+    check("second independent signup succeeds", moved2.ok);
+    if (!moved2.ok) return;
+    createdUserIds.push(moved2.userId);
+    const [moved2Agent] = await db
+      .select({ id: agents.id })
+      .from(agents)
+      .where(eq(agents.userId, moved2.userId));
+    await db.insert(listings).values({
+      ...base,
+      publicId: `vj4${tail}`,
+      slug: `verify-admin-moved-${stamp}`,
+      title: "Verify admin-moved listing",
+      priceAmount: "50000",
+      priceUsd: "50000",
+      ownerUserId: moved2.userId,
+    });
+    const [moved2Listing] = await db
+      .select({ id: listings.id })
+      .from(listings)
+      .where(eq(listings.ownerUserId, moved2.userId));
+    createdListingIds.push(moved2Listing.id);
+    const adminMove = await moveAgentToAgency({
+      agentId: moved2Agent.id,
+      agencyId: agencyBId,
+      role: "agent",
+      actorUserId: agencyOwner.userId,
+    });
+    const [moved2After] = await db
+      .select({ agencyId: listings.agencyId, agentId: listings.agentId })
+      .from(listings)
+      .where(eq(listings.id, moved2Listing.id));
+    check(
+      "super-admin move: their listings move with them",
+      adminMove === "ok" &&
+        moved2After.agencyId === agencyBId &&
+        moved2After.agentId === moved2Agent.id,
+    );
+    check(
+      "super-admin move: the notice names the member, not the operator",
+      (await listAgencyJoinEvents({ agencyId: agencyBId, afterId: 0 })).some(
+        (e) => e.agentName === "Verify Admin Moved" && e.listingIds.includes(moved2Listing.id),
+      ),
+    );
+
   } finally {
     // Clean up in FK order: leads before the listings they point at, listings
     // and sessions before the rows those point at.
@@ -682,6 +977,12 @@ async function main() {
     }
     if (createdListingIds.length) {
       await db.delete(listings).where(inArray(listings.id, createdListingIds));
+    }
+    if (createdUserIds.length) {
+      await db.delete(adminEvents).where(inArray(adminEvents.actorUserId, createdUserIds));
+    }
+    if (createdAgencyIds.length) {
+      await db.delete(agencyInvites).where(inArray(agencyInvites.agencyId, createdAgencyIds));
     }
     if (createdUserIds.length) {
       await db.delete(sessions).where(inArray(sessions.userId, createdUserIds));

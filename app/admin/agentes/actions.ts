@@ -9,7 +9,7 @@
  * in team-queries.ts, not here, so both callers get it.
  */
 import { revalidatePath } from "next/cache";
-import { revalidateDirectory } from "@/lib/cache";
+import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { moveAgentToAgency, type TeamRole } from "@/lib/team-queries";
@@ -19,7 +19,10 @@ const ROUTE = "/admin/agentes";
 function done(code: string): never {
   revalidatePath(ROUTE);
   revalidatePath("/admin/inmobiliarias");
-  revalidateDirectory();
+  // Listings, not just the directory: an independent moved into an agency
+  // takes their own listings with them (moveAgentToAgency), which changes the
+  // agency shown on those listings' cards. revalidateListings() drops both tags.
+  revalidateListings();
   redirect(`${ROUTE}?msg=${code}`);
 }
 
@@ -29,7 +32,7 @@ function toId(v: FormDataEntryValue | null): number {
 }
 
 export async function moveAgentAction(formData: FormData): Promise<void> {
-  await requireStaffOrAbove();
+  const actor = await requireStaffOrAbove();
 
   const agentId = toId(formData.get("agentId"));
   if (!agentId) done("invalid");
@@ -41,7 +44,7 @@ export async function moveAgentAction(formData: FormData): Promise<void> {
       ? "agency_admin"
       : "agent";
 
-  const result = await moveAgentToAgency({ agentId, agencyId, role });
+  const result = await moveAgentToAgency({ agentId, agencyId, role, actorUserId: actor.id });
 
   done(
     result === "ok"
