@@ -748,7 +748,7 @@ export const esPanel = {
   opsDisabledR2:
     "Falta configurar R2 (R2_ACCOUNT_ID y compañía). Se puede simular, no ejecutar.",
   opsDisabledTranslate:
-    "Falta una clave de traducción (DeepL, Gemini o Claude). Se puede simular, no ejecutar.",
+    "Falta una clave de traducción (Gemini o Claude). Se puede simular, no ejecutar.",
   /**
    * Named separately from the run history (S3) because this page's only job is
    * "press the thing"; the audit view is a different screen.

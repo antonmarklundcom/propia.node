@@ -153,10 +153,13 @@ export DATABASE_URL="mysql://propia:propia@127.0.0.1:3306/propia"
 ```
 
 If Docker is unavailable in your sandbox, **say so in the PR** and do not claim a
-run you did not do. A MariaDB stand-in is close but not identical: it stores
-`json` columns as `longtext`, so `mysql2` hands them back as strings. The
-import rollback's restore parses that (#165), but two other `previous_json`
-readers do not (`fable/KNOWN-ISSUES.md`). That is the sandbox, not the code.
+run you did not do. **Production is MariaDB 11.8, not MySQL 8**, so a local
+`mariadb:11.8` container is the closer stand-in (`docker run -d -e
+MARIADB_DATABASE=propia -e MARIADB_USER=propia -e MARIADB_PASSWORD=propia -e
+MARIADB_ROOT_PASSWORD=root -p 3306:3306 mariadb:11.8`). MariaDB stores `json`
+columns as `longtext`, so `mysql2` hands them back as strings: read
+`import_rows.previous_json` through `parseSnapshot()`
+(`src/lib/import/snapshot.ts`), never by casting the raw value.
 
 ### Migrations
 

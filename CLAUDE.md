@@ -36,7 +36,7 @@ fallback in `src/config/verticals.ts` already defaults to
 live env var itself needs updating for the two live domains to actually
 render with their new roles — until then, whatever hPanel currently has
 still wins. Also outstanding: `npm run cron:translate` (needs
-`DEEPL_API_KEY` and/or `ANTHROPIC_API_KEY` + `DATABASE_URL` against the live
+`GEMINI_API_KEY` and/or `ANTHROPIC_API_KEY` + `DATABASE_URL` against the live
 database) has not been run yet, so `title_en`/`description_en` are still
 empty for every listing — the English site is live and correctly wired, but
 currently shows the Spanish-fallback text everywhere until that job runs.
@@ -566,31 +566,24 @@ the fallback until it does.
   without any publish-path hook. **Do not add one:** a publish must not depend
   on a third party being up, and a multi-second outbound call inside a server
   action is the exact shape of the 503 post-mortem in PLAN.md. Without
-  `DEEPL_API_KEY`, `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` the job refuses to
+  `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` the job refuses to
   run and writes nothing.
-  **Provider order: DeepL → Gemini → Claude**, cheapest first, any subset of
-  the three keys may be set, a row falls through to the next configured
-  provider if one throws for it. DeepL gets a small fixed post-edit for
-  real-estate terms its plain MT call renders too literally
-  (`DEEPL_CORRECTIONS` in `src/lib/translate.ts`) since it never sees the
-  glossary prompt; Gemini and Claude both follow the full glossary/tone
-  prompt in `translate.ts`'s `SYSTEM` constant via structured JSON output, so
-  need no such correction. **The founder's DeepL key is the free "Developer"
-  tier: a ONE-TIME 1,000,000-character credit, not a recurring monthly
-  allowance** — run `cron:translate` with `--limit` and watch usage in the
-  DeepL dashboard, don't run it wide open assuming it refills. Gemini
+  **Provider order: Gemini → Claude**, either key may be set, a row falls
+  through to the other if one throws for it. Both follow the full
+  glossary/tone prompt in `translate.ts`'s `SYSTEM` constant (place names
+  stay Spanish) via structured JSON output. **DeepL was removed 2026-09-26
+  (founder decision)**: it never saw that prompt, so it translated place
+  names ("Sajonia" → "Saxony") — do not add it back. Gemini
   (`gemini-3.5-flash-lite` by default — `gemini-2.5-flash` 404s for a new
   project's key as of 2026-09-04; `gemini-3.6-flash` works but is a
   "thinking" model with real hidden token overhead billed at the output
   rate, confirmed absent on 3.5-flash-lite; check `GET
   /v1beta/models?key=...` if Google cycles the lineup again) is the
-  intended ongoing path once that credit is spent — $0.30/$2.50 per
-  million input/output tokens, cheaper than Claude and, unlike
-  3.6-flash, no hidden overhead inflating that price. See the
-  `GEMINI_MODEL` comment in `translate.ts` for the full comparison.
+  intended ongoing path — $0.30/$2.50 per million input/output tokens.
+  See the `GEMINI_MODEL` comment in `translate.ts` for the full comparison.
   Claude stays wired only as the last-resort fallback.
   **Run it against the live database now that `realestateinparaguay.com`
-  serves `locale: "en"`** — `DATABASE_URL="…" DEEPL_API_KEY="…" npm run
+  serves `locale: "en"`** — `DATABASE_URL="…" GEMINI_API_KEY="…" npm run
   cron:translate` (`--dry` first) — every listing is currently showing its
   Spanish fallback on the English door until this has run at least once, and
   again on a schedule after that as `translation_hash` picks up edits.
