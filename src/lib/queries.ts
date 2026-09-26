@@ -945,3 +945,35 @@ export async function getBestFinancingProgram() {
 export async function listCityBarrios(cityId: number) {
  return [...(await locationsById()).values()].filter(r => r.parentId === cityId && r.level === "barrio");
 }
+
+/**
+ * Cards for a visitor's saved ids — `/favoritos` and `/comparar`
+ * (plan-build-2026-09-26 A3). Published only: a listing paused, sold or
+ * rejected since it was saved drops out, and the page says how many did.
+ * Returned in the order asked. Not cached: the id set is per visitor, so an
+ * `unstable_cache` entry would never be read twice.
+ *
+ * No door filter on purpose. The ids came from this browser on this door, and
+ * a listing's detail page renders on any door (it only canonicalises away),
+ * so a visitor who saved it here sees it here.
+ */
+export async function getListingCardsByPublicIds(
+  publicIds: string[],
+): Promise<ListingCard[]> {
+  if (publicIds.length === 0) return [];
+  const rows = await db
+    .select(cardColumns())
+    .from(listings)
+    .where(
+      and(
+        eq(listings.status, "published"),
+        inArray(listings.publicId, publicIds),
+      ),
+    )
+    .limit(publicIds.length);
+  const cards = await attachVerified(await attachCovers(rows));
+  const order = new Map(publicIds.map((id, i) => [id, i]));
+  return cards.sort(
+    (a, b) => (order.get(a.publicId) ?? 0) - (order.get(b.publicId) ?? 0),
+  );
+}

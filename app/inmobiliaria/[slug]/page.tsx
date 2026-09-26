@@ -188,7 +188,7 @@ export default async function AgencyProfilePage({ params }: Params) {
               <h1 className="dir-profile__name">
                 {agency.name}
                 {agency.isVerified && (
-                  <span className="dir-profile__verified">{d.directory.listVerified}</span>
+                  <Link className="dir-profile__verified" href="/como-funciona#verificado" title={d.a3.verified.linkLabel}>{d.directory.listVerified}</Link>
                 )}
               </h1>
               <p className="dir-profile__meta">
@@ -274,9 +274,9 @@ export default async function AgencyProfilePage({ params }: Params) {
             <h1 className="agency-profile__name">
               {agency.name}
               {agency.isVerified && (
-                <span className="agency-profile__verified" title={d.listing.sellerVerified}>
+                <Link className="agency-profile__verified" href="/como-funciona#verificado" title={d.a3.verified.linkLabel} aria-label={d.a3.verified.linkLabel}>
                   <Glyph name="check" />
-                </span>
+                </Link>
               )}
             </h1>
             <p className="agency-profile__meta">

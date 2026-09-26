@@ -49,6 +49,8 @@ import { ListingCard } from "@/components/ListingCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
 import { PriceAlert } from "@/components/PriceAlert";
 import { RecentlyViewedRecorder } from "@/components/RecentlyViewed";
+import { FavoriteButton, CompareButton } from "@/components/SavedListings";
+import { ReportListing } from "@/components/ReportListing";
 import { safeImageUrl } from "@/lib/external-image";
 
 // Canonical URLs are derived from the Host header (one deployment, several
@@ -428,6 +430,10 @@ export default async function ListingPage({ params }: Params) {
           {cuota && <span className="listing-price__secondary">{d.card.cuotaLine(cuota)}</span>}
           {pricePerM2 && <span className="listing-price__secondary">{d.card.cardPerM2(pricePerM2)}</span>}
           <PriceAlert locale={locale} listingPublicId={listing.publicId} listingTitle={title} leadType={leadType} />
+          <div className="listing-save-actions">
+            <FavoriteButton publicId={listing.publicId} locale={locale} />
+            <CompareButton publicId={listing.publicId} locale={locale} />
+          </div>
         </div>
       </header>
       <ListingGallery locale={locale} images={realImages.map((im, i) => ({
@@ -591,7 +597,14 @@ export default async function ListingPage({ params }: Params) {
                 {(agency?.isVerified ||
                   agent?.isVerified ||
                   (ownerUser != null && listing.isVerified)) && (
-                  <span className="seller-card__verified" title={t.sellerVerified}><Glyph name="check" /></span>
+                  <Link
+                    className="seller-card__verified"
+                    href="/como-funciona#verificado"
+                    title={d.a3.verified.linkLabel}
+                    aria-label={d.a3.verified.linkLabel}
+                  >
+                    <Glyph name="check" />
+                  </Link>
                 )}
               </div>
               <div className="seller-card__kind">
@@ -621,9 +634,15 @@ export default async function ListingPage({ params }: Params) {
             prefillMessage={waMessage}
             variant="card"
             locale={locale}
+            recipients={{
+              agent: agent?.name ?? null,
+              agency: agency?.name ?? null,
+              brand,
+            }}
           />
           <p className="seller-card__privacy">{t.contactPrivacy}</p>
           {isSample && <p className="seller-card__sample-note">{t.sampleNote}</p>}
+          <ReportListing listingPublicId={listing.publicId} locale={locale} />
           {showForeignerBox && (
             <p className="seller-card__reply-note">{d.guideEn.replyInEnglish}</p>
           )}

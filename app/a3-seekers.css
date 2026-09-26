@@ -1,0 +1,288 @@
+/* Seekers (plan-build-2026-09-26 A3): favourites, compare, report a listing,
+   who receives an enquiry. Its own file so the parallel wave-A builds do not
+   all append to globals.css; imported once from app/layout.tsx. Colours are
+   the theme tokens only, and small text stays on --color-ink /
+   --color-ink-secondary (the contrast e2e wants ≥ 4.5:1). */
+
+/* A card plus its save/compare row. The row sits outside the card's <Link>:
+   a button inside an anchor is invalid and steals the card's click. */
+.listing-card-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.listing-card-wrap > .listing-card {
+  flex: 1 1 auto;
+}
+
+.listing-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 0;
+}
+
+.saved-btn__wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.saved-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.saved-btn:hover {
+  border-color: var(--color-ink-secondary);
+}
+.saved-btn:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+.saved-btn--on {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-background);
+}
+.saved-btn--on:hover {
+  border-color: var(--color-primary);
+}
+
+.saved-btn__note {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  bottom: calc(100% + 6px);
+  width: max-content;
+  max-width: 220px;
+  padding: 6px 10px;
+  background: var(--color-ink);
+  color: var(--color-surface);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* Detail page: under the price alert. */
+.listing-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Header: heart + count, only once something is saved. */
+.site-header__favorites {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 6px;
+  color: var(--header-nav-color);
+  text-decoration: none;
+  font-size: 14px;
+}
+.site-header__favorites:hover {
+  color: var(--header-nav-color);
+  opacity: 0.8;
+}
+
+/* Sticky compare tray. On a listing page below 901 px it rides above the
+   mobile contact bar instead of covering it. */
+.compare-bar {
+  position: fixed;
+  z-index: 31;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 10px 12px 10px 16px;
+  background: var(--color-primary);
+  color: var(--color-background);
+  box-shadow: 0 6px 24px rgba(16, 24, 40, 0.24);
+  font-size: 14px;
+}
+@media (width < 901px) {
+  body:has(.listing-cta-bar) .compare-bar {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+.compare-bar__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.compare-bar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.compare-bar__clear {
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.compare-bar__cta,
+.compare-bar__cta:hover {
+  padding: 8px 14px;
+  background: var(--color-background);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* /favoritos and /comparar */
+.saved-page__body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+.saved-page__note {
+  margin: 0 0 16px;
+  color: var(--color-ink-secondary);
+  font-size: 14px;
+}
+.saved-page__empty {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  color: var(--color-ink);
+}
+.saved-page__foot {
+  margin-top: 24px;
+}
+
+.compare-table__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.compare-table {
+  width: 100%;
+  min-width: 560px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: var(--color-ink);
+}
+.compare-table th,
+.compare-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+.compare-table__corner,
+.compare-table tbody th {
+  width: 160px;
+  color: var(--color-ink-secondary);
+  font-weight: 400;
+}
+.compare-table__head {
+  font-weight: 400;
+}
+.compare-table__link {
+  display: grid;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.compare-table__img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+.compare-table__title {
+  font-weight: 500;
+}
+.compare-table__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+.compare-table__remove {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-link);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* "Reportar este aviso" */
+.report-listing {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--color-ink);
+}
+.report-listing__summary {
+  cursor: pointer;
+  color: var(--color-ink-secondary);
+  text-decoration: underline;
+}
+.report-listing__form {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+.report-listing__intro,
+.report-listing__done {
+  margin: 8px 0 0;
+}
+.report-listing__reasons {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.report-listing__reason {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.report-listing__hint {
+  color: var(--color-ink-secondary);
+  font-size: 13px;
+}
+
+/* Who received the enquiry (Seeker 4). */
+.contact-form__recipient {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--color-ink);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
