@@ -48,6 +48,7 @@ import { isSuperAdmin } from "@/lib/auth/roles";
 import { updateLeadAction } from "./actions";
 import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
 import { esA3, type ReportReason } from "@/i18n/es-a3";
+import { OWNER_PANEL_SOURCE } from "@/lib/owner-realtor-request";
 import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
 import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
@@ -142,8 +143,9 @@ function waReplyHref(whatsapp: string): string {
  * founder's to answer directly.
  */
 function forwardHref(lead: AdminLeadRow) {
-  // A report is about the publisher, never forwarded to them.
-  if (!lead.ownerWhatsapp || isReport(lead)) return null;
+  // A report is about the publisher, never forwarded to them; the owner's own
+  // "sell it for me" request (A2) is from them, so forwarding it back is noise.
+  if (!lead.ownerWhatsapp || isReport(lead) || lead.utm?.source === OWNER_PANEL_SOURCE) return null;
   const href = waLink(
     lead.ownerWhatsapp,
     esPanel.forwardLeadMessage({
@@ -316,7 +318,7 @@ export default async function AdminLeadsPage({
       <div className="panel-card__head">
         <div>
           <h3 className="panel-card__title">
-            {shareTargets.length > 0 ? (
+            {shareTargets.length > 0 && !isReport(lead) ? (
               <input
                 type="checkbox"
                 name="leadIds"
@@ -356,7 +358,9 @@ export default async function AdminLeadsPage({
             {/* Who owns the follow-up: an agency, a particular
                 seller who has no panel yet, or you. */}
             <span>
-              {isReport(lead)
+              {/* An internal lead is yours whoever published the listing: a
+                  report, an owner's request, and every lead in agency mode. */}
+              {isReport(lead) || lead.routedTo === "internal"
                 ? ROUTED_LABEL.internal
                 : lead.agencyName ??
                 (lead.ownerWhatsapp
@@ -460,14 +464,17 @@ export default async function AdminLeadsPage({
         </div>
       </form>
 
-      <SharePanel
-        leadId={lead.id}
-        shares={sharesByLead.get(lead.id) ?? ([] as ShareRow[])}
-        targets={shareTargets}
-        back={backHref}
-        panelUrl={partnerPanelUrl}
-        leadName={lead.name}
-      />
+      {/* A report is never shared: shareLeads() refuses it too. */}
+      {!isReport(lead) && (
+        <SharePanel
+          leadId={lead.id}
+          shares={sharesByLead.get(lead.id) ?? ([] as ShareRow[])}
+          targets={shareTargets}
+          back={backHref}
+          panelUrl={partnerPanelUrl}
+          leadName={lead.name}
+        />
+      )}
 
       {/* Directory leads belong to nobody yet: the operator proposes
           up to three verified professionals and hands the lead over on

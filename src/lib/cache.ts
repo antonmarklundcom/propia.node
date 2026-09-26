@@ -36,6 +36,8 @@ export const CACHE_TAGS = {
   marketMedians: "market-medians",
   /** Latest USD-to-PYG rate; cron:fx in the panel invalidates this. */
   fx: "fx",
+  /** `site_settings` rows (business mode, analytics retention); /admin/ajustes invalidates this. */
+  settings: "settings",
 };
 
 /** Seconds. Short enough that a missed writer is a blip, not a bug report. */
@@ -48,6 +50,8 @@ export const CACHE_TTL = {
   marketMedians: 21_600,
   /** open.er-api.com's free tier refreshes daily; this is a safety margin, not the cadence. */
   fx: 3600,
+  /** Backstop only: the one writer (/admin/ajustes) drops the tag. */
+  settings: 300,
 } as const;
 
 /**
@@ -79,6 +83,16 @@ export function revalidateMarketMedians(): void {
   revalidateTag(CACHE_TAGS.marketMedians);
   // The home payload and sitemap embed price-city results under listings.
   revalidateTag(CACHE_TAGS.listings);
+}
+
+/**
+ * Call after any `site_settings` write. The business mode decides what every
+ * public page renders (contact, closed pages), so the listing-derived caches
+ * that embed contact data are dropped with it.
+ */
+export function revalidateSettings(): void {
+  revalidateTag(CACHE_TAGS.settings);
+  revalidateListings();
 }
 
 /** Call after a successful real cron:fx run in the operations panel. */

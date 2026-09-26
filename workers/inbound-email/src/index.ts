@@ -104,6 +104,31 @@ function base64Bytes(b64: string): number {
   return Math.floor((b64.length * 3) / 4) - pad;
 }
 
+/**
+ * The app's `inboundPayloadSchema` bounds, applied here so a legal but
+ * oversized header (a References chain from a very long thread, a mail with
+ * dozens of Reply-To addresses) is trimmed instead of failing the app's
+ * validation — which would send the message only to the fallback inbox.
+ */
+function cap(value: string | null | undefined, max: number): string | null {
+  return value == null ? null : value.slice(0, max);
+}
+
+function capAddresses(list: PayloadAddress[], max: number): PayloadAddress[] {
+  return list.slice(0, max).map((a) => ({
+    address: a.address.slice(0, 320),
+    name: a.name == null ? null : a.name.slice(0, 400),
+  }));
+}
+
+/** Keep the newest Message-IDs of a References header (the tail is what threads). */
+function capReferences(value: string | null | undefined): string | null {
+  if (value == null || value.length <= 20_000) return value ?? null;
+  const tail = value.slice(-20_000);
+  const firstId = tail.indexOf("<");
+  return firstId >= 0 ? tail.slice(firstId) : tail;
+}
+
 function header(email: Email, name: string): string | null {
   const h = email.headers.find((x) => x.key === name);
   return h ? h.value : null;
@@ -122,26 +147,26 @@ export async function buildPayload(
     const inline = content !== null && size <= MAX_ATTACHMENT_BYTES && size <= inlineBudget;
     if (inline) inlineBudget -= size;
     return {
-      filename: a.filename ?? null,
-      contentType: a.mimeType ?? null,
+      filename: cap(a.filename, 1000),
+      contentType: cap(a.mimeType, 255),
       size,
       content: inline ? content : null,
     };
   });
 
-  const from = flatten(email.from)[0] ?? null;
+  const from = capAddresses(flatten(email.from), 1)[0] ?? null;
   return {
     v: 1,
-    envelope,
-    messageId: email.messageId ?? null,
-    inReplyTo: email.inReplyTo ?? null,
-    references: email.references ?? null,
-    autoSubmitted: header(email, "auto-submitted"),
-    subject: email.subject ?? null,
+    envelope: { from: envelope.from.slice(0, 320), to: envelope.to.slice(0, 320) },
+    messageId: cap(email.messageId, 2000),
+    inReplyTo: cap(email.inReplyTo, 2000),
+    references: capReferences(email.references),
+    autoSubmitted: cap(header(email, "auto-submitted"), 100),
+    subject: cap(email.subject, 4000),
     from,
-    replyTo: flatten(email.replyTo),
-    to: flatten(email.to),
-    cc: flatten(email.cc),
+    replyTo: capAddresses(flatten(email.replyTo), 20),
+    to: capAddresses(flatten(email.to), 200),
+    cc: capAddresses(flatten(email.cc), 200),
     text: email.text ? email.text.slice(0, TEXT_MAX_CHARS) : null,
     // Truncated HTML would be broken HTML: past the cap, the text part is what the reader gets.
     html: email.html && email.html.length <= HTML_MAX_CHARS ? email.html : null,
@@ -151,8 +176,15 @@ export async function buildPayload(
   };
 }
 
-/** POST the payload; true only when the app answered 2xx. Never throws. */
-export async function deliver(env: Env, payload: InboundPayload): Promise<boolean> {
+/**
+ * POST the payload. `stored` only when the app answered 2xx; `dropped` when
+ * the app kept an attachment as metadata only (no private bucket configured),
+ * which means the original must still be forwarded. Never throws.
+ */
+export async function deliver(
+  env: Env,
+  payload: InboundPayload,
+): Promise<{ stored: boolean; dropped: boolean }> {
   try {
     const body = JSON.stringify(payload);
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -169,11 +201,15 @@ export async function deliver(env: Env, payload: InboundPayload): Promise<boolea
       signal: AbortSignal.timeout(POST_TIMEOUT_MS),
     });
     // Status only in the log — never an address, a subject or a body.
-    if (!res.ok) console.log(`inbound-email: app answered ${res.status}`);
-    return res.ok;
+    if (!res.ok) {
+      console.log(`inbound-email: app answered ${res.status}`);
+      return { stored: false, dropped: false };
+    }
+    const answer = (await res.json().catch(() => ({}))) as { attachmentsDropped?: unknown };
+    return { stored: true, dropped: answer.attachmentsDropped === true };
   } catch (e) {
     console.log(`inbound-email: POST failed (${e instanceof Error ? e.name : "error"})`);
-    return false;
+    return { stored: false, dropped: false };
   }
 }
 
@@ -186,8 +222,11 @@ export default {
     if (env.INBOUND_EMAIL_SECRET) {
       try {
         const payload = await buildPayload({ from: message.from, to: message.to }, raw);
-        trimmed = trimmedAttachments(payload);
-        stored = await deliver(env, payload);
+        const result = await deliver(env, payload);
+        stored = result.stored;
+        // Attachment bytes the Worker cut for size, or the app could not keep:
+        // either way the original goes to the fallback inbox too.
+        trimmed = trimmedAttachments(payload) || result.dropped;
       } catch (e) {
         console.log(`inbound-email: parse failed (${e instanceof Error ? e.name : "error"})`);
       }

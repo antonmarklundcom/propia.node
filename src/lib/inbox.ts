@@ -160,6 +160,12 @@ export interface StoredInbound {
   subject: string;
   /** False for our own machine mail and auto-generated mail — never alert on those (mail loops). */
   alert: boolean;
+  /**
+   * An attachment arrived with its bytes but was kept as metadata only (no
+   * private bucket configured). The route tells the Worker, which then still
+   * forwards the original to the fallback inbox — nothing is lost.
+   */
+  attachmentsDropped: boolean;
 }
 
 /**
@@ -241,7 +247,7 @@ export async function storeInbound(p: InboundPayload): Promise<StoredInbound> {
     .from(emailMessages)
     .where(eq(emailMessages.dedupKey, dedupKey))
     .limit(1);
-  const base = { mailbox, fromAddress, fromName, subject, alert: false };
+  const base = { mailbox, fromAddress, fromName, subject, alert: false, attachmentsDropped: false };
   if (existing) {
     return { ...base, status: "duplicate", id: existing.id, leadId: existing.leadId ?? null, threadKey: existing.threadKey };
   }
@@ -334,7 +340,16 @@ export async function storeInbound(p: InboundPayload): Promise<StoredInbound> {
   const ownMachineMail = fromAddress.endsWith(`@${machineDomain()}`);
   const alert = !ownMachineMail && (auto === "" || auto === "no");
 
-  return { ...base, status: "stored", id, leadId: thread.leadId, threadKey: thread.threadKey, alert };
+  const attachmentsDropped = p.attachments.some((a) => a.content != null) && !r2;
+  return {
+    ...base,
+    status: "stored",
+    id,
+    leadId: thread.leadId,
+    threadKey: thread.threadKey,
+    alert,
+    attachmentsDropped,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -533,9 +548,11 @@ export async function getInboxThread(viewer: InboxViewer, threadKey: string): Pr
     .select(messageColumns)
     .from(emailMessages)
     .where(and(eq(emailMessages.threadKey, threadKey), inboxScope(viewer)))
-    .orderBy(asc(emailMessages.id))
+    // Newest 200, shown oldest first: a cap must drop the oldest messages, never
+    // the reply the operator is about to answer.
+    .orderBy(desc(emailMessages.id))
     .limit(200);
-  return rows.length ? withAttachments(rows) : null;
+  return rows.length ? withAttachments(rows.reverse()) : null;
 }
 
 /** Mark a thread's inbound messages read. Scoped like the read. */
@@ -573,9 +590,11 @@ export async function listLeadThreads(leadIds: number[]): Promise<Map<number, In
     .select(messageColumns)
     .from(emailMessages)
     .where(inArray(emailMessages.leadId, ids))
-    .orderBy(asc(emailMessages.id))
+    // Newest 2000 across these leads, then oldest first per thread — the cap
+    // drops old history, never the latest buyer reply or its unread badge.
+    .orderBy(desc(emailMessages.id))
     .limit(2000);
-  for (const m of await withAttachments(rows)) {
+  for (const m of await withAttachments(rows.reverse())) {
     const list = out.get(m.leadId!) ?? [];
     list.push(m);
     out.set(m.leadId!, list);

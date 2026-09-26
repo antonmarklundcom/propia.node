@@ -30,6 +30,8 @@ import { currentLocale, dict } from "@/i18n/server";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { ContactForm } from "@/components/ContactForm";
+import { isAgencyMode } from "@/lib/site-settings";
+import { CONTACT_WHATSAPP } from "@/config/contact";
 import { safeImageUrl } from "@/lib/external-image";
 
 // Mirrors app/inmobiliaria/[slug]/page.tsx: DB-backed profile, no static
@@ -111,6 +113,9 @@ export default async function AgentProfilePage({ params }: Params) {
   // ItemList entries are listing detail URLs — canonical host may differ (F9).
   const listingOrigin = await listingCanonicalOrigin();
   const canonical = `${origin}${agentUrl(agent.slug)}`;
+  // Agency mode: an enquiry from a partner's profile reaches the operator
+  // first (docs/plan-agency-2026-09-26.md batch 3), never the partner directly.
+  const contactWhatsapp = (await isAgencyMode()) ? CONTACT_WHATSAPP : agent.whatsapp;
   const photo = safeImageUrl(agent.photoUrl) ?? undefined;
   const initials = agent.name
     .split(/\s+/)
@@ -272,7 +277,7 @@ export default async function AgentProfilePage({ params }: Params) {
                 <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
               </p>
             )}
-            {agent.whatsapp && (
+            {contactWhatsapp && (
               <div className="agent-profile__contact">
                 <a className="contact-form__altlink" href="#contacto">
                   <Glyph name="whatsapp" /> {d.agentProfile.whatsappLink}
@@ -298,12 +303,12 @@ export default async function AgentProfilePage({ params }: Params) {
         {/* The marketplace's contact block: a buyer enquiry handed off to the
             agent's own number, so it still gates on having one. The directory
             door's form is the branch above. */}
-        {agent.whatsapp && (
+        {contactWhatsapp && (
           <section className="contact-panel" id="contacto">
             <h2 className="contact-panel__title">{d.agentProfile.contactTitle}</h2>
             <p className="contact-panel__subtitle">{d.agentProfile.contactSubtitle}</p>
             <ContactForm
-              contactWhatsapp={agent.whatsapp}
+              contactWhatsapp={contactWhatsapp}
               leadType="buyer"
               prefillMessage={d.agentInquiryPrefillFor(brand, agent.name, canonical)}
               variant="panel"

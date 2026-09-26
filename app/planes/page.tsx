@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { isAgencyMode } from "@/lib/site-settings";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
@@ -111,6 +113,9 @@ const FAQ = [
 ];
 
 export default async function PlanesPage() {
+  // Agency mode: realtors join as partners by invitation, not by signing up
+  // from a pitch page (docs/plan-agency-2026-09-26.md batch 3).
+  if (await isAgencyMode()) redirect("/contacto");
   const origin = await siteOrigin();
 
   return (

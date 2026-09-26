@@ -6,6 +6,7 @@ import { countReviewQueue } from "@/lib/panel-queries";
 import { listAdminEvents, type AdminEventRow } from "@/lib/admin-events";
 import { esPanel } from "@/i18n/es";
 import { esA5 } from "@/i18n/es-a5";
+import { esAgency } from "@/i18n/es-agency";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ function targetHref(e: AdminEventRow): string | null {
   if (e.targetType === "user") return "/admin/usuarios";
   if (e.targetType === "lead") return "/admin/leads";
   if (e.targetType === "agency") return "/admin/agentes";
+  if (e.targetType === "setting") return "/admin/ajustes";
   return null;
 }
 
@@ -80,12 +82,12 @@ export default async function AdminHistoryPage() {
               <tbody>
                 {events.map((e) => {
                   const href = targetHref(e);
-                  const label = `${esPanel.historyTargetLabel[e.targetType] ?? esA5.historyTargetLabel[e.targetType] ?? e.targetType} #${e.targetId}`;
+                  const label = `${esPanel.historyTargetLabel[e.targetType] ?? esA5.historyTargetLabel[e.targetType] ?? esAgency.historyTargetLabel[e.targetType] ?? e.targetType} #${e.targetId}`;
                   return (
                     <tr key={e.id}>
                       <td>{formatWhen(e.createdAt)}</td>
                       <td>{e.actorName ?? e.actorEmail ?? "—"}</td>
-                      <td>{esPanel.historyAction[e.action] ?? esA5.historyAction[e.action] ?? e.action}</td>
+                      <td>{esPanel.historyAction[e.action] ?? esA5.historyAction[e.action] ?? esAgency.historyAction[e.action] ?? e.action}</td>
                       <td>{href ? <Link href={href}>{label}</Link> : label}</td>
                       <td>{detailText(e)}</td>
                     </tr>
