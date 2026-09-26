@@ -160,3 +160,27 @@ a verified agency or agent through a new `lead_assignments` table (not
 4. **Staff listing rights:** today `staff` can set a listing to `published` and
    hard-delete from `/admin/propiedades`, although Approve/Reject is
    superadmin-only. Intended or not?
+
+## 2026-09-26 — Inbound email (E2/E3), choices made while building
+
+Built on `claude/build-e2e3-inbox` (`docs/log/e2e3.md`). Chosen and working;
+say if any should change:
+
+1. **Staff see hola@ and contacto@ only; anton@ is the super-admin's.**
+   `SHARED_MAILBOXES` in `src/lib/inbox-address.ts`. Anything else that lands
+   (anton@, a mistyped address caught by the catch-all, a forged `lead-…@`)
+   is super-admin only.
+2. **A lead's email thread is shown to everyone who may see the lead** —
+   including a partner the lead was shared with, and the FSBO owner. They
+   already see the buyer's name, phone, email and message; the thread adds
+   what the buyer wrote back by email. This rides on the open privacy
+   sentence of 2026-09-25 (item 1 above): if sharing stays restricted, so
+   does this.
+3. **"Convertir en consulta" asks the operator for a WhatsApp number**
+   (prefilled when the email contains one), because `leads.whatsapp` is
+   required everywhere. An email with no phone cannot become a lead until the
+   operator has one.
+4. **No email notification to the owner or partner when a buyer replies by
+   email.** The operator gets Telegram; the others see it next time they open
+   their leads page. Say if they should get an email too (one function in
+   `lead-emails.ts`).

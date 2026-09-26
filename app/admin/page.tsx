@@ -10,6 +10,7 @@ import { esPanel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
+import { countUnreadInbox } from "@/lib/inbox";
 import { approveAction, rejectAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -27,9 +28,10 @@ const OPERATION_LABEL: Record<string, string> = {
 
 export default async function AdminReviewPage() {
   const user = await requireStaffOrAbove();
-  const [queue, recentLeads, health] = await Promise.all([
+  const [queue, recentLeads, unreadEmail, health] = await Promise.all([
     getReviewQueue(),
     countRecentLeads(24, isStaff(user.role)),
+    countUnreadInbox({ userId: user.id, superAdmin: isSuperAdmin(user.role) }),
     /**
      * Cached for five minutes and never tagged (`src/lib/health.ts`), so this
      * adds a handful of counts to the first render of each window and nothing to
@@ -46,7 +48,7 @@ export default async function AdminReviewPage() {
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("review", queue.length, undefined, recentLeads)}
+        tabs={adminTabs("review", queue.length, undefined, recentLeads, unreadEmail)}
       />
       <main className="panel site-main">
         {health ? <HealthSection health={health} /> : null}

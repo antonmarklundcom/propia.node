@@ -127,6 +127,13 @@
       "when": 1790373853925,
       "tag": "0017_mushy_madrox",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1790436114521,
+      "tag": "0018_hard_deathstrike",
+      "breakpoints": true
     }
   ]
 }

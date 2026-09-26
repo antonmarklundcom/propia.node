@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks",
-    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit",
+    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -35,6 +35,7 @@
     "verify:i18n": "tsx --tsconfig scripts/tsconfig.json scripts/verify-i18n.ts",
     "verify:seo": "tsx --tsconfig scripts/tsconfig.json scripts/verify-seo.ts",
     "verify:rate-limit": "tsx --tsconfig scripts/tsconfig.json scripts/verify-rate-limit.ts",
+    "verify:inbox": "tsx --tsconfig scripts/tsconfig.json scripts/verify-inbox.ts",
     "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",
     "backfill:images": "tsx --tsconfig scripts/tsconfig.json scripts/backfill-images.ts",
     "verify:scopes": "tsx --tsconfig scripts/tsconfig.json scripts/verify-scopes.ts",
@@ -55,6 +56,7 @@
     "next": "^15.3.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sanitize-html": "^2.17.7",
     "sharp": "^0.35.3",
     "zod": "^3.25.67"
   },
@@ -63,6 +65,7 @@
     "@types/node": "^22.15.32",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/sanitize-html": "^2.16.1",
     "drizzle-kit": "^0.31.1",
     "tsx": "^4.23.0",
     "typescript": "^5.8.3"

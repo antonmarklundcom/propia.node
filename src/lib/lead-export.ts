@@ -23,6 +23,7 @@ import {
 } from "@/lib/panel-queries";
 import {
   getSharedLeads,
+  isLeadSharedWithPanel,
   type PanelViewer,
   type SharedLeadRow,
 } from "@/lib/lead-assignments";
@@ -42,6 +43,21 @@ export function panelShowsOwnLeads(ctx: {
   user: { role: string };
 }): boolean {
   return !(ctx.agencyId == null && ctx.user.role === "agency_admin");
+}
+
+/**
+ * May this /agencia caller see lead N — i.e. is it on their /agencia/leads
+ * page? Exactly the page's two lists (own, when shown; shared), asked for
+ * one id. The email thread's reply action (wave E2) re-checks with this
+ * rather than trusting the lead id a form posted.
+ */
+export async function panelCanSeeLead(
+  ctx: { agencyId: number | null; user: { id: number; role: string } },
+  scope: EditScope,
+  leadId: number,
+): Promise<boolean> {
+  if (panelShowsOwnLeads(ctx) && (await getPanelLeads(scope, leadId)).length > 0) return true;
+  return isLeadSharedWithPanel({ agencyId: ctx.agencyId, userId: ctx.user.id }, leadId);
 }
 
 export interface PanelLeadSet {
