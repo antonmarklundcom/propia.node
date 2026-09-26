@@ -26,6 +26,7 @@ import {
   listingViewsDaily,
 } from "@/db/schema";
 import { syncDisplayCoords } from "../geo";
+import { parseSnapshot } from "./snapshot";
 import type { ImportReport } from "./types";
 import type { CommittedRow } from "./upsert";
 import type { ListingSource } from "./types";
@@ -369,19 +370,11 @@ export async function rollbackImportJob(
         (row.outcome === "updated" || row.outcome === "paused") &&
         row.previousJson
       ) {
-        // MariaDB returns JSON columns as text. An invalid snapshot is skipped
-        // just like a missing one, without marking the row as reverted.
-        let previous: unknown = row.previousJson;
-        if (typeof previous === "string") {
-          try {
-            previous = JSON.parse(previous);
-          } catch {
-            continue;
-          }
-        }
-        if (!previous || typeof previous !== "object" || Array.isArray(previous)) {
-          continue;
-        }
+        // MariaDB returns JSON columns as text (parseSnapshot). An invalid
+        // snapshot is skipped just like a missing one, without marking the row
+        // as reverted.
+        const previous = parseSnapshot(row.previousJson);
+        if (!previous) continue;
         // The snapshot carries two non-column keys the commit rode along:
         // `_images` (the image rows syncImages replaced) and `_source` (the
         // content_hash the commit advanced). Restoring only the scalar columns
@@ -433,9 +426,7 @@ export async function rollbackImportJob(
         // attached to predates the batch and is not ours to remove. Newer jobs
         // recorded the exact row id at commit (F12: the timestamp predicate never
         // matched, because the job header is written after commit).
-        const sourceRowId = (
-          row.previousJson as { _sourceRowId?: number } | null
-        )?._sourceRowId;
+        const sourceRowId = parseSnapshot(row.previousJson)?._sourceRowId;
         if (typeof sourceRowId === "number") {
           await tx
             .delete(listingSources)

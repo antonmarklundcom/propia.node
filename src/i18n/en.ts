@@ -624,7 +624,7 @@ export const enGuideEn = {
 /** Home page. */
 export const enHome = {
   metaDescription:
-    "Houses, apartments and land for sale and rent across Paraguay, with estimated monthly payments and financing.",
+    "Houses, apartments and land for sale and rent across Paraguay — search by city, neighbourhood and budget.",
   publishWaPrefill: (brand: string) =>
     `Hi, I would like to list a property on ${brand}.`,
 
@@ -632,7 +632,7 @@ export const enHome = {
   heroTitleLead: "Find your property in ",
   heroTitleHighlight: "Paraguay",
   heroSubtitle:
-    "Houses, apartments and land for sale and rent — with estimated monthly payments and financing.",
+    "Houses, apartments and land for sale and rent — search by city, neighbourhood and budget.",
   heroSeeListings: "Browse properties",
   heroSellCta: "Sell my property",
   heroStatCount: (total: string) => `${total} properties listed`,
@@ -670,7 +670,7 @@ export const enHome = {
     {
       icon: "chart",
       title: "Compare against the market",
-      text: "Every property for sale shows its estimated monthly payment, and we publish the median price per m² for each city.",
+      text: "We publish the median price per m² for each city, so you can see how a property's price compares.",
     },
     {
       icon: "chat",
@@ -690,7 +690,7 @@ export const enHome = {
   investKicker: "Investing",
   investTitle: "Invest in Paraguay on data, not on hunches",
   investText:
-    "We publish the median price per m² for each city, calculated from the listings on the portal, and the estimated monthly payment on every property for sale under the financing programmes currently available.",
+    "We publish the median price per m² for each city, calculated from the listings on the portal, so you can compare areas on data.",
   investImageAlt: "Asunción at sunset",
   investPricesCta: "See prices by area",
   investFinancingCta: "How financing works →",
@@ -726,9 +726,9 @@ export const enHome = {
       text: "You speak to the seller or the agency directly, with no middleman.",
     },
     {
-      icon: "card",
-      title: "Estimated monthly payment",
-      text: "Every property for sale shows its monthly payment under current financing.",
+      icon: "chart",
+      title: "Median prices by city",
+      text: "We publish the median price per m² for each city, calculated from the listings on the portal.",
     },
     {
       icon: "pin",
@@ -806,7 +806,7 @@ export const enHub = {
   copy: {
     venta: {
       h1: "Property for sale in Paraguay",
-      lead: "Houses, apartments, land and commercial units for sale across the country. Every listing shows its estimated monthly payment, so you know from the start whether the number works for you.",
+      lead: "Houses, apartments, land and commercial units for sale across the country, by city, property type and price.",
       label: "For sale",
       cityLabel: "Buy in",
     },
@@ -851,7 +851,7 @@ export const enHub = {
       paragraphs: [
         "Asuncion holds most of the country's for-sale inventory, with very different neighbourhoods to choose from: quiet, established areas like Carmelitas and Villa Morra, redeveloping riverside districts along the Costanera, and more affordable options toward the south and west of the capital. Just outside the capital, cities such as Luque, San Lorenzo, Lambare and Fernando de la Mora offer lower prices without moving far from the centre, while Encarnacion and Ciudad del Este serve much of the demand from the interior and the border region.",
         "Foreign buyers can own property in Paraguay under the same terms as Paraguayan citizens for most residential real estate. Before you go further, it helps to be clear on the property type you are after (house, apartment, land, duplex, commercial unit or office), your budget in US dollars — the currency most listings are priced in, even though the local currency is the Guarani — and whether the listed price already covers closing and registration costs, which in Paraguay are typically paid by the buyer. As with any purchase abroad, working with a local professional — a real estate agent, a notary (escribano), or both — is worth it to confirm the property's paperwork before committing.",
-        "Financing is worth thinking through too: many listings already show an estimated monthly payment, calculated against mortgage terms available in the Paraguayan market, as a quick reference for how a property compares beyond its sale price. That figure is an estimate, not a substitute for an actual bank or lender's credit assessment.",
+        "Financing is worth thinking through too: if you plan to borrow, speak with a bank or lender early, since only their credit assessment tells you what terms you would actually get.",
         "When comparing properties, check the total and covered square metres, the number of bedrooms and bathrooms, and whether the land or building has its paperwork in order (title deed, approved building plans, property tax up to date). A serious listing will usually include this information, or share it readily on request.",
         "Working with an agent or agency is not required, but it can make the process easier: someone who knows the area well can help narrow down options that fit your actual budget, arrange viewings, and often has a sense of recent price history in the neighbourhood. On this site, verified professionals carry a badge on their profile, so you can confirm who you are dealing with before reaching out.",
         "Contacting whoever posted the listing directly — owner, agent or agency — is the fastest way to confirm availability, arrange a viewing and settle specific questions about the property. Every listing on this site has a direct WhatsApp contact, with no intermediary and no fee for the buyer.",
@@ -913,7 +913,7 @@ export const enCategory = {
   titlePaged: (title: string, page: number) => `${title} — page ${page}`,
   metaNotFound: "Not found",
   metaDescription: (count: number, title: string, brand: string) =>
-    `${count} ${title.toLowerCase()} on ${brand}. Find your next property with estimated monthly payments and financing.`,
+    `${count} ${title.toLowerCase()} on ${brand}. Compare prices and contact whoever lists them directly.`,
   breadcrumbHome: "Home",
   count: (n: number) =>
     `${n} ${n === 1 ? "property" : "properties"} available.`,
@@ -2260,7 +2260,7 @@ export const enPremium = {
   heroTitleHighlight: "in",
   heroTitleTail: " Paraguay",
   heroSubtitle:
-    "Houses, apartments and land for sale and for rent in Asunción and across the country, with an estimated monthly payment and financing.",
+    "Houses, apartments and land for sale and for rent in Asunción and across the country.",
   heroBrowse: "Browse properties",
   heroWhatsapp: "Message us on WhatsApp",
   waPrefill: (brand: string) =>
@@ -2288,7 +2288,7 @@ export const enPremium = {
   aboutKicker: (brand: string) => `We are ${brand}`,
   aboutTitle: "Clarity. Trust.\nResults.",
   aboutText: (brand: string) =>
-    `${brand} brings together houses, apartments and land from agencies and private owners across Paraguay. Every listing shows its price, its estimated monthly payment and direct contact details for whoever published it — no middleman, and no commission for you.`,
+    `${brand} brings together houses, apartments and land from agencies and private owners across Paraguay. Every listing shows its price and direct contact details for whoever published it — no middleman, and no commission for you.`,
   aboutCta: "More about us",
   aboutHref: "/nosotros",
   servicesTitle: "What you can do here",
@@ -2359,7 +2359,7 @@ export const enPremium = {
 
 export const enAboutPage = {
   principleInformation: "Information before listings",
-  principleInformationBody: "A portal should be more than a noticeboard. We publish median prices by city and per m², estimated monthly payments on each property for sale, and free online valuations so you can compare, not just browse.",
+  principleInformationBody: "A portal should be more than a noticeboard. We publish median prices by city and per m², and free online valuations so you can compare, not just browse.",
   principleDirect: "Direct contact, no toll",
   principleDirectBody: "Enquiries go straight from the person searching to the person listing. We do not charge per lead, resell contacts or take part in negotiations.",
   principleLocal: "Built for Paraguay",
@@ -2380,14 +2380,14 @@ export const enAboutPage = {
   limitsHeading: "What we do not do",
   limitsBody: "We are not a real estate agency and do not represent either party. We do not negotiate, handle deposits or contracts, or independently verify ownership of each listed property. Before paying or signing, check the documentation with a notary.",
   dataHeading: "Where the data comes from",
-  dataBody: "Owners, agencies and agents add listings through the portal dashboard. Median prices are calculated from published listings for each city and property type, and we only publish a figure when the sample reaches a reasonable minimum. Estimated monthly payments use the terms of financing programmes available in Paraguay and are indicative: actual payments depend on the lender, term and your credit profile.",
+  dataBody: "Owners, agencies and agents add listings through the portal dashboard. Median prices are calculated from published listings for each city and property type, and we only publish a figure when the sample reaches a reasonable minimum.",
   ctaHeading: "Want to list your property?",
   ctaBody: "Add it in minutes and reach people searching in your area.",
   publish: "List for free",
   contact: "Contact us",
   title: "About us",
-  description: (brand: string) => `${brand} is Paraguay’s real estate portal: searching and listing are free, and each listing shows an area reference price and estimated monthly payment.`,
-  intro: (brand: string) => `${brand} began with a specific frustration: searching for a home in Paraguay means browsing duplicate listings with no reference price and no way to tell whether the monthly payment fits your budget. We built the portal we wanted to use.`,
+  description: (brand: string) => `${brand} is Paraguay’s real estate portal: searching and listing are free, and each listing shows an area reference price.`,
+  intro: (brand: string) => `${brand} began with a specific frustration: searching for a home in Paraguay means browsing duplicate listings with no reference price to compare against. We built the portal we wanted to use.`,
 } as const;
 
 export const enContactPage = {
@@ -2617,8 +2617,8 @@ export const enParaInmobiliarias = {
   benefitProfileBody: "Your own page with your logo, agents and all active listings ? a link you can share that also helps you appear on Google.",
   benefitData: "Real market data",
   benefitDataBody: "Median prices by city and per square metre, calculated from published listings. Concrete data to support your next listing pitch.",
-  benefitPayment: "An estimated monthly payment on every listing",
-  benefitPaymentBody: "We automatically show an approximate monthly payment based on current financing options. Buyers can see from the outset whether the numbers work for them.",
+  benefitPayment: "Your listings in English too",
+  benefitPaymentBody: "Listings open to foreign buyers also appear on our English-language site, so buyers abroad can find them.",
   benefitTeam: "Accounts for your team",
   benefitTeamBody: "Each agent gets a login and public profile under your agency account. You can see activity across the whole office.",
   stepAccount: "Create your account",

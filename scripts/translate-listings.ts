@@ -4,16 +4,14 @@
  * `translation_hash` rule live in `src/lib/ops/translate.ts` and
  * `src/lib/translate.ts`.
  *
- *   DATABASE_URL="mysql://..." DEEPL_API_KEY="...:fx" npm run cron:translate -- --limit 25
- *   ... GEMINI_API_KEY="AQ...."  npm run cron:translate       # or Gemini alone
+ *   DATABASE_URL="mysql://..." GEMINI_API_KEY="AQ...." npm run cron:translate -- --limit 25
  *   ... ANTHROPIC_API_KEY="sk-..." npm run cron:translate     # or Claude alone
  *   ... npm run cron:translate -- --dry            # what would run, no API calls
  *   ... npm run cron:translate -- --id 1234        # one listing, ignores the hash
  *   ... npm run cron:translate -- --force          # re-translate everything
  *
- * **Use `--limit`.** DeepL's free "Developer" tier is a ONE-TIME 1,000,000-
- * character credit, not a recurring monthly allowance — run it bounded and watch
- * usage in the DeepL dashboard rather than wide open.
+ * **Use `--limit`.** Every row is a paid API call — run it bounded and watch
+ * usage in the provider's dashboard rather than wide open.
  *
  * Exits 1 if any row failed, having printed the whole report: a cron that mails
  * its output then says something went wrong without pretending the batch died.
