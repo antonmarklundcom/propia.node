@@ -61,6 +61,23 @@ import {
   moveAgentToAgency,
   redeemInviteForExistingAccount,
 } from "../src/lib/team-queries";
+import {
+  getEditableAgent,
+  listEditableAgents,
+  updateAgentProfile,
+  type AgentEditor,
+  type AgentProfileEdit,
+} from "../src/lib/agent-profile-edit";
+import {
+  adminLeadRows,
+  adminLeadsCsv,
+  panelLeadSet,
+  panelLeadsCsv,
+  panelShowsOwnLeads,
+  parseAdminLeadFilter,
+} from "../src/lib/lead-export";
+import { toCsv } from "../src/lib/csv";
+import { getAgentNumbers } from "../src/lib/team-stats";
 
 const url = process.env.DATABASE_URL ?? "";
 if (!/@(localhost|127\.0\.0\.1|mysql)[:/]/.test(url)) {
@@ -536,6 +553,131 @@ async function main() {
     );
 
     /* ---------------------------------------------------------------- */
+    /* Lead exports and per-agent numbers (build A1)                    */
+    /* ---------------------------------------------------------------- */
+    /**
+     * The CSV must hold exactly what the panel shows: the same two reads
+     * under the same scope, never another agency's row, and for staff never a
+     * lane outside `internal`.
+     */
+    const setA = await panelLeadSet({ scope: agencyScope, viewer: viewerA, showOwn: true });
+    const pageOwnA = await getPanelLeads(agencyScope);
+    const pageSharedA = await getSharedLeads(viewerA);
+    const ids = (rows: { id: number }[]) => rows.map((r) => r.id).join(",");
+    check("export (own) = the page's own inbox", ids(setA.own) === ids(pageOwnA), `${setA.own.length} row(s)`);
+    check("export (shared) = the page's shared list", ids(setA.shared) === ids(pageSharedA), `${setA.shared.length} row(s)`);
+    check("export carries the lead shared with the agency", setA.shared.some((l) => l.id === sharedLeadId));
+    const setB = await panelLeadSet({
+      scope: { kind: "agency", agencyId: otherAgencyId },
+      viewer: viewerB,
+      showOwn: true,
+    });
+    check("another agency's export lacks the share", setB.shared.every((l) => l.id !== sharedLeadId));
+    check(
+      "another agency's export lacks the agency's own leads",
+      setB.own.every((l) => !pageOwnA.some((a) => a.id === l.id)),
+    );
+    const setOwner = await panelLeadSet({ scope: ownerScope, viewer: viewerIndep, showOwn: true });
+    check(
+      "the independent's export has their owner-lane lead and no internal one",
+      setOwner.own.some((l) => l.name === "Verify buyer lead") &&
+        !setOwner.own.some((l) => l.name === "Verify internal lead"),
+    );
+    check(
+      "an agency_admin with no agency exports no own inbox",
+      !panelShowsOwnLeads({ agencyId: null, user: { role: "agency_admin" } }) &&
+        panelShowsOwnLeads({ agencyId: null, user: { role: "agent" } }),
+    );
+    const csvA = panelLeadsCsv(setA, "http://localhost:3000");
+    check("panel CSV starts with a UTF-8 BOM", csvA.startsWith("\uFEFF"));
+    check("panel CSV holds the shared lead", csvA.includes(`Verify shared internal ${stamp}`));
+    check("panel CSV has one line per row plus the header", csvA.trimEnd().split("\r\n").length === 1 + setA.own.length + setA.shared.length);
+
+    const staffRows = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared` }, []), isStaff("staff"));
+    check("staff export: internal lane only", staffRows.length > 0 && staffRows.every((l) => l.routedTo === "internal"));
+    check("staff export lacks the agency-lane lead", staffRows.every((l) => l.id !== agencyLaneLeadId));
+    const adminRows = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared` }, []), false);
+    check("admin export includes the agency-lane lead", adminRows.some((l) => l.id === agencyLaneLeadId));
+    const telRows = await adminLeadRows(parseAdminLeadFilter({ tel: "986000002" }, []), false);
+    check("admin export honours the same-number filter", telRows.length > 0 && telRows.every((l) => l.whatsapp.endsWith("986000002")));
+    check(
+      "admin export ignores a site that no lead carries",
+      parseAdminLeadFilter({ sitio: "nope" }, ["verify"]).vertical === undefined &&
+        parseAdminLeadFilter({ sitio: "verify" }, ["verify"]).vertical === "verify",
+    );
+    check("admin CSV starts with a UTF-8 BOM", adminLeadsCsv(adminRows, "http://localhost:3000").startsWith("\uFEFF"));
+    const injected = toCsv(["a", "b", "c"], [["=HYPERLINK(\"x\")", "+595 981 000 001", "-1+cmd"]]);
+    check(
+      "CSV neutralises formulas but keeps phone numbers",
+      injected.includes(`"'=HYPERLINK(""x"")"`) && injected.includes(",+595 981 000 001,") && injected.includes("'-1+cmd"),
+      JSON.stringify(injected),
+    );
+
+    // Per-agent numbers: one agent-owned published listing with a recent
+    // lead, and one answered share, all inside agency A.
+    await db.update(agents).set({ isVerified: true }).where(eq(agents.id, agentRow.id));
+    const [teamListingRes] = await db.insert(listings).values({
+      ...base,
+      publicId: `vft${String(stamp).slice(-7)}`,
+      slug: `verify-team-${stamp}`,
+      title: "Verify team listing",
+      priceAmount: "80000",
+      priceUsd: "80000",
+      agencyId,
+      agentId: agentRow.id,
+    });
+    const teamListingId = Number((teamListingRes as unknown as { insertId: number }).insertId);
+    createdListingIds.push(teamListingId);
+    await db.insert(leads).values({
+      leadType: "buyer",
+      vertical: "verify",
+      listingId: teamListingId,
+      whatsapp: "0986000003",
+      name: "Verify team lead",
+      routedTo: "agency",
+    });
+    const ownAfter = (await panelLeadSet({ scope: agencyScope, viewer: viewerA, showOwn: true })).own;
+    check(
+      "the agency's export gains the new lead, exactly as its page does",
+      ownAfter.some((l) => l.name === "Verify team lead") &&
+        ids(ownAfter) === ids(await getPanelLeads(agencyScope)),
+    );
+    check(
+      "another agency's export does not",
+      (await panelLeadSet({ scope: { kind: "agency", agencyId: otherAgencyId }, viewer: viewerB, showOwn: true }))
+        .own.every((l) => l.name !== "Verify team lead"),
+    );
+    await shareLeads({
+      leadIds: [sharedLeadId],
+      target: { kind: "agent", id: agentRow.id },
+      note: null,
+      byUserId: agencyOwner.userId,
+      internalOnly: false,
+    });
+    const agentShare = (await getSharedLeads(viewerA)).find(
+      (l) => l.id === sharedLeadId && l.assignmentId !== shareA.assignmentId,
+    );
+    check("an agent-of-the-agency share reaches the agency panel", Boolean(agentShare));
+    if (agentShare) {
+      await setShareState({ assignmentId: agentShare.assignmentId, state: "contacted", viewer: viewerA });
+    }
+    const numbersA = await getAgentNumbers(agencyId);
+    const mine = numbersA.find((n) => n.agentId === agentRow.id);
+    check(
+      "team numbers count the agent's listing, lead and answer",
+      mine?.published === 1 && mine.leads === 1 && mine.sharedAnswered === 1 && mine.medianHours != null,
+      JSON.stringify(mine),
+    );
+    check(
+      "team numbers stay inside the agency",
+      numbersA.every((n) => n.agentId !== otherAgentRow.id && n.agentId !== indepAgent.id),
+    );
+    check(
+      "another agency's numbers never list this agency's agent",
+      (await getAgentNumbers(otherAgencyId)).every((n) => n.agentId !== agentRow.id),
+    );
+
+    /* ---------------------------------------------------------------- */
     /* Profile editing                                                  */
     /* ---------------------------------------------------------------- */
     const slugBefore = agencyRow!.slug;
@@ -588,6 +730,148 @@ async function main() {
       (await getOwnAgentProfile(agencyOwner.userId))?.name ===
         "Verify Agency Owner",
     );
+
+    /* ---------------------------------------------------------------- */
+    /* Agent profile editing — who may write which agents row (A4)      */
+    /* ---------------------------------------------------------------- */
+    /**
+     * `agentEditWhere()` is the whole boundary: an agent edits only their own
+     * row, an agency admin also their own agency's agents, nobody else's. A
+     * colleague joins the first agency the way an accepted invite leaves them:
+     * an agents row with that agency_id and the `agent` role.
+     */
+    const colleague = await registerAccount({
+      kind: "independent",
+      name: "Verify Colleague",
+      email: mail("colleague"),
+      password: "secreto123",
+      whatsapp: null,
+      agencyName: null,
+    });
+    check("colleague signup succeeds", colleague.ok);
+    if (!colleague.ok) return;
+    createdUserIds.push(colleague.userId);
+    await db.update(agents).set({ agencyId }).where(eq(agents.userId, colleague.userId));
+    const [colleagueAgent] = await db.select().from(agents).where(eq(agents.userId, colleague.userId));
+    const [ownerAgent] = await db.select().from(agents).where(eq(agents.userId, agencyOwner.userId));
+
+    const [city] = await db
+      .select({ slug: locations.slug })
+      .from(locations)
+      .where(eq(locations.level, "ciudad"))
+      .limit(1);
+    const citySlug = city?.slug ?? "";
+
+    const adminEd: AgentEditor = { userId: agencyOwner.userId, role: "agency_admin", agencyId };
+    const colleagueEd: AgentEditor = { userId: colleague.userId, role: "agent", agencyId };
+    const indepEd: AgentEditor = { userId: independent.userId, role: "agent", agencyId: null };
+    const otherAdminEd: AgentEditor = { userId: otherOwner.userId, role: "agency_admin", agencyId: otherAgencyId };
+    // An agency_admin with no agency (a company account later unlinked).
+    const looseAdminEd: AgentEditor = { userId: independent.userId, role: "agency_admin", agencyId: null };
+
+    const edit = (over: Partial<AgentProfileEdit>): AgentProfileEdit => ({
+      name: "Verify Profile",
+      whatsapp: "",
+      photoUrl: "",
+      bio: "",
+      licenseNo: "",
+      yearsActive: "",
+      zones: [],
+      ...over,
+    });
+    const nameOf = async (agentId: number) =>
+      (await db.select({ name: agents.name }).from(agents).where(eq(agents.id, agentId)))[0]?.name;
+
+    const ownSave = await updateAgentProfile(colleagueEd, colleagueAgent.id, edit({
+      name: "Verify Colleague Edited",
+      bio: "Vendo casas en Asunción.",
+      licenseNo: "MAT-123",
+      yearsActive: "7",
+      zones: [citySlug, "no-es-una-ciudad", citySlug],
+    }));
+    const [colleagueAfter] = await db.select().from(agents).where(eq(agents.id, colleagueAgent.id));
+    check("agent edits their own profile", ownSave.ok && colleagueAfter.name === "Verify Colleague Edited");
+    check(
+      "bio, licence and years are stored",
+      colleagueAfter.bio === "Vendo casas en Asunción." &&
+        colleagueAfter.licenseNo === "MAT-123" &&
+        colleagueAfter.yearsActive === 7,
+    );
+    const storedZones = (await getEditableAgent(colleagueEd, colleagueAgent.id))?.zones ?? [];
+    check(
+      "zones keep real ciudad slugs only, deduplicated",
+      citySlug !== "" && storedZones.length === 1 && storedZones[0] === citySlug,
+      JSON.stringify(storedZones),
+    );
+
+    check(
+      "agent cannot edit their agency admin's profile",
+      !(await updateAgentProfile(colleagueEd, ownerAgent.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(ownerAgent.id)) !== "Hijacked",
+    );
+    check(
+      "agent cannot read a colleague's profile for editing",
+      (await getEditableAgent(colleagueEd, ownerAgent.id)) === null,
+    );
+    check(
+      "agent cannot edit another agency's agent",
+      !(await updateAgentProfile(colleagueEd, otherAgentRow.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(otherAgentRow.id)) !== "Hijacked",
+    );
+    check(
+      "independent cannot edit an agency's agent",
+      !(await updateAgentProfile(indepEd, colleagueAgent.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(colleagueAgent.id)) !== "Hijacked",
+    );
+
+    const adminSave = await updateAgentProfile(adminEd, colleagueAgent.id, edit({
+      name: "Verify Colleague By Admin",
+      zones: [citySlug],
+    }));
+    check(
+      "agency admin edits their own agency's agent",
+      adminSave.ok && (await nameOf(colleagueAgent.id)) === "Verify Colleague By Admin",
+    );
+    check(
+      "another agency's admin cannot edit that agent",
+      !(await updateAgentProfile(otherAdminEd, colleagueAgent.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(colleagueAgent.id)) === "Verify Colleague By Admin",
+    );
+    check(
+      "agency admin cannot edit an independent agent",
+      !(await updateAgentProfile(adminEd, indepAgent.id, edit({ name: "Hijacked" }))).ok &&
+        (await nameOf(indepAgent.id)) !== "Hijacked",
+    );
+    check(
+      "an agency_admin with no agency reaches only their own row",
+      (await listEditableAgents(looseAdminEd)).every((a) => a.userId === independent.userId),
+    );
+
+    const adminList = (await listEditableAgents(adminEd)).map((a) => a.id);
+    check(
+      "admin's editable list is exactly their agency's agents",
+      adminList.includes(ownerAgent.id) &&
+        adminList.includes(colleagueAgent.id) &&
+        !adminList.includes(otherAgentRow.id) &&
+        !adminList.includes(indepAgent.id),
+      JSON.stringify(adminList),
+    );
+    const colleagueList = (await listEditableAgents(colleagueEd)).map((a) => a.id);
+    check(
+      "agent's editable list is only their own row",
+      colleagueList.length === 1 && colleagueList[0] === colleagueAgent.id,
+      JSON.stringify(colleagueList),
+    );
+
+    const badYears = await updateAgentProfile(colleagueEd, colleagueAgent.id, edit({ yearsActive: "200" }));
+    check("years out of range refused", !badYears.ok && badYears.error === "years");
+    const badPhoto = await updateAgentProfile(colleagueEd, colleagueAgent.id, edit({ photoUrl: "http://127.0.0.1/x.png" }));
+    check("unsafe photo URL refused", !badPhoto.ok && badPhoto.error === "photo");
+    const [slugAfter] = await db
+      .select({ slug: agents.slug })
+      .from(agents)
+      .where(eq(agents.id, colleagueAgent.id));
+    check("agent slug is never rewritten on edit", slugAfter.slug === colleagueAgent.slug);
 
     const collision = await updateOwnAccount(independent.userId, {
       name: "Verify Independent",

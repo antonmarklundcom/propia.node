@@ -1,0 +1,91 @@
+/* plan-build A4 — agent profile zones and the listing quality check.
+   A module rather than globals.css so parallel builds do not collide. */
+
+.zones {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--color-border);
+}
+
+.zones legend {
+  padding: 0 4px;
+}
+
+.zoneGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.zone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  min-height: 32px;
+}
+
+.quality {
+  flex: 1 1 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  padding: 12px 14px;
+}
+
+.qualityTitle {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.qualityList {
+  list-style: none;
+  margin: 10px 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.qualityItem {
+  display: grid;
+  grid-template-columns: 1.5em 1fr;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.qualityMark {
+  font-weight: 700;
+}
+
+.pass .qualityMark {
+  color: var(--color-ink);
+}
+
+.warn .qualityMark {
+  color: var(--color-link-hover);
+}
+
+.block {
+  font-weight: 600;
+}
+
+.block .qualityMark {
+  color: #a4161a;
+}
+
+.qualityTag {
+  font-size: 12px;
+  color: var(--color-muted, #55655f);
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.qualitySummary {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}

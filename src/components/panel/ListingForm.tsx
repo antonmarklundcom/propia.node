@@ -24,6 +24,7 @@ export function ListingForm({
   action,
   canDelete,
   deleteAction,
+  beforeSubmit,
 }: {
   listing: EditableListing;
   locations: PublishLocation[];
@@ -31,6 +32,8 @@ export function ListingForm({
   action: (formData: FormData) => void | Promise<void>;
   canDelete?: boolean;
   deleteAction?: (formData: FormData) => void | Promise<void>;
+  /** Rendered inside the form, above the save button (the agency quality check). */
+  beforeSubmit?: React.ReactNode;
 }) {
   return (
     <>
@@ -45,6 +48,7 @@ export function ListingForm({
             type="text"
             defaultValue={listing.title}
             maxLength={180}
+            minLength={8}
             required
           />
         </label>
@@ -224,6 +228,8 @@ export function ListingForm({
           />
           <span>{esPanel.listingForeignLabel}</span>
         </label>
+
+        {beforeSubmit}
 
         <div className="panel-form__field panel-form__field--action">
           <button className="panel-btn panel-btn--primary" type="submit">
