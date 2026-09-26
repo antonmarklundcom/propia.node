@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AccountForm } from "@/components/panel/AccountForm";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { canManageTeam, requireAgencyContext } from "@/lib/auth/guards";
 import {
@@ -247,69 +248,11 @@ export default async function AgencyProfilePage({
               {esPanel.profileAccountTitle}
             </h2>
 
-            <form action={updateAccountAction} className="panel-form">
-              <label className="panel-form__field">
-                <span className="auth-field__label">{esPanel.nameLabel}</span>
-                <input
-                  className="auth-field__input"
-                  name="name"
-                  type="text"
-                  defaultValue={ctx.user.name ?? ""}
-                  maxLength={140}
-                  required
-                />
-              </label>
-
-              <label className="panel-form__field">
-                <span className="auth-field__label">{esPanel.emailLabel}</span>
-                <input
-                  className="auth-field__input"
-                  name="email"
-                  type="email"
-                  defaultValue={ctx.user.email ?? ""}
-                  maxLength={190}
-                  required
-                />
-              </label>
-
-              <label className="panel-form__field">
-                <span className="auth-field__label">
-                  {esPanel.newPasswordLabel}
-                </span>
-                <input
-                  className="auth-field__input"
-                  name="password"
-                  type="password"
-                  minLength={8}
-                  autoComplete="new-password"
-                />
-                <span className="auth-field__hint">
-                  {esPanel.newPasswordHint}
-                </span>
-              </label>
-
-              {/* Re-auth (audit F21). Not `required`: the name can be edited on
-                  its own, and the server is what decides whether this field
-                  was needed — the form is not the gate. */}
-              <label className="panel-form__field">
-                <span className="auth-field__label">
-                  {esPanel.currentPasswordLabel}
-                </span>
-                <input
-                  className="auth-field__input"
-                  name="currentPassword"
-                  type="password"
-                  autoComplete="current-password"
-                />
-                <span className="auth-field__hint">
-                  {esPanel.currentPasswordHint}
-                </span>
-              </label>
-
-              <button className="panel-btn panel-btn--primary" type="submit">
-                {esPanel.profileSave}
-              </button>
-            </form>
+            <AccountForm
+              action={updateAccountAction}
+              name={ctx.user.name}
+              email={ctx.user.email}
+            />
           </article>
         </div>
       </main>

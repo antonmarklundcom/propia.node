@@ -59,6 +59,7 @@ export type OpsJob =
   | "seed:demo-seller"
   | "import:csv"
   | "backfill:images"
+  | "crm:backfill"
   | "financing.edit";
 
 /**

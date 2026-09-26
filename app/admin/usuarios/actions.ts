@@ -15,12 +15,14 @@ import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
   countSuperAdmins,
   createPanelUser,
+  getUserRole,
   deletePanelUser,
   linkUserToAgency,
   revokeUserSessions,
   updatePanelUser,
   type UserRoleValue,
 } from "@/lib/panel-queries";
+import { recordAdminEvent } from "@/lib/admin-events";
 
 const ROUTE = "/admin/usuarios";
 
@@ -88,7 +90,12 @@ export async function updateUserAction(formData: FormData): Promise<void> {
   if (id === me.id && role !== me.role) done("self_role");
 
   // Demoting the only remaining admin leaves nobody who can promote one back.
-  if (role !== "admin" && (await countSuperAdmins()) <= 1) {
+  // The check is on the user being edited, read from the database: editing
+  // anybody else (a staff member's name, a new password for an agent) must
+  // not trip it just because there is one admin.
+  const current = await getUserRole(id);
+  if (!current) done("invalid");
+  if (current === "admin" && role !== "admin" && (await countSuperAdmins()) <= 1) {
     done("last_admin");
   }
 
@@ -103,9 +110,14 @@ export async function updateUserAction(formData: FormData): Promise<void> {
 
   if (!ok) done("email_taken");
 
+  if (current !== role) {
+    await recordAdminEvent(me.id, "user.role", "user", id, { from: current, to: role });
+  }
+
   // A password change should not leave old cookies working elsewhere.
   if (password) {
     await revokeUserSessions(id);
+    await recordAdminEvent(me.id, "user.password", "user", id);
     done("password_reset");
   }
 
@@ -119,10 +131,13 @@ export async function deleteUserAction(formData: FormData): Promise<void> {
   if (!id) done("invalid");
   if (id === me.id) done("self_delete");
 
-  const role = toRole(formData.get("role"));
+  // The role comes from the database, never from the form.
+  const role = await getUserRole(id);
+  if (!role) done("invalid");
   if (role === "admin" && (await countSuperAdmins()) <= 1) done("last_admin");
 
   await deletePanelUser(id);
+  await recordAdminEvent(me.id, "user.delete", "user", id, { role });
   done("deleted");
 }
 

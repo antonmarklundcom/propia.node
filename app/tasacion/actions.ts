@@ -14,7 +14,9 @@ import { after } from "next/server";
 import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
-import { getCrm } from "@/lib/crm";
+import { alertOperator, deliverLead } from "@/lib/crm";
+import { siteOrigin } from "@/lib/origin";
+import { esPanel } from "@/i18n/es";
 import { canonPhone } from "@/lib/import/normalize";
 import { estimateValue, type ValuationResult } from "@/lib/valuation";
 import { OPERATIONS, PROPERTY_TYPES } from "@/lib/import/types";
@@ -56,7 +58,7 @@ export async function requestValuationContactAction(input: {
 
   // MySQL first, provider second — defer the push with after() like /api/leads,
   // so a visitor never waits on the webhook and a failed push never loses the lead.
-  await db.insert(leads).values({
+  const [res] = await db.insert(leads).values({
     leadType: "valuation",
     vertical,
     name: input.name.trim().slice(0, 140) || null,
@@ -66,15 +68,37 @@ export async function requestValuationContactAction(input: {
     // should work, and it shows up under "Interno" in /admin/leads.
     routedTo: "internal",
   });
+  const leadId = Number((res as unknown as { insertId: number }).insertId);
+
+  // The site the visitor is on, for the operator alert's link — read here,
+  // inside the request, because after() runs once the headers are gone.
+  const adminUrl = `${await siteOrigin()}/admin/leads`;
 
   after(async () => {
+    // Every other lead writer pings the operator; a valuation request is a
+    // seller asking to be called, the lead the portal most wants to answer.
+    await alertOperator({
+      kind: "new_lead",
+      title: esPanel.alertNewLeadTitle,
+      detail: esPanel.alertNewLeadDetail({
+        leadType: "valuation",
+        name: input.name.trim() || null,
+        whatsapp,
+        listingTitle: null,
+      }),
+      url: adminUrl,
+      site: new URL(adminUrl).host,
+    });
+
     try {
-      await getCrm().pushLead({
+      await deliverLead({
+        leadId,
         leadType: "valuation",
         vertical,
-        name: input.name.trim() || undefined,
+        // The same bounded values the row stores, not the raw input.
+        name: input.name.trim().slice(0, 140) || undefined,
         whatsapp,
-        message: input.context,
+        message: input.context.slice(0, 2000),
         routedTo: "internal",
       });
     } catch {

@@ -9,6 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateListings } from "@/lib/cache";
 import { requireSuperAdmin, requireStaffOrAbove } from "@/lib/auth/guards";
+import { recordAdminEvent } from "@/lib/admin-events";
 import {
   approveListing,
   rejectListing,
@@ -22,9 +23,12 @@ function toId(v: FormDataEntryValue | null): number {
 }
 
 export async function approveAction(formData: FormData): Promise<void> {
-  await requireSuperAdmin();
+  const user = await requireSuperAdmin();
   const id = toId(formData.get("listingId"));
-  if (id) await approveListing(id);
+  if (id) {
+    await approveListing(id);
+    await recordAdminEvent(user.id, "listing.publish", "listing", id, { via: "review" });
+  }
   revalidatePath("/admin");
   // Approval is the write that changes which listings are published, so it is
   // the one that must drop the data cache: the home rail, the sitemap and the

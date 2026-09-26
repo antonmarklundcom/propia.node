@@ -287,6 +287,23 @@ default, `--dry` first). It records itself as a revertible import job.
     "directory:home"` / `"directory:profile"`; the operator picks matches in
     the panel and the hand-off to the realtor stays manual. **Do not add a
     `leads.source` column, an `agent_id` column or a new `routed_to` member.**
+12. **Sharing a lead with a partner (2026-09-25, migration 0017).** The
+    operator shares any lead from `/admin/leads` (per card or bulk) with a
+    *verified* agency or agent; it shows in their `/agencia/leads` under
+    "Compartidas por el portal", where they answer (La tomo / No puedo / Ya lo
+    contacté / Cerrada). `lead_assignments` is the table, `src/lib/lead-assignments.ts`
+    the only module, and `sharedWithPanel()` the one visibility predicate for
+    the read and the write. Sharing is additive — `routed_to` and
+    `getPanelLeads()` are unchanged. Staff share internal-lane leads only. The
+    WhatsApp "Avisar" link is the only notification. `/admin/historial` reads
+    `admin_events` (share, revoke, publish, delete, role, password). Plan and
+    the founder decisions still open (privacy wording):
+    `docs/plan-lead-access-2026-09-25.md`, `docs/decisions-needed.md`.
+13. **VenderCRM gets a copy of every lead (2026-09-25).** `deliverLead()` in
+    `src/lib/crm.ts`: a door with `VENDERCRM_KEY_<DOOR>` (by `leads.vertical`)
+    sends there, otherwise the generic webhook — never both, never another
+    door's key, never OTP. `npm run crm:backfill -- --dry` copies old rows;
+    idempotent by `portal-lead-<leads.id>`. Keys live in hPanel only.
 
 ## Launch track — state as of 2026-09-22
 
@@ -601,6 +618,8 @@ that section no longer lists everything:
 | `drizzle/0013_ambitious_violations.sql` | the `lead_matches` table and `agents.bio` / `license_no` / `years_active` / `zones` (D3) | **yes, 2026-09-23** |
 | `drizzle/0014_shiny_nehzno.sql` | the `ops_runs` and `site_settings` tables, `posts.locale` (`/admin` reads `ops_runs`) | **yes, 2026-09-23** |
 | `drizzle/0015_broad_kulan_gath.sql` | the `staff` member of `users.role` (#171) | **yes, 2026-09-23** |
+| `drizzle/0016_light_post.sql` | `leads.status`, `leads.note`, lead types `landlord` / `question` (#210) | **no — apply before the PR that carries it deploys** |
+| `drizzle/0017_mushy_madrox.sql` | the `lead_assignments` and `admin_events` tables (lead sharing, history) | **no — same** |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

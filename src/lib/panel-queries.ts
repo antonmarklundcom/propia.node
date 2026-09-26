@@ -156,6 +156,55 @@ export async function listAgencies(): Promise<AgencyRow[]> {
     .orderBy(agencies.name);
 }
 
+/**
+ * What a partner agency still lacks before it can work leads well — the
+ * onboarding checklist on /admin/inmobiliarias. Computed from columns that
+ * already exist; no "onboarded" flag to keep in sync.
+ */
+export interface AgencyReadiness {
+  hasLogo: boolean;
+  /** Team members who can log in (agents rows linked to a user). */
+  logins: number;
+  /** Agents with a directory bio (D3 profile fields). */
+  withBio: number;
+  published: number;
+}
+
+export async function listAgencyReadiness(): Promise<Map<number, AgencyReadiness>> {
+  const [logos, team, stock] = await Promise.all([
+    db
+      .select({ id: agencies.id, logoUrl: agencies.logoUrl })
+      .from(agencies),
+    db
+      .select({
+        agencyId: agents.agencyId,
+        logins: sql<number>`sum(${agents.userId} is not null)`,
+        withBio: sql<number>`sum(${agents.bio} is not null and ${agents.bio} <> '')`,
+      })
+      .from(agents)
+      .groupBy(agents.agencyId),
+    db
+      .select({ agencyId: listings.agencyId, n: sql<number>`count(*)` })
+      .from(listings)
+      .where(eq(listings.status, "published"))
+      .groupBy(listings.agencyId),
+  ]);
+
+  const teamBy = new Map(team.map((t) => [t.agencyId, t]));
+  const stockBy = new Map(stock.map((r) => [r.agencyId, Number(r.n)]));
+  return new Map(
+    logos.map((a) => [
+      a.id,
+      {
+        hasLogo: Boolean(a.logoUrl),
+        logins: Number(teamBy.get(a.id)?.logins ?? 0),
+        withBio: Number(teamBy.get(a.id)?.withBio ?? 0),
+        published: stockBy.get(a.id) ?? 0,
+      },
+    ]),
+  );
+}
+
 export interface AgentRow {
   id: number;
   name: string;
@@ -275,6 +324,16 @@ export async function listUsers(): Promise<PanelUserRow[]> {
     ...r,
     hasPassword: Boolean(passwordHash),
   }));
+}
+
+/** A user's current role, or null when the id does not exist. */
+export async function getUserRole(id: number): Promise<UserRoleValue | null> {
+  const [row] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return row?.role ?? null;
 }
 
 /** How many super-admins exist — used to refuse removing the last one. */
@@ -559,6 +618,8 @@ export async function listAllLeads(params: {
   vertical?: string;
   /** The operator's follow-up state. */
   status?: LeadFollowUp;
+  /** A `leadPhoneKey()` — every lead from the same WhatsApp number. */
+  phoneKey?: string;
   q?: string;
   limit?: number;
 }): Promise<AdminLeadRow[]> {
@@ -569,6 +630,9 @@ export async function listAllLeads(params: {
   }
   if (params.vertical) filters.push(eq(leads.vertical, params.vertical));
   if (params.status) filters.push(eq(leads.status, params.status));
+  if (params.phoneKey && /^\d{6,9}$/.test(params.phoneKey)) {
+    filters.push(sql`${PHONE_KEY_SQL} = ${params.phoneKey}`);
+  }
   const q = params.q?.trim();
   if (q) {
     const term = containsPattern(q);
@@ -651,6 +715,49 @@ function parseUtm(value: unknown): Record<string, string> | null {
 }
 
 /** Lead counts per type for the admin filter chips — one GROUP BY, not one query each. */
+/**
+ * The key that says two leads came from the same WhatsApp: its last nine
+ * digits. `leads.whatsapp` is stored as typed (`0981 123 456`, `595981123456`,
+ * `+1 555 …`), and the last nine digits are a Paraguayan mobile without its
+ * 595/0 prefix, and distinctive enough for a foreign number. Display and
+ * filtering only — never a dedup key for writing (see dedupKey()'s rules).
+ */
+export function leadPhoneKey(whatsapp: string): string {
+  return whatsapp.replace(/\D/g, "").slice(-9);
+}
+
+/**
+ * The same key in SQL. Not sargable — it scans `leads`, which is fine at the
+ * portal's volume (hundreds of rows) and is the price of not adding a column.
+ * REGEXP_REPLACE exists in MySQL 8 and MariaDB ≥ 10.0.5.
+ */
+const PHONE_KEY_SQL = sql`right(regexp_replace(${leads.whatsapp}, '[^0-9]', ''), 9)`;
+
+/**
+ * How many leads share each phone key, for the keys given, when more than one
+ * does. One GROUP BY for the whole page, not a query per card. `internalOnly`
+ * is the staff predicate, so a staff user never learns of a lead in another lane.
+ */
+export async function countLeadsByPhoneKey(
+  keys: string[],
+  internalOnly = false,
+): Promise<Map<string, number>> {
+  const wanted = [...new Set(keys.filter((k) => /^\d{6,9}$/.test(k)))];
+  if (wanted.length === 0) return new Map();
+  const rows = await db
+    .select({ k: sql<string>`${PHONE_KEY_SQL}`, n: sql<number>`count(*)` })
+    .from(leads)
+    .where(
+      and(
+        inArray(PHONE_KEY_SQL, wanted),
+        internalOnly ? eq(leads.routedTo, "internal") : undefined,
+      ),
+    )
+    .groupBy(PHONE_KEY_SQL)
+    .having(sql`count(*) > 1`);
+  return new Map(rows.map((r) => [String(r.k), Number(r.n)]));
+}
+
 /** Lead count per follow-up state, for the status chips on /admin/leads. */
 export async function countLeadsByStatus(
   internalOnly = false,

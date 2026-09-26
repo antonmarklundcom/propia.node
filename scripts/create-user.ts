@@ -1,8 +1,8 @@
 /**
  * Create or update a panel user with an email+password login and a role.
- * There's no public sign-up for the panel yet (WhatsApp OTP + the publish
- * wizard are a later milestone), so this is how the founder bootstraps the
- * first super-admin and seeds agency/agent logins.
+ * Agencies and agents normally sign up themselves at /registro and staff are
+ * normally created in /admin/usuarios; this CLI is how the founder bootstraps
+ * the first super-admin, or fixes a login when the panel is unreachable.
  *
  * Idempotent — re-running for the same email resets the password/role/name:
  *
@@ -20,9 +20,10 @@
  *   super_admin | admin           → admin
  *   agency      | agency_admin     → agency_admin
  *   agent                          → agent
+ *   staff                          → staff
  *
- * Linking an agency/agent login to a specific agency is done via the agents
- * table (agents.user_id) in Drizzle Studio — the dashboard scopes on it.
+ * Linking an agency/agent login to a specific agency is done in
+ * /admin/usuarios ("Inmobiliaria"), which writes agents.user_id/agency_id.
  *
  * A real run writes, so it uses `DATABASE_URL_RW ?? DATABASE_URL` — a
  * read-only credential cannot create a login (see AGENTS.md). The password is
@@ -43,6 +44,7 @@ const ROLE_ALIASES: Record<string, Role> = {
   agency: "agency_admin",
   agency_admin: "agency_admin",
   agent: "agent",
+  staff: "staff",
   developer: "developer",
   consumer: "consumer",
 };
@@ -65,7 +67,7 @@ function planFromArgs(argv: string[]): UserPlan {
   if (!email || !password || !roleArg) throw new Error(USAGE);
   const role = ROLE_ALIASES[roleArg.toLowerCase()];
   if (!role) {
-    throw new Error("Unknown role (third argument). Use: super_admin | agency | agent | developer | consumer");
+    throw new Error("Unknown role (third argument). Use: super_admin | staff | agency | agent | developer | consumer");
   }
   const normalizedEmail = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error(`The first argument is not an email address. ${USAGE}`);

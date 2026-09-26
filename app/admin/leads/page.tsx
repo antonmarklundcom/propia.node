@@ -5,10 +5,12 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   countLeadsByStatus,
+  countLeadsByPhoneKey,
   countLeadsByType,
   countLeadsByVertical,
   countRecentLeads,
   countReviewQueue,
+  leadPhoneKey,
   listAllLeads,
   type AdminLeadRow,
   type LeadFollowUp,
@@ -26,6 +28,16 @@ import { VERTICALS } from "@/config/verticals";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
 import { MatchPanel } from "./MatchPanel";
+import { SharePanel, ShareTargetSelect } from "./SharePanel";
+import { shareLeadsAction } from "./actions";
+import {
+  listShareBoard,
+  listSharesForLeads,
+  listShareTargets,
+  type ShareRow,
+} from "@/lib/lead-assignments";
+import { siteOrigin } from "@/lib/origin";
+import { isSuperAdmin } from "@/lib/auth/roles";
 import { updateLeadAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -97,12 +109,14 @@ function leadsHref(p: {
   tipo?: string;
   sitio?: string;
   estado?: string;
+  tel?: string;
   q?: string;
 }): string {
   const sp = new URLSearchParams();
   if (p.tipo && p.tipo !== "all") sp.set("tipo", p.tipo);
   if (p.sitio) sp.set("sitio", p.sitio);
   if (p.estado) sp.set("estado", p.estado);
+  if (p.tel) sp.set("tel", p.tel);
   if (p.q) sp.set("q", p.q);
   const qs = sp.toString();
   return qs ? `/admin/leads?${qs}` : "/admin/leads";
@@ -158,7 +172,14 @@ const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
   match_none: { text: esPanel.matchNoneFlash },
   match_limit: { text: esPanel.matchLimitError, error: true },
   match_invalid: { text: esPanel.matchInvalidError, error: true },
+  shared: { text: esPanel.shareFlashShared },
+  share_none: { text: esPanel.shareFlashNone, error: true },
+  share_invalid: { text: esPanel.shareFlashInvalid, error: true },
+  share_revoked: { text: esPanel.shareFlashRevoked },
 };
+
+/** The bulk share bar's <form>; each card's checkbox points at it by id. */
+const BULK_SHARE_FORM = "bulk-share";
 
 function formatWhen(d: Date): string {
   return new Intl.DateTimeFormat("es-PY", {
@@ -176,11 +197,12 @@ export default async function AdminLeadsPage({
     tipo?: string;
     sitio?: string;
     estado?: string;
+    tel?: string;
     q?: string;
     msg?: string;
   }>;
 }) {
-  const [{ tipo, sitio, estado, q, msg }, user] = await Promise.all([
+  const [{ tipo, sitio, estado, tel, q, msg }, user] = await Promise.all([
     searchParams,
     requireStaffOrAbove(),
   ]);
@@ -205,18 +227,36 @@ export default async function AdminLeadsPage({
   const activeSite = siteCounts.some((s) => s.vertical === sitio)
     ? sitio
     : undefined;
+  // "Same number" filter: only a well-formed key, never free text.
+  const activeTel = tel && /^\d{6,9}$/.test(tel) ? tel : undefined;
   const rows = await listAllLeads({
     type: activeType,
     vertical: activeSite,
     status: activeStatus,
+    phoneKey: activeTel,
     q,
     internalOnly,
   });
+  // Which numbers on this page wrote more than once (one GROUP BY), who each
+  // lead is shared with, the partners it could be shared with, and — for the
+  // super-admin — how those partners answer. One query each for the page.
+  const [repeats, sharesByLead, shareTargets, board, origin] = await Promise.all([
+    countLeadsByPhoneKey(
+      rows.map((r) => leadPhoneKey(r.whatsapp)),
+      internalOnly,
+    ),
+    listSharesForLeads(rows.map((r) => r.id)),
+    listShareTargets(),
+    isSuperAdmin(user.role) ? listShareBoard() : Promise.resolve([]),
+    siteOrigin(),
+  ]);
+  const partnerPanelUrl = `${origin}/agencia/leads`;
   // Where "Guardar" on a card sends the operator back to.
   const backHref = leadsHref({
     tipo: activeType,
     sitio: activeSite,
     estado: activeStatus,
+    tel: activeTel,
     q,
   });
 
@@ -366,6 +406,66 @@ export default async function AdminLeadsPage({
           </div>
         </form>
 
+        {activeTel ? (
+          <p className="panel-note">
+            {esPanel.leadsSamePhoneFilter}{" "}
+            <Link href={leadsHref({ tipo: activeType, sitio: activeSite, estado: activeStatus, q })}>
+              {esPanel.leadsSamePhoneClear}
+            </Link>
+          </p>
+        ) : null}
+
+        {board.length > 0 ? (
+          <details className="panel-card">
+            <summary>
+              <strong>{esPanel.shareBoardTitle}</strong>
+            </summary>
+            <div className="panel-table__wrap">
+              <table className="panel-table">
+                <thead>
+                  <tr>
+                    {esPanel.shareBoardHead.map((h) => (
+                      <th key={h}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {board.map((b) => (
+                    <tr key={`${b.kind}:${b.targetName}`}>
+                      <td className="panel-table__name">{b.targetName}</td>
+                      <td>{b.active}</td>
+                      <td>{b.pending}</td>
+                      <td>{b.overdue > 0 ? <strong>{b.overdue}</strong> : 0}</td>
+                      <td>{b.answered}</td>
+                      <td>{b.avgHours ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        ) : null}
+
+        {rows.length > 0 && shareTargets.length > 0 ? (
+          <form id={BULK_SHARE_FORM} action={shareLeadsAction} className="panel-form panel-card">
+            <input type="hidden" name="back" value={backHref} />
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esPanel.shareBulkTitle}</span>
+              <ShareTargetSelect targets={shareTargets} />
+            </label>
+            <label className="panel-form__field" style={{ flexGrow: 1 }}>
+              <span className="auth-field__label">{esPanel.shareNoteLabel}</span>
+              <input className="auth-field__input" name="shareNote" maxLength={280} />
+            </label>
+            <div className="panel-form__field panel-form__field--action">
+              <button className="panel-btn panel-btn--primary" type="submit">
+                {esPanel.shareBulkSubmit}
+              </button>
+            </div>
+            <p className="panel-note" style={{ flexBasis: "100%" }}>{esPanel.shareHint}</p>
+          </form>
+        ) : null}
+
         {rows.length === 0 ? (
           <p className="panel-empty">{esPanel.adminLeadsEmpty}</p>
         ) : (
@@ -374,6 +474,16 @@ export default async function AdminLeadsPage({
               <div className="panel-card__head">
                 <div>
                   <h3 className="panel-card__title">
+                    {shareTargets.length > 0 ? (
+                      <input
+                        type="checkbox"
+                        name="leadIds"
+                        value={lead.id}
+                        form={BULK_SHARE_FORM}
+                        aria-label={`${esPanel.shareSelect}: ${lead.name ?? lead.whatsapp}`}
+                        style={{ marginRight: 8 }}
+                      />
+                    ) : null}
                     {lead.name ?? "Consulta"}
                   </h3>
                   <div className="panel-card__meta">
@@ -387,6 +497,19 @@ export default async function AdminLeadsPage({
                     </span>
                     <span>{formatWhen(lead.createdAt)}</span>
                     <span>{lead.whatsapp}</span>
+                    {/* The same person writing again — or the same bot. */}
+                    {(() => {
+                      const key = leadPhoneKey(lead.whatsapp);
+                      const n = repeats.get(key);
+                      return n && !activeTel ? (
+                        <Link
+                          className="panel-chip panel-chip--active"
+                          href={leadsHref({ tel: key })}
+                        >
+                          {esPanel.leadsSamePhone(n)}
+                        </Link>
+                      ) : null;
+                    })()}
                     {lead.email ? <span>{lead.email}</span> : null}
                     {/* Who owns the follow-up: an agency, a particular
                         seller who has no panel yet, or you. */}
@@ -475,6 +598,15 @@ export default async function AdminLeadsPage({
                   </button>
                 </div>
               </form>
+
+              <SharePanel
+                leadId={lead.id}
+                shares={sharesByLead.get(lead.id) ?? ([] as ShareRow[])}
+                targets={shareTargets}
+                back={backHref}
+                panelUrl={partnerPanelUrl}
+                leadName={lead.name}
+              />
 
               {/* Directory leads belong to nobody yet: the operator proposes
                   up to three verified professionals and hands the lead over on

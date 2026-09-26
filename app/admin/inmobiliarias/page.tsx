@@ -4,7 +4,10 @@ import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   countReviewQueue,
   listAgencies,
+  listAgencyReadiness,
   listAgents,
+  type AgencyReadiness,
+  type AgencyRow,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { adminTabs } from "../tabs";
@@ -36,6 +39,23 @@ const PLAN_OPTIONS: { value: "free" | "destacado" | "partner"; label: string }[]
   { value: "partner", label: "Partner" },
 ];
 
+/**
+ * The partner checklist: what an agency still lacks before shared leads and
+ * its profile page work well. Order is the order the founder fixes them in.
+ */
+function readinessGaps(a: AgencyRow, r: AgencyReadiness | undefined): string[] {
+  const gaps: string[] = [];
+  if (!a.isVerified) gaps.push(esPanel.readyNotVerified);
+  if (!a.whatsapp) gaps.push(esPanel.readyNoWhatsapp);
+  if (!r || r.logins === 0) gaps.push(esPanel.readyNoLogin);
+  if (!r?.hasLogo) gaps.push(esPanel.readyNoLogo);
+  if (!r || r.withBio === 0) gaps.push(esPanel.readyNoBio);
+  if (!r || r.published === 0) gaps.push(esPanel.readyNoListing);
+  return gaps;
+}
+
+const READY_TOTAL = 6;
+
 function planLabel(plan: string): string {
   return PLAN_OPTIONS.find((p) => p.value === plan)?.label ?? plan;
 }
@@ -52,10 +72,11 @@ export default async function AdminAgenciesPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [{ msg }, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
-  const [reviewCount, agencies, agents] = await Promise.all([
+  const [reviewCount, agencies, agents, readiness] = await Promise.all([
     countReviewQueue(),
     listAgencies(),
     listAgents(),
+    listAgencyReadiness(),
   ]);
 
   const flash = msg ? FLASH[msg] : undefined;
@@ -127,17 +148,34 @@ export default async function AdminAgenciesPage({
                   <th>Plan</th>
                   <th>Contacto</th>
                   <th>Estado</th>
+                  <th>{esPanel.readyTitle}</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {agencies.map((a) => (
+                {agencies.map((a) => {
+                  const gaps = readinessGaps(a, readiness.get(a.id));
+                  return (
                   <tr key={a.id}>
                     <td className="panel-table__name">{a.name}</td>
                     <td>{planLabel(a.plan)}</td>
                     <td>{a.whatsapp ?? a.email ?? "—"}</td>
                     <td>
                       <VerifiedPill on={a.isVerified} />
+                    </td>
+                    <td>
+                      <strong>
+                        {READY_TOTAL - gaps.length}/{READY_TOTAL}
+                      </strong>
+                      {gaps.length > 0 ? (
+                        <span className="panel-card__meta" style={{ display: "block" }}>
+                          {esPanel.readyMissing} {gaps.join(" · ")}
+                        </span>
+                      ) : (
+                        <span className="panel-card__meta" style={{ display: "block" }}>
+                          {esPanel.readyAll}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <form action={toggleAgencyVerifiedAction}>
@@ -153,7 +191,8 @@ export default async function AdminAgenciesPage({
                       </form>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
