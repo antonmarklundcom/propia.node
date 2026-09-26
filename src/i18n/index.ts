@@ -62,6 +62,7 @@ import {
   esSearchBar,
   esVender,
 } from "./es";
+import { esA5 } from "./es-a5";
 import {
   enOnboarding,
   enTranslationStatus,
@@ -106,6 +107,7 @@ import {
   enSearchBar,
   enVender,
 } from "./en";
+import { enA5 } from "./en-a5";
 import { esA4 } from "./es-a4";
 import { enA4 } from "./en-a4";
 import { esA1 } from "./es-a1";
@@ -163,6 +165,7 @@ const esDictionary = {
   vender: esVender,
   contactForm: esContactForm,
   leadForm: esLeadForm,
+  agentJoin: esA5,
   a4: esA4,
   a1: esA1,
 } as const;
@@ -245,6 +248,7 @@ const enDictionary = {
   vender: enVender,
   contactForm: enContactForm,
   leadForm: enLeadForm,
+  agentJoin: enA5,
   a4: enA4,
   a1: enA1,
 } satisfies Dictionary;
