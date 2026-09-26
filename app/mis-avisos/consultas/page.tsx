@@ -5,7 +5,8 @@ import { requireOwnerContext } from "@/lib/auth/guards";
 import { getPanelLeads } from "@/lib/panel-queries";
 import { esOwner } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
-import { waLink } from "@/lib/wa";
+import { leadReplyHref } from "@/lib/lead-reply";
+import { listingCanonicalOrigin } from "@/lib/origin";
 import { ownerTabs } from "../tabs";
 
 export const metadata: Metadata = {
@@ -26,11 +27,6 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
   question: "Consulta",
 };
 
-/** wa.me deep link to reply to the lead's own WhatsApp number. */
-function waReplyHref(whatsapp: string): string {
-  return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
-}
-
 function formatWhen(d: Date): string {
   return new Intl.DateTimeFormat("es-PY", {
     day: "2-digit",
@@ -44,7 +40,11 @@ export default async function OwnerLeadsPage() {
   const { user, scope } = await requireOwnerContext();
   // Scope-guarded: the WHERE clause joins through the caller's own listings,
   // so this reads their leads and cannot read anyone else's.
-  const leads = await getPanelLeads(scope);
+  const [leads, origin] = await Promise.all([
+    getPanelLeads(scope),
+    // The door that owns the detail page — the listing link in a reply.
+    listingCanonicalOrigin(),
+  ]);
 
   return (
     <>
@@ -92,7 +92,7 @@ export default async function OwnerLeadsPage() {
                   </div>
                   <a
                     className="panel-btn panel-btn--whatsapp"
-                    href={waReplyHref(lead.whatsapp)}
+                    href={leadReplyHref(lead, origin)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

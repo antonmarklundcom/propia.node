@@ -11,10 +11,17 @@ import {
   countRecentLeads,
   countReviewQueue,
   leadPhoneKey,
-  listAllLeads,
   type AdminLeadRow,
   type LeadFollowUp,
 } from "@/lib/panel-queries";
+import {
+  ADMIN_LEAD_TYPES,
+  adminLeadFilterQuery,
+  adminLeadRows,
+  FOLLOW_UP,
+  parseAdminLeadFilter,
+} from "@/lib/lead-export";
+import { esA1 } from "@/i18n/es-a1";
 import { esPanel } from "@/i18n/es";
 import { listAgentMatchCandidates } from "@/lib/directory-queries";
 import {
@@ -39,7 +46,7 @@ import {
 import { siteOrigin } from "@/lib/origin";
 import { isSuperAdmin } from "@/lib/auth/roles";
 import { updateLeadAction } from "./actions";
-import { countReportLeads, isReportLead, REPORT_SOURCE } from "@/lib/report-queries";
+import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
 import { esA3, type ReportReason } from "@/i18n/es-a3";
 
 /** A listing report (A3): a `question` lead marked `utm.source`. */
@@ -54,17 +61,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const LEAD_TYPES = [
-  "all",
-  "buyer",
-  "renter",
-  "seller",
-  "valuation",
-  "developer",
-  "agent_signup",
-  "landlord",
-  "question",
-] as const;
+const LEAD_TYPES = ADMIN_LEAD_TYPES;
 
 const LEAD_TYPE_LABEL: Record<string, string> = {
   all: esPanel.filterAll,
@@ -77,9 +74,6 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
   landlord: "Alquilar su propiedad",
   question: "Consulta",
 };
-
-/** The operator's follow-up state, in the order a lead moves through it. */
-const FOLLOW_UP: readonly LeadFollowUp[] = ["new", "contacted", "closed"];
 
 const FOLLOW_UP_LABEL: Record<LeadFollowUp, string> = {
   new: "Nueva",
@@ -118,6 +112,7 @@ function leadsHref(p: {
   estado?: string;
   tel?: string;
   q?: string;
+  agrupar?: boolean;
   fuente?: string;
 }): string {
   const sp = new URLSearchParams();
@@ -127,6 +122,7 @@ function leadsHref(p: {
   if (p.estado) sp.set("estado", p.estado);
   if (p.tel) sp.set("tel", p.tel);
   if (p.q) sp.set("q", p.q);
+  if (p.agrupar) sp.set("agrupar", "1");
   const qs = sp.toString();
   return qs ? `/admin/leads?${qs}` : "/admin/leads";
 }
@@ -191,6 +187,23 @@ const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
 /** The bulk share bar's <form>; each card's checkbox points at it by id. */
 const BULK_SHARE_FORM = "bulk-share";
 
+/**
+ * Leads grouped by `leadPhoneKey()`, in the order the list already has
+ * (newest first), so each group's head is its newest lead. A number with no
+ * usable digits is a group of its own rather than one bucket of strangers.
+ */
+function groupByPhone(rows: AdminLeadRow[]): AdminLeadRow[][] {
+  const groups = new Map<string, AdminLeadRow[]>();
+  for (const row of rows) {
+    const key = leadPhoneKey(row.whatsapp);
+    const k = /^\d{6,9}$/.test(key) ? key : `id:${row.id}`;
+    const g = groups.get(k);
+    if (g) g.push(row);
+    else groups.set(k, [row]);
+  }
+  return [...groups.values()];
+}
+
 function formatWhen(d: Date): string {
   return new Intl.DateTimeFormat("es-PY", {
     day: "2-digit",
@@ -210,20 +223,16 @@ export default async function AdminLeadsPage({
     tel?: string;
     q?: string;
     msg?: string;
+    agrupar?: string;
     fuente?: string;
   }>;
 }) {
-  const [{ tipo, sitio, estado, tel, q, msg, fuente }, user] = await Promise.all([
+  const [{ tipo, sitio, estado, tel, q, msg, agrupar, fuente }, user] = await Promise.all([
     searchParams,
     requireStaffOrAbove(),
   ]);
 
-  const activeType = LEAD_TYPES.includes(tipo as (typeof LEAD_TYPES)[number])
-    ? (tipo as (typeof LEAD_TYPES)[number])
-    : "all";
-
   const internalOnly = isStaff(user.role);
-  const reportsOnly = fuente === "reportes";
   const [reviewCount, recentLeads, counts, siteCounts, statusCounts, reportCount] =
     await Promise.all([
       countReviewQueue(),
@@ -233,24 +242,25 @@ export default async function AdminLeadsPage({
       countLeadsByStatus(internalOnly),
       countReportLeads(internalOnly),
     ]);
-  const activeStatus = FOLLOW_UP.includes(estado as LeadFollowUp)
-    ? (estado as LeadFollowUp)
-    : undefined;
-  // Only a value that some lead actually carries — never a free-text filter.
-  const activeSite = siteCounts.some((s) => s.vertical === sitio)
-    ? sitio
-    : undefined;
-  // "Same number" filter: only a well-formed key, never free text.
-  const activeTel = tel && /^\d{6,9}$/.test(tel) ? tel : undefined;
-  const rows = await listAllLeads({
+  // One parser for the page and its CSV export (src/lib/lead-export.ts): a
+  // site is only a value some lead actually carries, a number only a
+  // well-formed key — never free text.
+  const filter = parseAdminLeadFilter(
+    { tipo, sitio, estado, tel, q, fuente },
+    siteCounts.map((s) => s.vertical),
+  );
+  const {
     type: activeType,
     vertical: activeSite,
     status: activeStatus,
     phoneKey: activeTel,
-    where: reportsOnly ? isReportLead() : undefined,
-    q,
-    internalOnly,
-  });
+  } = filter;
+  const reportsOnly = filter.reports === true;
+  // Superadmin 7: one card per WhatsApp number. Display only — every lead
+  // keeps its own row, status, note and shares.
+  const grouped = agrupar === "1";
+  const rows = await adminLeadRows(filter, internalOnly);
+  const exportQuery = adminLeadFilterQuery(filter);
   // Which numbers on this page wrote more than once (one GROUP BY), who each
   // lead is shared with, the partners it could be shared with, and — for the
   // super-admin — how those partners answer. One query each for the page.
@@ -272,6 +282,7 @@ export default async function AdminLeadsPage({
     estado: activeStatus,
     tel: activeTel,
     q,
+    agrupar: grouped,
     fuente: reportsOnly ? "reportes" : undefined,
   });
 
@@ -288,6 +299,179 @@ export default async function AdminLeadsPage({
       ? listMatchesForLeads(directoryLeads.map((l) => l.id))
       : Promise.resolve(new Map<number, LeadMatchRow[]>()),
   ]);
+
+  const leadCard = (lead: AdminLeadRow) => (
+    <article className="panel-card" key={lead.id}>
+      <div className="panel-card__head">
+        <div>
+          <h3 className="panel-card__title">
+            {shareTargets.length > 0 ? (
+              <input
+                type="checkbox"
+                name="leadIds"
+                value={lead.id}
+                form={BULK_SHARE_FORM}
+                aria-label={`${esPanel.shareSelect}: ${lead.name ?? lead.whatsapp}`}
+                style={{ marginRight: 8 }}
+              />
+            ) : null}
+            {lead.name ?? "Consulta"}
+          </h3>
+          <div className="panel-card__meta">
+            <span
+              className={`panel-chip${lead.status === "new" ? " panel-chip--active" : ""}`}
+            >
+              {FOLLOW_UP_LABEL[lead.status]}
+            </span>
+            <span>
+              {LEAD_TYPE_LABEL[lead.leadType] ?? lead.leadType}
+            </span>
+            <span>{formatWhen(lead.createdAt)}</span>
+            <span>{lead.whatsapp}</span>
+            {/* The same person writing again — or the same bot. */}
+            {(() => {
+              const key = leadPhoneKey(lead.whatsapp);
+              const n = repeats.get(key);
+              return n && !activeTel ? (
+                <Link
+                  className="panel-chip panel-chip--active"
+                  href={leadsHref({ tel: key })}
+                >
+                  {esPanel.leadsSamePhone(n)}
+                </Link>
+              ) : null;
+            })()}
+            {lead.email ? <span>{lead.email}</span> : null}
+            {/* Who owns the follow-up: an agency, a particular
+                seller who has no panel yet, or you. */}
+            <span>
+              {isReport(lead)
+                ? ROUTED_LABEL.internal
+                : lead.agencyName ??
+                (lead.ownerWhatsapp
+                  ? `${esPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerWhatsapp}`
+                  : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
+            </span>
+            {/* Which door captured it — matters once feeders are on. */}
+            <span>{siteLabel(lead.vertical)}</span>
+            {/* No dedicated `leads.source` column — /vender (PR4)
+                stamps utm.source instead (VenderForm.tsx). */}
+            {isReport(lead) ? (
+              <span className="panel-chip panel-chip--active">
+                {esA3.admin.reportBadge}
+                {lead.utm?.report_reason &&
+                lead.utm.report_reason in esA3.admin.reportReason
+                  ? ` · ${esA3.admin.reportReason[lead.utm.report_reason as ReportReason]}`
+                  : null}
+              </span>
+            ) : null}
+            {lead.utm?.source === "vender" ? (
+              <span className="panel-chip panel-chip--active">
+                /vender
+              </span>
+            ) : null}
+            {lead.listingTitle &&
+            lead.listingPublicId &&
+            lead.listingSlug ? (
+              <Link
+                href={listingUrl({
+                  slug: lead.listingSlug,
+                  publicId: lead.listingPublicId,
+                })}
+                target="_blank"
+              >
+                {lead.listingTitle}
+              </Link>
+            ) : null}
+          </div>
+        </div>
+        <div className="panel-card__actions">
+          <a
+            className="panel-btn panel-btn--whatsapp"
+            href={waReplyHref(lead.whatsapp)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {esPanel.contactLead}
+          </a>
+          {/* A particular seller has no inbox of their own (PLAN.md
+              D8), so the lead only reaches them if it is forwarded. */}
+          {forwardHref(lead)}
+        </div>
+      </div>
+
+      {lead.message ? (
+        <div className="panel-card__body">{lead.message}</div>
+      ) : null}
+
+      <form action={updateLeadAction} className="panel-form">
+        <input type="hidden" name="leadId" value={lead.id} />
+        <input type="hidden" name="back" value={backHref} />
+        <label className="panel-form__field">
+          <span className="auth-field__label">Estado</span>
+          <select
+            className="auth-field__input"
+            name="status"
+            defaultValue={lead.status}
+          >
+            {FOLLOW_UP.map((st) => (
+              <option key={st} value={st}>
+                {FOLLOW_UP_LABEL[st]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label
+          className="panel-form__field"
+          style={{ flexBasis: "320px", flexGrow: 1 }}
+        >
+          <span className="auth-field__label">Nota interna</span>
+          <textarea
+            className="auth-field__input"
+            name="note"
+            rows={2}
+            maxLength={2000}
+            defaultValue={lead.note ?? ""}
+          />
+        </label>
+        <div className="panel-form__field panel-form__field--action">
+          <button className="panel-btn" type="submit">
+            Guardar
+          </button>
+        </div>
+      </form>
+
+      <SharePanel
+        leadId={lead.id}
+        shares={sharesByLead.get(lead.id) ?? ([] as ShareRow[])}
+        targets={shareTargets}
+        back={backHref}
+        panelUrl={partnerPanelUrl}
+        leadName={lead.name}
+      />
+
+      {/* Directory leads belong to nobody yet: the operator proposes
+          up to three verified professionals and hands the lead over on
+          WhatsApp. Every other lead already has an inbox. */}
+      {isDirectoryLead(lead) ? (
+        <MatchPanel
+          leadId={lead.id}
+          citySlug={leadCitySlug(lead.utm)}
+          suggestions={rankCandidates(
+            candidates,
+            leadCitySlug(lead.utm),
+          )}
+          matches={matchesByLead.get(lead.id) ?? []}
+          forwardText={esPanel.forwardLeadMessage({
+            listingTitle: lead.listingTitle,
+            name: lead.name,
+            whatsapp: lead.whatsapp,
+            message: lead.message,
+          })}
+        />
+      ) : null}
+    </article>
+  );
 
   const flash = msg ? MATCH_FLASH[msg] : undefined;
 
@@ -323,6 +507,7 @@ export default async function AdminLeadsPage({
               sitio: activeSite,
               estado: activeStatus,
               q,
+              agrupar: grouped,
             });
             const count = counts[t] ?? 0;
             return (
@@ -344,6 +529,7 @@ export default async function AdminLeadsPage({
               sitio: activeSite,
               estado: activeStatus,
               q,
+              agrupar: grouped,
               fuente: reportsOnly ? undefined : "reportes",
             })}
             className={`panel-chip${reportsOnly ? " panel-chip--active" : ""}`}
@@ -358,7 +544,7 @@ export default async function AdminLeadsPage({
         {siteCounts.length > 1 ? (
           <nav className="panel-chips" aria-label="Sitio">
             <Link
-              href={leadsHref({ tipo: activeType, estado: activeStatus, q })}
+              href={leadsHref({ tipo: activeType, estado: activeStatus, q, agrupar: grouped })}
               className={`panel-chip${activeSite ? "" : " panel-chip--active"}`}
             >
               Todos los sitios
@@ -372,6 +558,7 @@ export default async function AdminLeadsPage({
                   sitio: s.vertical,
                   estado: activeStatus,
                   q,
+                  agrupar: grouped,
                 })}
                 className={`panel-chip${s.vertical === activeSite ? " panel-chip--active" : ""}`}
               >
@@ -385,7 +572,7 @@ export default async function AdminLeadsPage({
         {/* Follow-up state. "Nuevas" is the inbox: what nobody answered yet. */}
         <nav className="panel-chips" aria-label="Estado">
           <Link
-            href={leadsHref({ tipo: activeType, sitio: activeSite, q })}
+            href={leadsHref({ tipo: activeType, sitio: activeSite, q, agrupar: grouped })}
             className={`panel-chip${activeStatus ? "" : " panel-chip--active"}`}
           >
             Todos los estados
@@ -398,6 +585,7 @@ export default async function AdminLeadsPage({
                 sitio: activeSite,
                 estado: st,
                 q,
+                agrupar: grouped,
               })}
               className={`panel-chip${st === activeStatus ? " panel-chip--active" : ""}`}
             >
@@ -418,6 +606,7 @@ export default async function AdminLeadsPage({
           {activeStatus ? (
             <input type="hidden" name="estado" value={activeStatus} />
           ) : null}
+          {grouped ? <input type="hidden" name="agrupar" value="1" /> : null}
           {reportsOnly ? <input type="hidden" name="fuente" value="reportes" /> : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">
@@ -437,10 +626,36 @@ export default async function AdminLeadsPage({
           </div>
         </form>
 
+        <nav className="panel-chips" aria-label={esA1.groupToggle}>
+          <Link
+            href={leadsHref({
+              tipo: activeType,
+              sitio: activeSite,
+              estado: activeStatus,
+              tel: activeTel,
+              q,
+              agrupar: !grouped,
+            })}
+            className={`panel-chip${grouped ? " panel-chip--active" : ""}`}
+          >
+            {grouped ? esA1.groupToggleOff : esA1.groupToggle}
+          </Link>
+          {rows.length > 0 ? (
+            <a
+              className="panel-chip"
+              href={`/admin/leads/export${exportQuery ? `?${exportQuery}` : ""}`}
+              title={esA1.exportHint}
+              download
+            >
+              {esA1.exportCsv}
+            </a>
+          ) : null}
+        </nav>
+
         {activeTel ? (
           <p className="panel-note">
             {esPanel.leadsSamePhoneFilter}{" "}
-            <Link href={leadsHref({ tipo: activeType, sitio: activeSite, estado: activeStatus, q })}>
+            <Link href={leadsHref({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped })}>
               {esPanel.leadsSamePhoneClear}
             </Link>
           </p>
@@ -499,178 +714,19 @@ export default async function AdminLeadsPage({
 
         {rows.length === 0 ? (
           <p className="panel-empty">{esPanel.adminLeadsEmpty}</p>
+        ) : !grouped ? (
+          rows.map(leadCard)
         ) : (
-          rows.map((lead) => (
-            <article className="panel-card" key={lead.id}>
-              <div className="panel-card__head">
-                <div>
-                  <h3 className="panel-card__title">
-                    {shareTargets.length > 0 ? (
-                      <input
-                        type="checkbox"
-                        name="leadIds"
-                        value={lead.id}
-                        form={BULK_SHARE_FORM}
-                        aria-label={`${esPanel.shareSelect}: ${lead.name ?? lead.whatsapp}`}
-                        style={{ marginRight: 8 }}
-                      />
-                    ) : null}
-                    {lead.name ?? "Consulta"}
-                  </h3>
-                  <div className="panel-card__meta">
-                    <span
-                      className={`panel-chip${lead.status === "new" ? " panel-chip--active" : ""}`}
-                    >
-                      {FOLLOW_UP_LABEL[lead.status]}
-                    </span>
-                    <span>
-                      {LEAD_TYPE_LABEL[lead.leadType] ?? lead.leadType}
-                    </span>
-                    <span>{formatWhen(lead.createdAt)}</span>
-                    <span>{lead.whatsapp}</span>
-                    {/* The same person writing again — or the same bot. */}
-                    {(() => {
-                      const key = leadPhoneKey(lead.whatsapp);
-                      const n = repeats.get(key);
-                      return n && !activeTel ? (
-                        <Link
-                          className="panel-chip panel-chip--active"
-                          href={leadsHref({ tel: key })}
-                        >
-                          {esPanel.leadsSamePhone(n)}
-                        </Link>
-                      ) : null;
-                    })()}
-                    {lead.email ? <span>{lead.email}</span> : null}
-                    {/* Who owns the follow-up: an agency, a particular
-                        seller who has no panel yet, or you. */}
-                    <span>
-                      {isReport(lead)
-                        ? ROUTED_LABEL.internal
-                        : lead.agencyName ??
-                        (lead.ownerWhatsapp
-                          ? `${esPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerWhatsapp}`
-                          : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
-                    </span>
-                    {/* Which door captured it — matters once feeders are on. */}
-                    <span>{siteLabel(lead.vertical)}</span>
-                    {/* No dedicated `leads.source` column — /vender (PR4)
-                        stamps utm.source instead (VenderForm.tsx). */}
-                    {isReport(lead) ? (
-                      <span className="panel-chip panel-chip--active">
-                        {esA3.admin.reportBadge}
-                        {lead.utm?.report_reason &&
-                        lead.utm.report_reason in esA3.admin.reportReason
-                          ? ` · ${esA3.admin.reportReason[lead.utm.report_reason as ReportReason]}`
-                          : null}
-                      </span>
-                    ) : null}
-                    {lead.utm?.source === "vender" ? (
-                      <span className="panel-chip panel-chip--active">
-                        /vender
-                      </span>
-                    ) : null}
-                    {lead.listingTitle &&
-                    lead.listingPublicId &&
-                    lead.listingSlug ? (
-                      <Link
-                        href={listingUrl({
-                          slug: lead.listingSlug,
-                          publicId: lead.listingPublicId,
-                        })}
-                        target="_blank"
-                      >
-                        {lead.listingTitle}
-                      </Link>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="panel-card__actions">
-                  <a
-                    className="panel-btn panel-btn--whatsapp"
-                    href={waReplyHref(lead.whatsapp)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {esPanel.contactLead}
-                  </a>
-                  {/* A particular seller has no inbox of their own (PLAN.md
-                      D8), so the lead only reaches them if it is forwarded. */}
-                  {forwardHref(lead)}
-                </div>
-              </div>
-
-              {lead.message ? (
-                <div className="panel-card__body">{lead.message}</div>
+          groupByPhone(rows).map((group) => (
+            <div key={`group-${group[0].id}`}>
+              {leadCard(group[0])}
+              {group.length > 1 ? (
+                <details className="panel-card">
+                  <summary>{esA1.groupOlder(group.length - 1)}</summary>
+                  {group.slice(1).map(leadCard)}
+                </details>
               ) : null}
-
-              <form action={updateLeadAction} className="panel-form">
-                <input type="hidden" name="leadId" value={lead.id} />
-                <input type="hidden" name="back" value={backHref} />
-                <label className="panel-form__field">
-                  <span className="auth-field__label">Estado</span>
-                  <select
-                    className="auth-field__input"
-                    name="status"
-                    defaultValue={lead.status}
-                  >
-                    {FOLLOW_UP.map((st) => (
-                      <option key={st} value={st}>
-                        {FOLLOW_UP_LABEL[st]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label
-                  className="panel-form__field"
-                  style={{ flexBasis: "320px", flexGrow: 1 }}
-                >
-                  <span className="auth-field__label">Nota interna</span>
-                  <textarea
-                    className="auth-field__input"
-                    name="note"
-                    rows={2}
-                    maxLength={2000}
-                    defaultValue={lead.note ?? ""}
-                  />
-                </label>
-                <div className="panel-form__field panel-form__field--action">
-                  <button className="panel-btn" type="submit">
-                    Guardar
-                  </button>
-                </div>
-              </form>
-
-              <SharePanel
-                leadId={lead.id}
-                shares={sharesByLead.get(lead.id) ?? ([] as ShareRow[])}
-                targets={shareTargets}
-                back={backHref}
-                panelUrl={partnerPanelUrl}
-                leadName={lead.name}
-              />
-
-              {/* Directory leads belong to nobody yet: the operator proposes
-                  up to three verified professionals and hands the lead over on
-                  WhatsApp. Every other lead already has an inbox. */}
-              {isDirectoryLead(lead) ? (
-                <MatchPanel
-                  leadId={lead.id}
-                  citySlug={leadCitySlug(lead.utm)}
-                  suggestions={rankCandidates(
-                    candidates,
-                    leadCitySlug(lead.utm),
-                  )}
-                  matches={matchesByLead.get(lead.id) ?? []}
-                  forwardText={esPanel.forwardLeadMessage({
-                    listingTitle: lead.listingTitle,
-                    name: lead.name,
-                    whatsapp: lead.whatsapp,
-                    message: lead.message,
-                  })}
-                />
-              ) : null}
-            </article>
+            </div>
           ))
         )}
       </main>
