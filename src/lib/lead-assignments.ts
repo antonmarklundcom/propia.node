@@ -187,6 +187,8 @@ export interface ShareRow {
   id: number;
   leadId: number;
   kind: "agency" | "agent";
+  /** The agency's or the agent's id, whichever `kind` says. */
+  targetId: number;
   targetName: string;
   targetWhatsapp: string | null;
   state: ShareState;
@@ -205,6 +207,7 @@ export async function listSharesForLeads(leadIds: number[]): Promise<Map<number,
       id: leadAssignments.id,
       leadId: leadAssignments.leadId,
       agencyId: leadAssignments.agencyId,
+      agentId: leadAssignments.agentId,
       agencyName: agencies.name,
       agencyWhatsapp: agencies.whatsapp,
       agentName: agents.name,
@@ -227,6 +230,7 @@ export async function listSharesForLeads(leadIds: number[]): Promise<Map<number,
       id: r.id,
       leadId: r.leadId,
       kind,
+      targetId: kind === "agency" ? r.agencyId : r.agentId,
       targetName: (kind === "agency" ? r.agencyName : r.agentName) ?? "—",
       targetWhatsapp: kind === "agency" ? r.agencyWhatsapp : r.agentWhatsapp,
       state: r.state,
@@ -305,8 +309,11 @@ export interface PanelViewer {
  *   (the agency admin sees what was handed to their people).
  * - Independent agent: shares with their own `agents` row.
  * - Anyone else (no agents row): nothing.
+ *
+ * Exported for `src/lib/deals.ts` (plan-agency batch 6), whose partner stage
+ * read and write must answer to exactly this rule — not a copy of it.
  */
-function sharedWithPanel(viewer: PanelViewer): SQL {
+export function sharedWithPanel(viewer: PanelViewer): SQL {
   const active = isNull(leadAssignments.revokedAt);
   if (viewer.agencyId != null) {
     return and(

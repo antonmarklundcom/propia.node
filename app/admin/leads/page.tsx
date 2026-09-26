@@ -54,6 +54,14 @@ import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
 import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
 import { LeadEmailThread } from "@/components/panel/EmailThread";
 import { leadEmailAction } from "./actions";
+import { DealPanel, DealStageReadOnly } from "./DealPanel";
+import { esDeals } from "@/i18n/es-deals";
+import {
+  getDealsForLeads,
+  getDealStagesForLeads,
+  type DealRow,
+  type DealStageRow,
+} from "@/lib/deals";
 
 /** A listing report (A3): a `question` lead marked `utm.source`. */
 function isReport(lead: AdminLeadRow): boolean {
@@ -191,6 +199,9 @@ const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
   share_revoked: { text: esPanel.shareFlashRevoked },
   ...LEAD_EMAIL_FLASH,
   converted: { text: esInbox.flash.converted },
+  ...Object.fromEntries(
+    Object.entries(esDeals.flash).map(([k, text]) => [k, { text, error: k !== "deal_saved" }]),
+  ),
 };
 
 /** The bulk share bar's <form>; each card's checkbox points at it by id. */
@@ -234,9 +245,10 @@ export default async function AdminLeadsPage({
     msg?: string;
     agrupar?: string;
     fuente?: string;
+    negocio?: string;
   }>;
 }) {
-  const [{ tipo, sitio, estado, tel, q, msg, agrupar, fuente }, user] = await Promise.all([
+  const [{ tipo, sitio, estado, tel, q, msg, agrupar, fuente, negocio }, user] = await Promise.all([
     searchParams,
     requireStaffOrAbove(),
   ]);
@@ -286,6 +298,15 @@ export default async function AdminLeadsPage({
     // rows already carry the staff rule, so the threads inherit it.
     listLeadThreads(rows.map((r) => r.id)),
   ]);
+  // The deal ledger (batch 6): the super-admin gets the full row, staff the
+  // stage alone — their query never selects a money column.
+  const superAdmin = isSuperAdmin(user.role);
+  const leadIds = rows.map((r) => r.id);
+  const [dealsByLead, dealStagesByLead] = await Promise.all([
+    superAdmin ? getDealsForLeads(leadIds) : Promise.resolve(new Map<number, DealRow>()),
+    superAdmin ? Promise.resolve(new Map<number, DealStageRow>()) : getDealStagesForLeads(leadIds),
+  ]);
+  const openDealLead = Number(negocio) || 0;
   const replyAvailable = leadEmailReplyAvailable();
   const partnerPanelUrl = `${origin}/agencia/leads`;
   // Where "Guardar" on a card sends the operator back to.
@@ -314,7 +335,7 @@ export default async function AdminLeadsPage({
   ]);
 
   const leadCard = (lead: AdminLeadRow) => (
-    <article className="panel-card" key={lead.id}>
+    <article className="panel-card" key={lead.id} id={`lead-${lead.id}`}>
       <div className="panel-card__head">
         <div>
           <h3 className="panel-card__title">
@@ -474,6 +495,19 @@ export default async function AdminLeadsPage({
           panelUrl={partnerPanelUrl}
           leadName={lead.name}
         />
+      )}
+
+      {/* The deal and commission ledger. A report never becomes a deal. */}
+      {isReport(lead) ? null : superAdmin ? (
+        <DealPanel
+          leadId={lead.id}
+          deal={dealsByLead.get(lead.id)}
+          shares={sharesByLead.get(lead.id) ?? []}
+          back={backHref}
+          open={openDealLead === lead.id}
+        />
+      ) : (
+        <DealStageReadOnly deal={dealStagesByLead.get(lead.id)} />
       )}
 
       {/* Directory leads belong to nobody yet: the operator proposes

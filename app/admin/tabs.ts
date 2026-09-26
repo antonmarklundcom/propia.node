@@ -3,6 +3,7 @@ import { esPanel } from "@/i18n/es";
 import { esInbox } from "@/i18n/es-e2";
 import { esAgency } from "@/i18n/es-agency";
 import { esAnalytics } from "@/i18n/es-analytics";
+import { esDeals } from "@/i18n/es-deals";
 
 /**
  * The /admin tabs, with the active one flagged and the review count badged.
@@ -20,6 +21,7 @@ export function adminTabs(
     | "users"
     | "listings"
     | "leads"
+    | "deals"
     | "inbox"
     | "posts"
     | "import"
@@ -57,6 +59,14 @@ export function adminTabs(
       label: esPanel.adminLeadsTitle,
       count: recentLeadCount,
       active: active === "leads",
+    },
+    {
+      // Main row, next to Consultas: the ledger is what became of those
+      // leads, and the owner reads it as often. Super-admin only — PanelBar's
+      // staff allowlist leaves it out, and the page guards itself.
+      href: "/admin/negocios",
+      label: esDeals.tab,
+      active: active === "deals",
     },
     {
       href: "/admin/inbox",
