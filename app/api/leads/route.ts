@@ -17,6 +17,8 @@ import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
 import { rawHostFrom } from "@/lib/host";
 import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
+import { currentVertical } from "@/lib/vertical-context";
+import { emailOwnerNewLead, emailSeekerConfirmation } from "@/lib/lead-emails";
 
 const bodySchema = z.object({
   leadType: z.enum([
@@ -65,6 +67,15 @@ const bodySchema = z.object({
 /** 10 leads per IP per 10 minutes — far above a real buyer, far below a bot. */
 const LEAD_MAX = 10;
 const LEAD_WINDOW_MS = 10 * 60_000;
+
+/**
+ * Seeker confirmations per address per hour. The address is whatever the form
+ * was given, so without a cap of its own the per-IP limit above would still
+ * let a rotating-IP script aim our confirmation email at a stranger's inbox.
+ * The lead itself is always saved; only the copy to that address stops.
+ */
+const CONFIRM_MAX = 3;
+const CONFIRM_WINDOW_MS = 60 * 60_000;
 
 /**
  * The endpoint is intentionally unauthenticated — it is the public capture
@@ -256,11 +267,22 @@ export async function POST(req: NextRequest) {
   };
 
   // The owner lane is the FSBO seller (D8). This is their go-look ping,
-  // delivered only when a webhook is configured, same rule as alertOperator.
-  let owner: { whatsapp: string | null; name: string | null } | null = null;
+  // delivered only when a webhook (or, for the email copy, Cloudflare Email
+  // Sending) is configured, same rule as alertOperator.
+  let owner: {
+    whatsapp: string | null;
+    name: string | null;
+    email: string | null;
+    locale: "es" | "en";
+  } | null = null;
   if (routedTo === "owner" && listing?.ownerUserId) {
     const [row] = await db
-      .select({ whatsapp: users.whatsapp, name: users.name })
+      .select({
+        whatsapp: users.whatsapp,
+        name: users.name,
+        email: users.email,
+        locale: users.locale,
+      })
       .from(users)
       .where(eq(users.id, listing.ownerUserId))
       .limit(1);
@@ -284,6 +306,14 @@ export async function POST(req: NextRequest) {
    */
   const adminUrl = `${await siteOrigin()}/admin/leads`;
   const ownerUrl = `${await siteOrigin()}/mis-avisos/consultas`;
+  // The lead's own door names the emails: brand and the seeker's language.
+  // Read here, inside the request — after() runs once the headers are gone.
+  const door = await currentVertical();
+  const listingTitle = listing
+    ? door.locale === "en"
+      ? (listing.titleEn ?? listing.title)
+      : listing.title
+    : null;
   after(async () => {
     await alertOperator({
       kind: "new_lead",
@@ -312,6 +342,33 @@ export async function POST(req: NextRequest) {
         url: ownerUrl,
       });
     }
+
+    // Email copies of the two pings above, each only when the person left an
+    // address and email is configured (`sendEmail` is a silent no-op
+    // otherwise, and never throws).
+    await Promise.allSettled([
+      owner?.email
+        ? emailOwnerNewLead({
+            to: owner.email,
+            locale: owner.locale,
+            brand: door.brand,
+            listingTitle: listing?.title ?? null,
+            name: parsed.name ?? null,
+            whatsapp: parsed.whatsapp,
+            url: ownerUrl,
+          })
+        : null,
+      parsed.email &&
+      allowRequest(`lead-confirm|${parsed.email.toLowerCase()}`, CONFIRM_MAX, CONFIRM_WINDOW_MS)
+        ? emailSeekerConfirmation({
+            to: parsed.email,
+            locale: door.locale,
+            brand: door.brand,
+            listingTitle,
+            listingUrl: payload.listing?.url ?? null,
+          })
+        : null,
+    ]);
 
     // The provider's contact id is worth storing when it comes back, but a
     // push that fails or times out leaves the lead exactly as complete as it

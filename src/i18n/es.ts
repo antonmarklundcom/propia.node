@@ -3723,3 +3723,51 @@ export const esNotFound = {
     "Alquileres en Asunción"
   ]
 } as const;
+
+/**
+ * Transactional email (wave E1, `src/lib/email.ts`). Outbound, never rendered
+ * on a page, but copy all the same — so it lives here with an `en.ts` peer.
+ *
+ * What the seeker confirmation deliberately does NOT contain: the name, the
+ * WhatsApp or the message the visitor typed. The address was typed by
+ * whoever submitted the form, so anything they typed that we echo back is text
+ * an attacker could deliver to a stranger's inbox from our domain. Only what
+ * comes from our own rows (the listing title, the brand) is repeated.
+ */
+export const esEmail = {
+  footerAutomatic: (brand: string) =>
+    `Correo automático de ${brand}. No respondas a este mensaje: esta dirección no recibe correo.`,
+
+  operatorCta: "Abrir en el panel",
+  operatorFooter: "Alerta interna para quien opera el portal.",
+
+  ownerSubject: (listingTitle: string | null) =>
+    listingTitle ? `Nueva consulta por tu aviso: ${listingTitle}` : "Nueva consulta por tu aviso",
+  ownerHeading: "Tenés una nueva consulta",
+  ownerIntro: (listingTitle: string | null) =>
+    listingTitle
+      ? `Alguien se interesó por tu aviso «${listingTitle}».`
+      : "Alguien se interesó por tu aviso.",
+  ownerContact: (name: string | null, whatsapp: string) =>
+    `${name ?? "Sin nombre"} · WhatsApp ${whatsapp}`,
+  ownerAdvice: "Respondé cuanto antes: las consultas se enfrían rápido.",
+  ownerCta: "Ver la consulta",
+
+  seekerSubject: (brand: string) => `Recibimos tu consulta — ${brand}`,
+  seekerHeading: "Recibimos tu consulta",
+  seekerBody: (listingTitle: string | null) =>
+    listingTitle
+      ? `Tu consulta sobre «${listingTitle}» quedó registrada. Te van a responder por WhatsApp, al número que dejaste.`
+      : "Tu consulta quedó registrada. Te van a responder por WhatsApp, al número que dejaste.",
+  seekerNotYou: "Si no enviaste esta consulta, ignorá este correo.",
+  seekerCta: "Ver el aviso",
+
+  shareSubject: (brand: string, count: number) =>
+    count === 1
+      ? `${brand} te compartió una consulta`
+      : `${brand} te compartió ${count} consultas`,
+  shareHeading: "Tenés consultas nuevas en tu panel",
+  shareBody: (count: number) =>
+    `${count === 1 ? "La vas a encontrar" : "Las vas a encontrar"} en tu panel, en «Compartidas por el portal». Contanos qué hiciste con cada una: La tomo, No puedo, Ya lo contacté o Cerrada.`,
+  shareCta: "Abrir mis consultas",
+} as const;

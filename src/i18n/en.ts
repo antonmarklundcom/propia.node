@@ -2705,3 +2705,42 @@ export const enPanel = {
   staffEditListing: "Edit property",
   staffLeadsHint: "Enquiries routed to the portal's internal team.",
 } satisfies Record<keyof Pick<typeof import("./es").esPanel, "staffRole" | "staffEditListing" | "staffLeadsHint">, string>;
+
+/** Peer of `esEmail` — transactional email (wave E1). Same no-echo rule for the seeker. */
+export const enEmail = {
+  footerAutomatic: (brand: string) =>
+    `Automated email from ${brand}. Please don't reply: this address does not receive mail.`,
+
+  operatorCta: "Open in the panel",
+  operatorFooter: "Internal alert for whoever runs the portal.",
+
+  ownerSubject: (listingTitle: string | null) =>
+    listingTitle ? `New enquiry about your listing: ${listingTitle}` : "New enquiry about your listing",
+  ownerHeading: "You have a new enquiry",
+  ownerIntro: (listingTitle: string | null) =>
+    listingTitle
+      ? `Someone is interested in your listing “${listingTitle}”.`
+      : "Someone is interested in your listing.",
+  ownerContact: (name: string | null, whatsapp: string) =>
+    `${name ?? "No name given"} · WhatsApp ${whatsapp}`,
+  ownerAdvice: "Reply soon: enquiries go cold quickly.",
+  ownerCta: "See the enquiry",
+
+  seekerSubject: (brand: string) => `We received your enquiry — ${brand}`,
+  seekerHeading: "We received your enquiry",
+  seekerBody: (listingTitle: string | null) =>
+    listingTitle
+      ? `Your enquiry about “${listingTitle}” has been recorded. You'll get a reply on WhatsApp, at the number you left.`
+      : "Your enquiry has been recorded. You'll get a reply on WhatsApp, at the number you left.",
+  seekerNotYou: "If you didn't send this enquiry, you can ignore this email.",
+  seekerCta: "View the listing",
+
+  shareSubject: (brand: string, count: number) =>
+    count === 1
+      ? `${brand} shared an enquiry with you`
+      : `${brand} shared ${count} enquiries with you`,
+  shareHeading: "You have new enquiries in your panel",
+  shareBody: (count: number) =>
+    `You'll find ${count === 1 ? "it" : "them"} in your panel, under “Compartidas por el portal”. Let us know what you did with each one: La tomo, No puedo, Ya lo contacté or Cerrada.`,
+  shareCta: "Open my enquiries",
+} as const;

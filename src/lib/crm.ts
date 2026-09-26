@@ -18,6 +18,9 @@
  * same payloads. Either way, nothing outside this file changes.
  */
 
+import { operatorEmail, renderEmail, sendEmail } from "@/lib/email";
+import { esEmail } from "@/i18n/es";
+
 export interface LeadPayload {
   /**
    * The saved `leads.id`. VenderCRM's idempotency key is built from it, so a
@@ -286,17 +289,36 @@ function operatorAlertText(alert: OperatorAlert): string {
 }
 
 /**
+ * The operator alert as an email to `OPERATOR_EMAIL`. Spanish, like the rest
+ * of the operator's copy; no display-name override, since it is the portal
+ * talking to its own operator rather than a door talking to a visitor.
+ */
+function sendOperatorEmail(to: string, alert: OperatorAlert) {
+  const { html, text } = renderEmail({
+    heading: alert.title,
+    paragraphs: [alert.detail, alert.site].filter((l): l is string => Boolean(l)),
+    cta: alert.url ? { label: esEmail.operatorCta, url: alert.url } : undefined,
+    footer: esEmail.operatorFooter,
+  });
+  const subject = alert.site ? `${alert.title} · ${alert.site}` : alert.title;
+  return sendEmail({ to, subject, html, text });
+}
+
+/**
  * Fire-and-forget operator alert. Never throws and never reports back: no
  * caller may fail, retry or slow a request because a ping did not land — the
  * lead or the pending listing is already in MySQL, which is the record.
  *
- * Goes to every configured channel: the webhook (when set) and Telegram (when
- * set). With neither, nothing is sent and nothing pretends it was.
+ * Goes to every configured channel: the webhook (when set), Telegram (when
+ * set) and email (when Cloudflare Email Sending and `OPERATOR_EMAIL` are
+ * set). With none, nothing is sent and nothing pretends it was.
  */
 export async function alertOperator(alert: OperatorAlert): Promise<void> {
+  const to = operatorEmail();
   await Promise.allSettled([
     getCrm().notifyOperator(alert),
     telegramConfig() ? sendTelegram(operatorAlertText(alert)) : null,
+    to ? sendOperatorEmail(to, alert) : null,
   ]);
 }
 
