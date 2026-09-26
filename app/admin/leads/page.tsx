@@ -46,6 +46,13 @@ import {
 import { siteOrigin } from "@/lib/origin";
 import { isSuperAdmin } from "@/lib/auth/roles";
 import { updateLeadAction } from "./actions";
+import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
+import { esA3, type ReportReason } from "@/i18n/es-a3";
+
+/** A listing report (A3): a `question` lead marked `utm.source`. */
+function isReport(lead: AdminLeadRow): boolean {
+  return lead.utm?.source === REPORT_SOURCE;
+}
 
 export const metadata: Metadata = {
   title: `Consultas`,
@@ -106,8 +113,10 @@ function leadsHref(p: {
   tel?: string;
   q?: string;
   agrupar?: boolean;
+  fuente?: string;
 }): string {
   const sp = new URLSearchParams();
+  if (p.fuente) sp.set("fuente", p.fuente);
   if (p.tipo && p.tipo !== "all") sp.set("tipo", p.tipo);
   if (p.sitio) sp.set("sitio", p.sitio);
   if (p.estado) sp.set("estado", p.estado);
@@ -128,7 +137,8 @@ function waReplyHref(whatsapp: string): string {
  * founder's to answer directly.
  */
 function forwardHref(lead: AdminLeadRow) {
-  if (!lead.ownerWhatsapp) return null;
+  // A report is about the publisher, never forwarded to them.
+  if (!lead.ownerWhatsapp || isReport(lead)) return null;
   const href = waLink(
     lead.ownerWhatsapp,
     esPanel.forwardLeadMessage({
@@ -214,27 +224,29 @@ export default async function AdminLeadsPage({
     q?: string;
     msg?: string;
     agrupar?: string;
+    fuente?: string;
   }>;
 }) {
-  const [{ tipo, sitio, estado, tel, q, msg, agrupar }, user] = await Promise.all([
+  const [{ tipo, sitio, estado, tel, q, msg, agrupar, fuente }, user] = await Promise.all([
     searchParams,
     requireStaffOrAbove(),
   ]);
 
   const internalOnly = isStaff(user.role);
-  const [reviewCount, recentLeads, counts, siteCounts, statusCounts] =
+  const [reviewCount, recentLeads, counts, siteCounts, statusCounts, reportCount] =
     await Promise.all([
       countReviewQueue(),
       countRecentLeads(24, internalOnly),
       countLeadsByType(internalOnly),
       countLeadsByVertical(internalOnly),
       countLeadsByStatus(internalOnly),
+      countReportLeads(internalOnly),
     ]);
   // One parser for the page and its CSV export (src/lib/lead-export.ts): a
   // site is only a value some lead actually carries, a number only a
   // well-formed key — never free text.
   const filter = parseAdminLeadFilter(
-    { tipo, sitio, estado, tel, q },
+    { tipo, sitio, estado, tel, q, fuente },
     siteCounts.map((s) => s.vertical),
   );
   const {
@@ -243,6 +255,7 @@ export default async function AdminLeadsPage({
     status: activeStatus,
     phoneKey: activeTel,
   } = filter;
+  const reportsOnly = filter.reports === true;
   // Superadmin 7: one card per WhatsApp number. Display only — every lead
   // keeps its own row, status, note and shares.
   const grouped = agrupar === "1";
@@ -270,6 +283,7 @@ export default async function AdminLeadsPage({
     tel: activeTel,
     q,
     agrupar: grouped,
+    fuente: reportsOnly ? "reportes" : undefined,
   });
 
   // D3 matching, loaded once for the page rather than per card: one candidate
@@ -331,7 +345,9 @@ export default async function AdminLeadsPage({
             {/* Who owns the follow-up: an agency, a particular
                 seller who has no panel yet, or you. */}
             <span>
-              {lead.agencyName ??
+              {isReport(lead)
+                ? ROUTED_LABEL.internal
+                : lead.agencyName ??
                 (lead.ownerWhatsapp
                   ? `${esPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerWhatsapp}`
                   : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
@@ -340,6 +356,15 @@ export default async function AdminLeadsPage({
             <span>{siteLabel(lead.vertical)}</span>
             {/* No dedicated `leads.source` column — /vender (PR4)
                 stamps utm.source instead (VenderForm.tsx). */}
+            {isReport(lead) ? (
+              <span className="panel-chip panel-chip--active">
+                {esA3.admin.reportBadge}
+                {lead.utm?.report_reason &&
+                lead.utm.report_reason in esA3.admin.reportReason
+                  ? ` · ${esA3.admin.reportReason[lead.utm.report_reason as ReportReason]}`
+                  : null}
+              </span>
+            ) : null}
             {lead.utm?.source === "vender" ? (
               <span className="panel-chip panel-chip--active">
                 /vender
@@ -496,6 +521,22 @@ export default async function AdminLeadsPage({
               </Link>
             );
           })}
+          {/* Listing reports from "Reportar este aviso" (A3) — a subset of
+              "Consulta", marked by utm.source rather than a type of its own. */}
+          <Link
+            href={leadsHref({
+              tipo: activeType,
+              sitio: activeSite,
+              estado: activeStatus,
+              q,
+              agrupar: grouped,
+              fuente: reportsOnly ? undefined : "reportes",
+            })}
+            className={`panel-chip${reportsOnly ? " panel-chip--active" : ""}`}
+          >
+            {esA3.admin.reportsChip}
+            <span className="panel-tab__count">{reportCount}</span>
+          </Link>
         </nav>
 
         {/* Which door captured the lead. Counts are per site across every
@@ -566,6 +607,7 @@ export default async function AdminLeadsPage({
             <input type="hidden" name="estado" value={activeStatus} />
           ) : null}
           {grouped ? <input type="hidden" name="agrupar" value="1" /> : null}
+          {reportsOnly ? <input type="hidden" name="fuente" value="reportes" /> : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">
               {esPanel.adminLeadsSearchLabel}

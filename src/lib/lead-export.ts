@@ -27,6 +27,7 @@ import {
   type SharedLeadRow,
 } from "@/lib/lead-assignments";
 import { csvDate, toCsv } from "@/lib/csv";
+import { isReportLead } from "@/lib/report-queries";
 import { listingUrl } from "@/lib/urls";
 
 /* ------------------------------ /agencia/leads ----------------------------- */
@@ -126,6 +127,8 @@ export interface AdminLeadFilter {
   status?: LeadFollowUp;
   phoneKey?: string;
   q?: string;
+  /** Only listing reports (A3: `?fuente=reportes`). */
+  reports?: boolean;
 }
 
 /**
@@ -134,7 +137,7 @@ export interface AdminLeadFilter {
  * filter is never free text.
  */
 export function parseAdminLeadFilter(
-  sp: { tipo?: string; sitio?: string; estado?: string; tel?: string; q?: string },
+  sp: { tipo?: string; sitio?: string; estado?: string; tel?: string; q?: string; fuente?: string },
   sites: readonly string[],
 ): AdminLeadFilter {
   return {
@@ -144,6 +147,7 @@ export function parseAdminLeadFilter(
     // "Same number" filter: only a well-formed key, never free text.
     phoneKey: sp.tel && /^\d{6,9}$/.test(sp.tel) ? sp.tel : undefined,
     q: sp.q || undefined,
+    reports: sp.fuente === "reportes" || undefined,
   };
 }
 
@@ -155,6 +159,7 @@ export function adminLeadFilterQuery(f: AdminLeadFilter): string {
   if (f.status) sp.set("estado", f.status);
   if (f.phoneKey) sp.set("tel", f.phoneKey);
   if (f.q) sp.set("q", f.q);
+  if (f.reports) sp.set("fuente", "reportes");
   return sp.toString();
 }
 
@@ -169,6 +174,7 @@ export function adminLeadRows(filter: AdminLeadFilter, internalOnly: boolean): P
     status: filter.status,
     phoneKey: filter.phoneKey,
     q: filter.q,
+    where: filter.reports ? isReportLead() : undefined,
     internalOnly,
   });
 }

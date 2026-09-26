@@ -3,6 +3,7 @@ import { BRAND_KICKER } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
 import { HEADER_NAV, type NavLink } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
+import { FavoritesHeaderLink } from "@/components/SavedListings";
 import { currentVertical } from "@/lib/vertical-context";
 import { RENTAL_SERVICES } from "@/config/rental-services";
 import {
@@ -198,6 +199,7 @@ export async function SiteHeader() {
         </nav>
 
         <div className="site-header__actions">
+          <FavoritesHeaderLink locale={vertical.locale} />
           {showLogin && (
             <Link className="site-header__login" href="/login">
               {d.common.login}

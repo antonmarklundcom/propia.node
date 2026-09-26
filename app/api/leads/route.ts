@@ -17,6 +17,7 @@ import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
 import { rawHostFrom } from "@/lib/host";
 import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
+import { esA3, REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
 
 const bodySchema = z.object({
   leadType: z.enum([
@@ -60,6 +61,15 @@ const bodySchema = z.object({
   email: z.string().email().max(190).optional(),
   message: z.string().max(2000).optional(),
   utm: z.record(z.string()).optional(),
+  /**
+   * "Reportar este aviso" (plan-build-2026-09-26 A3, Seeker 7). Not a new
+   * table and not a new lane: a `question` lead on the listing, routed to
+   * `internal` whoever owns the listing, marked `utm.source: "report:listing"`.
+   * The server sets all three — the client only says which reason.
+   */
+  report: z
+    .object({ reason: z.enum(REPORT_REASONS as [ReportReason, ...ReportReason[]]) })
+    .optional(),
 });
 
 /** 10 leads per IP per 10 minutes — far above a real buyer, far below a bot. */
@@ -137,6 +147,15 @@ export async function POST(req: NextRequest) {
     listing = row ?? null;
   }
 
+  // A report is about one listing; without it there is nothing to review.
+  if (parsed.report && !listing) {
+    return NextResponse.json(
+      { ok: false, error: "invalid payload" },
+      { status: 400 },
+    );
+  }
+  const report = parsed.report && listing ? parsed.report : null;
+
   /**
    * Same precedence as the detail page's seller card: agent, then agency, then
    * the private owner. `owner` exists so an FSBO lead is addressed to the
@@ -192,7 +211,14 @@ export async function POST(req: NextRequest) {
    * structure is `lead_matches` in D3, which is a migration and a founder
    * decision — do not add a column here to get ahead of it.
    */
-  const utm = explicitAgent
+  const utm = report && listing
+    ? {
+        // Server-stamped: a report is never re-labelled by what a client sent.
+        source: "report:listing",
+        report_reason: report.reason,
+        listing_id: String(listing.id),
+      }
+    : explicitAgent
     ? {
         ...(parsed.utm ?? {}),
         agent_slug: explicitAgent.slug,
@@ -206,7 +232,10 @@ export async function POST(req: NextRequest) {
         }
       : parsed.utm;
 
-  const routedTo: LeadPayload["routedTo"] = explicitAgent
+  // A report is the operator's to review — never the publisher's inbox.
+  const routedTo: LeadPayload["routedTo"] = report
+    ? "internal"
+    : explicitAgent
     ? "agent"
     : explicitAgency
       ? "agency"
@@ -219,8 +248,9 @@ export async function POST(req: NextRequest) {
           : "internal";
 
   // 1. Record in MySQL first.
+  const leadType = report ? "question" : parsed.leadType;
   const [res] = await db.insert(leads).values({
-    leadType: parsed.leadType,
+    leadType,
     vertical,
     listingId: listing?.id,
     projectId: listing?.projectId,
@@ -236,7 +266,7 @@ export async function POST(req: NextRequest) {
   // 2. The payload for the deferred push below.
   const payload: LeadPayload & { leadId: number } = {
     leadId,
-    leadType: parsed.leadType,
+    leadType,
     vertical,
     name: parsed.name,
     whatsapp: parsed.whatsapp,
@@ -285,11 +315,26 @@ export async function POST(req: NextRequest) {
   const adminUrl = `${await siteOrigin()}/admin/leads`;
   const ownerUrl = `${await siteOrigin()}/mis-avisos/consultas`;
   after(async () => {
+    if (report) {
+      // The report is the operator's alone: no owner ping, and no CRM copy —
+      // it is not a sales lead, and VenderCRM would open a deal for it.
+      await alertOperator({
+        kind: "new_lead",
+        title: esA3.admin.alertReportTitle,
+        detail: esA3.admin.alertReportDetail(
+          esA3.admin.reportReason[report.reason],
+          listing?.title ?? "",
+        ),
+        url: `${adminUrl}?fuente=reportes`,
+        site: new URL(adminUrl).host,
+      });
+      return;
+    }
     await alertOperator({
       kind: "new_lead",
       title: esPanel.alertNewLeadTitle,
       detail: esPanel.alertNewLeadDetail({
-        leadType: parsed.leadType,
+        leadType,
         name: parsed.name ?? null,
         whatsapp: parsed.whatsapp,
         listingTitle: listing?.title ?? null,
@@ -330,5 +375,7 @@ export async function POST(req: NextRequest) {
     }
   });
 
-  return NextResponse.json({ ok: true, leadId });
+  // `routedTo` lets the form say who received the enquiry (A3, Seeker 4);
+  // the lane, never a name or a number.
+  return NextResponse.json({ ok: true, leadId, routedTo });
 }

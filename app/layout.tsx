@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
+import "./a3-seekers.css";
 // Self-hosted Manrope, unconditionally available (just makes the font files
 // downloadable — only the rental family's theme override (OVERRIDES.alquiler
 // / OVERRIDES.rent) actually selects it via --font-display/--font-sans; the
@@ -20,6 +21,7 @@ import "@fontsource-variable/lora";
 import "@fontsource-variable/public-sans";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { CompareBar } from "@/components/SavedListings";
 import { SiteNotice } from "@/components/SiteNotice";
 import { brandMeta } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
@@ -109,6 +111,7 @@ export default async function RootLayout({
         <SiteHeader />
         <div className="site-main">{children}</div>
         <SiteFooter />
+        <CompareBar locale={vertical.locale} />
       </body>
     </html>
   );
