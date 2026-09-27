@@ -11,7 +11,7 @@
  * the SEO contract and are not recomputed for an existing row.
  */
 import "server-only";
-import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNull, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies, listings, locations } from "@/db/schema";
 import { syncDisplayCoords } from "@/lib/geo";
@@ -156,7 +156,12 @@ export function listingScopeWhere(scope: EditScope): SQL | undefined {
     case "agency":
       return eq(listings.agencyId, scope.agencyId);
     case "owner":
-      return eq(listings.ownerUserId, scope.userId);
+      // Only listings no agency owns. `owner_user_id` records who published a
+      // listing, and it stays set when the listing belongs to an agency (a
+      // member publishing inside it, or an independent's listings moving in on
+      // joining, A5). Without this, an agent who later left — owner scope
+      // again — kept editing the agency's listings and reading their leads.
+      return and(eq(listings.ownerUserId, scope.userId), isNull(listings.agencyId));
   }
 }
 

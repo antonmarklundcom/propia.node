@@ -13,7 +13,7 @@ import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { listingImages, listings } from "@/db/schema";
-import type { EditScope } from "@/lib/listing-edit";
+import { listingScopeWhere, type EditScope } from "@/lib/listing-edit";
 import {
   buildImageKey,
   ImageRejectedError,
@@ -41,12 +41,10 @@ async function scopedListing(
   listingId: number,
   scope: EditScope,
 ): Promise<{ id: number; publicId: string } | null> {
-  const owned =
-    scope.kind === "admin"
-      ? undefined
-      : scope.kind === "agency"
-        ? eq(listings.agencyId, scope.agencyId)
-        : eq(listings.ownerUserId, scope.userId);
+  // The panels' own predicate, not a copy of it: a copy is how an agent who
+  // left an agency kept editing its listings' photos after the owner branch
+  // learned to stop at agency-owned rows.
+  const owned = listingScopeWhere(scope);
   const guard = owned
     ? and(eq(listings.id, listingId), owned)
     : eq(listings.id, listingId);

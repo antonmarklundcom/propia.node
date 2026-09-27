@@ -26,6 +26,7 @@ import {
   leadAssignments,
   leads,
   leadMatches,
+  listingImages,
   listings,
   locations,
   sessions,
@@ -46,6 +47,12 @@ import {
   setPanelListingStatus,
 } from "../src/lib/panel-queries";
 import { getEditableListing, updateListing } from "../src/lib/listing-edit";
+import { deleteListingImage, listListingImages } from "../src/lib/listing-images";
+import {
+  getUserDraft,
+  publisherScope,
+  submitDraftForReview,
+} from "../src/lib/publish-queries";
 import { isStaff, isStaffOrAbove, isSuperAdmin, isAgencyRole } from "../src/lib/auth/roles";
 import { proposeMatches, markMatchSent } from "../src/lib/matching";
 import {
@@ -1584,6 +1591,65 @@ async function main() {
         !(await getPanelLeads(agencyBScope)).some((l) => l.id === joinLead.id),
     );
 
+    // An agent who later leaves (removeTeamMember, or moved to independent)
+    // is owner-scoped again. The listings stay with the agency, so owner scope
+    // must reach none of them — nor their leads — even though
+    // owner_user_id still names the agent who published them.
+    const leftIds = await idsIn(joinerOwnerScope);
+    check(
+      "after leaving: owner scope no longer reaches the agency's listings",
+      !leftIds.has(joinPubId) &&
+        !leftIds.has(joinDraftId) &&
+        (await getEditableListing(joinPubId, joinerOwnerScope)) === null,
+    );
+    check(
+      "after leaving: the agency's leads are not in their inbox",
+      !(await getPanelLeads(joinerOwnerScope)).some((l) => l.id === joinLead.id),
+    );
+
+    // The photo actions (/agencia, /mis-avisos) check ownership in
+    // listing-images.ts, not through getEditableListing — a forged listingId
+    // goes straight there, so it must refuse the same rows.
+    const [joinImage] = await db
+      .insert(listingImages)
+      .values({ listingId: joinPubId, r2Key: "verify/scopes/left.webp", position: 0 })
+      .$returningId();
+    check(
+      "after leaving: their photo actions cannot reach the agency's listing",
+      (await listListingImages(joinPubId, joinerOwnerScope)).length === 0 &&
+        !(await deleteListingImage(joinPubId, joinImage.id, joinerOwnerScope)) &&
+        (await listListingImages(joinPubId, agencyScope)).some((i) => i.id === joinImage.id),
+    );
+    // …while a current member's /publicar wizard still reaches their own
+    // agency's rows: their draft carries the agency, so owner scope alone
+    // would lock them out of adding its photos.
+    const memberWizard = await publisherScope(joiner.userId);
+    check(
+      "a member's publish wizard is scoped to their agency",
+      memberWizard.kind === "agency" &&
+        (await listListingImages(joinPubId, memberWizard)).some((i) => i.id === joinImage.id),
+    );
+    check(
+      "a member can resume the agency draft they started",
+      (await getUserDraft(joiner.userId, joinDraftId)) !== null,
+    );
+
+    // Now actually leave (agents.agency_id → NULL, what removeTeamMember
+    // writes), then put them back so the checks below see a member again.
+    // saveDraft re-stamps agency_id from the *current* agency, so a wizard
+    // that still reached this draft would carry it out of the agency.
+    await db.update(agents).set({ agencyId: null }).where(eq(agents.userId, joiner.userId));
+    try {
+      check(
+        "after leaving: the wizard cannot reopen or submit the agency's draft",
+        (await publisherScope(joiner.userId)).kind === "owner" &&
+          (await getUserDraft(joiner.userId, joinDraftId)) === null &&
+          (await submitDraftForReview({ userId: joiner.userId, draftId: joinDraftId, verified: false })) === 0,
+      );
+    } finally {
+      await db.update(agents).set({ agencyId }).where(eq(agents.userId, joiner.userId));
+    }
+
     const joinEvents = await db
       .select({ action: adminEvents.action, targetType: adminEvents.targetType, targetId: adminEvents.targetId })
       .from(adminEvents)
@@ -1687,6 +1753,7 @@ async function main() {
       await db.delete(leads).where(inArray(leads.listingId, createdListingIds));
     }
     if (createdListingIds.length) {
+      await db.delete(listingImages).where(inArray(listingImages.listingId, createdListingIds));
       await db.delete(listings).where(inArray(listings.id, createdListingIds));
     }
     if (createdUserIds.length) {
