@@ -661,8 +661,7 @@ that section no longer lists everything:
 | `drizzle/0016_light_post.sql` | `leads.status`, `leads.note`, lead types `landlord` / `question` (#210) | yes, by 2026-09-26 (`db:migrate` for 0018 runs every earlier pending file) |
 | `drizzle/0017_mushy_madrox.sql` | the `lead_assignments` and `admin_events` tables (lead sharing, history) | yes, same |
 | `drizzle/0018_hard_deathstrike.sql` | inbound email: `email_messages`, `email_attachments` (E2/E3, #219) | **yes, 2026-09-26** (founder, before merging #219) |
-| `drizzle/0019_fuzzy_ego.sql` | `deals`, `analytics_events`, `analytics_daily`, `lead_assignments.partner_note` / `reminded_at`, `users.telegram_chat_id` (`docs/plan-agency-2026-09-26.md` batch 2) | **no — apply before merging its PR** |
-| `drizzle/0018_hard_deathstrike.sql` | the `email_messages` and `email_attachments` tables (E2/E3 inbox) | **no — apply before the PR that carries it deploys** |
+| `drizzle/0019_fuzzy_ego.sql` | `deals`, `analytics_events`, `analytics_daily`, `lead_assignments.partner_note` / `reminded_at`, `users.telegram_chat_id` (`docs/plan-agency-2026-09-26.md` batch 2) | **yes, 2026-09-27** (founder: `db:status` → 0 pending, 20 applied, No drift) |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

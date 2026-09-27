@@ -30,15 +30,23 @@ const beaconSchema = z.object({
     .max(20),
 });
 
-/** Per IP: generous for a person clicking around, useless for a flood. */
-const BEACON_MAX = 60;
+/**
+ * Per IP, counted in EVENTS, not requests: a request carries up to 20, so a
+ * request budget let one address write 1 200 rows a minute — and fake
+ * `wa_click`s on a /propiedad path land in the partners' WhatsApp-click
+ * column. A real visit is about one request of ten events; 120 leaves room
+ * for several visitors behind one carrier NAT.
+ */
+const BEACON_MAX_EVENTS = 120;
+/** And in requests, checked before the body is read, so a flood costs no parsing. */
+const BEACON_MAX_REQUESTS = 60;
 const BEACON_WINDOW_MS = 60_000;
 
 const noContent = () => new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
 
 export async function POST(req: NextRequest) {
   const ip = clientIpFrom(req.headers);
-  if (!allowRequest(`beacon|${ip}`, BEACON_MAX, BEACON_WINDOW_MS)) return noContent();
+  if (!allowRequest(`beacon|${ip}`, BEACON_MAX_REQUESTS, BEACON_WINDOW_MS)) return noContent();
 
   let parsed: z.infer<typeof beaconSchema>;
   try {
@@ -53,6 +61,7 @@ export async function POST(req: NextRequest) {
   const userAgent = req.headers.get("user-agent");
   const ownHost = req.headers.get("host");
   for (const ev of parsed.events) {
+    if (!allowRequest(`beacon-ev|${ip}`, BEACON_MAX_EVENTS, BEACON_WINDOW_MS)) break;
     recordAnalyticsEvent({
       event: ev.e === "wa" ? "wa_click" : "page_view",
       path: ev.p,

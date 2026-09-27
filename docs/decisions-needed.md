@@ -220,3 +220,19 @@ this yet. Proposed line, for the founder to approve or reword: "Contamos
 visitas de forma anónima, sin cookies ni servicios de terceros: guardamos la
 página visitada, el sitio de origen y el tipo de dispositivo, nunca tu
 dirección IP."
+
+## 2026-09-27 — May a partner change a deal the operator has closed?
+
+Found reviewing #226 (deal ledger). `setPartnerDealStage()` (`src/lib/deals.ts`)
+lets a partner move a shared lead's deal between any of the partner stages at
+any time, including out of `won` or `lost` — even after the super-admin has
+typed the sale price and commission and set `paid_at`. `/admin/negocios` would
+then drop it from "won" while its `my_share_usd` still counts in the paid
+total (that sum checks only `paid_at`), so the ledger stops adding up.
+
+This is who owns the commission record, so no agent picks it. Options:
+(a) lock the stage for partners once it is `won` or `lost` (the operator can
+still change it); (b) lock only once `paid_at` is set; (c) leave it open and
+make `/admin/negocios` count paid shares only on `won` deals. Recommendation:
+(a) — a closed deal is the operator's to reopen. Small change either way
+(one guard in `setPartnerDealStage` + a read-only selector).
