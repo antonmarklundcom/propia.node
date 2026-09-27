@@ -4,11 +4,11 @@ import { currentLocale, dict } from "@/i18n/server";
 import { numberLocaleFor } from "@/i18n";
 import { getListingCardsByPublicIds, locationChain } from "@/lib/queries";
 import { parseIdsParam } from "@/lib/saved-listings";
-import { formatCuota, formatPrice, formatUsd, imageThumbUrl } from "@/lib/format";
+import { displayPrice, formatCuota, formatUsd, imageThumbUrl } from "@/lib/format";
 import { isPlaceholderPhoto } from "@/lib/photos";
 import { listingUrl } from "@/lib/urls";
 import { currentVertical } from "@/lib/vertical-context";
-import { showCuota } from "@/design/sections";
+import { showCuota, usdFirstPrice } from "@/design/sections";
 import { PageHero } from "@/components/MarketingUI";
 import { ClearSavedButton, RemoveSavedButton, SavedIdsSync } from "@/components/SavedListings";
 
@@ -47,6 +47,7 @@ export default async function CompararPage({ searchParams }: Props) {
   const cards = await getListingCardsByPublicIds(ids);
   const gone = ids.length - cards.length;
   const withCuota = showCuota(vertical.key);
+  const usdFirst = usdFirstPrice(vertical.key);
 
   // Barrio and city per column — at most three chains, one query each.
   const zones = await Promise.all(
@@ -71,12 +72,18 @@ export default async function CompararPage({ searchParams }: Props) {
         ? formatUsd(Number(c.priceUsd) / basis, numberLocale)
         : t.missing;
     const cuota = withCuota && c.operation === "venta" ? formatCuota(c.cuotaGs) : null;
+    // US$ first on the English marketplace doors, the listed Guaraní price
+    // beside it — the card's and the detail page's rule (displayPrice()).
+    const period = c.operation !== "venta" ? d.publicUi.perMonth : "";
+    const shown = displayPrice(c, { usdFirst, numberLocale, approx: d.publicUi.approxPrice });
     return {
       card: c,
       title: locale === "en" ? (c.titleEn ?? c.title) : c.title,
       img: isPlaceholderPhoto(c.coverKey) ? null : imageThumbUrl(c.coverKey),
       price:
-        formatPrice(c, numberLocale) + (c.operation !== "venta" ? d.publicUi.perMonth : ""),
+        shown.main +
+        period +
+        (shown.listed ? ` · ${d.publicUi.listedPrice(shown.listed)}${period}` : ""),
       operation: d.card.operationBadge[c.operation],
       type: d.listing.typeSingular[c.propertyType] ?? c.propertyType,
       zone: zones[i] || t.missing,

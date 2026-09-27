@@ -19,6 +19,7 @@ export function CategoryMapLazy(props: {
   zoom?: number;
   query: Record<string, string>;
   locale: Locale;
+  usdFirst?: boolean;
 }) {
   return <CategoryMap {...props} />;
 }

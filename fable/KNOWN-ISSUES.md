@@ -15,8 +15,8 @@ it; none of them blocks a phase.
   WhatsApp, listing) and never included the message, so it does not carry them
   either; the owner email and the partner share email leave the message out on
   purpose. Fix, if wanted: pass the details block into `alertNewLeadDetail`.
-  Also not USD-first yet on the English doors: `/comparar`'s price row and the
-  category map's price pins still show the listed currency.
+  (`/comparar`'s price row and the category map's pins went US$-first on the
+  English doors on 2026-09-27, `claude/usd-first-compare-map`.)
 
 - **Resolved 2026-09-27 (#236): cold home
   renders 500ing on "Queue limit reached"** (found by `verify:live` the same
