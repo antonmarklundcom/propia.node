@@ -162,7 +162,7 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
           </div>
 
           {lead.message ? (
-            <div className="panel-card__body">{lead.message}</div>
+            <div className="panel-card__body panel-card__body--message">{lead.message}</div>
           ) : null}
           <EmailBlock leadId={lead.id} email={lead.email} threads={threads} />
         </article>
@@ -228,7 +228,7 @@ async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: st
             </p>
           ) : null}
           {lead.message ? (
-            <div className="panel-card__body">{lead.message}</div>
+            <div className="panel-card__body panel-card__body--message">{lead.message}</div>
           ) : null}
           <EmailBlock leadId={lead.id} email={lead.email} threads={threads} />
 

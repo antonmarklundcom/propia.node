@@ -630,8 +630,8 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`.
-  Same thing by hand: `npm run verify:local`. The last six are pure — no database, no network —
+  `npm run verify:inbox`, `npm run verify:prices`.
+  Same thing by hand: `npm run verify:local`. The last seven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath

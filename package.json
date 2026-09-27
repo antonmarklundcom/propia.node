@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks",
-    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox",
+    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox && npm run verify:prices",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -36,6 +36,8 @@
     "verify:seo": "tsx --tsconfig scripts/tsconfig.json scripts/verify-seo.ts",
     "verify:rate-limit": "tsx --tsconfig scripts/tsconfig.json scripts/verify-rate-limit.ts",
     "verify:inbox": "tsx --tsconfig scripts/tsconfig.json scripts/verify-inbox.ts",
+    "verify:prices": "tsx --tsconfig scripts/tsconfig.json scripts/verify-prices.ts",
+    "verify:live": "tsx --tsconfig scripts/tsconfig.json scripts/verify-live.ts",
     "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",
     "backfill:images": "tsx --tsconfig scripts/tsconfig.json scripts/backfill-images.ts",
     "verify:scopes": "tsx --tsconfig scripts/tsconfig.json scripts/verify-scopes.ts",
