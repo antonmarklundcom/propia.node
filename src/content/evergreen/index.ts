@@ -19,11 +19,95 @@
  */
 import type { VerticalKey } from "../../config/verticals";
 import type { EvergreenPage } from "./types";
+import { alquilerAsuncion } from "./alquiler-asuncion";
+import { alquilerAsuncionDepartamentos } from "./alquiler-asuncion-departamentos";
+import { alquilerAsuncionCasas } from "./alquiler-asuncion-casas";
+import { ventaAsuncionCasas } from "./venta-asuncion-casas";
+import { alquilerSanLorenzoCasas } from "./alquiler-san-lorenzo-casas";
+import { ventaAsuncionDepartamentos } from "./venta-asuncion-departamentos";
+import { ventaLuqueDepartamentos } from "./venta-luque-departamentos";
+import { alquilerLuqueCasas } from "./alquiler-luque-casas";
+import { alquilerCiudadDelEsteCasas } from "./alquiler-ciudad-del-este-casas";
+import { alquilerLambareCasas } from "./alquiler-lambare-casas";
 import { ventaLuqueCasas } from "./venta-luque-casas";
+import { ventaLambareCasas } from "./venta-lambare-casas";
+import { alquilerFernandoDeLaMoraCasas } from "./alquiler-fernando-de-la-mora-casas";
+import { alquilerCiudadDelEsteDepartamentos } from "./alquiler-ciudad-del-este-departamentos";
+import { ventaAreguaTerrenos } from "./venta-aregua-terrenos";
+import { ventaSanLorenzoCasas } from "./venta-san-lorenzo-casas";
+import { alquilerSanLorenzoDepartamentos } from "./alquiler-san-lorenzo-departamentos";
+import { alquilerLambareDepartamentos } from "./alquiler-lambare-departamentos";
+import { alquilerLuqueDepartamentos } from "./alquiler-luque-departamentos";
+import { alquilerMarianoRoqueAlonsoCasas } from "./alquiler-mariano-roque-alonso-casas";
+import { ventaLuqueTerrenos } from "./venta-luque-terrenos";
+import { alquilerFernandoDeLaMoraDepartamentos } from "./alquiler-fernando-de-la-mora-departamentos";
+import { alquilerEncarnacionDepartamentos } from "./alquiler-encarnacion-departamentos";
+import { ventaFernandoDeLaMoraCasas } from "./venta-fernando-de-la-mora-casas";
+import { ventaMarianoRoqueAlonsoCasas } from "./venta-mariano-roque-alonso-casas";
+import { ventaCiudadDelEsteCasas } from "./venta-ciudad-del-este-casas";
+import { alquilerEncarnacionCasas } from "./alquiler-encarnacion-casas";
+import { alquilerLuqueDuplex } from "./alquiler-luque-duplex";
+import { ventaCiudadDelEsteTerrenos } from "./venta-ciudad-del-este-terrenos";
+import { ventaItauguaTerrenos } from "./venta-itaugua-terrenos";
+import { ventaLuqueDuplex } from "./venta-luque-duplex";
+import { ventaEncarnacionCasas } from "./venta-encarnacion-casas";
+import { alquilerTemporalAsuncion } from "./alquiler-temporal-asuncion";
+import { ventaYpacaraiTerrenos } from "./venta-ypacarai-terrenos";
+import { ventaLimpioTerrenos } from "./venta-limpio-terrenos";
+import { ventaEncarnacionTerrenos } from "./venta-encarnacion-terrenos";
+import { ventaLimpioCasas } from "./venta-limpio-casas";
+import { ventaCapiataTerrenos } from "./venta-capiata-terrenos";
+import { ventaSanBernardinoTerrenos } from "./venta-san-bernardino-terrenos";
+import { ventaSanBernardinoCasas } from "./venta-san-bernardino-casas";
+import { alquilerAsuncionLomaPytaCasas } from "./alquiler-asuncion-loma-pyta-casas";
+import { alquilerAsuncionLomaPytaDepartamentos } from "./alquiler-asuncion-loma-pyta-departamentos";
 
 export type { EvergreenPage, EvergreenPriceBand } from "./types";
 
-export const EVERGREEN_PAGES: readonly EvergreenPage[] = [ventaLuqueCasas];
+export const EVERGREEN_PAGES: readonly EvergreenPage[] = [
+  alquilerAsuncion,
+  alquilerAsuncionDepartamentos,
+  alquilerAsuncionCasas,
+  ventaAsuncionCasas,
+  alquilerSanLorenzoCasas,
+  ventaAsuncionDepartamentos,
+  ventaLuqueDepartamentos,
+  alquilerLuqueCasas,
+  alquilerCiudadDelEsteCasas,
+  alquilerLambareCasas,
+  ventaLuqueCasas,
+  ventaLambareCasas,
+  alquilerFernandoDeLaMoraCasas,
+  alquilerCiudadDelEsteDepartamentos,
+  ventaAreguaTerrenos,
+  ventaSanLorenzoCasas,
+  alquilerSanLorenzoDepartamentos,
+  alquilerLambareDepartamentos,
+  alquilerLuqueDepartamentos,
+  alquilerMarianoRoqueAlonsoCasas,
+  ventaLuqueTerrenos,
+  alquilerFernandoDeLaMoraDepartamentos,
+  alquilerEncarnacionDepartamentos,
+  ventaFernandoDeLaMoraCasas,
+  ventaMarianoRoqueAlonsoCasas,
+  ventaCiudadDelEsteCasas,
+  alquilerEncarnacionCasas,
+  alquilerLuqueDuplex,
+  ventaCiudadDelEsteTerrenos,
+  ventaItauguaTerrenos,
+  ventaLuqueDuplex,
+  ventaEncarnacionCasas,
+  alquilerTemporalAsuncion,
+  ventaYpacaraiTerrenos,
+  ventaLimpioTerrenos,
+  ventaEncarnacionTerrenos,
+  ventaLimpioCasas,
+  ventaCapiataTerrenos,
+  ventaSanBernardinoTerrenos,
+  ventaSanBernardinoCasas,
+  alquilerAsuncionLomaPytaCasas,
+  alquilerAsuncionLomaPytaDepartamentos,
+];
 
 const BY_DOOR_PATH = new Map(
   EVERGREEN_PAGES.map((p) => [`${p.door}|${p.path}`, p] as const),
