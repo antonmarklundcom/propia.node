@@ -480,10 +480,15 @@ door the path is indexable at any count, renders 200 at 0 listings (never
 `notFound()`/redirect), is in the sitemap, stays in menus
 (`stockedPathsOrNull()` adds it) and is linked by `relatedCategoryLinks()`.
 On every other door, and for every other URL, the count rule is unchanged.
-State as of PR 1: **one page, the pilot `/venta/luque/casas` on
-`inmobiliaria.com.py`**; the other 37 in `docs/seo-evergreen-keywords.md`
-wait on the founder's review of that map (and 8 land pages on decision S9 —
-which door owns land).
+State as of PR 2 (2026-09-27): **42 pages** — the 38 of table A in
+`docs/seo-evergreen-keywords.md` (29 + the Luque pilot on
+`inmobiliaria.com.py`, 8 land pages on `terreno.com.py`, founder decision
+S9) and 4 for the places added by S10 (San Bernardino, Loma Pytã — they 404
+until `seed:locations` runs on production). Each page's `claimsToVerify`
+still awaits the founder's check. A rental page's `financing` section is
+about moving-in costs and shows no `/financiamiento` link.
+`npx tsx scripts/check-evergreen-file.ts <file>` checks a new content file
+before it is registered.
 
 Rules that bite:
 

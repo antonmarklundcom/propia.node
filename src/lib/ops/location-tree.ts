@@ -40,6 +40,9 @@ export const TREE: Node[] = [
       { name: "Trinidad", level: "barrio", lat: -25.2569, lng: -57.5478 },
       { name: "San Vicente", level: "barrio", lat: -25.2705, lng: -57.6218 },
       { name: "Barrio Jara", level: "barrio", lat: -25.2761, lng: -57.5877 },
+      // Decision S10 (2026-09-27): ~90 searches/month for cheap house rentals.
+      // Centroid approximate, to verify (docs/decisions-needed.md S10).
+      { name: "Loma Pytã", level: "barrio", lat: -25.23, lng: -57.56 },
     ],
   },
   {
@@ -129,6 +132,9 @@ export const TREE: Node[] = [
     children: [
       { name: "Caacupé", level: "ciudad", lat: -25.3858, lng: -57.1414 },
       { name: "Tobatí", level: "ciudad", lat: -25.2586, lng: -57.0742 },
+      // Decision S10 (2026-09-27): the biggest land search in the keyword
+      // export (210/month). Centroid to verify.
+      { name: "San Bernardino", level: "ciudad", lat: -25.3094, lng: -57.2964 },
     ],
   },
   {
