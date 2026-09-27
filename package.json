@@ -36,6 +36,7 @@
     "verify:seo": "tsx --tsconfig scripts/tsconfig.json scripts/verify-seo.ts",
     "verify:rate-limit": "tsx --tsconfig scripts/tsconfig.json scripts/verify-rate-limit.ts",
     "verify:inbox": "tsx --tsconfig scripts/tsconfig.json scripts/verify-inbox.ts",
+    "verify:live": "tsx --tsconfig scripts/tsconfig.json scripts/verify-live.ts",
     "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",
     "backfill:images": "tsx --tsconfig scripts/tsconfig.json scripts/backfill-images.ts",
     "verify:scopes": "tsx --tsconfig scripts/tsconfig.json scripts/verify-scopes.ts",
