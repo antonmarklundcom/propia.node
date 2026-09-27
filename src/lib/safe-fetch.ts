@@ -350,20 +350,32 @@ export async function fetchUserUrl(raw: string): Promise<FetchedPage> {
   return { url: res.url, html: new TextDecoder("utf-8").decode(res.body) };
 }
 
-/** Binary download with the same pinned hosts, redirect checks and streaming cap. */
-export async function fetchUserBuffer(raw: string, maxBytes: number): Promise<Buffer> {
+/**
+ * Binary download with the same pinned hosts, redirect checks and streaming cap.
+ *
+ * `timeoutMs` can only *shorten* the whole-request deadline (all hops
+ * together): a caller answering a crawler from inside a request handler — the
+ * link-preview image — cannot afford the batch job's ten seconds.
+ */
+export async function fetchUserBuffer(
+  raw: string,
+  maxBytes: number,
+  opts: { timeoutMs?: number } = {},
+): Promise<Buffer> {
   if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
     throw new RangeError("maxBytes must be a positive safe integer");
   }
-  return (await fetchUserBody(raw, maxBytes, false)).body;
+  const timeoutMs = Math.min(TIMEOUT_MS, Math.max(1, opts.timeoutMs ?? TIMEOUT_MS));
+  return (await fetchUserBody(raw, maxBytes, false, timeoutMs)).body;
 }
 
 async function fetchUserBody(
   raw: string,
   maxBytes: number,
   requireHtml: boolean,
+  timeoutMs: number = TIMEOUT_MS,
 ): Promise<{ url: string; body: Buffer }> {
-  const deadline = Date.now() + TIMEOUT_MS;
+  const deadline = Date.now() + timeoutMs;
   let { url, pinned } = await resolveFetchTarget(raw);
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {

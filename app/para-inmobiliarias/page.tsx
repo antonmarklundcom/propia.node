@@ -3,6 +3,7 @@ import { isAgencyMode } from "@/lib/site-settings";
 import { numberLocaleFor } from "@/i18n";
 import { dict, currentLocale } from "@/i18n/server";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
@@ -30,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: `${c.title}`,
     description: c.description(brand),
     alternates: { canonical: `${await siteOrigin()}/para-inmobiliarias` },
-    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand) },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand), images: doorOgImages(brand) },
   };
 }
 

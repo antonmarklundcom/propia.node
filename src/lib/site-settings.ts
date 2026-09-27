@@ -14,7 +14,7 @@ import { unstable_cache } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
-import { CACHE_TAGS, CACHE_TTL, revalidateSettings } from "./cache";
+import { CACHE_TAGS, CACHE_TTL, revalidateSettings, singleFlight } from "./cache";
 
 /**
  * `marketplace`: anyone publishes, a listing's contact goes to whoever listed
@@ -39,10 +39,14 @@ export async function readSiteSettingsRaw(): Promise<Record<string, string>> {
   return out;
 }
 
-const readSiteSettingsCached = unstable_cache(readSiteSettingsRaw, ["site-settings"], {
-  revalidate: CACHE_TTL.settings,
-  tags: [CACHE_TAGS.settings],
-});
+// Single-flighted: the header and the footer read it in the same render.
+const readSiteSettingsCached = singleFlight(
+  "site-settings",
+  unstable_cache(readSiteSettingsRaw, ["site-settings"], {
+    revalidate: CACHE_TTL.settings,
+    tags: [CACHE_TAGS.settings],
+  }),
+);
 
 async function readSiteSettings(): Promise<Record<string, string>> {
   try {

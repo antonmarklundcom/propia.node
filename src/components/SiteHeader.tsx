@@ -5,6 +5,8 @@ import { HEADER_NAV, withoutAgencyModePages, type NavLink } from "@/config/site-
 import { isAgencyMode } from "@/lib/site-settings";
 import { MobileMenu } from "@/components/MobileMenu";
 import { FavoritesHeaderLink } from "@/components/SavedListings";
+import { CurrencySwitch } from "@/components/CurrencySwitch";
+import { usdEurRate } from "@/lib/eur-rate";
 import { currentVertical } from "@/lib/vertical-context";
 import { RENTAL_SERVICES } from "@/config/rental-services";
 import {
@@ -14,6 +16,7 @@ import {
   chromeShowLogin,
   chromeShowPublishCta,
   rentalPath,
+  usdFirstPrice,
 } from "@/design/sections";
 import { dict } from "@/i18n/server";
 import { stockedPathsOrNull, withoutEmptyCategoryLinks } from "@/lib/queries";
@@ -50,6 +53,9 @@ export async function SiteHeader() {
   const isGuideEn = chromeVariant(vertical.key) === "guide-en";
   const showLogin = chromeShowLogin(vertical.key);
   const showPublishCta = chromeShowPublishCta(vertical.key);
+  // The USD / EUR switch: only on a door that leads with US$, and only while
+  // USD_EUR_RATE holds a valid rate (src/lib/eur-rate.ts).
+  const showCurrencySwitch = usdFirstPrice(vertical.key) && usdEurRate() != null;
   // realestateinparaguay.com guide §5 "Header": Buy · Rent · Land · New
   // developments · How it works · Guides, sourced from the i18n dictionary
   // rather than HEADER_NAV (which is Spanish-only and has its own dropdown
@@ -208,6 +214,14 @@ export async function SiteHeader() {
         </nav>
 
         <div className="site-header__actions">
+          {showCurrencySwitch && (
+            <CurrencySwitch
+              label={d.publicUi.currencySwitchLabel}
+              usdLabel={d.publicUi.currencyUsd}
+              eurLabel={d.publicUi.currencyEur}
+              eurTitle={d.publicUi.currencyEurTitle}
+            />
+          )}
           <FavoritesHeaderLink locale={vertical.locale} />
           {showLogin && (
             <Link className="site-header__login" href="/login">

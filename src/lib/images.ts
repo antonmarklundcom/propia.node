@@ -16,6 +16,8 @@
  */
 import "server-only";
 import sharp from "sharp";
+// Hostinger shared hosting counts every Sharp thread against the account's 200 Max Processes, so pin it to 1.
+sharp.concurrency(1);
 
 /** Uploads above this are rejected before decoding — a phone photo is ~5 MB. */
 export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;

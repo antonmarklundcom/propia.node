@@ -45,6 +45,14 @@ import {
   MARKETPLACE_SITEMAP_PATHS,
   rentalSitemapPaths,
 } from "../src/config/site-nav";
+import {
+  categoryFacts,
+  relatedCategoryLinks,
+  type CategoryPageRef,
+  type InventoryLocation,
+  type InventoryRow,
+} from "../src/lib/category-context";
+import { categoryUrl } from "../src/lib/urls";
 
 let failures = 0;
 
@@ -815,6 +823,147 @@ check(
   "the primary host's row agrees that it owns its detail pages",
   VERTICALS[CANONICAL_HOST]?.ownsListingDetail !== false,
   `${CANONICAL_HOST} is primary, so origin.ts self-canonicalises its /propiedad pages regardless of the flag`,
+);
+
+/**
+ * (k) Category pages' related-links module and intro facts
+ * (`src/lib/category-context.ts`). The module is a crawl path, so its one
+ * rule is the sitemap's: a link may only point at a page that is indexable on
+ * this door. Driven with a synthetic inventory — the same shape
+ * `getCategoryInventory()` returns — and re-checked against counts this script
+ * computes itself rather than the module's own tally.
+ */
+console.log("\ncategory pages: related links only reach indexable pages");
+
+const LOCS: InventoryLocation[] = [
+  { id: 1, name: "Ciudad A", slug: "ciudad-a", level: "ciudad", parentId: null, lat: -25.3, lng: -57.6 },
+  { id: 11, name: "Barrio A1", slug: "barrio-a1", level: "barrio", parentId: 1, lat: null, lng: null },
+  { id: 12, name: "Barrio A2", slug: "barrio-a2", level: "barrio", parentId: 1, lat: null, lng: null },
+  { id: 2, name: "Ciudad B", slug: "ciudad-b", level: "ciudad", parentId: null, lat: -25.4, lng: -57.6 },
+  { id: 3, name: "Ciudad C", slug: "ciudad-c", level: "ciudad", parentId: null, lat: -25.31, lng: -57.6 },
+  { id: 4, name: "Ciudad D", slug: "ciudad-d", level: "ciudad", parentId: null, lat: -27.3, lng: -55.9 },
+  { id: 41, name: "Barrio D1", slug: "barrio-d1", level: "barrio", parentId: 4, lat: null, lng: null },
+  { id: 5, name: "Ciudad E", slug: "ciudad-e", level: "ciudad", parentId: null, lat: null, lng: null },
+];
+const LOC_BY_ID = new Map(LOCS.map((l) => [l.id, l]));
+const row = (
+  locationId: number,
+  propertyType: InventoryRow["propertyType"],
+  count: number,
+  minUsd = 50_000,
+  maxUsd = 90_000,
+): InventoryRow => ({ locationId, propertyType, count, minUsd, maxUsd });
+const INV: InventoryRow[] = [
+  row(11, "casa", 3, 80_000, 120_000), // A1 casas: indexable, parent A/casas = 5
+  row(12, "casa", 1), // A2 casas: 1 → noindex, never linked
+  row(1, "casa", 1, 0, 0), // city-level, price "a consultar" → ignored for bounds
+  row(1, "terreno", 2), // A/terrenos: 2 → noindex, never linked
+  row(12, "departamento", 4, 60_000, 150_000), // A/departamentos: 4 → linked
+  row(2, "casa", 3), // B/casas → linked, and B is nearest to A
+  row(3, "casa", 2), // C/casas: 2 → never linked, although closest to A
+  row(41, "casa", 3), // D/casas via its barrio
+  row(5, "terreno", 4), // E: one type only (a terreno-only door's shape)
+];
+
+/** Independent recount: the count the linked page itself would compute. */
+function pageCountOf(path: string): { count: number; parentOk: boolean } {
+  const [, , citySlug, a, b] = path.split("/");
+  const city = LOCS.find((l) => l.slug === citySlug && l.level === "ciudad")!;
+  const barrio = b ? LOCS.find((l) => l.slug === a && l.parentId === city.id) : undefined;
+  const typeSeg = b ?? a;
+  const type = typeSeg
+    ? (Object.entries({ casas: "casa", departamentos: "departamento", terrenos: "terreno" })
+        .find(([p]) => p === typeSeg)?.[1] ?? "?")
+    : null;
+  const inCity = (id: number) => id === city.id || LOC_BY_ID.get(id)?.parentId === city.id;
+  const sum = (pred: (r: InventoryRow) => boolean) =>
+    INV.filter(pred).reduce((n, r) => n + r.count, 0);
+  const count = sum(
+    (r) =>
+      (barrio ? r.locationId === barrio.id : inCity(r.locationId)) &&
+      (type == null || r.propertyType === type),
+  );
+  const parentOk = barrio
+    ? sum((r) => inCity(r.locationId) && r.propertyType === type) >= 3
+    : true;
+  return { count, parentOk };
+}
+
+const PAGES: CategoryPageRef[] = [
+  { operation: "venta", cityId: 1, barrioId: null, type: null },
+  { operation: "venta", cityId: 1, barrioId: null, type: "casa" },
+  { operation: "venta", cityId: 1, barrioId: 11, type: "casa" },
+  { operation: "venta", cityId: 2, barrioId: null, type: "casa" },
+  { operation: "venta", cityId: 5, barrioId: null, type: null },
+];
+const allLinks = PAGES.flatMap((p) => {
+  const g = relatedCategoryLinks(INV, LOC_BY_ID, p);
+  return [...g.types, ...g.barrios, ...g.cities].map((l) => ({ page: p, link: l }));
+});
+check(
+  "(k) every related link points at a page indexable on this door",
+  allLinks.every(({ link }) => {
+    const { count, parentOk } = pageCountOf(link.href);
+    return count >= 3 && parentOk && count === link.count;
+  }),
+  allLinks
+    .filter(({ link }) => pageCountOf(link.href).count < 3)
+    .map(({ link }) => link.href)
+    .join(", "),
+);
+check(
+  "(k) no page links to itself",
+  allLinks.every(({ page, link }) => {
+    const self = categoryUrl({
+      operation: page.operation,
+      citySlug: LOC_BY_ID.get(page.cityId)!.slug,
+      barrioSlug: page.barrioId ? LOC_BY_ID.get(page.barrioId)!.slug : undefined,
+      type: page.type ?? undefined,
+    });
+    return link.href !== self;
+  }),
+);
+check(
+  "(k) links stay inside the page's operation",
+  allLinks.every(({ page, link }) => link.href.startsWith(`/${page.operation}/`)),
+);
+const aCasas = relatedCategoryLinks(INV, LOC_BY_ID, PAGES[1]);
+check(
+  "(k) /venta/ciudad-a/casas: other types = departamentos only (terrenos has 2)",
+  aCasas.types.map((l) => l.href).join() === "/venta/ciudad-a/departamentos",
+  aCasas.types.map((l) => l.href).join(),
+);
+check(
+  "(k) …barrios = A1 only (A2 has 1)",
+  aCasas.barrios.map((l) => l.href).join() === "/venta/ciudad-a/barrio-a1/casas",
+  aCasas.barrios.map((l) => l.href).join(),
+);
+check(
+  "(k) …other cities = B then D, nearest first; C (2 listings) is left out",
+  aCasas.cities.map((l) => l.href).join() === "/venta/ciudad-b/casas,/venta/ciudad-d/casas",
+  aCasas.cities.map((l) => l.href).join(),
+);
+check(
+  "(k) a barrio page does not list itself among its sibling barrios",
+  relatedCategoryLinks(INV, LOC_BY_ID, PAGES[2]).barrios.length === 0,
+);
+check(
+  "(k) a one-type door's city page does not link its own set under a second URL",
+  relatedCategoryLinks(INV, LOC_BY_ID, PAGES[4]).types.length === 0,
+  "ciudad-e holds only terrenos, so /venta/ciudad-e/terrenos is the same listing set",
+);
+const factsA = categoryFacts(INV, LOC_BY_ID, PAGES[0]);
+check(
+  "(k) intro facts: count, barrios and types are the page's own rows",
+  factsA.count === 11 &&
+    factsA.barrioCount === 2 &&
+    factsA.types.map((x) => `${x.type}:${x.count}`).join() === "casa:5,departamento:4,terreno:2",
+  JSON.stringify(factsA),
+);
+check(
+  "(k) …and a zero price never becomes the \"from\" figure",
+  factsA.minUsd === 50_000 && factsA.maxUsd === 150_000,
+  `${factsA.minUsd}–${factsA.maxUsd}`,
 );
 
 console.log(

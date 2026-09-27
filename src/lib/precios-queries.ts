@@ -14,7 +14,7 @@
  */
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
+import { CACHE_TAGS, CACHE_TTL, singleFlight } from "@/lib/cache";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { locations, marketMedians } from "@/db/schema";
@@ -275,14 +275,16 @@ async function citiesWithPricesUncached(): Promise<
  */
 const PRICES_TTL_SECONDS = CACHE_TTL.marketMedians;
 
-export const getCityPrices = unstable_cache(
+// Single-flighted (src/lib/cache.ts): every door's cold home reads the same
+// price cities at once after a deploy.
+export const getCityPrices = singleFlight("city-prices", unstable_cache(
   getCityPricesUncached,
   ["city-prices"],
   { revalidate: PRICES_TTL_SECONDS, tags: [CACHE_TAGS.marketMedians] },
-);
+));
 
-export const citiesWithPrices = unstable_cache(
+export const citiesWithPrices = singleFlight("cities-with-prices", unstable_cache(
   citiesWithPricesUncached,
   ["cities-with-prices"],
   { revalidate: PRICES_TTL_SECONDS, tags: [CACHE_TAGS.marketMedians] },
-);
+));

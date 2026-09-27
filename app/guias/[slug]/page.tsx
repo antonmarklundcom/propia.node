@@ -1,6 +1,7 @@
 import { Glyph } from "@/components/Glyph";
 import { cache } from "react";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
@@ -44,6 +45,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // point here), but it is not this door's page: noindex, and the index,
   // related list and sitemap leave it out (post-queries.ts).
   const ownLanguage = post.locale === (await currentLocale());
+  const brand = await brandName();
   return {
     title: `${post.title}`,
     description,
@@ -52,11 +54,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     openGraph: {
       type: "article",
       // og:title doesn't inherit title.template — brand goes in by hand (F47).
-      title: `${post.title} — ${await brandName()}`,
+      title: `${post.title} — ${brand}`,
       description,
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: post.updatedAt?.toISOString(),
-      ...(cover ? { images: [cover] } : {}),
+      // A guide's own cover when it has one; otherwise the door's card.
+      images: cover ? [cover] : doorOgImages(brand),
     },
   };
 }

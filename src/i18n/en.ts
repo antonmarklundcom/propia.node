@@ -37,6 +37,16 @@ export const enPublicUi = {
   notFound: "Not found",
   phonePlaceholder: "0981 123 456",
   perMonth: "/month",
+  /** A Guaraní listing's US$ equivalent, where a door leads with US$ (displayPrice()). */
+  approxPrice: (usd: string) => `≈ ${usd}`,
+  approxPriceTitle: "Approximate US$ equivalent. The listed price is in guaraníes.",
+  listedPrice: (price: string) => `Listed at ${price}`,
+  /** The USD / EUR switch (CurrencySwitch) — see esPublicUi. */
+  currencySwitchLabel: "Show prices in",
+  currencyUsd: "USD",
+  currencyEur: "EUR",
+  currencyEurTitle:
+    "Euro amounts are approximate, converted from US dollars at a periodically updated rate",
   operations: { venta: "Sale", alquiler: "Rental", alquiler_temporal: "Short-term rental" },
   propertyTypes: { casa: "Houses", departamento: "Apartments", terreno: "Land", duplex: "Duplexes", comercial: "Commercial properties", oficina: "Offices", deposito: "Warehouses", quinta: "Country homes" } as Record<string, string>,
 } as const;
@@ -207,6 +217,40 @@ export const enContactForm = {
   waLinkLabel: "WhatsApp",
   phoneLinkLabel: "See phone number",
   fallbackText: "We couldn't save your inquiry. You can contact the seller directly on WhatsApp.",
+  /** The foreign buyer's optional questions — see esContactForm.foreign. */
+  foreign: {
+    toggle: "Add details to get a faster, better answer",
+    hint: "All optional. They help the seller answer what matters to you.",
+    choose: "Choose…",
+    countryLabel: "Country of residence",
+    countryPlaceholder: "e.g. Canada",
+    budgetLabel: "Budget (US$)",
+    budgetUnder: (max: string) => `Under ${max}`,
+    budgetBetween: (min: string, max: string) => `${min} – ${max}`,
+    budgetOver: (min: string) => `Over ${min}`,
+    timelineLabel: "When do you plan to buy?",
+    timeline: {
+      now: "Now",
+      "3-6m": "In 3–6 months",
+      "6-12m": "In 6–12 months",
+      exploring: "Just exploring",
+    },
+    visitLabel: "Planning a visit to Paraguay?",
+    visitPlaceholder: "Dates, or “not yet”",
+    purposeLabel: "Purpose",
+    purpose: { live: "To live in", invest: "Investment", retire: "Retirement", other: "Other" },
+    contactLabel: "Preferred contact",
+    contact: { whatsapp: "WhatsApp", email: "Email", video: "Video call" },
+    blockHeading: "Buyer details",
+    lineCountry: "Country",
+    lineBudget: "Budget",
+    lineTimeline: "Timeline",
+    lineVisit: "Visit to Paraguay",
+    linePurpose: "Purpose",
+    lineContact: "Preferred contact",
+    phonePlaceholderIntl: "+1 202 555 0143",
+    phoneHintIntl: "Include your country code",
+  },
 } as const;
 
 export const enSearchBar = {
@@ -884,6 +928,30 @@ export const enMap = {
 } as const;
 
 /** Category grid: /[operacion]/[...segments]. */
+/** Singular / plural noun per property type, for counted phrases. */
+const EN_TYPE_NOUN: Record<string, readonly [string, string]> = {
+  casa: ["house", "houses"],
+  departamento: ["apartment", "apartments"],
+  terreno: ["plot of land", "plots of land"],
+  duplex: ["duplex", "duplexes"],
+  comercial: ["commercial unit", "commercial units"],
+  oficina: ["office", "offices"],
+  deposito: ["warehouse", "warehouses"],
+  quinta: ["country house", "country houses"],
+};
+
+function enCountNoun(n: number, type: string | null): string {
+  const [one, many] = (type && EN_TYPE_NOUN[type]) || ["property", "properties"];
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** "a", "a and b", "a, b and c". */
+function enList(items: string[]): string {
+  return items.length <= 1
+    ? (items[0] ?? "")
+    : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 export const enCategory = {
   operationLabel: {
     venta: "for sale",
@@ -912,8 +980,52 @@ export const enCategory = {
     `${typeLabel} ${opLabel} in ${where}`,
   titlePaged: (title: string, page: number) => `${title} — page ${page}`,
   metaNotFound: "Not found",
-  metaDescription: (count: number, title: string, brand: string) =>
-    `${count} ${title.toLowerCase()} on ${brand}. Compare prices and contact whoever lists them directly.`,
+  /**
+   * Count, type, place and — when the page has prices — the lowest asking
+   * price. The old tail ("contact whoever lists them directly") stops being
+   * true in agency mode, so it now says only what the page always offers.
+   */
+  metaDescription: (p: {
+    count: number;
+    type: string | null;
+    opLabel: string;
+    where: string;
+    fromPrice: string | null;
+    monthly: boolean;
+    brand: string;
+  }) => {
+    const from = p.fromPrice ? `, from ${p.fromPrice}${p.monthly ? " a month" : ""}` : "";
+    const head = `${enCountNoun(p.count, p.type)} ${p.opLabel} in ${p.where}${from}.`;
+    const full = `${head} Compare prices and locations on the map at ${p.brand}.`;
+    return full.length <= 155 ? full : head;
+  },
+  /** "5 houses", "1 plot of land", "12 properties" — `type` null = any. */
+  countNoun: (n: number, type: string | null) => enCountNoun(n, type),
+  intro: (p: {
+    count: number;
+    type: string | null;
+    opLabel: string;
+    where: string;
+    barrioCount: number;
+  }) =>
+    `There ${p.count === 1 ? "is" : "are"} ${enCountNoun(p.count, p.type)} ${p.opLabel} in ${p.where}${
+      p.barrioCount >= 2 ? `, with listings in ${p.barrioCount} neighbourhoods` : ""
+    }.`,
+  introTypes: (items: string[]) => `By type: ${enList(items)}.`,
+  introPrice: (p: { min: string; max: string; monthly: boolean }) =>
+    p.min === p.max
+      ? `Asking price: ${p.min}${p.monthly ? " a month" : ""}.`
+      : `Asking prices run from ${p.min} to ${p.max}${p.monthly ? " a month" : ""} (in US dollars or the guaraní equivalent).`,
+  relatedAria: "Related searches",
+  relatedTypesTitle: (place: string) => `Also in ${place}`,
+  relatedBarriosTitle: (typeLabel: string | null, city: string) =>
+    typeLabel ? `${typeLabel} by neighbourhood in ${city}` : `By neighbourhood in ${city}`,
+  relatedSiblingBarriosTitle: (typeLabel: string, city: string) =>
+    `${typeLabel} in other neighbourhoods of ${city}`,
+  relatedCitiesTitle: (typeLabel: string, opLabel: string) =>
+    `${typeLabel} ${opLabel} in other cities`,
+  relatedBarrioLink: (typeLabel: string, barrio: string) => `${typeLabel} in ${barrio}`,
+  breadcrumbLabel: "Breadcrumb",
   breadcrumbHome: "Home",
   count: (n: number) =>
     `${n} ${n === 1 ? "property" : "properties"} available.`,
@@ -2588,8 +2700,8 @@ export const enAgencyProfile = {
     `${n === 1 ? "1 published property" : `${n} published properties`} by ${agencyName} on ${brand}.`,
 } as const;
 
-export function inquiryPrefillFor(brand: string, title: string, url: string): string {
-  return `Hello, I saw this property on ${brand} and I am interested: ${title}\n${url}`;
+export function inquiryPrefillFor(brand: string, title: string, url: string, ref: string): string {
+  return `Hello, I saw this property on ${brand} and I am interested: ${title} (Ref. ${ref})\n${url}`;
 }
 
 export function agentInquiryPrefillFor(brand: string, agentName: string, url: string): string {

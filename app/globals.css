@@ -1832,6 +1832,66 @@ body {
   font-size: 14px;
 }
 
+/* Category pages: visible trail, data-driven intro and related searches.
+   The trail reuses .breadcrumb-nav (listing detail) so both read alike. */
+.category-breadcrumb {
+  margin-bottom: 8px;
+}
+
+.category-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-intro {
+  max-width: 72ch;
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-ink-secondary);
+}
+
+.category-related {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px 32px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.category-related__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.category-related__list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-related__link {
+  font-size: 14px;
+  color: var(--color-link, var(--color-primary));
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.category-related__link:hover {
+  text-decoration: underline;
+}
+
+.category-related__count {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+}
+
 /* ---- Site footer -------------------------------------------------------- */
 /* Deep green ground, gold hairlines, uppercase column titles. The teal-on-teal
    greys the old footer used have no equivalent in the editorial palette — the
@@ -6582,6 +6642,70 @@ summary.panel-btn::-webkit-details-marker {
   line-height: 1.6;
 }
 
+/* ---- Buyer brief (BuyerBrief.tsx) ---------------------------------------- */
+
+/* "Tell us what you're looking for" under an empty / thin result set and on
+   the 404. The form itself is .lead-form, so it inherits every door's theme;
+   this only frames the heading and the collapsed thin-results variant. */
+.buyer-brief {
+  margin-top: 24px;
+  min-width: 0;
+}
+
+.buyer-brief__title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.buyer-brief__intro {
+  margin: 0 0 14px;
+  color: var(--color-ink-secondary);
+  line-height: 1.6;
+}
+
+.buyer-brief--collapsed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.buyer-brief--collapsed .buyer-brief__title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.buyer-brief__open {
+  padding: 0.75rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.buyer-brief__open:hover {
+  background: var(--button-primary-bg-hover);
+}
+
+.buyer-brief__note {
+  min-height: 64px;
+}
+
 /* ---- Operation hubs (/venta, /alquiler) ---------------------------------- */
 
 /* A1: compact header on cream inside the results column. The sidebar is the
@@ -10290,3 +10414,98 @@ summary.panel-btn::-webkit-details-marker {
 }
 @media (max-width: 480px) { .listing-browser .listing-results-grid { grid-template-columns: minmax(0,1fr); } }
 @media (prefers-reduced-motion: reduce) { .listing-spinner { animation: none; } }
+
+/* == Foreign buyer enquiry + USD-first prices (English marketplace doors) == */
+.contact-form__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-ink-secondary);
+}
+.contact-form__more {
+  border: 1px solid var(--color-border);
+}
+.contact-form__more-toggle {
+  display: list-item;
+  min-height: 44px;
+  padding: 11px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.contact-form__more-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.contact-form__more[open] > .contact-form__more-toggle {
+  border-bottom: 1px solid var(--color-border);
+}
+.contact-form__more > .contact-form__hint {
+  padding: 10px 12px 0;
+}
+.contact-form__more-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+.contact-form__select {
+  appearance: auto;
+}
+.listing-card__price-alt {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+}
+.listing-cta-bar__listed {
+  font-size: 12px;
+  color: var(--color-ink-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A lead's message keeps its line breaks (the buyer-details block, /vender's lines). */
+.panel-card__body--message {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* USD / EUR (FxSwap + CurrencySwitch): the server renders both, the
+   attribute CurrencySwitch sets on <html> decides which one shows. */
+:root:not([data-currency="eur"]) .fx--eur,
+:root[data-currency="eur"] .fx--usd {
+  display: none !important;
+}
+.currency-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--header-border, var(--color-border));
+}
+.currency-switch__btn {
+  min-width: 40px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--header-nav-color, var(--color-ink));
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.currency-switch__btn[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+.currency-switch__btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+@media (max-width: 430px) {
+  .currency-switch__btn {
+    min-width: 36px;
+    padding: 0 6px;
+  }
+}

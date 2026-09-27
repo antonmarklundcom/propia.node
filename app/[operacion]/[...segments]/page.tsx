@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { dict } from "@/i18n/server";
@@ -10,8 +11,16 @@ import {
   resolveBarrio,
   citySubtreeIds,
   countCategory,
+  getCategoryInventory,
+  locationIndex,
   type LocationRow,
 } from "@/lib/queries";
+import {
+  categoryFacts,
+  relatedCategoryLinks,
+  type CategoryPageRef,
+  type RelatedLink,
+} from "@/lib/category-context";
 import {
   hasListingUserParams,
 } from "@/lib/facets";
@@ -34,6 +43,7 @@ import {
 } from "@/lib/precios-queries";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { siteOrigin } from "@/lib/origin";
+import { orDegraded } from "@/lib/degrade";
 import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingBrowser, listingPage as parsePage } from "@/components/ListingBrowser";
@@ -80,6 +90,61 @@ const countFor = cache(
       vertical,
     }),
 );
+
+/**
+ * The type every listing on the page is: the one in its path, else the
+ * door's only type (terreno.com.py's /venta/luque is all terrenos, whatever
+ * its title says). Counted phrases use it so they name what the visitor sees.
+ */
+function nounType(r: Resolved, vertical: VerticalConfig): PropertyType | null {
+  if (r.type) return r.type;
+  const only = vertical.filters?.property_type;
+  return only?.length === 1 ? (only[0] as PropertyType) : null;
+}
+
+/** Where the page is: "Luque", or "Recoleta, Asunción" on a barrio page. */
+function whereOf(r: Resolved): string {
+  return r.barrio ? `${r.barrio.name}, ${r.city.name}` : r.city.name;
+}
+
+/**
+ * A price this page may print, or null. Short-term rentals get none: the
+ * listing form does not record whether their amount is per night or per
+ * month, and a range with the wrong period is a wrong fact.
+ */
+function priceText(
+  usd: number | null,
+  operation: Operation,
+  vertical: VerticalConfig,
+): string | null {
+  if (usd == null || !(usd > 0) || operation === "alquiler_temporal") return null;
+  return formatUsd(usd, numberLocaleFor(vertical.locale));
+}
+
+/**
+ * The page's facts (intro, meta description) and its related links, from ONE
+ * cached aggregate of this door's inventory for the operation
+ * (`getCategoryInventory()`, whose cache key carries the vertical key) plus
+ * the location table this request already loaded. cache() shares it between
+ * generateMetadata and the page body; both callers pass the same `Resolved`
+ * (itself from the cached resolve()) and the same vertical object.
+ */
+const pageContext = cache(async (r: Resolved, vertical: VerticalConfig) => {
+  const [rows, byId] = await Promise.all([
+    getCategoryInventory(vertical, r.operation),
+    locationIndex(),
+  ]);
+  const ref: CategoryPageRef = {
+    operation: r.operation,
+    cityId: r.city.id,
+    barrioId: r.barrio?.id ?? null,
+    type: r.type,
+  };
+  return {
+    facts: categoryFacts(rows, byId, ref),
+    related: relatedCategoryLinks(rows, byId, ref),
+  };
+});
 
 /**
  * Where an empty typed page sends the visitor: the nearest level up that has
@@ -205,7 +270,21 @@ export async function generateMetadata({
   const indexed = ix.state === "index" && page === 1 && !userFiltered;
 
   const title = page > 1 ? t.titlePaged(r.title, page) : r.title;
-  const description = t.metaDescription(count, r.title, brand);
+  // The lowest asking price comes from the same cached aggregate the intro
+  // reads; `count` stays the authoritative COUNT above. A failed aggregate
+  // costs the price clause, never the page.
+  const facts = await pageContext(r, vertical)
+    .then((c) => c.facts)
+    .catch(() => null);
+  const description = t.metaDescription({
+    count,
+    type: nounType(r, vertical),
+    opLabel: t.operationLabel[r.operation],
+    where: whereOf(r),
+    fromPrice: priceText(facts?.minUsd ?? null, r.operation, vertical),
+    monthly: r.operation === "alquiler",
+    brand,
+  });
   return {
     title,
     description,
@@ -220,7 +299,7 @@ export async function generateMetadata({
         : undefined,
     },
     // og:title doesn't inherit title.template, so the brand is explicit (F47).
-    openGraph: { title: `${title} — ${brand}`, description },
+    openGraph: { title: `${title} — ${brand}`, description, images: doorOgImages(brand) },
     robots: indexed
         ? { index: true, follow: true }
         : { index: false, follow: true },
@@ -279,7 +358,13 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     typeof sp.tipo_vacio === "string" ? parseTypePlural(sp.tipo_vacio) : null;
 
   // Does this city have a price page worth linking to? Cheap: one aggregate.
-  const cityPrices = await cityPricesFor(r.city.slug);
+  // An aside, not the grid: under pool pressure it renders as "no prices" for
+  // this request (never cached — src/lib/degrade.ts) instead of a 500.
+  const cityPrices = await orDegraded(
+    `city-prices[${r.city.slug}]`,
+    cityPricesFor(r.city.slug),
+    null,
+  );
   const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
 
   /**
@@ -295,15 +380,93 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     ? medianFor(cityPrices, r.operation, r.type)
     : bestMedianFor(cityPrices, r.operation);
 
-  // Breadcrumbs are this host's own pages; the ItemList points at listing
-  // detail pages, which may be canonical on a different host entirely.
+  // Breadcrumbs are this host's own pages; the ItemList (ListingBrowser)
+  // points at listing detail pages, which may be canonical on another host.
   const origin = await siteOrigin();
+  const numberLocale = numberLocaleFor(vertical.locale);
 
+  // The same URL-hierarchy the redirects walk: operation hub › city ›
+  // city/type › barrio/type. Every ancestor holds at least this page's
+  // listings on this door, so none of them is empty (404) or a redirect.
   const crumbs = [
     { name: t.breadcrumbHome, url: "/" },
+    { name: d.hub.copy[r.operation].label, url: `/${operationSlug(r.operation)}` },
     { name: r.city.name, url: categoryUrl({ operation: r.operation, citySlug: r.city.slug }) },
+    ...(r.type
+      ? [{
+          name: t.typeLabel[r.type],
+          url: categoryUrl({ operation: r.operation, citySlug: r.city.slug, type: r.type }),
+        }]
+      : []),
     ...(r.barrio ? [{ name: r.barrio.name, url: r.canonicalPath }] : []),
   ];
+
+  // The intro describes the canonical listing set, so it shows only where
+  // that set is what the page is about: page 1, no visitor filter, indexable.
+  // The related module only ever links pages indexable on this door, so it
+  // is safe (and useful) on every state that renders.
+  const indexed =
+    ix.state === "index" && parsePage(sp.page) === 1 && !hasListingUserParams(sp);
+  const context = await pageContext(r, vertical).catch(() => null);
+  const facts = context?.facts;
+  const noun = nounType(r, vertical);
+
+  let intro: string | null = null;
+  if (indexed && facts) {
+    const min = priceText(facts.minUsd, r.operation, vertical);
+    const max = priceText(facts.maxUsd, r.operation, vertical);
+    intro = [
+      t.intro({
+        count,
+        type: noun,
+        opLabel: t.operationLabel[r.operation],
+        where: whereOf(r),
+        barrioCount: facts.barrioCount,
+      }),
+      facts.types.length >= 2
+        ? t.introTypes(facts.types.map((x) => t.countNoun(x.count, x.type)))
+        : null,
+      min && max
+        ? t.introPrice({ min, max, monthly: r.operation === "alquiler" })
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  const typeName = (type: PropertyType | null) =>
+    type ? t.typeLabel[type] : t.typeLabelAny;
+  const relatedGroups: { key: string; title: string; links: { href: string; label: string; count: number }[] }[] = [];
+  if (context) {
+    const { types, barrios, cities } = context.related;
+    const withLabel = (links: RelatedLink[], label: (l: RelatedLink) => string) =>
+      links.map((l) => ({ href: l.href, label: label(l), count: l.count }));
+    if (types.length > 0) {
+      relatedGroups.push({
+        key: "types",
+        title: t.relatedTypesTitle(r.city.name),
+        links: withLabel(types, (l) => typeName(l.type)),
+      });
+    }
+    if (barrios.length > 0) {
+      relatedGroups.push({
+        key: "barrios",
+        title: r.barrio && r.type
+          ? t.relatedSiblingBarriosTitle(t.typeLabel[r.type], r.city.name)
+          : t.relatedBarriosTitle(r.type ? t.typeLabel[r.type] : null, r.city.name),
+        links: withLabel(barrios, (l) =>
+          r.type ? l.place : t.relatedBarrioLink(typeName(l.type), l.place),
+        ),
+      });
+    }
+    if (cities.length > 0) {
+      relatedGroups.push({
+        key: "cities",
+        title: t.relatedCitiesTitle(typeName(noun), t.operationLabel[r.operation]),
+        links: withLabel(cities, (l) => l.place),
+      });
+    }
+  }
 
   return (
     <main className={vertical.key === "inmobiliaria" || vertical.key === "en" ? "c3b-marketplace c3b-category" : undefined} style={{ maxWidth: 1440, margin: "0 auto", padding: "1rem" }}>
@@ -315,7 +478,26 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         />
       )}
 
+      <nav className="breadcrumb-nav category-breadcrumb" aria-label={t.breadcrumbLabel}>
+        {crumbs.map((crumb, i) => (
+          <span key={crumb.url} className="category-breadcrumb__item">
+            {i > 0 && <span aria-hidden>›</span>}
+            {i === crumbs.length - 1 ? (
+              <span className="breadcrumb-nav__current" aria-current="page">
+                {crumb.name}
+              </span>
+            ) : (
+              <Link className="breadcrumb-nav__link" href={crumb.url}>
+                {crumb.name}
+              </Link>
+            )}
+          </span>
+        ))}
+      </nav>
+
       <h1 className="category-title">{r.title}</h1>
+
+      {intro && <p className="category-intro">{intro}</p>}
 
       {tipoVacio && (
         <p className="category-redirect-notice">
@@ -328,6 +510,31 @@ export default async function CategoryPage({ params, searchParams }: Params) {
       )}
 
       <ListingBrowser basePath={r.canonicalPath} query={baseQuery} searchParams={sp} city={r.city} barrio={r.barrio} />
+
+      {/* Related searches: only pages indexable on this door (see
+          src/lib/category-context.ts), so it never links into a noindex,
+          an empty or a redirected category. */}
+      {relatedGroups.length > 0 && (
+        <nav className="category-related" aria-label={t.relatedAria}>
+          {relatedGroups.map((group) => (
+            <section key={group.key} className="category-related__group">
+              <h2 className="category-related__title">{group.title}</h2>
+              <ul className="category-related__list">
+                {group.links.map((link) => (
+                  <li key={link.href}>
+                    <Link className="category-related__link" href={link.href}>
+                      {link.label}
+                    </Link>{" "}
+                    <span className="category-related__count">
+                      {link.count.toLocaleString(numberLocale)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </nav>
+      )}
 
       {/* Internal link module: market context for this city. Only rendered
           when the medians job has something defensible to show, so we never
@@ -344,11 +551,11 @@ export default async function CategoryPage({ params, searchParams }: Params) {
                   city: r.city.name,
                   median:
                     contextCell.medianPriceUsd != null
-                      ? formatUsd(contextCell.medianPriceUsd, numberLocaleFor(vertical.locale))
+                      ? formatUsd(contextCell.medianPriceUsd, numberLocale)
                       : "—",
                   perM2:
                     contextCell.medianPriceM2Usd != null
-                      ? formatUsd(contextCell.medianPriceM2Usd, numberLocaleFor(vertical.locale))
+                      ? formatUsd(contextCell.medianPriceM2Usd, numberLocale)
                       : null,
                   sample: contextCell.sampleSize,
                 })

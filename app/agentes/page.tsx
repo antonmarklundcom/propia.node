@@ -1,5 +1,6 @@
 import { numberLocaleFor } from "@/i18n";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
 import {
@@ -53,7 +54,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // indexed either — the sitemap already drops it (`includeDirectory`), and
     // these two answers must not disagree.
     robots: { index: ownsDirectory, follow: true },
-    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand) },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand), images: doorOgImages(brand) },
   };
 }
 
