@@ -884,6 +884,30 @@ export const enMap = {
 } as const;
 
 /** Category grid: /[operacion]/[...segments]. */
+/** Singular / plural noun per property type, for counted phrases. */
+const EN_TYPE_NOUN: Record<string, readonly [string, string]> = {
+  casa: ["house", "houses"],
+  departamento: ["apartment", "apartments"],
+  terreno: ["plot of land", "plots of land"],
+  duplex: ["duplex", "duplexes"],
+  comercial: ["commercial unit", "commercial units"],
+  oficina: ["office", "offices"],
+  deposito: ["warehouse", "warehouses"],
+  quinta: ["country house", "country houses"],
+};
+
+function enCountNoun(n: number, type: string | null): string {
+  const [one, many] = (type && EN_TYPE_NOUN[type]) || ["property", "properties"];
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** "a", "a and b", "a, b and c". */
+function enList(items: string[]): string {
+  return items.length <= 1
+    ? (items[0] ?? "")
+    : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 export const enCategory = {
   operationLabel: {
     venta: "for sale",
@@ -912,8 +936,52 @@ export const enCategory = {
     `${typeLabel} ${opLabel} in ${where}`,
   titlePaged: (title: string, page: number) => `${title} — page ${page}`,
   metaNotFound: "Not found",
-  metaDescription: (count: number, title: string, brand: string) =>
-    `${count} ${title.toLowerCase()} on ${brand}. Compare prices and contact whoever lists them directly.`,
+  /**
+   * Count, type, place and — when the page has prices — the lowest asking
+   * price. The old tail ("contact whoever lists them directly") stops being
+   * true in agency mode, so it now says only what the page always offers.
+   */
+  metaDescription: (p: {
+    count: number;
+    type: string | null;
+    opLabel: string;
+    where: string;
+    fromPrice: string | null;
+    monthly: boolean;
+    brand: string;
+  }) => {
+    const from = p.fromPrice ? `, from ${p.fromPrice}${p.monthly ? " a month" : ""}` : "";
+    const head = `${enCountNoun(p.count, p.type)} ${p.opLabel} in ${p.where}${from}.`;
+    const full = `${head} Compare prices and locations on the map at ${p.brand}.`;
+    return full.length <= 155 ? full : head;
+  },
+  /** "5 houses", "1 plot of land", "12 properties" — `type` null = any. */
+  countNoun: (n: number, type: string | null) => enCountNoun(n, type),
+  intro: (p: {
+    count: number;
+    type: string | null;
+    opLabel: string;
+    where: string;
+    barrioCount: number;
+  }) =>
+    `There ${p.count === 1 ? "is" : "are"} ${enCountNoun(p.count, p.type)} ${p.opLabel} in ${p.where}${
+      p.barrioCount >= 2 ? `, with listings in ${p.barrioCount} neighbourhoods` : ""
+    }.`,
+  introTypes: (items: string[]) => `By type: ${enList(items)}.`,
+  introPrice: (p: { min: string; max: string; monthly: boolean }) =>
+    p.min === p.max
+      ? `Asking price: ${p.min}${p.monthly ? " a month" : ""}.`
+      : `Asking prices run from ${p.min} to ${p.max}${p.monthly ? " a month" : ""} (in US dollars or the guaraní equivalent).`,
+  relatedAria: "Related searches",
+  relatedTypesTitle: (place: string) => `Also in ${place}`,
+  relatedBarriosTitle: (typeLabel: string | null, city: string) =>
+    typeLabel ? `${typeLabel} by neighbourhood in ${city}` : `By neighbourhood in ${city}`,
+  relatedSiblingBarriosTitle: (typeLabel: string, city: string) =>
+    `${typeLabel} in other neighbourhoods of ${city}`,
+  relatedCitiesTitle: (typeLabel: string, opLabel: string) =>
+    `${typeLabel} ${opLabel} in other cities`,
+  relatedBarrioLink: (typeLabel: string, barrio: string) => `${typeLabel} in ${barrio}`,
+  breadcrumbLabel: "Breadcrumb",
   breadcrumbHome: "Home",
   count: (n: number) =>
     `${n} ${n === 1 ? "property" : "properties"} available.`,

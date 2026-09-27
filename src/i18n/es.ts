@@ -1833,6 +1833,30 @@ export const esMap = {
 } as const;
 
 /** Category grid: /[operacion]/[...segments]. */
+/** Singular / plural noun per property type, for counted phrases. */
+const ES_TYPE_NOUN: Record<string, readonly [string, string]> = {
+  casa: ["casa", "casas"],
+  departamento: ["departamento", "departamentos"],
+  terreno: ["terreno", "terrenos"],
+  duplex: ["dúplex", "dúplex"],
+  comercial: ["local comercial", "locales comerciales"],
+  oficina: ["oficina", "oficinas"],
+  deposito: ["depósito", "depósitos"],
+  quinta: ["quinta", "quintas"],
+};
+
+function esCountNoun(n: number, type: string | null): string {
+  const [one, many] = (type && ES_TYPE_NOUN[type]) || ["propiedad", "propiedades"];
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** "a", "a y b", "a, b y c". */
+function esList(items: string[]): string {
+  return items.length <= 1
+    ? (items[0] ?? "")
+    : `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
+}
+
 export const esCategory = {
   operationLabel: {
     venta: "venta",
@@ -1855,8 +1879,60 @@ export const esCategory = {
     `${typeLabel} en ${opLabel} en ${where}`,
   titlePaged: (title: string, page: number) => `${title} — página ${page}`,
   metaNotFound: "No encontrado",
-  metaDescription: (count: number, title: string, brand: string) =>
-    `${count} ${title.toLowerCase()} en ${brand}. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
+  /**
+   * Count, type, place and — when the page has prices — the lowest asking
+   * price, all counted from the page's own rows. The old sentence promised a
+   * cuota on every page, which is false on rentals and on doors that show
+   * none (`showCuota()`). Under ~155 characters: the brand tail goes first.
+   */
+  metaDescription: (p: {
+    count: number;
+    type: string | null;
+    opLabel: string;
+    where: string;
+    fromPrice: string | null;
+    monthly: boolean;
+    brand: string;
+  }) => {
+    const from = p.fromPrice ? `, desde ${p.fromPrice}${p.monthly ? " por mes" : ""}` : "";
+    const head = `${esCountNoun(p.count, p.type)} en ${p.opLabel} en ${p.where}${from}.`;
+    const full = `${head} Compará precios y ubicaciones en el mapa en ${p.brand}.`;
+    return full.length <= 155 ? full : head;
+  },
+  /** "5 terrenos", "1 local comercial", "12 propiedades" — `type` null = any. */
+  countNoun: (n: number, type: string | null) => esCountNoun(n, type),
+  /**
+   * The category intro (only on indexable pages). Every clause is a count the
+   * page itself made on this door's rows; a clause with nothing true to say
+   * is left out rather than padded.
+   */
+  intro: (p: {
+    count: number;
+    type: string | null;
+    opLabel: string;
+    where: string;
+    barrioCount: number;
+  }) =>
+    `Hay ${esCountNoun(p.count, p.type)} en ${p.opLabel} en ${p.where}${
+      p.barrioCount >= 2 ? `, con avisos en ${p.barrioCount} barrios` : ""
+    }.`,
+  /** items: ["12 casas", "8 terrenos"]. */
+  introTypes: (items: string[]) => `Por tipo: ${esList(items)}.`,
+  introPrice: (p: { min: string; max: string; monthly: boolean }) =>
+    p.min === p.max
+      ? `Precio publicado: ${p.min}${p.monthly ? " por mes" : ""}.`
+      : `Precios publicados de ${p.min} a ${p.max}${p.monthly ? " por mes" : ""} (en dólares o su equivalente en guaraníes).`,
+  relatedAria: "Búsquedas relacionadas",
+  relatedTypesTitle: (place: string) => `También en ${place}`,
+  relatedBarriosTitle: (typeLabel: string | null, city: string) =>
+    typeLabel ? `${typeLabel} por barrio en ${city}` : `Por barrio en ${city}`,
+  relatedSiblingBarriosTitle: (typeLabel: string, city: string) =>
+    `${typeLabel} en otros barrios de ${city}`,
+  relatedCitiesTitle: (typeLabel: string, opLabel: string) =>
+    `${typeLabel} en ${opLabel} en otras ciudades`,
+  /** A barrio link on a page without a type: "Casas en Recoleta". */
+  relatedBarrioLink: (typeLabel: string, barrio: string) => `${typeLabel} en ${barrio}`,
+  breadcrumbLabel: "Ruta de navegación",
   breadcrumbHome: "Inicio",
   count: (n: number) => `${n} ${n === 1 ? "propiedad" : "propiedades"} disponibles.`,
   emptyTypeNotice: (typeLabel: string, opLabel: string, city: string) =>
