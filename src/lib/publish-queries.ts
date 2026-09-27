@@ -2,17 +2,19 @@
  * Publish-wizard data access (ARCHITECTURE.md §3, M5). A draft is a `listings`
  * row with status='draft' owned by the publisher — no separate drafts table
  * (the schema STOP gate is closed; status='draft' is the intended shape). Every
- * write is scoped to ownerUserId in the WHERE clause, so a publisher can only
- * ever touch their own draft, whatever the client submits. Reference data
+ * write is scoped to ownerUserId — and the publisher's current agency,
+ * draftClaim() — in the WHERE clause, so a publisher can only ever touch their
+ * own draft, whatever the client submits. Reference data
  * (locations, nearby projects, financing programs) feeds the wizard's selects.
  */
 import "server-only";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   agencies, agents, financingPrograms, listings, locations, projects,
 } from "@/db/schema";
 import type { FinancingProgram } from "@/lib/cuota";
+import type { EditScope } from "@/lib/listing-edit";
 import { makePublicId, toPriceUsd } from "@/lib/import/normalize";
 import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
@@ -29,6 +31,35 @@ async function resolvePublisher(userId: number) {
     .where(eq(agents.userId, userId))
     .limit(1);
   return agent ?? { agentId: null, agencyId: null };
+}
+
+/**
+ * The scope the wizard's photo actions run under. A draft an agency member
+ * starts is stamped with their agency (saveDraft), and the owner scope stops
+ * at agency-owned rows (listingScopeWhere), so a member works on it through
+ * their agency — re-derived from the agents row on every call, so it lapses
+ * the moment they leave. Everyone else (FSBO, an independent agent) is owner.
+ */
+export async function publisherScope(userId: number): Promise<EditScope> {
+  const { agencyId } = await resolvePublisher(userId);
+  return agencyId != null
+    ? { kind: "agency", agencyId }
+    : { kind: "owner", userId };
+}
+
+/**
+ * The wizard's claim on an existing draft: the user created it AND it sits
+ * where they publish today — their agency's, or no agency's. `saveDraft`
+ * re-stamps `agency_id` from the publisher's current agency, so a claim on
+ * `owner_user_id` alone let an agent who left reopen a draft they started
+ * inside the agency and, on save, carry it out into their own account.
+ */
+async function draftClaim(userId: number): Promise<SQL> {
+  const { agencyId } = await resolvePublisher(userId);
+  return and(
+    eq(listings.ownerUserId, userId),
+    agencyId != null ? eq(listings.agencyId, agencyId) : isNull(listings.agencyId),
+  )!;
 }
 
 export interface PublishContact {
@@ -48,7 +79,7 @@ export async function getPublishContact(
       .from(listings)
       .where(and(
         eq(listings.id, draftId),
-        eq(listings.ownerUserId, userId),
+        await draftClaim(userId),
         eq(listings.status, "draft"),
       ))
       .limit(1);
@@ -181,7 +212,7 @@ export async function getUserDraft(
   const [row] = await db
     .select()
     .from(listings)
-    .where(and(eq(listings.id, draftId), eq(listings.ownerUserId, userId)))
+    .where(and(eq(listings.id, draftId), await draftClaim(userId)))
     .limit(1);
   if (!row) return null;
   return {
@@ -238,7 +269,7 @@ async function draftFields(input: DraftInput, agencyId: number | null) {
  * Create or update the caller's draft. On create the row is stamped with a
  * public_id, a title slug and ownerUserId; on update those identity columns are
  * left untouched (never recompute a slug — SEO contract). The update is scoped
- * to (id, ownerUserId, status='draft') so a published/removed row can't be
+ * to (id, draftClaim(), status='draft') so a published/removed row can't be
  * mutated back into a draft, and no other user's draft can be touched.
  * Returns the draft id (0 when an update matched nothing).
  * New rows resolve both professional IDs from the authenticated user's agent
@@ -260,7 +291,7 @@ export async function saveDraft(params: {
       .where(
         and(
           eq(listings.id, draftId),
-          eq(listings.ownerUserId, userId),
+          await draftClaim(userId),
           eq(listings.status, "draft"),
         ),
       );
@@ -302,7 +333,7 @@ export async function submitDraftForReview(params: {
     .where(
       and(
         eq(listings.id, params.draftId),
-        eq(listings.ownerUserId, params.userId),
+        await draftClaim(params.userId),
         eq(listings.status, "draft"),
         // A draft may be saved before its price step (saveDraftAction), but it
         // never reaches the review queue without one.

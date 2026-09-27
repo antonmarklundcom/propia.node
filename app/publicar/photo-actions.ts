@@ -4,8 +4,10 @@
  * Photo upload from the publish wizard.
  *
  * The wizard's publisher is often FSBO ("particular") with no agency, so the
- * scope here is `owner` — their claim on the row is `owner_user_id`, re-derived
- * from the session on every call. A forged draftId therefore matches no row.
+ * scope is usually `owner` — their claim on the row is `owner_user_id`; an
+ * agency member's draft carries their agency and is reached through it
+ * (publisherScope()). Either way it is re-derived from the session on every
+ * call. A forged draftId therefore matches no row.
  * That guard is also what keeps this from being an open upload endpoint: bytes
  * can only ever be written against a draft the caller created.
  *
@@ -19,6 +21,7 @@ import {
   listListingImages,
   type ListingImageRow,
 } from "@/lib/listing-images";
+import { publisherScope } from "@/lib/publish-queries";
 
 export type DraftPhotoResult =
   | { ok: true; images: ListingImageRow[]; rejected: string[] }
@@ -33,7 +36,7 @@ export async function uploadDraftPhotosAction(
     return { ok: false, error: "not_found" };
   }
 
-  const scope = { kind: "owner", userId: user.id } as const;
+  const scope = await publisherScope(user.id);
   const files = formData
     .getAll("photos")
     .filter((f): f is File => f instanceof File && f.size > 0);
@@ -53,7 +56,7 @@ export async function deleteDraftPhotoAction(
   imageId: number,
 ): Promise<DraftPhotoResult> {
   const user = await requireUser("/publicar");
-  const scope = { kind: "owner", userId: user.id } as const;
+  const scope = await publisherScope(user.id);
 
   const ok = await deleteListingImage(draftId, imageId, scope);
   if (!ok) return { ok: false, error: "not_found" };
