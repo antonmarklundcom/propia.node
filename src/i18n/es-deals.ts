@@ -58,7 +58,19 @@ export const esDeals = {
       "Revisá los valores: porcentajes entre 0 y 100 con hasta 2 decimales, montos desde 0, fecha válida.",
     deal_partner: "Ese socio no tiene esta consulta compartida.",
     deal_forbidden: "Solo el administrador puede editar los montos de un negocio.",
+    deal_deleted: "Negocio borrado. Lo que tenía quedó en el Historial.",
+    deal_delete_confirm: "Para borrar el negocio, escribí BORRAR en la casilla de confirmación.",
+    deal_gone: "Ese negocio ya no existe.",
   } as Record<string, string>,
+
+  /** The flash codes above that report a success, not an error. */
+  flashOk: ["deal_saved", "deal_deleted"] as readonly string[],
+
+  deleteTitle: "Borrar este negocio",
+  deleteConfirmLabel: "Escribí BORRAR para confirmar",
+  deleteButton: "Borrar negocio",
+  deleteHint:
+    "Saca el negocio del libro y de todas las sumas de Negocios. No toca la consulta ni lo compartido. Lo que tenía (etapa, socio, montos, nota) queda en el Historial.",
 
   /* --------------------------- /agencia/leads --------------------------- */
   partnerTitle: "Etapa del negocio",
@@ -99,6 +111,27 @@ export const esDeals = {
     "Cobrado",
   ],
   openLead: "Ver consulta",
+  exportCsv: "Descargar CSV",
+  exportHint:
+    "Todos los negocios (hasta 1000, los movidos más recientemente primero), con los montos tal como los escribiste.",
+  csvHead: [
+    "Negocio",
+    "Creado",
+    "Etapa desde",
+    "Consulta",
+    "Nombre",
+    "Aviso",
+    "Socio",
+    "Etapa",
+    "Motivo de pérdida",
+    "Precio de venta (US$)",
+    "Comisión total (%)",
+    "Tu parte (%)",
+    "Tu parte (US$)",
+    "Fecha de cobro",
+    "Nota",
+    "Enlace",
+  ] as readonly string[],
   noPartner: "Sin socio",
   lostTitle: "Motivos de pérdida",
   lostHead: ["Motivo", "Negocios"],
@@ -111,5 +144,6 @@ export const esDeals = {
   historyAction: {
     "deal.update": "Editó un negocio",
     "deal.stage": "Un socio movió la etapa de un negocio",
+    "deal.delete": "Borró un negocio",
   } as Record<string, string>,
 } as const;

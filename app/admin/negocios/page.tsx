@@ -94,6 +94,13 @@ export default async function AdminDealsPage() {
         </section>
 
         <h3 className="panel-section__title" style={{ marginTop: 28 }}>{esDeals.dealsTitle}</h3>
+        {deals.length > 0 ? (
+          <p className="panel-note">
+            <a className="panel-chip" href="/admin/negocios/export" title={esDeals.exportHint} download>
+              {esDeals.exportCsv}
+            </a>
+          </p>
+        ) : null}
         {deals.length === 0 ? (
           <p className="panel-empty">{esDeals.dealsEmpty}</p>
         ) : (

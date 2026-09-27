@@ -67,9 +67,12 @@ import { telegramChatsFor } from "../src/lib/partner-alerts";
 import { linkTelegramChat, unlinkTelegramChat } from "../src/lib/telegram-accounts";
 import { userMaySeeLead } from "../src/lib/inbox-access";
 import { parseOperatorDealForm, parsePartnerStageForm } from "../src/lib/deal-form";
+import { dealsCsv } from "../src/lib/deal-export";
 import {
   dealSummary,
+  deleteOperatorDeal,
   getDealByLead,
+  listDeals,
   getPartnerDealStages,
   setPartnerDealStage,
   upsertOperatorDeal,
@@ -736,6 +739,52 @@ async function main() {
       internalOnly: false,
     });
 
+    // The ledger CSV: the same rows as /admin/negocios, money exactly as stored.
+    const csvRow = (await listDeals(1000)).find((d) => d.leadId === sharedLeadId);
+    const ledgerCsv = csvRow ? dealsCsv([csvRow], "https://example.test") : "";
+    check(
+      "ledger CSV: the deal is exported with its money columns as stored",
+      ledgerCsv.includes(",150000.00,4.00,30.00,1800.50,2026-09-15,") &&
+        ledgerCsv.includes("https://example.test/admin/leads#lead-" + sharedLeadId),
+      ledgerCsv,
+    );
+    const injectedLedger = dealsCsv(
+      [{ ...csvRow!, note: "=HYPERLINK(\"http://x\")", leadName: "@SUM(A1)", listingTitle: "+cmd|x" }],
+      "https://example.test",
+    );
+    check(
+      "ledger CSV: formula-looking cells are neutralised",
+      injectedLedger.includes(`"'=HYPERLINK(""http://x"")"`) && injectedLedger.includes("'@SUM(A1)") && injectedLedger.includes("'+cmd|x"),
+      injectedLedger,
+    );
+
+    // Deleting a deal: the super-admin only, and the writer itself refuses anyone else.
+    for (const role of ["staff", "agency_admin", "agent", "consumer", "developer"] as const) {
+      const r = await deleteOperatorDeal({ id: agencyOwner.userId, role }, sharedLeadId);
+      check(`deal delete refuses a ${role}`, !r.ok && r.error === "forbidden");
+    }
+    check("…and the deal is still there", (await getDealByLead(sharedLeadId))?.stage === "offer");
+    const removed = await deleteOperatorDeal({ id: agencyOwner.userId, role: "admin" }, sharedLeadId);
+    check(
+      "the super-admin deletes the deal, and gets back what it held",
+      removed.ok &&
+        removed.deleted.leadId === sharedLeadId &&
+        Number(removed.deleted.myShareUsd) === 1800.5 &&
+        removed.deleted.paidAt === "2026-09-15" &&
+        removed.deleted.agencyId === agencyId,
+      JSON.stringify(removed),
+    );
+    check("…the row is gone", (await getDealByLead(sharedLeadId)) === null);
+    check(
+      "…a second delete finds nothing",
+      (await deleteOperatorDeal({ id: agencyOwner.userId, role: "admin" }, sharedLeadId)).ok === false,
+    );
+    check(
+      "…and a partner stage move afterwards opens a fresh deal with no money",
+      (await stage(sharedLeadId, viewerA, "viewing")) === "ok" &&
+        (await getDealByLead(sharedLeadId))?.myShareUsd === null,
+    );
+
     /* ---------------------------------------------------------------- */
     /* Partner note, reminders, Telegram recipients (plan-agency b4)    */
     /* ---------------------------------------------------------------- */
@@ -786,7 +835,26 @@ async function main() {
 
     // Telegram recipients follow the share: the agency admin with a chat.
     const verifyChat = "900000000" + String(stamp).slice(-6);
-    check("telegram: a verified link stores the chat", await linkTelegramChat(agencyOwner.userId, verifyChat));
+    check(
+      "telegram: a verified link stores the chat",
+      (await linkTelegramChat(agencyOwner.userId, verifyChat)).status === "linked",
+    );
+    check(
+      "telegram: opening the link again from the same chat is still linked",
+      (await linkTelegramChat(agencyOwner.userId, verifyChat)).status === "linked",
+    );
+    const strangerChat = "800000000" + String(stamp).slice(-6);
+    check(
+      "telegram: a link opened from a different chat does not replace the linked one",
+      (await linkTelegramChat(agencyOwner.userId, strangerChat)).status === "other_chat" &&
+        (await shareRecipients({ kind: "agency", id: agencyId })).some(
+          (r) => r.userId === agencyOwner.userId && r.telegramChatId === verifyChat,
+        ),
+    );
+    check(
+      "telegram: a link for a user that does not exist links nothing",
+      (await linkTelegramChat(2_000_000_000, strangerChat)).status === "missing",
+    );
     check(
       "telegram: the agency's admin is a recipient of its shares",
       (await shareRecipients({ kind: "agency", id: agencyId })).some(
@@ -795,11 +863,13 @@ async function main() {
     );
     check(
       "telegram: an active share's lead reaches that chat",
-      (await telegramChatsFor(await activeShareTargets(sharedLeadId))).includes(verifyChat),
+      (await telegramChatsFor(await activeShareTargets(sharedLeadId))).some(
+        (c) => c.chat === verifyChat && c.locale === "es",
+      ),
     );
     check(
       "telegram: another agency's shares do not reach it",
-      !(await telegramChatsFor([{ kind: "agency", id: otherAgencyId }])).includes(verifyChat),
+      !(await telegramChatsFor([{ kind: "agency", id: otherAgencyId }])).some((c) => c.chat === verifyChat),
     );
 
     // Reminders: only an old, pending, unreminded, active share is due, and a

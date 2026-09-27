@@ -191,16 +191,26 @@ export async function activeShareTargets(leadId: number): Promise<ShareTarget[]>
   return rows.map(targetOf);
 }
 
-/** Listing title of each lead that has a listing — the one detail a partner alert names. */
-export async function listingTitlesForLeads(leadIds: number[]): Promise<Map<number, string>> {
-  const out = new Map<number, string>();
+export interface LeadListingTitle {
+  title: string;
+  /** `cron:translate`'s English title, when it has reached that listing. */
+  titleEn: string | null;
+}
+
+/**
+ * Listing title of each lead that has a listing — the one detail a partner
+ * alert names — in both languages, so an English-locale partner's alert can
+ * name it the way the English door does (`titleEn ?? title`).
+ */
+export async function listingTitlesForLeads(leadIds: number[]): Promise<Map<number, LeadListingTitle>> {
+  const out = new Map<number, LeadListingTitle>();
   if (leadIds.length === 0) return out;
   const rows = await db
-    .select({ id: leads.id, title: listings.title })
+    .select({ id: leads.id, title: listings.title, titleEn: listings.titleEn })
     .from(leads)
     .innerJoin(listings, eq(listings.id, leads.listingId))
     .where(inArray(leads.id, leadIds));
-  for (const r of rows) out.set(r.id, r.title);
+  for (const r of rows) out.set(r.id, { title: r.title, titleEn: r.titleEn });
   return out;
 }
 

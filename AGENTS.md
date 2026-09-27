@@ -79,9 +79,9 @@ git push -u origin claude/<feature-name>
 - **Branch naming: `claude/<feature-name>`.** One PR per unit of work.
 - **`npm run verify:local` must pass before every push.** It is
   `typecheck → build → verify:import → verify:facets → verify:i18n → verify:seo →
-  verify:rate-limit → verify:inbox → verify:prices`. The last seven need no network. `verify:facets`,
-  `verify:i18n`, `verify:seo`, `verify:rate-limit` (a fake clock), `verify:inbox` and `verify:prices`
-  never touch a database;
+  verify:rate-limit → verify:inbox → verify:prices → verify:telegram`. The last eight need no network.
+  `verify:facets`, `verify:i18n`, `verify:seo`, `verify:rate-limit` (a fake clock),
+  `verify:inbox`, `verify:prices` and `verify:telegram` never touch a database;
   `verify:import` also runs a database half (plan → commit → re-run → rollback)
   when `DATABASE_URL` points at localhost, and refuses any other host.
 - **Never `git push --no-verify`.** `.githooks/pre-push` runs the same gate; it is

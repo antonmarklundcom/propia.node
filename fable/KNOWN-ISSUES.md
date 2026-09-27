@@ -143,16 +143,26 @@ it; none of them blocks a phase.
   docker-compose `mysql:8.4` image; production is MariaDB 11.8, where it runs.
   Fixed with `AS table_name` aliases in that SELECT (`src/lib/ops/migrations.ts`).
 
-- **Telegram link tokens never expire (found 2026-09-27, #226 review).**
+- **Resolved by `claude/partner-loop-polish` (stacked on #226): Telegram link tokens never expired (found 2026-09-27, #226 review).**
   `src/lib/telegram.ts` derives the `/start` token as an HMAC of the user id,
   so a forwarded or screenshotted `t.me/…?start=` link can re-link that
   partner's alerts to another chat at any time, silently. Alerts carry no
-  buyer data (listing title + panel link), so exposure is small. Fix: put an
-  issue time in the token and reject it after ~1 h, or refuse to replace an
-  already-linked chat.
+  buyer data (listing title + panel link), so exposure is small. Fixed with
+  both: the token now carries its issue time (still HMAC-signed, constant-time
+  compare, bounded regex) and is refused after one hour, and a `/start` from a
+  different chat than the one already linked is refused with "disconnect
+  first" (`linkTelegramChat()`, guarded in the UPDATE's own WHERE). Residual:
+  within that hour, a forwarded link still links a partner who has no chat
+  linked yet. Checked by `npm run verify:telegram` and `verify:scopes`.
 
-- **Telegram partner alerts are always Spanish (found 2026-09-27, #226 review).**
+- **Resolved by `claude/partner-loop-polish` (stacked on #226): Telegram partner alerts were always Spanish (found 2026-09-27, #226 review).**
   `src/lib/partner-alerts.ts` builds every message from `esTelegram`, although
   `shareRecipients()` returns each partner's `locale` and the email notice
   uses it. An English-locale partner gets the email in English, Telegram in
-  Spanish. Fix: add an `enTelegram` peer and pick per recipient.
+  Spanish. Fixed: `src/i18n/en-telegram.ts` is the peer (wired as `telegram`
+  in both dictionaries, so `verify:i18n` walks it), every alert and reminder
+  is built per chat in its owner's `users.locale` (`src/lib/telegram-text.ts`),
+  with the listing's English title when `cron:translate` has reached it. The
+  bot's replies follow the linked user's locale, else the Telegram app's
+  language. The operator's own reminder alert and the panel screens stay
+  Spanish.

@@ -1,9 +1,12 @@
 /**
  * Plan-agency batch 4: partner alerts on Telegram, the unanswered-lead
- * reminder, and the partner's own note on a shared lead. Panel and bot copy,
- * Spanish only like the rest of the panel (`fable/KNOWN-ISSUES.md`, "Panel and
- * owner copy is Spanish-only"); nothing here reaches a visitor. Its own file
- * so parallel builds don't collide in es.ts.
+ * reminder, and the partner's own note on a shared lead. Panel and bot copy;
+ * nothing here reaches a visitor. Its own file so parallel builds don't
+ * collide in es.ts. `en-telegram.ts` is its peer: the alerts and the bot's
+ * replies go out in each partner's own `users.locale`
+ * (`src/lib/partner-alerts.ts`); the panel screens still read the Spanish
+ * (`fable/KNOWN-ISSUES.md`, "Panel and owner copy is Spanish-only").
+ * `index.ts` wires both in as `telegram`, so `verify:i18n` walks them.
  *
  * **No buyer data in any message.** A Telegram chat is not a panel: it sits on
  * a phone, in notification previews, possibly on a shared device. So every
@@ -18,7 +21,7 @@ export const esTelegram = {
       "Recibí en Telegram un aviso cuando te compartan una consulta, cuando el comprador responda por correo, y un recordatorio si una consulta queda sin respuesta. Los mensajes no incluyen datos del comprador: solo te avisan que mires tu panel.",
     connect: "Conectar Telegram",
     connectHint:
-      "Se abre Telegram con nuestro bot: tocá «Iniciar» y listo. El enlace es solo tuyo, no lo compartas.",
+      "Se abre Telegram con nuestro bot: tocá «Iniciar» y listo. El enlace es solo tuyo y vence en una hora; si pasó más tiempo, recargá esta página.",
     connected: "Conectado",
     connectedHint:
       "Las alertas llegan al chat de Telegram que conectaste. Para usar otro, desconectá y volvé a conectar desde ese teléfono.",
@@ -32,7 +35,9 @@ export const esTelegram = {
   bot: {
     linked: "Listo: vas a recibir aquí las consultas que te compartan.",
     invalidLink:
-      "Ese enlace no es válido. Abrí «Conectar Telegram» desde tu perfil en el panel y probá de nuevo.",
+      "Ese enlace no es válido o ya venció (dura una hora). Abrí «Conectar Telegram» desde tu perfil en el panel y probá de nuevo.",
+    otherChat:
+      "Tu cuenta ya tiene otro chat de Telegram conectado. Para usar este, primero tocá «Desconectar» en tu perfil del panel y después volvé a conectar desde aquí.",
     stopped: "Listo: ya no vas a recibir alertas en este chat.",
     notLinked: "Este chat no estaba conectado a ninguna cuenta.",
     help:
