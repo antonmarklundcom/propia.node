@@ -20,6 +20,8 @@ export function adminTabs(
     | "agents"
     | "users"
     | "listings"
+    | "quality"
+    | "google"
     | "leads"
     | "deals"
     | "inbox"
@@ -55,6 +57,11 @@ export function adminTabs(
       active: active === "listings",
     },
     {
+      href: "/admin/calidad",
+      label: esPanel.qualityTab,
+      active: active === "quality",
+    },
+    {
       href: "/admin/leads",
       label: esPanel.adminLeadsTitle,
       count: recentLeadCount,
@@ -78,6 +85,11 @@ export function adminTabs(
       href: "/admin/analitica",
       label: esAnalytics.tab,
       active: active === "analytics",
+    },
+    {
+      href: "/admin/google",
+      label: esPanel.gscTab,
+      active: active === "google",
     },
     {
       href: "/admin/guias",

@@ -21,6 +21,7 @@
  *
  * Refuses a non-local DATABASE_URL: it creates and deletes listings.
  */
+import { qualityScore, scoreIssues } from "../src/lib/listing-score";
 import { inArray, like } from "drizzle-orm";
 import { canonPhone, contentHash, dedupKey, toPriceUsd } from "../src/lib/import/normalize";
 import { parseCsvRecords, recordToRaw } from "../src/lib/import/csv";
@@ -350,6 +351,37 @@ async function main() {
     );
   } else {
     await dbChecks();
+  }
+
+  // Listing quality score (/admin/calidad): the form checklist's rules, plus
+  // three operator-only checks.
+  {
+    const good = {
+      propertyType: "casa",
+      title: "Casa de tres dormitorios con patio en Luque",
+      description: "x".repeat(400),
+      priceAmount: 120000,
+      photoCount: 8,
+      coverWatermark: 0,
+      map: "exact" as const,
+      areaM2: 180,
+      landM2: 360,
+      bedrooms: 3,
+      hasContact: true,
+    };
+    check("quality: a complete listing has no issues and scores 100", scoreIssues(good).length === 0 && qualityScore(scoreIssues(good)) === 100);
+    const bare = scoreIssues({ ...good, photoCount: 0, description: "", map: "none", hasContact: false });
+    check(
+      "quality: no photos, no description, no position, no contact are all named",
+      ["no_photos", "short_description", "no_position", "no_contact"].every((i) => bare.includes(i as never)),
+      bare.join(),
+    );
+    check("quality: the score never goes below zero", qualityScore(scoreIssues({ ...good, photoCount: 0, description: "", map: "none", hasContact: false, priceAmount: 0, title: "x", areaM2: null, landM2: null, bedrooms: null })) === 0);
+    check("quality: a centroid position is 'approx', not 'none'", scoreIssues({ ...good, map: "approx" }).join() === "approx_position");
+    check("quality: few photos is not no photos", scoreIssues({ ...good, photoCount: 2 }).join() === "few_photos");
+    check("quality: a watermarked cover is flagged", scoreIssues({ ...good, coverWatermark: 80 }).includes("watermark_cover"));
+    check("quality: a plot needs land, not bedrooms", scoreIssues({ ...good, propertyType: "terreno", bedrooms: null, areaM2: null }).length === 0);
+    check("quality: a dwelling without bedrooms is flagged", scoreIssues({ ...good, bedrooms: null }).join() === "no_bedrooms");
   }
 
   console.log(failures === 0 ? "\nall checks passed\n" : `\n${failures} FAILED\n`);

@@ -65,6 +65,8 @@ import {
   isEvergreenPath,
 } from "../src/content/evergreen";
 import { guidesForPage, pagesForGuide } from "../src/lib/guide-links";
+import { propertyHost, reportWindow, serviceAccount, signedAssertion } from "../src/lib/search-console";
+import { createVerify, generateKeyPairSync } from "node:crypto";
 import { getIndexability } from "../src/lib/indexability";
 import { TREE, flatten } from "../src/lib/ops/location-tree";
 
@@ -1166,6 +1168,34 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
     "(l) …and neither when the path is not evergreen on this door",
     without.cities.length === 0 && without.types.length === 0,
   );
+}
+
+// Search Console (src/lib/search-console.ts): the key parses in both
+// spellings, the signed assertion verifies against the key, the window lags.
+{
+  console.log("\n(m) Search Console report");
+  const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const pem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  const json = JSON.stringify({ client_email: "reader@project.iam.gserviceaccount.com", private_key: pem });
+  const sa = serviceAccount(json);
+  check("(m) a raw JSON key parses", sa?.client_email === "reader@project.iam.gserviceaccount.com");
+  check("(m) a base64 JSON key parses", serviceAccount(Buffer.from(json).toString("base64"))?.private_key === pem);
+  check("(m) no key / junk → not configured", serviceAccount("") === null && serviceAccount("{nope") === null);
+  const jwt = signedAssertion(sa!, 1_700_000_000);
+  const [h, c, sig] = jwt.split(".");
+  const verifier = createVerify("RSA-SHA256");
+  verifier.update(`${h}.${c}`);
+  check("(m) the assertion is signed with the key (RS256)", verifier.verify(publicKey, Buffer.from(sig, "base64url")));
+  const claims = JSON.parse(Buffer.from(c, "base64url").toString());
+  check(
+    "(m) the assertion asks only for read access, for one hour",
+    claims.scope === "https://www.googleapis.com/auth/webmasters.readonly" && claims.exp - claims.iat === 3600,
+  );
+  const w = reportWindow(new Date("2026-09-27T12:00:00Z"));
+  check("(m) the window is 28 days ending two days ago", w.startDate === "2026-08-29" && w.endDate === "2026-09-25", JSON.stringify(w));
+  check("(m) sc-domain properties map to our doors", propertyHost("sc-domain:inmobiliaria.com.py") === "inmobiliaria.com.py");
+  check("(m) URL-prefix properties map too", propertyHost("https://terreno.com.py/") === "terreno.com.py");
+  check("(m) a property that is not a door maps to none", propertyHost("sc-domain:example.com") === null);
 }
 
 console.log(
