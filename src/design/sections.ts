@@ -20,6 +20,7 @@
  */
 import {
   familyOf,
+  localeOf,
   type VerticalFamily,
   type VerticalKey,
 } from "@/config/verticals";
@@ -247,6 +248,37 @@ export function secondaryAreaUnit(key: VerticalKey): AreaUnit | null {
  */
 export function foreignerBox(key: VerticalKey): boolean {
   return key === "en";
+}
+
+/**
+ * The English marketplace doors — realestateinparaguay.com and
+ * landforsaleparaguay.com — whose visitor is a foreign buyer. Derived from the
+ * table (family + locale) rather than a list of keys, so a new English
+ * marketplace door inherits both behaviours below and an English door of
+ * another family (rentparaguay.com) never does.
+ */
+function englishMarketplace(key: VerticalKey): boolean {
+  return familyOf(key) === "marketplace" && localeOf(key) === "en";
+}
+
+/**
+ * Whether the listing enquiry form offers the foreign buyer's optional
+ * questions (country, budget, timeline, visit, purpose, preferred contact).
+ * `ContactForm` renders them and `/api/leads` accepts them only where this is
+ * true — the rental family's renters are not asked about a purchase.
+ */
+export function foreignBuyerEnquiry(key: VerticalKey): boolean {
+  return englishMarketplace(key);
+}
+
+/**
+ * Whether prices lead with US$. A Guaraní-listed property then shows its
+ * `price_usd` equivalent first, marked approximate, and the Guaraní price
+ * second (`displayPrice()` in src/lib/format.ts). The Spanish doors keep
+ * every price in the currency it was listed in.
+ */
+export function usdFirstPrice(key: VerticalKey): boolean {
+  return englishMarketplace(key);
 }
 
 export type SellerCta = "publicar";

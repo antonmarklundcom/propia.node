@@ -17,8 +17,8 @@ answers in the same session.
 | 1 | Fixes: `previous_json`, English copy, DeepL removed, this plan | no | merged (#220) |
 | 2 | Agency schema (0019), schema only | **yes — founder** | open (#222) |
 | 3 | Agency-mode switch + contact routing (copy: founder) + partner install page | no (`site_settings`) | built, off by default |
-| 4 | Partner alerts on Telegram + reminders + app install page | uses 2 | after 2 |
-| 5 | First-party analytics + `/admin/analitica` | uses 2 | after 2 |
+| 4 | Partner alerts on Telegram + reminders + app install page | uses 2 | built, in the combined features PR |
+| 5 | First-party analytics + `/admin/analitica` | uses 2 | built, in the combined features PR |
 | 6 | Deal and commission ledger | uses 2 | after 2 |
 | 7 | Later, once real inventory exists | — | backlog |
 
@@ -100,6 +100,55 @@ answered decision D1 below.**
   worker, which A4 rejected on purpose, and iPhone only allows it for
   installed apps; Telegram reaches both platforms without that.
 
+#### Batch 4 — what landed (branch `claude/bold-davinci-myybaw-telegram`)
+
+- **Linking.** `/agencia/perfil` → "Alertas por Telegram": a
+  `https://t.me/<TELEGRAM_BOT_USERNAME>?start=<userId>_<issuedAt36>_<sig>`
+  link, `sig` = first 24 chars of base64url HMAC-SHA256(`TELEGRAM_WEBHOOK_SECRET`,
+  `"tg-link:v2:"+userId+":"+issuedAt`) (`src/lib/telegram.ts`), valid for one
+  hour (2026-09-27; the first version never expired). A `/start` from a
+  different chat than the one already linked is refused with "disconnect
+  first" rather than replacing it. Linked → "Conectado" +
+  "Desconectar" (clears the session user's own chat only). Without
+  `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME` + a 16+ char
+  `TELEGRAM_WEBHOOK_SECRET` the card says the operator has not enabled it.
+- **Webhook** `app/api/telegram/route.ts`: secret-token header compared in
+  constant time (503 without a secret, 401 wrong), `/start <token>` stores the
+  chat (private chats only), `/stop` clears it, anything else gets one line of
+  help. Replies ride on the webhook response (`{"method":"sendMessage"}`), so
+  no outbound call. Rate-limited per chat; logs no text or ids.
+- **Alerts** (`src/lib/partner-alerts.ts`, never buyer data — what happened,
+  the listing title at most, the `/agencia/leads` link): a lead shared with
+  you (`shareLeadsAction`, in `after()`), a buyer's email reply to a lead you
+  hold an active share of (`/api/inbound-email`, in `after()`).
+- **Reminders** `npm run cron:reminders` (`src/lib/ops/partner-reminders.ts`,
+  also a card on `/admin/operaciones` and in the `/admin` health box): a share
+  still `pending` 4 h (`REMIND_AFTER_HOURS`) after it was made, not revoked,
+  never reminded → one Telegram message per partner chat, `reminded_at`
+  stamped, then one operator alert with the count. The 4 h is a constant, not
+  a setting yet.
+- **Scheduler** `POST /api/cron/tick` (`Authorization: Bearer CRON_SECRET`,
+  503 without it) runs `src/lib/cron-tick.ts`'s task list and records each job
+  in `ops_runs`. The clock is the inbound-email Worker's `scheduled` handler,
+  `crons = ["17 * * * *"]` (`workers/inbound-email/README.md`, "The hourly
+  cron"). Batch 5 adds its rollup to the same task list.
+- **Partner note** on each shared-lead card in `/agencia/leads` ("Tu nota",
+  `lead_assignments.partner_note`, ≤ 2000 chars), read and written through
+  `sharedWithPanel()`; the operator sees it read-only next to the share in
+  `/admin/leads`.
+
+**Founder, once:** in hPanel set `TELEGRAM_BOT_USERNAME`,
+`TELEGRAM_WEBHOOK_SECRET` (`openssl rand -hex 32`) and `CRON_SECRET` (a second
+`openssl rand -hex 32`), restart; register the webhook:
+
+```bash
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://inmobiliaria.com.py/api/telegram&secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
+
+then `npx wrangler secret put CRON_SECRET` and `npx wrangler deploy` in
+`workers/inbound-email/`. Needs migration 0019 applied first (the three
+columns).
+
 ### 5 — First-party analytics (no Google)
 
 - **No extra request per page view.** Record on the server inside requests
@@ -120,6 +169,19 @@ answered decision D1 below.**
   (`listing_views_daily`, `/mis-avisos`, `/agencia`); this adds WhatsApp clicks
   to those panels.
 
+**What landed (batch 5):** `src/lib/analytics.ts` (in-memory buffer, one
+INSERT a minute, daily-rotating visitor hash, bots and staff pages dropped),
+`app/api/a` (the beacon, never touches the database), `AnalyticsBeacon` in the
+root layout (about one request per visit: sent when the tab hides or ten
+events queue; the visit's referrer and utm ride on every event, so a WhatsApp
+tap is credited to the campaign that brought the visitor), form leads counted
+server-side in `/api/leads`, `cron:analytics` (rollup + retention prune, also in
+`/admin/operaciones`), `/admin/analitica`, and a "Clics en WhatsApp" column in
+`/agencia` and `/mis-avisos`. Deviation from the plan above: page views are
+sent by a batched beacon rather than recorded inside the page render — root
+layouts do not re-render on client navigation, so server-side counting would
+miss most page views.
+
 ### 6 — Deal and commission ledger
 
 - From a lead in `/admin/leads`: open a deal, move it through the stages,
@@ -129,6 +191,44 @@ answered decision D1 below.**
 - `/admin/negocios`: pipeline by stage, commission owed / paid per partner per
   month, lost reasons, response time per partner (the existing response
   board).
+
+**What landed (2026-09-26, branch `claude/bold-davinci-myybaw-deals`, on top
+of 0019).** `src/lib/deals.ts` is the only module on `deals`; form parsing and
+es-PY formatting are pure in `src/lib/deal-form.ts`; copy in
+`src/i18n/es-deals.ts` (panel, Spanish only).
+- `/admin/leads`: each card (not reports) has a collapsed «Negocio» block —
+  stage, lost reason, partner (only targets the lead was shared with, revoked
+  shares included), sale price, commission %, your share %, your share US$,
+  paid date, note. Super-admin only (`saveDealAction` → `requireSuperAdmin()`,
+  and `upsertOperatorDeal()` refuses any other role itself). Staff see the
+  stage read-only; their query selects no money column. The «≈ US$» beside
+  "Tu parte" is a display estimate from the stored values, never saved. Every
+  save that changes something writes `deal.update` to `admin_events`.
+- `/agencia/leads`: a stage selector (visita / oferta / reservado / ganado /
+  perdido + motivo) on each shared lead. `setPartnerDealStage()` uses
+  `sharedWithPanel()` (now exported from `lead-assignments.ts`) for the read
+  and in the UPDATE's own WHERE, creates the deal when missing (partner =
+  that share's target, `created_by_user_id` = the partner), claims a deal with
+  no partner, refuses another partner's deal, and writes no money column.
+  Logged as `deal.stage`.
+- `/admin/negocios` (main tab row, next to Consultas; super-admin only): KPI
+  table (deals per open stage, won this month / total, your share won-unpaid
+  and paid, this month / total — sums of `my_share_usd` as typed), the deals
+  table with a link back to each lead card, per-partner rows, lost reasons.
+  The response board stays on /admin/leads (linked).
+- `scripts/verify-scopes.ts` covers it: form validation, the money writer
+  refusing staff/agency/agent/consumer/developer roles, a partner moving a
+  stage only on an actively shared lead (not another agency's, not after a
+  revoke, not another partner's deal), and a partner write leaving every money
+  field unchanged.
+- Not built: a default split prefilled from D2 (founder decision).
+- **Added 2026-09-27 (`claude/partner-loop-polish`, stacked on #226):**
+  deleting a deal (super-admin only, typed confirm word `BORRAR`, the
+  «Negocio» block on /admin/leads; `deleteOperatorDeal()` refuses every other
+  role itself; the history line `deal.delete` keeps what the deal held) and
+  the ledger CSV (`/admin/negocios/export`, super-admin only, the same rows as
+  the page via `listDeals()`, money as stored, formula-safe through
+  `toCsv()`). Who may move a closed deal is unchanged (open founder decision).
 
 ### 7 — Later (after real inventory)
 

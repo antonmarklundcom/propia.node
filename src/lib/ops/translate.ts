@@ -44,6 +44,14 @@ export interface TranslateOptions extends OpsOptions {
   id?: number | null;
   /** Re-translate every published row even when the hash still matches. */
   force?: boolean;
+  /**
+   * A wall-clock budget for the whole run, in ms. When it runs out the call in
+   * flight is aborted (that row counts under `fallaron` and keeps its old hash,
+   * so the next run retries it) and no further candidate is scanned. The hourly
+   * tick sets it so one tick cannot outlive the Worker that is waiting for it;
+   * the CLI and `/admin/operaciones` leave it unset.
+   */
+  deadlineMs?: number;
 }
 
 interface Candidate {
@@ -125,8 +133,22 @@ export async function runTranslate(opts: TranslateOptions): Promise<OpsResult> {
 
     out.track("pendientes", "traducidos", "fallaron");
 
+    /**
+     * Checked before each row in the dry run and the real one alike, so both are
+     * the same pass (a dry run makes no calls, so in practice it never hits it).
+     */
+    const budget =
+      opts.deadlineMs && opts.deadlineMs > 0 ? AbortSignal.timeout(opts.deadlineMs) : undefined;
+
     let attempted = 0;
     for await (const row of candidates(onlyId, opts.force ?? false)) {
+      if (budget?.aborted) {
+        out.note(
+          `Time budget reached (${Math.round(opts.deadlineMs! / 1000)} s); further ` +
+            "candidates were not scanned and are left for the next run.",
+        );
+        break;
+      }
       out.count("pendientes");
       attempted++;
 
@@ -141,7 +163,7 @@ export async function runTranslate(opts: TranslateOptions): Promise<OpsResult> {
       }
 
       try {
-        const t = await translateListing(row);
+        const t = await translateListing(row, { signal: budget });
         /**
          * The hash is written from the same row we translated, in the same
          * statement as the text. If the seller edits the description while this

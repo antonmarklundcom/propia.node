@@ -82,6 +82,35 @@ export function parseListingPublicId(slugParam: string): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * The listing's human-readable reference code: its public_id in capitals
+ * (`ab12cd34ef` → `AB12CD34EF`). Capitals because it is read aloud and typed
+ * from a phone screen; the id itself is lowercase a-z0-9, so the mapping is
+ * lossless and `parseListingRef()` below undoes it.
+ */
+export function listingRef(publicId: string): string {
+  return publicId.toUpperCase();
+}
+
+/**
+ * Resolve what an operator pastes into "Registrar consulta de WhatsApp" to a
+ * public_id: a bare code (`AB12CD34EF`, any case), the prefill's
+ * `Ref. AB12CD34EF`, or a listing URL / path (`…/propiedad/slug-ab12cd34ef`,
+ * with or without a query string) — or the whole prefilled WhatsApp message
+ * pasted as it arrived, which carries both. Null when none of those shapes
+ * match — the caller says so rather than saving a lead tied to nothing.
+ */
+export function parseListingRef(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  const bare = raw.replace(/^ref\.?\s*/i, "").trim().toLowerCase();
+  if (/^[a-z0-9]{10}$/.test(bare)) return bare;
+  const ref = /\bref\.?\s*([a-z0-9]{10})\b/i.exec(raw);
+  if (ref) return ref[1].toLowerCase();
+  const url = /\/propiedad\/([^\s/?#]+)/i.exec(raw);
+  return url ? parseListingPublicId(url[1].toLowerCase()) : null;
+}
+
 /** Public agency profile URL. agencies.slug is already unique (schema.ts). */
 export function agencyUrl(slug: string): string {
   return `/inmobiliaria/${slug}`;

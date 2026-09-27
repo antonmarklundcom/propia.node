@@ -37,6 +37,8 @@ import { runCuotas } from "@/lib/ops/cuotas";
 import { runPriceUsd } from "@/lib/ops/price-usd";
 import { runMedians } from "@/lib/ops/medians";
 import { runGeo } from "@/lib/ops/geo";
+import { runAnalytics } from "@/lib/ops/analytics";
+import { esAnalytics } from "@/i18n/es-analytics";
 import { runFx } from "@/lib/ops/fx";
 import { runResync } from "@/lib/ops/resync";
 import { runTranslate } from "@/lib/ops/translate";
@@ -44,6 +46,8 @@ import { runSessions } from "@/lib/ops/sessions";
 import { runSeedFinancing } from "@/lib/ops/seed-financing";
 import { runSeedLocations } from "@/lib/ops/seed-locations";
 import { runBackfillImages } from "@/lib/ops/backfill-images";
+import { REMIND_AFTER_HOURS, runPartnerReminders } from "@/lib/ops/partner-reminders";
+import { esTelegram } from "@/i18n/es-telegram";
 
 /** What a card knows about itself, minus the runner (which never crosses to the client). */
 export interface OpsJobMeta {
@@ -170,6 +174,26 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runSessions(o),
+      revalidate: null,
+    },
+    {
+      job: "cron:analytics",
+      label: esAnalytics.opsLabel,
+      description: esAnalytics.opsDescription,
+      writes: esAnalytics.opsWrites,
+      requiresLimit: false,
+      disabledReason: null,
+      run: (o) => runAnalytics(o),
+      revalidate: null,
+    },
+    {
+      job: "cron:reminders",
+      label: esTelegram.ops.label,
+      description: esTelegram.ops.description(REMIND_AFTER_HOURS),
+      writes: esTelegram.ops.writes,
+      requiresLimit: false,
+      disabledReason: null,
+      run: (o) => runPartnerReminders(o),
       revalidate: null,
     },
     {

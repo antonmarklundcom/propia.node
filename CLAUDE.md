@@ -40,6 +40,8 @@ still wins. Also outstanding: `npm run cron:translate` (needs
 database) has not been run yet, so `title_en`/`description_en` are still
 empty for every listing — the English site is live and correctly wired, but
 currently shows the Spanish-fallback text everywhere until that job runs.
+Once either key is set in hPanel, the hourly `/api/cron/tick` runs it on its
+own (see the i18n section).
 
 Consequences that bite:
 
@@ -118,6 +120,18 @@ How to read it, and the one mistake to avoid:
   and Next appends `" — <brand>"`. Do not put the brand back into a page's own
   title — it will double. OG titles do *not* inherit the template, so those
   spell the brand out.
+- **Link previews (og:image) are rendered per door** (2026-09-27):
+  `/api/og/door` (brand, tagline, the door's theme colours) and
+  `/api/og/listing/[publicId]` (cover photo, locale-aware title, price, place,
+  brand; published rows only), both in `src/lib/og-image.tsx` — route
+  handlers, not `opengraph-image.tsx`, so the Host header picks the brand.
+  The layout's `openGraph` uses the door card, but **a page that sets its own
+  `openGraph` replaces the layout's wholesale** — pass
+  `images: doorOgImages(brand)` (`src/lib/og-urls.ts`) or it shares as a bare
+  link. One render at a time per process, 4 in flight, 40 per IP per 5 min,
+  JPEG (WhatsApp drops big images), a day-long Cache-Control; bump
+  `OG_IMAGE_VERSION` when the design changes. Text passes through `ogText()`
+  so the renderer never fetches a fallback font from a third party.
 - Copy that names the brand is brand-parameterised, not constant:
   `faqSections(brand)`, `esSiteNotice.body(brand)`, `esPrecios.methodBody(brand)`,
   `inquiryPrefillFor(brand, …)`, and friends.
@@ -392,8 +406,10 @@ The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
 - **e2e specs** (`E2E_PORT=3100 npx playwright test`, local DB only):
   `sort`, `listing-sidebar`, `hub-type-links`, `contrast` (small text ≥ 4.5:1
   on the marketplace, A4 #177) and `contrast-doors` (the same on the other six
-  doors through `--host-resolver-rules`, #184). The shared contrast helper is
-  `tests/e2e/contrast.ts`.
+  doors through `--host-resolver-rules`, #184), and `partner-flow` (share →
+  "La tomo" → stage → money → staff sees no money → revoke → delete deal;
+  writes its own users/lead/agent through SQL and removes them). The shared
+  contrast helper is `tests/e2e/contrast.ts`.
 - Also landed: JSON-LD nonce without a hydration warning (#179), English door
   without unsourced legal/tax/cost claims (#180, wording awaits the founder's
   signature), `/favicon.ico` + apple-touch icon (#182).
@@ -423,6 +439,22 @@ queries don't run. Tags, TTLs and the invalidation helpers live in
   why `ListingCard` re-wraps `featuredUntil`). A cached query returning Dates
   re-wraps them in its exported wrapper — see `listFinancingPrograms` and the
   `revive*` helpers in `post-queries.ts` — not in each consumer.
+
+**A cold cache is a burst, and the pool is bounded on purpose** (6 + 24 queued,
+`src/db/index.ts`, never an agent's to edit). Every merge deploys with an
+empty data cache, and `unstable_cache` runs *every* concurrent miss — before
+2026-09-27 eight cold homes at once answered 500 "Queue limit reached". Three
+rules keep that closed:
+
+- A cached reader hit from several places in one render, or by every door at
+  once, is wrapped in `singleFlight()` (`src/lib/cache.ts`) around its
+  `unstable_cache`. Only there: the result must depend on its arguments alone.
+- A page that needs many reads runs them through `loadSections()`
+  (`src/lib/degrade.ts`) with a small concurrency cap, not one `Promise.all`.
+- Only a **non-essential** section degrades, only on pool pressure (never on a
+  SQL error), and the degraded value is **thrown out of** the cached function
+  (`PartialResult`) so it is never stored. The grid, the listing, a hub's own
+  counts still fail the page: that is an outage, not a section.
 
 **The sitemap has two halves and they are not interchangeable.**
 `src/lib/sitemap.ts` decides *what* is listed — the half that must agree with
@@ -515,7 +547,10 @@ labels, section titles, form copy. The listing *content* layer
 (`title_en`/`description_en`) is wired to be read (see below) but is
 currently empty for every row: `npm run cron:translate` has not been run
 against the live database yet, so English visitors see the Spanish text via
-the fallback until it does.
+the fallback until it does. **Since 2026-09-27 the hourly `/api/cron/tick`
+(`src/lib/cron-tick.ts`) runs it** — 15 rows a tick, 35 s
+budget — as soon as `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` is set in hPanel;
+with neither set the tick skips it quietly (`docs/log/cron-tick-jobs.md`).
 
 - **Strings live in `src/i18n/es.ts`.** Buyer-facing copy — home, the operation
   hubs, the category grid, `SearchBar`, `CategoryFilterBar`, `ListingCard` and
@@ -592,7 +627,12 @@ the fallback until it does.
   serves `locale: "en"`** — `DATABASE_URL="…" GEMINI_API_KEY="…" npm run
   cron:translate` (`--dry` first) — every listing is currently showing its
   Spanish fallback on the English door until this has run at least once, and
-  again on a schedule after that as `translation_hash` picks up edits.
+  again on a schedule after that as `translation_hash` picks up edits. The
+  schedule is the hourly tick (`src/lib/cron-tick.ts`): once a key is in
+  hPanel it works through the backlog 15 rows an hour with no hPanel cron
+  entry, which also runs `cron:geo` and `cron:sessions` once a day. The tick
+  deliberately does **not** run `cron:fx`, `cron:cuotas`, `cron:resync` or
+  `backfill:images` — see the comment at the top of that file.
 - **The detail page, `ListingCard`, and `generateMetadata` read
   `title_en`/`description_en`** as of the 2026-09-04 flip
   (`app/propiedad/[slug]/page.tsx`, `src/components/ListingCard.tsx`,
@@ -624,8 +664,8 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:reset`.
-  Same thing by hand: `npm run verify:local`. The last seven are pure — no database, no network —
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`.
+  Same thing by hand: `npm run verify:local`. The last nine are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath
@@ -664,9 +704,10 @@ that section no longer lists everything:
 | `drizzle/0013_ambitious_violations.sql` | the `lead_matches` table and `agents.bio` / `license_no` / `years_active` / `zones` (D3) | **yes, 2026-09-23** |
 | `drizzle/0014_shiny_nehzno.sql` | the `ops_runs` and `site_settings` tables, `posts.locale` (`/admin` reads `ops_runs`) | **yes, 2026-09-23** |
 | `drizzle/0015_broad_kulan_gath.sql` | the `staff` member of `users.role` (#171) | **yes, 2026-09-23** |
-| `drizzle/0016_light_post.sql` | `leads.status`, `leads.note`, lead types `landlord` / `question` (#210) | **no — apply before the PR that carries it deploys** |
-| `drizzle/0017_mushy_madrox.sql` | the `lead_assignments` and `admin_events` tables (lead sharing, history) | **no — same** |
-| `drizzle/0018_hard_deathstrike.sql` | the `email_messages` and `email_attachments` tables (E2/E3 inbox) | **no — apply before the PR that carries it deploys** |
+| `drizzle/0016_light_post.sql` | `leads.status`, `leads.note`, lead types `landlord` / `question` (#210) | yes, by 2026-09-26 (`db:migrate` for 0018 runs every earlier pending file) |
+| `drizzle/0017_mushy_madrox.sql` | the `lead_assignments` and `admin_events` tables (lead sharing, history) | yes, same |
+| `drizzle/0018_hard_deathstrike.sql` | inbound email: `email_messages`, `email_attachments` (E2/E3, #219) | **yes, 2026-09-26** (founder, before merging #219) |
+| `drizzle/0019_fuzzy_ego.sql` | `deals`, `analytics_events`, `analytics_daily`, `lead_assignments.partner_note` / `reminded_at`, `users.telegram_chat_id` (`docs/plan-agency-2026-09-26.md` batch 2) | **yes, 2026-09-27** (founder: `db:status` → 0 pending, 20 applied, No drift) |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

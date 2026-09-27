@@ -134,6 +134,13 @@
       "when": 1790436114521,
       "tag": "0018_hard_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1790446674838,
+      "tag": "0019_fuzzy_ego",
+      "breakpoints": true
     }
   ]
 }

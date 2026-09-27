@@ -12,6 +12,7 @@ import {
   listNearbyProjects,
   listPublishLocations,
   getUsdToPygRate,
+  publisherScope,
 } from "@/lib/publish-queries";
 import { dict, currentLocale } from "@/i18n/server";
 import { brandName } from "@/lib/brand-server";
@@ -137,12 +138,9 @@ export default async function PublishPage({
         videoUrl: row.videoUrl ?? "",
         foreignExposure: row.foreignExposure,
       };
-      // Same owner scope the upload action uses, so a resumed draft shows the
+      // Same scope the upload action uses, so a resumed draft shows the
       // photos already stored for it.
-      initialPhotos = await listListingImages(row.id, {
-        kind: "owner",
-        userId: user.id,
-      });
+      initialPhotos = await listListingImages(row.id, await publisherScope(user.id));
     }
   }
 

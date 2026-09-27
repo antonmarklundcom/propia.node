@@ -86,6 +86,35 @@ Do step 0 first: the app has to have the tables before any mail arrives.
    then, replies from `/admin/inbox` are sent from `avisos@mail.…` with
    Reply-To hola@, which works but shows the `mail.` address as sender.
 
+## The hourly cron (plan-agency batch 4)
+
+The same Worker is also the app's clock: `[triggers] crons = ["17 * * * *"]`
+in `wrangler.toml` calls its `scheduled` handler at minute 17 of every hour,
+which POSTs `https://inmobiliaria.com.py/api/cron/tick` with
+`Authorization: Bearer <CRON_SECRET>`. The app then runs its scheduled jobs
+(today: `cron:reminders`, the unanswered shared-lead reminders) and records
+each run in `ops_runs`, so `/admin`'s health box shows when it last ran.
+
+Once, in this order:
+
+1. Pick a second secret (not the inbound one): `openssl rand -hex 32`.
+2. **hPanel → Environment variables:** `CRON_SECRET` = that value, restart the
+   app. Until it is set, `/api/cron/tick` answers 503 and runs nothing.
+3. Here:
+
+   ```bash
+   cd workers/inbound-email
+   npx wrangler secret put CRON_SECRET   # the same value as step 1
+   npx wrangler deploy                   # picks up the [triggers] block
+   ```
+
+4. Check: Cloudflare dashboard → Workers → `inbound-email` → Settings →
+   Triggers shows the cron; `npx wrangler tail` shows `cron: app answered 200`
+   at :17. `401` = the two `CRON_SECRET`s differ; `503` = hPanel has none.
+
+Optional: `CRON_URL` (a `[vars]` entry) points the tick somewhere else — only
+ever the marketplace primary in production.
+
 ## Watching it
 
 ```bash

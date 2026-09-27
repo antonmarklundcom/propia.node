@@ -6,6 +6,33 @@ it; none of them blocks a phase.
 
 ## Open
 
+- **Foreign-buyer details are not in the operator's go-look alerts (2026-09-27).**
+  The English doors' enquiry answers are folded into `leads.message`
+  (`app/api/leads/route.ts`, `src/lib/buyer-details.ts`), so they reach
+  `/admin/leads`, `/agencia/leads`, `/mis-avisos/consultas`, VenderCRM and the
+  generic webhook's `lead` event. `alertOperator()`'s Telegram / email /
+  `operator_alert` text is built from `esPanel.alertNewLeadDetail` (type, name,
+  WhatsApp, listing) and never included the message, so it does not carry them
+  either; the owner email and the partner share email leave the message out on
+  purpose. Fix, if wanted: pass the details block into `alertNewLeadDetail`.
+  Also not USD-first yet on the English doors: `/comparar`'s price row and the
+  category map's price pins still show the listed currency.
+
+- **Resolved 2026-09-27 (#236): cold home
+  renders 500ing on "Queue limit reached"** (found by `verify:live` the same
+  day). Reproduced locally at 6 of 8 cold homes → 500; now 0 of 8, 0 of 16 and
+  0 of 42 in a mixed homes + category burst, with the pool bounds untouched.
+  Three changes: `singleFlight()` in `src/lib/cache.ts` (Next 15.5's
+  `unstable_cache` runs every concurrent miss — the header, footer and home
+  each ran the same navigation read), the home payload's ten reads capped at
+  two at a time, and `src/lib/degrade.ts` — a non-essential section rejected
+  by a full pool queue is retried once, then renders empty for that request
+  only (never cached), while a SQL error or every section failing still
+  fails the page. Still true by design: under a full multi-second stall,
+  essential category/hub reads (`resolveCity`, the grid, the hub counts) 500.
+  `verify:live` still paces itself two requests at a time; that is politeness
+  to production now, not a workaround.
+
 - **Listing sidebar follow-up (2026-09-21): stored USD conversion.** Gs listings kept the `price_usd` of the rate they were written with (7300 on the demo rows). **Fixed in code 2026-09-22: `npm run cron:price-usd`** re-derives it from the latest `fx_rates` row (plan §4 rule); it still has to be run on production, between `cron:fx` and `cron:cuotas`. (The map pins' Spanish-only USD formatting noted here was fixed in #191: pins use the listing's own currency and the door's locale.)
 
 - **Resolved 2026-09-26: the two `previous_json` readers that assumed MySQL 8's
@@ -115,3 +142,27 @@ it; none of them blocks a phase.
   `Cannot read properties of undefined (reading 'toLowerCase')`. Seen on the
   docker-compose `mysql:8.4` image; production is MariaDB 11.8, where it runs.
   Fixed with `AS table_name` aliases in that SELECT (`src/lib/ops/migrations.ts`).
+
+- **Resolved by `claude/partner-loop-polish` (stacked on #226): Telegram link tokens never expired (found 2026-09-27, #226 review).**
+  `src/lib/telegram.ts` derives the `/start` token as an HMAC of the user id,
+  so a forwarded or screenshotted `t.me/…?start=` link can re-link that
+  partner's alerts to another chat at any time, silently. Alerts carry no
+  buyer data (listing title + panel link), so exposure is small. Fixed with
+  both: the token now carries its issue time (still HMAC-signed, constant-time
+  compare, bounded regex) and is refused after one hour, and a `/start` from a
+  different chat than the one already linked is refused with "disconnect
+  first" (`linkTelegramChat()`, guarded in the UPDATE's own WHERE). Residual:
+  within that hour, a forwarded link still links a partner who has no chat
+  linked yet. Checked by `npm run verify:telegram` and `verify:scopes`.
+
+- **Resolved by `claude/partner-loop-polish` (stacked on #226): Telegram partner alerts were always Spanish (found 2026-09-27, #226 review).**
+  `src/lib/partner-alerts.ts` builds every message from `esTelegram`, although
+  `shareRecipients()` returns each partner's `locale` and the email notice
+  uses it. An English-locale partner gets the email in English, Telegram in
+  Spanish. Fixed: `src/i18n/en-telegram.ts` is the peer (wired as `telegram`
+  in both dictionaries, so `verify:i18n` walks it), every alert and reminder
+  is built per chat in its owner's `users.locale` (`src/lib/telegram-text.ts`),
+  with the listing's English title when `cron:translate` has reached it. The
+  bot's replies follow the linked user's locale, else the Telegram app's
+  language. The operator's own reminder alert and the panel screens stay
+  Spanish.

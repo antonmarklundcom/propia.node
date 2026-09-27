@@ -183,7 +183,10 @@ say if any should change:
 4. **No email notification to the owner or partner when a buyer replies by
    email.** The operator gets Telegram; the others see it next time they open
    their leads page. Say if they should get an email too (one function in
-   `lead-emails.ts`).
+   `lead-emails.ts`). **Partners resolved by plan-agency batch 4:** a partner
+   holding an active share of the lead now gets a Telegram ping (no buyer
+   data, just "look") when they linked Telegram on `/agencia/perfil`. The FSBO
+   owner still gets nothing; still open for them.
 
 ## 2026-09-26 — Agency mode: public copy that becomes false (founder wording)
 
@@ -205,3 +208,31 @@ commission needs a licence or a registered company), so no agent invents it:
 
 Also decide: D4 — does a partner see the buyer's name and phone only after
 pressing "La tomo"? Today a shared lead shows them immediately.
+
+## 2026-09-26 — Privacy policy sentence for first-party statistics
+
+`/admin/analitica` (plan-agency batch 5) counts page views and WhatsApp taps
+without cookies: each event stores the path, the referring site, utm tags, the
+device type and a 16-character hash of IP + browser + day that changes every
+day (the IP itself is never stored). Raw events are kept 365 days
+(/admin/ajustes), daily totals indefinitely. `/privacidad` says nothing about
+this yet. Proposed line, for the founder to approve or reword: "Contamos
+visitas de forma anónima, sin cookies ni servicios de terceros: guardamos la
+página visitada, el sitio de origen y el tipo de dispositivo, nunca tu
+dirección IP."
+
+## 2026-09-27 — May a partner change a deal the operator has closed?
+
+Found reviewing #226 (deal ledger). `setPartnerDealStage()` (`src/lib/deals.ts`)
+lets a partner move a shared lead's deal between any of the partner stages at
+any time, including out of `won` or `lost` — even after the super-admin has
+typed the sale price and commission and set `paid_at`. `/admin/negocios` would
+then drop it from "won" while its `my_share_usd` still counts in the paid
+total (that sum checks only `paid_at`), so the ledger stops adding up.
+
+This is who owns the commission record, so no agent picks it. Options:
+(a) lock the stage for partners once it is `won` or `lost` (the operator can
+still change it); (b) lock only once `paid_at` is set; (c) leave it open and
+make `/admin/negocios` count paid shares only on `won` deals. Recommendation:
+(a) — a closed deal is the operator's to reopen. Small change either way
+(one guard in `setPartnerDealStage` + a read-only selector).
