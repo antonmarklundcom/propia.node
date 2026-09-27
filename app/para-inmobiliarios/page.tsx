@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { redirect } from "next/navigation";
 import { dict } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
@@ -27,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: t.proText,
     alternates: { canonical: `${origin}/para-inmobiliarios` },
     robots: { index: true, follow: true },
-    openGraph: { title: `${t.proTitle} — ${brand}`, description: t.proText },
+    openGraph: { title: `${t.proTitle} — ${brand}`, description: t.proText, images: doorOgImages(brand) },
   };
 }
 

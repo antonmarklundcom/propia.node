@@ -19,6 +19,8 @@ echo "pre-push: verify:rate-limit…"
 npm run --silent verify:rate-limit
 echo "pre-push: verify:inbox…"
 npm run --silent verify:inbox
+echo "pre-push: verify:prices…"
+npm run --silent verify:prices
 echo "pre-push: verify:telegram…"
 npm run --silent verify:telegram
 echo "pre-push: OK"
