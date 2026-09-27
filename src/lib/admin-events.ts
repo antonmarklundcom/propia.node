@@ -23,6 +23,7 @@ export type AdminEventAction =
   | "user.delete"
   | "agent.join_agency"
   | "lead.from_email"
+  | "lead.from_whatsapp"
   | "setting.change"
   | "deal.update"
   | "deal.stage";

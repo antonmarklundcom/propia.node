@@ -1,11 +1,14 @@
 import { Glyph } from "@/components/Glyph";
 import Link from "next/link";
 import { tokens } from "@/design/tokens";
-import { listCities, listNavigationInventory, stockedNavigationPaths } from "@/lib/queries";
+import { headers } from "next/headers";
+import { listCities, listNavigationInventory, resolveBarrio, stockedNavigationPaths } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
 import { SearchBar } from "@/components/SearchBar";
+import { BuyerBrief } from "@/components/BuyerBrief";
 import { currentLocale, dict } from "@/i18n/server";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
+import { briefChoices, briefFromPath, type BriefPrefill } from "@/lib/buyer-brief";
 
 // Renders per-request rather than at build time — the root layout reads the
 // Host header for the per-host brand, so nothing in this app prerenders
@@ -24,12 +27,33 @@ export default async function NotFound() {
   // "category URL with zero matches", so it renders during exactly the kind
   // of incident where MySQL may be the thing that is unwell — a dead search
   // bar is a worse-but-usable page, a stack trace is not.
-  const [cities, locale, d, inventory] = await Promise.all([
+  const doorPromise = currentVertical();
+  const [cities, locale, d, inventory, door, pathname] = await Promise.all([
     listCities().catch(() => []),
     currentLocale(),
     dict(),
-    currentVertical().then(listNavigationInventory).catch(() => []),
+    doorPromise.then(listNavigationInventory).catch(() => []),
+    doorPromise,
+    headers().then((h) => h.get("x-pathname")),
   ]);
+
+  // Buyer brief (src/lib/buyer-brief.ts): the category URL that matched
+  // nothing still spells what the visitor wanted, so the form starts from it.
+  // Every lookup here degrades to "no prefill" — the form itself needs no
+  // database to render, and a failed submit says so and keeps its answers.
+  const fromPath = briefFromPath(pathname);
+  const briefCity = fromPath.citySlug ? cities.find((c) => c.slug === fromPath.citySlug) : undefined;
+  const briefBarrio = briefCity && fromPath.barrioSlug
+    ? await resolveBarrio(briefCity.id, fromPath.barrioSlug).catch(() => null)
+    : null;
+  const briefPrefill: BriefPrefill = {
+    operation: fromPath.operation,
+    propertyType: fromPath.propertyType,
+    where: briefCity ? (briefBarrio ? `${briefBarrio.name}, ${briefCity.name}` : briefCity.name) : undefined,
+  };
+  // The directory door is seller-first (it has its own lead form); a buyer
+  // brief there would be off-message.
+  const showBrief = door.family !== "directory";
   const stockedPaths = stockedNavigationPaths(inventory);
   // Attach localized labels before filtering so dictionary indexes stay aligned.
   const suggestions = POPULAR_SEARCHES.map((s, index) => ({
@@ -93,6 +117,18 @@ export default async function NotFound() {
             ))}
           </div>
         </>
+      )}
+
+      {showBrief && (
+        <div style={{ textAlign: "left", marginTop: 32 }}>
+          <BuyerBrief
+            locale={locale}
+            surface="not_found"
+            prefill={briefPrefill}
+            choices={briefChoices(door.filters)}
+            idPrefix="brief-404"
+          />
+        </div>
       )}
 
       <Link

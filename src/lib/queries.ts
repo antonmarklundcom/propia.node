@@ -31,8 +31,10 @@ import {
   users,
 } from "../db/schema";
 import type { Operation, PropertyType } from "./import/types";
-import { CACHE_TAGS, CACHE_TTL } from "./cache";
-import type { VerticalConfig } from "@/config/verticals";
+import { CACHE_TAGS, CACHE_TTL, singleFlight } from "./cache";
+import { logDegraded } from "./degrade";
+import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
+import type { InventoryRow } from "./category-context";
 import { facetConds, verticalConds, publishedFacetWhere } from "./facet-sql";
 import { categoryUrl, parseOperation, parseTypePlural } from "./urls";
 import type { ListingFacets, SortOption } from "./facets";
@@ -49,9 +51,10 @@ export type LocationRow = typeof locations.$inferSelect;
  * /tasacion and the 404 page all render a SearchBar, so before caching this
  * every one of those requests paid a round-trip for a table that only changes
  * when someone runs the seed. Cached under `locations` (src/lib/cache.ts);
- * plain scalars, so nothing to re-wrap on the way out.
+ * plain scalars, so nothing to re-wrap on the way out. Single-flighted: every
+ * door's cold home asks for the same list at once after a deploy.
  */
-const cachedCities = unstable_cache(
+const cachedCities = singleFlight("queries:listCities", unstable_cache(
   async (): Promise<Pick<LocationRow, "id" | "name" | "slug">[]> =>
     db
       .select({ id: locations.id, name: locations.name, slug: locations.slug })
@@ -60,7 +63,7 @@ const cachedCities = unstable_cache(
       .orderBy(asc(locations.name)),
   ["queries:listCities"],
   { revalidate: CACHE_TTL.locations, tags: [CACHE_TAGS.locations] },
-);
+));
 
 export async function listCities(): Promise<
   Pick<LocationRow, "id" | "name" | "slug">[]
@@ -72,8 +75,10 @@ export async function listCities(): Promise<
  * citySubtreeIds(). Counts are separate from SEO's indexability threshold.
  * The vertical object (including its key and filters) enters the cache key.
  * Existing listing writers invalidate this tag; ten minutes is the backstop.
+ * Single-flighted: the header, the footer and the home ask for it in the same
+ * render, and `unstable_cache` alone ran all three on a cold cache.
  */
-export const listNavigationInventory = unstable_cache(
+export const listNavigationInventory = singleFlight("queries:listNavigationInventory", unstable_cache(
   async (vertical: VerticalConfig) => {
     const city = alias(locations, "navigation_city");
     return db
@@ -94,7 +99,49 @@ export const listNavigationInventory = unstable_cache(
   },
   ["queries:listNavigationInventory"],
   { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings, CACHE_TAGS.locations] },
+));
+
+/**
+ * The door's published inventory for one operation, grouped by
+ * `(location, type)` with the `price_usd` bounds of each cell — everything a
+ * category page's intro and related-links module need (`category-context.ts`)
+ * in one aggregate instead of a COUNT per candidate link.
+ *
+ * Takes the vertical as a KEY, not a config: the key is what enters the cache
+ * key (the `cachedDirectoryZones` pattern in `directory-queries.ts`), so a door
+ * with hard filters gets its own entry and never serves its listing set to
+ * another door — CLAUDE.md's live cross-door leak. Tagged `listings`, whose
+ * writers (`revalidateListings()`, and `revalidateLocations()` through it)
+ * already cover every write that changes which rows are published or where
+ * they sit; ten minutes is the backstop. Plain numbers only, so nothing to
+ * re-wrap on the way out of the cache.
+ */
+const cachedCategoryInventory = unstable_cache(
+  async (verticalKey: VerticalKey, operation: Operation): Promise<InventoryRow[]> => {
+    const vertical = Object.values(VERTICALS).find((v) => v.key === verticalKey) ?? null;
+    const rows = await db
+      .select({
+        locationId: listings.locationId,
+        propertyType: listings.propertyType,
+        count: sql<number>`count(*)`.mapWith(Number),
+        minUsd: sql<number>`min(${listings.priceUsd})`.mapWith(Number),
+        maxUsd: sql<number>`max(${listings.priceUsd})`.mapWith(Number),
+      })
+      .from(listings)
+      .where(publishedFacetWhere({ operation }, vertical))
+      .groupBy(listings.locationId, listings.propertyType);
+    return rows;
+  },
+  ["queries:categoryInventory"],
+  { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings] },
 );
+
+export function getCategoryInventory(
+  vertical: VerticalConfig,
+  operation: Operation,
+): Promise<InventoryRow[]> {
+  return cachedCategoryInventory(vertical.key, operation);
+}
 
 /** City and city/type destinations with real stock; no query per tile. */
 export function stockedNavigationPaths(
@@ -111,7 +158,10 @@ export function stockedNavigationPaths(
 
 /** The stocked set for chrome: null when the read fails, which keeps every link. */
 export async function stockedPathsOrNull(vertical: VerticalConfig): Promise<Set<string> | null> {
-  return listNavigationInventory(vertical).then(stockedNavigationPaths).catch(() => null);
+  return listNavigationInventory(vertical).then(stockedNavigationPaths).catch((err: unknown) => {
+    logDegraded(`nav-inventory[${vertical.key}]`, err);
+    return null;
+  });
 }
 
 /** /{operacion}/{ciudad} or /{operacion}/{ciudad}/{tipo}: the two shapes stockedNavigationPaths() knows. */
@@ -193,6 +243,11 @@ const locationsById = cache(async (): Promise<Map<number, LocationRow>> => {
   const rows: LocationRow[] = await db.select().from(locations);
   return new Map(rows.map((row) => [row.id, row]));
 });
+
+/** The request-scoped location table, for callers that aggregate over it. */
+export function locationIndex(): Promise<Map<number, LocationRow>> {
+  return locationsById();
+}
 
 export async function locationChain(locationId: number): Promise<LocationRow[]> {
   const byId = await locationsById();
@@ -705,6 +760,81 @@ export async function getListingByPublicId(
   ]);
 
   return { listing, images, chain, agency, agent, ownerUser };
+}
+
+/** What a link-preview image of one listing needs — and nothing a draft has. */
+export interface ListingPreview {
+  publicId: string;
+  title: string;
+  titleEn: string | null;
+  operation: Operation;
+  propertyType: PropertyType;
+  priceAmount: string;
+  priceCurrency: "USD" | "PYG";
+  bedrooms: number | null;
+  bathrooms: number | null;
+  areaM2: string | null;
+  landM2: string | null;
+  coverKey: string | null;
+  chain: LocationRow[];
+}
+
+/**
+ * The lean read behind `/api/og/listing/[publicId]`: one row, its first photo
+ * and its location chain. **Published rows only** — the preview endpoint is
+ * public and takes an id, so anything looser would leak a draft's title and
+ * price to whoever guesses or kept an old link. Deliberately not cached: the
+ * image response itself carries a day-long HTTP cache, so this runs once per
+ * listing per crawler cache miss, and an uncached read has no tag to forget.
+ */
+export async function getListingPreview(
+  publicId: string,
+): Promise<ListingPreview | null> {
+  const [row] = await db
+    .select({
+      id: listings.id,
+      publicId: listings.publicId,
+      title: listings.title,
+      titleEn: listings.titleEn,
+      operation: listings.operation,
+      propertyType: listings.propertyType,
+      priceAmount: listings.priceAmount,
+      priceCurrency: listings.priceCurrency,
+      bedrooms: listings.bedrooms,
+      bathrooms: listings.bathrooms,
+      areaM2: listings.areaM2,
+      landM2: listings.landM2,
+      locationId: listings.locationId,
+    })
+    .from(listings)
+    .where(and(eq(listings.publicId, publicId), eq(listings.status, "published")))
+    .limit(1);
+  if (!row) return null;
+  const [cover, chain] = await Promise.all([
+    db
+      .select({ r2Key: listingImages.r2Key })
+      .from(listingImages)
+      .where(eq(listingImages.listingId, row.id))
+      .orderBy(asc(listingImages.position))
+      .limit(1)
+      .then((rows) => rows[0]?.r2Key ?? null),
+    locationChain(row.locationId),
+  ]);
+  return {
+    publicId: row.publicId,
+    title: row.title,
+    titleEn: row.titleEn,
+    operation: row.operation,
+    propertyType: row.propertyType,
+    priceAmount: row.priceAmount,
+    priceCurrency: row.priceCurrency,
+    bedrooms: row.bedrooms,
+    bathrooms: row.bathrooms,
+    areaM2: row.areaM2,
+    landM2: row.landM2,
+    coverKey: cover,
+    chain,
+  };
 }
 
 /** Same operación + tipo, same city subtree, excluding the listing itself. */

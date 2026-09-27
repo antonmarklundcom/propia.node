@@ -361,6 +361,15 @@ export function familyOf(key: VerticalKey): VerticalFamily {
   return FAMILY_BY_KEY[key] ?? DEFAULT.family;
 }
 
+/** The language a vertical key serves, for the same registry callers as `familyOf()`. */
+const LOCALE_BY_KEY: Record<string, VerticalConfig["locale"]> = Object.fromEntries(
+  Object.values(VERTICALS).map((v) => [v.key, v.locale]),
+);
+
+export function localeOf(key: VerticalKey): VerticalConfig["locale"] {
+  return LOCALE_BY_KEY[key] ?? DEFAULT.locale;
+}
+
 /** Resolve a Host header to a vertical. Unknown hosts (localhost, previews) → CANONICAL_HOST's vertical. */
 export function resolveVertical(host: string | null): VerticalConfig {
   if (!host) return DEFAULT;

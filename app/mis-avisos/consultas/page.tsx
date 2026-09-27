@@ -117,7 +117,7 @@ export default async function OwnerLeadsPage({
                 </div>
 
                 {lead.message ? (
-                  <div className="panel-card__body">{lead.message}</div>
+                  <div className="panel-card__body panel-card__body--message">{lead.message}</div>
                 ) : null}
                 <LeadEmailThread
                   messages={threads.get(lead.id) ?? []}

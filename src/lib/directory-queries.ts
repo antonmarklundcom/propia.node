@@ -19,7 +19,7 @@ import {
   projects,
 } from "../db/schema";
 import { unstable_cache } from "next/cache";
-import { CACHE_TAGS, CACHE_TTL } from "./cache";
+import { CACHE_TAGS, CACHE_TTL, singleFlight } from "./cache";
 import { projectCardsFrom } from "./queries";
 import type { ProjectCard } from "./queries";
 import { verticalConds } from "./facet-sql";
@@ -648,11 +648,11 @@ export const listAgenciesForDirectory = unstable_cache(
  * agency directory: an agent with nothing live is not listed, because a
  * directory of empty profiles helps nobody and dilutes crawl budget.
  */
-export const listAgentsForDirectory = unstable_cache(
+export const listAgentsForDirectory = singleFlight("directory:agents", unstable_cache(
   listAgentsForDirectoryUncached,
   ["directory:agents"],
   DIRECTORY_CACHE,
-);
+));
 
 /** Developers with at least one project — the /desarrolladoras index. */
 export const listDevelopersForDirectory = unstable_cache(

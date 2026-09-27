@@ -38,6 +38,27 @@ import { BRAND_NAME } from "@/lib/brand";
 import { siteOrigin } from "@/lib/origin";
 import { recordAdminEvent } from "@/lib/admin-events";
 import { handleLeadEmailForm } from "@/lib/inbox-access";
+import {
+  findLeadListing,
+  leadLaneFor,
+  leadOwnerContact,
+  recordLead,
+  sendLeadCopies,
+  type LeadLane,
+  type LeadListing,
+  type LeadType,
+} from "@/lib/lead-intake";
+import { toInternationalPhone } from "@/lib/crm";
+import { allowRequest } from "@/lib/rate-limit";
+import { parseListingRef } from "@/lib/urls";
+import { VERTICALS } from "@/config/verticals";
+import { currentVertical } from "@/lib/vertical-context";
+import { isAgencyMode } from "@/lib/site-settings";
+import { esWa } from "@/i18n/es-wa";
+import {
+  WHATSAPP_MANUAL_SOURCE,
+  type WhatsappLeadState,
+} from "@/lib/whatsapp-lead";
 
 const FOLLOW_UP: readonly LeadFollowUp[] = ["new", "contacted", "closed"];
 const NOTE_MAX = 2000;
@@ -272,4 +293,153 @@ export async function saveDealAction(formData: FormData): Promise<void> {
   revalidatePath(ROUTE);
   revalidatePath("/admin/negocios");
   redirect(to("deal_saved", input.leadId));
+}
+
+/* ------------------------------------------------------------------ */
+/* "Registrar consulta de WhatsApp"                                    */
+/* ------------------------------------------------------------------ */
+
+/** The types an operator can pick; "auto" follows the listing's operation. */
+const WA_LEAD_TYPES: readonly LeadType[] = [
+  "buyer",
+  "renter",
+  "seller",
+  "valuation",
+  "landlord",
+  "question",
+];
+
+/** Per operator: far above a real inbox session, far below a runaway script. */
+const WA_LOG_MAX = 60;
+const WA_LOG_WINDOW_MS = 10 * 60_000;
+
+/** `routed_to` in the panel's own words, for the confirmation line. */
+const WA_LANE_LABEL: Record<LeadLane, string> = {
+  agency: "Inmobiliaria",
+  agent: "Agente",
+  owner: "Particular",
+  internal: "Interno",
+  developer: "Desarrolladora",
+};
+
+function field(formData: FormData, name: string, max: number): string {
+  return String(formData.get(name) ?? "").trim().slice(0, max);
+}
+
+/**
+ * An enquiry that arrived on the operator's WhatsApp (the listing's wa.me
+ * button), typed in by hand so it becomes a `leads` row like any other:
+ * shareable with a partner, counted, copied to VenderCRM.
+ *
+ * It goes through the public form's own writer (`src/lib/lead-intake.ts`):
+ * same lane precedence, same INSERT, same after-response copies. What
+ * differs is only what a hand-typed lead has to: the door is picked in the
+ * form (the operator knows which site the buyer came from; the request's host
+ * is just where /admin is open), the marker is `utm.source = "whatsapp"`,
+ * `medium = "manual"` (there is no `leads.source` column, on purpose), there
+ * is no seeker confirmation email, and the operator alert fires only when a
+ * staff member logged it — the super-admin does not need a ping about a lead
+ * they just typed (the inbox's "Convertir en consulta" skips it too).
+ *
+ * The role is re-checked here, never trusted from the page. Returns form
+ * state rather than redirecting so a typo (an unknown ref) keeps what the
+ * operator typed.
+ */
+export async function logWhatsappLeadAction(
+  _prev: WhatsappLeadState,
+  formData: FormData,
+): Promise<WhatsappLeadState> {
+  const user = await requireStaffOrAbove();
+  const t = esWa;
+
+  const values = {
+    whatsapp: field(formData, "whatsapp", 40),
+    name: field(formData, "name", 140),
+    ref: field(formData, "ref", 1000),
+    message: field(formData, "message", 2000),
+    leadType: field(formData, "leadType", 20),
+    vertical: field(formData, "vertical", 40),
+  };
+  const fail = (message: string): WhatsappLeadState => ({
+    ok: false,
+    message,
+    nonce: Date.now(),
+    values,
+  });
+
+  if (!allowRequest(`wa-lead-log|${user.id}`, WA_LOG_MAX, WA_LOG_WINDOW_MS)) {
+    return fail(t.errorRate);
+  }
+
+  // Stored in one spelling (+595…), the one VenderCRM and wa.me agree on.
+  // 6–15 digits: the public form's lower bound, E.164's upper one.
+  const digits = values.whatsapp.replace(/\D/g, "");
+  if (digits.length < 6 || digits.length > 15) return fail(t.errorPhone);
+  const whatsapp = toInternationalPhone(values.whatsapp);
+
+  // A ref that does not resolve is refused, never saved as a lead about
+  // nothing: the operator is looking at the code and can fix it.
+  let listing: LeadListing | null = null;
+  if (values.ref) {
+    const publicId = parseListingRef(values.ref);
+    listing = publicId ? await findLeadListing(publicId) : null;
+    if (!listing) return fail(t.errorRef);
+  }
+
+  let leadType: LeadType;
+  if (values.leadType === "auto" || values.leadType === "") {
+    leadType = listing && listing.operation !== "venta" ? "renter" : "buyer";
+  } else if ((WA_LEAD_TYPES as readonly string[]).includes(values.leadType)) {
+    leadType = values.leadType as LeadType;
+  } else {
+    return fail(t.errorInvalid);
+  }
+
+  // An enabled door's key, else the door /admin is open on.
+  const door =
+    Object.values(VERTICALS).find((v) => v.enabled && v.key === values.vertical) ??
+    (await currentVertical());
+
+  const routedTo = leadLaneFor({ internal: await isAgencyMode(), listing });
+  const utm = { source: WHATSAPP_MANUAL_SOURCE, medium: "manual" };
+
+  const { leadId, payload } = await recordLead({
+    leadType,
+    vertical: door.key,
+    listing,
+    name: values.name || undefined,
+    whatsapp,
+    message: values.message || undefined,
+    utm,
+    routedTo,
+  });
+  await recordAdminEvent(user.id, "lead.from_whatsapp", "lead", leadId, {
+    listing: listing?.publicId ?? null,
+  });
+
+  const owner = await leadOwnerContact(routedTo, listing);
+  const origin = await siteOrigin();
+  const staffLogged = isStaff(user.role);
+  after(() =>
+    sendLeadCopies({
+      payload,
+      owner,
+      adminUrl: `${origin}/admin/leads`,
+      ownerUrl: `${origin}/mis-avisos/consultas`,
+      brand: door.brand,
+      alertOperator: staffLogged,
+    }),
+  );
+
+  revalidatePath(ROUTE);
+  const lane = WA_LANE_LABEL[routedTo];
+  const saved = listing ? t.savedListing(lane, listing.title) : t.saved(lane);
+  return {
+    ok: true,
+    message:
+      staffLogged && routedTo !== "internal"
+        ? `${saved} ${t.savedHiddenFromStaff}`
+        : saved,
+    nonce: Date.now(),
+  };
 }

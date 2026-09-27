@@ -1,10 +1,12 @@
 import { Glyph, isGlyphName } from "@/components/Glyph";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { unstable_cache } from "next/cache";
 import { dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
-import { CACHE_TAGS, CACHE_TTL } from "@/lib/cache";
+import { CACHE_TAGS, CACHE_TTL, singleFlight } from "@/lib/cache";
+import { acceptPartial, loadSections } from "@/lib/degrade";
 import { currentVertical } from "@/lib/vertical-context";
 import { homeSections, homeLayout } from "@/design/sections";
 import { PremiumHome, type PremiumZoneTile } from "@/components/home/PremiumHome";
@@ -105,67 +107,98 @@ const CITY_SHORTCUTS = [
   "Encarnación",
 ];
 
+type HomePayload = {
+  recent: Card[];
+  cities: Awaited<ReturnType<typeof listCities>>;
+  total: number;
+  ventaCasas: Card[];
+  ventaDeptos: Card[];
+  alquileres: Card[];
+  terrenos: Card[];
+  featuredProjects: Awaited<ReturnType<typeof getFeaturedProjects>>;
+  featuredDevelopers: Awaited<ReturnType<typeof getFeaturedDevelopers>>;
+  priceCities: Awaited<ReturnType<typeof citiesWithPrices>>;
+};
+
+/**
+ * What a section shows when it degraded (src/lib/degrade.ts): nothing. Every
+ * consumer already renders an empty rail as no rail, and `total: 0` as the
+ * neutral "properties across Paraguay" line rather than a count.
+ */
+const EMPTY_HOME_PAYLOAD: HomePayload = {
+  recent: [],
+  cities: [],
+  total: 0,
+  ventaCasas: [],
+  ventaDeptos: [],
+  alquileres: [],
+  terrenos: [],
+  featuredProjects: [],
+  featuredDevelopers: [],
+  priceCities: [],
+};
+
+/**
+ * How many of the payload's queries run at once. The payload is ten reads and
+ * each card rail is three round-trips (cards, covers, verified badges); fired
+ * all together, four cold homes filled the pool's 6 connections + 24 queued
+ * slots and six of eight doors answered 500 right after a deploy
+ * (fable/KNOWN-ISSUES.md, 2026-09-27). Capped, one render holds at most this
+ * many connections. It only costs time on a miss; a warm render runs none.
+ */
+const HOME_QUERY_CONCURRENCY = 2;
+
 /**
  * NOTE: no `export const revalidate` here — the page renders per request
  * (brand/origin come from the Host header, a dynamic API), which made a
  * route-level revalidate silently dead (audit F17/F37). The DB work is
  * cached below in getHomePayload instead: the render still runs per hit,
  * but its 10+ queries run once per 10 minutes.
+ *
+ * A section that fails under pool pressure renders empty for this request
+ * only: `loadSections` throws a PartialResult from inside the cached function,
+ * so the degraded payload is never stored, and `acceptPartial` unwraps it. A
+ * SQL error, or every section failing, still fails the page.
  */
-const getHomePayload = unstable_cache(
-  async (verticalKey: VerticalKey) => {
+const getHomePayloadCached = singleFlight("home-payload", unstable_cache(
+  async (verticalKey: VerticalKey): Promise<HomePayload> => {
     // Resolved from the key rather than passed as an object: the key is what
     // enters the cache key, and a config object would serialize its comments
     // and future fields into it too.
     const vertical: VerticalConfig | undefined = Object.values(VERTICALS).find(
       (v) => v.key === verticalKey,
     );
-    const [
-      recent,
-      cities,
-      total,
-      ventaCasas,
-      ventaDeptos,
-      alquileres,
-      terrenos,
-      featuredProjects,
-      featuredDevelopers,
-      priceCities,
-    ] = await Promise.all([
-      getRecentListings(8, vertical),
-      listCities(),
-      countPublished(vertical),
-      getRecentListingsBy({ operation: "venta", type: "casa", vertical }, 8),
-      getRecentListingsBy(
-        { operation: "venta", type: "departamento", vertical },
-        8,
-      ),
-      getRecentListingsBy({ operation: "alquiler", vertical }, 8),
-      getRecentListingsBy({ operation: "venta", type: "terreno", vertical }, 8),
-      getFeaturedProjects(6),
-      getFeaturedDevelopers(8),
-      citiesWithPrices(),
-    ]);
-    return {
-      recent,
-      cities,
-      total,
-      ventaCasas,
-      ventaDeptos,
-      alquileres,
-      terrenos,
-      featuredProjects,
-      featuredDevelopers,
-      priceCities,
-    };
+    return loadSections<HomePayload>(
+      `home-payload[${verticalKey}]`,
+      {
+        recent: () => getRecentListings(8, vertical),
+        cities: () => listCities(),
+        total: () => countPublished(vertical),
+        ventaCasas: () => getRecentListingsBy({ operation: "venta", type: "casa", vertical }, 8),
+        ventaDeptos: () =>
+          getRecentListingsBy({ operation: "venta", type: "departamento", vertical }, 8),
+        alquileres: () => getRecentListingsBy({ operation: "alquiler", vertical }, 8),
+        terrenos: () => getRecentListingsBy({ operation: "venta", type: "terreno", vertical }, 8),
+        featuredProjects: () => getFeaturedProjects(6),
+        featuredDevelopers: () => getFeaturedDevelopers(8),
+        priceCities: () => citiesWithPrices(),
+      },
+      EMPTY_HOME_PAYLOAD,
+      HOME_QUERY_CONCURRENCY,
+    );
   },
   ["home-payload"],
   // The vertical key is an argument, and `unstable_cache` folds arguments into
   // the cache key — so a door with hard filters gets its own entry instead of
-  // being served another door's listing set. (Both live hosts declare no
-  // filters today, so their two entries hold identical rows.)
+  // being served another door's listing set. singleFlight keys on the same
+  // arguments, so two doors never share an in-flight read either.
   { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings] },
-);
+));
+
+/** The payload, plus whether a section degraded for this request (never cached). */
+function getHomePayload(verticalKey: VerticalKey) {
+  return acceptPartial(getHomePayloadCached(verticalKey));
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const [brand, vertical, d] = await Promise.all([
@@ -206,10 +239,15 @@ export async function generateMetadata(): Promise<Metadata> {
         family: vertical.family,
       }),
     },
-    // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
-    // is the size every network crops to.
+    // WhatsApp is how a link gets shared here, and it renders this card: the
+    // door's own branded preview (brand, tagline, colours), 1200x630 — the size
+    // every network crops to. This object replaces the layout's openGraph, so
+    // siteName and locale are restated rather than lost.
     openGraph: {
-      images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
+      type: "website",
+      siteName: brand,
+      locale: vertical.locale === "en" ? "en_US" : "es_PY",
+      images: doorOgImages(brand),
     },
   };
 }
@@ -290,10 +328,22 @@ export default async function Home() {
    * where offering a city with no supply would be an empty result.
    */
   if (homeLayout(vertical.key) === "directory") {
-    const [zoneCities, directoryAgents] = await Promise.all([
-      listCities(),
-      listAgentsForDirectory(),
-    ]);
+    // Both reads degrade under pool pressure (src/lib/degrade.ts): an empty
+    // agent list renders the recruiting band, an empty city list a form without
+    // the select's options — for this request only. Both failing is an outage.
+    const {
+      value: { zoneCities, directoryAgents },
+    } = await acceptPartial(
+      loadSections<{
+        zoneCities: Awaited<ReturnType<typeof listCities>>;
+        directoryAgents: Awaited<ReturnType<typeof listAgentsForDirectory>>;
+      }>(
+        `directory-home[${vertical.key}]`,
+        { zoneCities: () => listCities(), directoryAgents: () => listAgentsForDirectory() },
+        { zoneCities: [], directoryAgents: [] },
+        HOME_QUERY_CONCURRENCY,
+      ),
+    );
     return (
       <DirectoryHome
         vertical={vertical}
@@ -307,16 +357,19 @@ export default async function Home() {
   }
 
   const {
-    recent,
-    cities,
-    total,
-    ventaCasas,
-    ventaDeptos,
-    alquileres,
-    terrenos,
-    featuredProjects,
-    featuredDevelopers,
-    priceCities,
+    value: {
+      recent,
+      cities,
+      total,
+      ventaCasas,
+      ventaDeptos,
+      alquileres,
+      terrenos,
+      featuredProjects,
+      featuredDevelopers,
+      priceCities,
+    },
+    degraded,
   } = await getHomePayload(vertical.key);
 
   const cityShortcuts = CITY_SHORTCUTS.map((name) =>
@@ -640,7 +693,8 @@ export default async function Home() {
           cards={terrenos}
         />
 
-        {recent.length === 0 && (
+        {/* A degraded read is not "nothing published": say nothing then. */}
+        {recent.length === 0 && !degraded && (
           <p style={{ color: "var(--color-ink-secondary)", padding: "2rem 0" }}>
             {tCommon.emptyState}
           </p>
