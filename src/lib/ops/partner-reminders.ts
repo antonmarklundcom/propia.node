@@ -29,7 +29,13 @@ import {
   sharesToRemind,
   type ShareTarget,
 } from "@/lib/lead-assignments";
-import { reminderText, sendToChats, telegramChatsFor } from "@/lib/partner-alerts";
+import {
+  reminderText,
+  sendToChats,
+  telegramChatsFor,
+  titleIn,
+  type TelegramChat,
+} from "@/lib/partner-alerts";
 import { telegramBotToken } from "@/lib/telegram";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
 
@@ -51,7 +57,7 @@ export async function runPartnerReminders(opts: OpsOptions): Promise<OpsResult> 
     const origin = `https://${CANONICAL_HOST}`;
     const due = await sharesToRemind({ olderThanHours: REMIND_AFTER_HOURS, limit });
 
-    const chatsByTarget = new Map<string, string[]>();
+    const chatsByTarget = new Map<string, TelegramChat[]>();
     const chatsOf = async (target: ShareTarget) => {
       const key = `${target.kind}:${target.id}`;
       let chats = chatsByTarget.get(key);
@@ -62,8 +68,8 @@ export async function runPartnerReminders(opts: OpsOptions): Promise<OpsResult> 
       return chats;
     };
 
-    /** chat id → the leads it is reminded about. */
-    const perChat = new Map<string, number[]>();
+    /** chat id → its reader's language and the leads it is reminded about. */
+    const perChat = new Map<string, { chat: TelegramChat; leadIds: number[] }>();
     let reminded = 0;
     for (const share of due) {
       if (!opts.dry && !(await claimShareReminder(share.id))) {
@@ -74,7 +80,11 @@ export async function runPartnerReminders(opts: OpsOptions): Promise<OpsResult> 
       out.count("pendientes");
       const chats = await chatsOf(share.target);
       out.count(chats.length > 0 ? "con_telegram" : "sin_telegram");
-      for (const chat of chats) perChat.set(chat, [...(perChat.get(chat) ?? []), share.leadId]);
+      for (const chat of chats) {
+        const entry = perChat.get(chat.chat) ?? { chat, leadIds: [] };
+        entry.leadIds.push(share.leadId);
+        perChat.set(chat.chat, entry);
+      }
     }
     out.count("mensajes", perChat.size);
 
@@ -86,16 +96,18 @@ export async function runPartnerReminders(opts: OpsOptions): Promise<OpsResult> 
       return;
     }
 
-    const singles = [...perChat.values()].filter((ids) => ids.length === 1).map((ids) => ids[0]);
+    const singles = [...perChat.values()]
+      .filter((e) => e.leadIds.length === 1)
+      .map((e) => e.leadIds[0]);
     const titles = await listingTitlesForLeads([...new Set(singles)]);
     let sent = 0;
-    for (const [chat, leadIds] of perChat) {
-      sent += await sendToChats(
-        [chat],
+    for (const { chat, leadIds } of perChat.values()) {
+      sent += await sendToChats([chat], (locale) =>
         reminderText({
+          locale,
           count: leadIds.length,
           hours: REMIND_AFTER_HOURS,
-          title: leadIds.length === 1 ? (titles.get(leadIds[0]) ?? null) : null,
+          title: leadIds.length === 1 ? titleIn(locale, titles.get(leadIds[0])) : null,
           url: `${origin}/agencia/leads`,
         }),
       );

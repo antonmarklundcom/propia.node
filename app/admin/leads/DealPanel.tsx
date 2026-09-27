@@ -8,7 +8,7 @@ import {
 } from "@/lib/deal-form";
 import type { DealRow, DealStageRow } from "@/lib/deals";
 import type { ShareRow } from "@/lib/lead-assignments";
-import { saveDealAction } from "./actions";
+import { deleteDealAction, saveDealAction } from "./actions";
 
 function formatWhen(d: Date): string {
   return new Intl.DateTimeFormat("es-PY", { day: "2-digit", month: "short", year: "numeric" }).format(d);
@@ -198,6 +198,22 @@ export function DealPanel({
         {shares.length === 0 ? `${esDeals.partnerHint} ` : null}
         {esDeals.moneyHint}
       </p>
+      {deal ? (
+        <form action={deleteDealAction} className="panel-form" aria-label={esDeals.deleteTitle}>
+          <input type="hidden" name="leadId" value={leadId} />
+          <input type="hidden" name="back" value={back} />
+          <label className="panel-form__field">
+            <span className="auth-field__label">{esDeals.deleteConfirmLabel}</span>
+            <input className="auth-field__input" name="confirm" autoComplete="off" />
+          </label>
+          <div className="panel-form__field panel-form__field--action">
+            <button className="panel-btn" type="submit">
+              {esDeals.deleteButton}
+            </button>
+          </div>
+          <p className="panel-hint" style={{ flexBasis: "100%" }}>{esDeals.deleteHint}</p>
+        </form>
+      ) : null}
     </details>
   );
 }

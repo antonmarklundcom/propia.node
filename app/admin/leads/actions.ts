@@ -19,7 +19,7 @@ import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { requireStaffOrAbove, requireSuperAdmin } from "@/lib/auth/guards";
 import { parseOperatorDealForm } from "@/lib/deal-form";
-import { upsertOperatorDeal } from "@/lib/deals";
+import { deleteOperatorDeal, upsertOperatorDeal } from "@/lib/deals";
 import {
   markMatchSent,
   proposeMatches,
@@ -272,4 +272,48 @@ export async function saveDealAction(formData: FormData): Promise<void> {
   revalidatePath(ROUTE);
   revalidatePath("/admin/negocios");
   redirect(to("deal_saved", input.leadId));
+}
+
+/** The word the operator types to confirm a deal delete (the /admin/propiedades pattern). */
+const DELETE_CONFIRM_WORD = "BORRAR";
+
+/**
+ * Delete a lead's deal — super-admin only, and only after the confirm word.
+ * `deleteOperatorDeal()` re-checks the role itself. The history line keeps
+ * what the deal held (money included; /admin/historial is super-admin only),
+ * so a mistaken delete can be typed back in from it.
+ */
+export async function deleteDealAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  const target = backTarget(formData);
+  const leadId = toId(formData.get("leadId"));
+  const to = (msg: string) =>
+    leadId ? `${withMsg(target, msg)}&negocio=${leadId}#lead-${leadId}` : withMsg(target, msg);
+
+  if (String(formData.get("confirm") ?? "").trim().toUpperCase() !== DELETE_CONFIRM_WORD) {
+    redirect(to("deal_delete_confirm"));
+  }
+
+  const res = await deleteOperatorDeal(user, leadId);
+  if (!res.ok) {
+    redirect(to(res.error === "forbidden" ? "deal_forbidden" : "deal_gone"));
+  }
+  const d = res.deleted;
+  await recordAdminEvent(user.id, "deal.delete", "lead", d.leadId, {
+    deal_id: d.id,
+    stage: d.stage,
+    lost_reason: d.lostReason,
+    agency_id: d.agencyId,
+    agent_id: d.agentId,
+    sale_price_usd: d.salePriceUsd,
+    commission_pct: d.commissionPct,
+    my_share_pct: d.mySharePct,
+    my_share_usd: d.myShareUsd,
+    paid_at: d.paidAt,
+    note: d.note ? d.note.slice(0, 300) : null,
+  });
+
+  revalidatePath(ROUTE);
+  revalidatePath("/admin/negocios");
+  redirect(to("deal_deleted"));
 }

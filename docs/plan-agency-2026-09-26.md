@@ -103,9 +103,12 @@ answered decision D1 below.**
 #### Batch 4 — what landed (branch `claude/bold-davinci-myybaw-telegram`)
 
 - **Linking.** `/agencia/perfil` → "Alertas por Telegram": a
-  `https://t.me/<TELEGRAM_BOT_USERNAME>?start=<userId>_<sig>` link, `sig` =
-  first 24 chars of base64url HMAC-SHA256(`TELEGRAM_WEBHOOK_SECRET`,
-  `"tg-link:"+userId`) (`src/lib/telegram.ts`). Linked → "Conectado" +
+  `https://t.me/<TELEGRAM_BOT_USERNAME>?start=<userId>_<issuedAt36>_<sig>`
+  link, `sig` = first 24 chars of base64url HMAC-SHA256(`TELEGRAM_WEBHOOK_SECRET`,
+  `"tg-link:v2:"+userId+":"+issuedAt`) (`src/lib/telegram.ts`), valid for one
+  hour (2026-09-27; the first version never expired). A `/start` from a
+  different chat than the one already linked is refused with "disconnect
+  first" rather than replacing it. Linked → "Conectado" +
   "Desconectar" (clears the session user's own chat only). Without
   `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME` + a 16+ char
   `TELEGRAM_WEBHOOK_SECRET` the card says the operator has not enabled it.
@@ -218,8 +221,14 @@ es-PY formatting are pure in `src/lib/deal-form.ts`; copy in
   stage only on an actively shared lead (not another agency's, not after a
   revoke, not another partner's deal), and a partner write leaving every money
   field unchanged.
-- Not built: a default split prefilled from D2 (founder decision), deleting a
-  deal, a CSV export of the ledger.
+- Not built: a default split prefilled from D2 (founder decision).
+- **Added 2026-09-27 (`claude/partner-loop-polish`, stacked on #226):**
+  deleting a deal (super-admin only, typed confirm word `BORRAR`, the
+  «Negocio» block on /admin/leads; `deleteOperatorDeal()` refuses every other
+  role itself; the history line `deal.delete` keeps what the deal held) and
+  the ledger CSV (`/admin/negocios/export`, super-admin only, the same rows as
+  the page via `listDeals()`, money as stored, formula-safe through
+  `toCsv()`). Who may move a closed deal is unchanged (open founder decision).
 
 ### 7 — Later (after real inventory)
 

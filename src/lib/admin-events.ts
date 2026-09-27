@@ -25,7 +25,9 @@ export type AdminEventAction =
   | "lead.from_email"
   | "setting.change"
   | "deal.update"
-  | "deal.stage";
+  | "deal.stage"
+  // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
+  | "deal.delete";
 
 export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting";
 

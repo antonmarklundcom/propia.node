@@ -400,6 +400,76 @@ export async function upsertOperatorDeal(
   });
 }
 
+export type DeleteDealResult =
+  | { ok: true; deleted: DeletedDeal }
+  | { ok: false; error: "forbidden" | "no_deal" };
+
+/** What a deleted deal held — kept in its `deal.delete` history line (super-admin only). */
+export interface DeletedDeal {
+  id: number;
+  leadId: number;
+  stage: DealStage;
+  lostReason: LostReason | null;
+  agencyId: number;
+  agentId: number;
+  salePriceUsd: string | null;
+  commissionPct: string | null;
+  mySharePct: string | null;
+  myShareUsd: string | null;
+  /** YYYY-MM-DD, as typed. */
+  paidAt: string | null;
+  note: string | null;
+  createdByUserId: number | null;
+}
+
+/**
+ * Delete a lead's deal — the super-admin only, checked HERE as well as by the
+ * action's guard, like the money writer: a deal holds the money columns, and
+ * removing it changes every sum on /admin/negocios. A partner cannot delete
+ * one (their writer only moves a stage). Returns what the row held, so the
+ * history line can say exactly what was removed.
+ *
+ * Nothing references `deals` by foreign key, so the delete touches no other
+ * table. A partner moving the stage afterwards opens a fresh deal, as on a
+ * lead that never had one.
+ */
+export async function deleteOperatorDeal(
+  actor: { id: number; role: UserRole },
+  leadId: number,
+): Promise<DeleteDealResult> {
+  if (!isSuperAdmin(actor.role)) return { ok: false, error: "forbidden" };
+  if (!Number.isSafeInteger(leadId) || leadId <= 0) return { ok: false, error: "no_deal" };
+
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(deals)
+      .where(eq(deals.leadId, leadId))
+      .for("update")
+      .limit(1);
+    if (!row) return { ok: false as const, error: "no_deal" as const };
+    await tx.delete(deals).where(eq(deals.id, row.id));
+    return {
+      ok: true as const,
+      deleted: {
+        id: row.id,
+        leadId: row.leadId,
+        stage: row.stage,
+        lostReason: row.lostReason,
+        agencyId: row.agencyId,
+        agentId: row.agentId,
+        salePriceUsd: row.salePriceUsd,
+        commissionPct: row.commissionPct,
+        mySharePct: row.mySharePct,
+        myShareUsd: row.myShareUsd,
+        paidAt: row.paidAt ? row.paidAt.toISOString().slice(0, 10) : null,
+        note: row.note,
+        createdByUserId: row.createdByUserId,
+      },
+    };
+  });
+}
+
 /* ------------------------------ partner side ------------------------------ */
 
 /**

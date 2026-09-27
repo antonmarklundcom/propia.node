@@ -386,8 +386,10 @@ The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
 - **e2e specs** (`E2E_PORT=3100 npx playwright test`, local DB only):
   `sort`, `listing-sidebar`, `hub-type-links`, `contrast` (small text ≥ 4.5:1
   on the marketplace, A4 #177) and `contrast-doors` (the same on the other six
-  doors through `--host-resolver-rules`, #184). The shared contrast helper is
-  `tests/e2e/contrast.ts`.
+  doors through `--host-resolver-rules`, #184), and `partner-flow` (share →
+  "La tomo" → stage → money → staff sees no money → revoke → delete deal;
+  writes its own users/lead/agent through SQL and removes them). The shared
+  contrast helper is `tests/e2e/contrast.ts`.
 - Also landed: JSON-LD nonce without a hydration warning (#179), English door
   without unsourced legal/tax/cost claims (#180, wording awaits the founder's
   signature), `/favicon.ico` + apple-touch icon (#182).
@@ -618,8 +620,8 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`.
-  Same thing by hand: `npm run verify:local`. The last six are pure — no database, no network —
+  `npm run verify:inbox`, `npm run verify:telegram`.
+  Same thing by hand: `npm run verify:local`. The last seven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath

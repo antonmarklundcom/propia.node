@@ -200,7 +200,7 @@ const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
   ...LEAD_EMAIL_FLASH,
   converted: { text: esInbox.flash.converted },
   ...Object.fromEntries(
-    Object.entries(esDeals.flash).map(([k, text]) => [k, { text, error: k !== "deal_saved" }]),
+    Object.entries(esDeals.flash).map(([k, text]) => [k, { text, error: !esDeals.flashOk.includes(k) }]),
   ),
 };
 

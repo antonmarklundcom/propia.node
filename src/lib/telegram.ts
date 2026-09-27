@@ -16,11 +16,16 @@
  *   account-wide limit (the 503 post-mortem in PLAN.md).
  *
  * Linking is stateless: the `t.me/<bot>?start=<token>` link carries the user
- * id and an HMAC of it under `TELEGRAM_WEBHOOK_SECRET`, so there is no token
- * column and nothing to expire. Telegram delivers the `/start <token>` message
- * to `/api/telegram`, which checks the HMAC and stores the chat id on
- * `users.telegram_chat_id`. Rotating the secret invalidates every unused link
- * (already-linked chats keep working: the chat id is what is stored).
+ * id, the time it was issued and an HMAC of both under
+ * `TELEGRAM_WEBHOOK_SECRET`, so there is no token column. A token is good for
+ * `LINK_TTL_SECONDS` (one hour) after it was issued: a forwarded or
+ * screenshotted link stops working on its own, and /agencia/perfil mints a
+ * fresh one on every render. Telegram delivers the `/start <token>` message to
+ * `/api/telegram`, which checks the HMAC and the age and stores the chat id
+ * on `users.telegram_chat_id` — never over a different chat already linked
+ * (the partner disconnects first; `linkTelegramChat()`). Rotating the secret
+ * invalidates every unused link (already-linked chats keep working: the chat
+ * id is what is stored).
  *
  * No `next/*`, no database: the CLI jobs import this unchanged.
  */
@@ -103,35 +108,62 @@ export function telegramBotUsername(): string | null {
   return u && /^[A-Za-z][A-Za-z0-9_]{3,31}$/.test(u) ? u : null;
 }
 
-function linkSig(userId: number, secret: string): string {
+/** How long a start link works after it was issued. */
+export const LINK_TTL_SECONDS = 60 * 60;
+
+/** A token "issued" further in the future than this is refused (clock skew allowance). */
+const LINK_FUTURE_SKEW_SECONDS = 5 * 60;
+
+/**
+ * `v2` separates these signatures from the old never-expiring ones (an HMAC
+ * of the user id alone): no old link can be replayed in the new format.
+ */
+function linkSig(userId: number, issuedAt: number, secret: string): string {
   return createHmac("sha256", secret)
-    .update(`tg-link:${userId}`)
+    .update(`tg-link:v2:${userId}:${issuedAt}`)
     .digest("base64url")
     .slice(0, LINK_SIG_CHARS);
 }
 
-/**
- * `<userId>_<sig>` — only `[A-Za-z0-9_-]` and at most 35 characters, inside
- * Telegram's 64-character `start` parameter limit. Null when the secret is
- * not configured.
- */
-export function telegramLinkToken(userId: number): string | null {
-  const secret = telegramWebhookSecret();
-  if (!secret || !Number.isSafeInteger(userId) || userId <= 0) return null;
-  return `${userId}_${linkSig(userId, secret)}`;
+function nowSeconds(nowMs: number): number {
+  return Math.floor(nowMs / 1000);
 }
 
-/** The user id a start token was issued for, or null when forged, malformed or unsigned. */
-export function verifyTelegramLinkToken(token: string): number | null {
+/**
+ * `<userId>_<issuedAt base36>_<sig>` — only `[A-Za-z0-9_-]` and at most 43
+ * characters (10 + 1 + 7 + 1 + 24), inside Telegram's 64-character `start`
+ * parameter limit. Null when the secret is not configured. `nowMs` is for the
+ * pure checks (`npm run verify:telegram`); callers leave it out.
+ */
+export function telegramLinkToken(userId: number, nowMs: number = Date.now()): string | null {
   const secret = telegramWebhookSecret();
-  if (!secret) return null;
-  const m = new RegExp(`^(\\d{1,10})_([A-Za-z0-9_-]{${LINK_SIG_CHARS}})$`).exec(token);
+  if (!secret || !Number.isSafeInteger(userId) || userId <= 0 || userId > 9_999_999_999) return null;
+  const issuedAt = nowSeconds(nowMs);
+  return `${userId}_${issuedAt.toString(36)}_${linkSig(userId, issuedAt, secret)}`;
+}
+
+/**
+ * The user id a start token was issued for, or null when it is forged,
+ * malformed, unsigned, older than `LINK_TTL_SECONDS` or dated in the future.
+ * The signature is compared in constant time, and only after the shape has
+ * been checked by a bounded regex.
+ */
+export function verifyTelegramLinkToken(token: string, nowMs: number = Date.now()): number | null {
+  const secret = telegramWebhookSecret();
+  if (!secret || token.length > 64) return null;
+  const m = new RegExp(`^(\\d{1,10})_([0-9a-z]{1,7})_([A-Za-z0-9_-]{${LINK_SIG_CHARS}})$`).exec(token);
   if (!m) return null;
   const userId = Number(m[1]);
-  if (!Number.isSafeInteger(userId) || userId <= 0) return null;
-  const want = Buffer.from(linkSig(userId, secret));
-  const got = Buffer.from(m[2]);
-  return want.length === got.length && timingSafeEqual(want, got) ? userId : null;
+  const issuedAt = parseInt(m[2], 36);
+  if (!Number.isSafeInteger(userId) || userId <= 0 || !Number.isSafeInteger(issuedAt)) return null;
+  // Canonical spelling only: "007" or a padded base36 would sign the same numbers.
+  if (String(userId) !== m[1] || issuedAt.toString(36) !== m[2]) return null;
+  const want = Buffer.from(linkSig(userId, issuedAt, secret));
+  const got = Buffer.from(m[3]);
+  if (want.length !== got.length || !timingSafeEqual(want, got)) return null;
+  const age = nowSeconds(nowMs) - issuedAt;
+  if (age > LINK_TTL_SECONDS || age < -LINK_FUTURE_SKEW_SECONDS) return null;
+  return userId;
 }
 
 /**

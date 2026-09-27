@@ -8,8 +8,14 @@
  *   characters) → 503. A wrong or missing header → 401, compared in constant
  *   time (`secretMatches()`).
  * - `/start <token>` in a private chat links that chat to the user the token
- *   was signed for (`verifyTelegramLinkToken()`, constant time); `/stop`
- *   unlinks every account using the chat; anything else gets a one-line help.
+ *   was signed for (`verifyTelegramLinkToken()`, constant time, one-hour
+ *   expiry) — unless that user already has a different chat linked, which is
+ *   never replaced silently: the bot asks them to disconnect first on
+ *   /agencia/perfil. `/stop` unlinks every account using the chat; anything
+ *   else gets a one-line help.
+ * - Replies are in the linked user's `users.locale` once the token names
+ *   one, else in the Telegram app's language (`from.language_code`: English
+ *   for `en*`, Spanish otherwise).
  * - **Replies ride on the response.** Telegram lets a webhook answer with a
  *   Bot API call in its body (`{"method":"sendMessage",…}`), so a reply costs
  *   no outbound request and cannot stall this one.
@@ -20,10 +26,10 @@
  * - **Never logs** a message text, a chat id or a user id.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { esTelegram } from "@/i18n/es-telegram";
 import { allowRequest } from "@/lib/rate-limit";
 import { isChatId, secretMatches, telegramWebhookSecret, verifyTelegramLinkToken } from "@/lib/telegram";
 import { linkTelegramChat, unlinkTelegramChat } from "@/lib/telegram-accounts";
+import { telegramCopy } from "@/lib/telegram-text";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +38,6 @@ const BODY_MAX_BYTES = 256 * 1024;
 /** Commands per chat per window — enough for a person, not for a script. */
 const CHAT_MAX = 20;
 const CHAT_WINDOW_MS = 10 * 60_000;
-
-const bot = esTelegram.bot;
 
 function json(status: number, body: Record<string, unknown>) {
   return NextResponse.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -55,6 +59,7 @@ interface TelegramUpdate {
   message?: {
     chat?: { id?: unknown; type?: unknown };
     text?: unknown;
+    from?: { language_code?: unknown };
   };
 }
 
@@ -91,16 +96,20 @@ export async function POST(req: NextRequest) {
   if (!isChatId(chatId)) return json(200, { ok: true });
   if (!allowRequest(`telegram:${chatId}`, CHAT_MAX, CHAT_WINDOW_MS)) return json(200, { ok: true });
 
+  const lang = msg.from?.language_code;
+  const bot = telegramCopy(typeof lang === "string" && /^en\b/i.test(lang) ? "en" : "es").bot;
+
   // `/start@BotName payload` is how the command looks from a group or a menu.
   const m = /^\/(start|stop)(?:@[A-Za-z0-9_]+)?(?:\s+(\S+))?\s*$/.exec(msg.text.trim());
   try {
     if (m?.[1] === "start") {
       if (!m[2]) return reply(chatId, bot.help);
       const userId = verifyTelegramLinkToken(m[2]);
-      if (userId == null || !(await linkTelegramChat(userId, chatId))) {
-        return reply(chatId, bot.invalidLink);
-      }
-      return reply(chatId, bot.linked);
+      if (userId == null) return reply(chatId, bot.invalidLink);
+      const res = await linkTelegramChat(userId, chatId);
+      if (res.status === "missing") return reply(chatId, bot.invalidLink);
+      const own = telegramCopy(res.locale).bot;
+      return reply(chatId, res.status === "linked" ? own.linked : own.otherChat);
     }
     if (m?.[1] === "stop") {
       return reply(chatId, (await unlinkTelegramChat(chatId)) > 0 ? bot.stopped : bot.notLinked);
