@@ -62,11 +62,16 @@ interface Pin {
  * ~70px. The decimal separator comes from the number locale; the unit words
  * from the dictionary.
  */
-function pinPrice(pin: Pin, t: Dictionary["map"], numberLocale: string): string {
-  const pyg = pin.priceCurrency === "PYG";
+function pinPrice(pin: Pin, t: Dictionary["map"], numberLocale: string, usdFirst: boolean): string {
+  // On a US$-first door (usdFirstPrice(): the English marketplace doors) a
+  // Guaraní listing with a usable price_usd shows "≈ US$", the same rule as
+  // displayPrice() on the card; otherwise its own currency.
+  const usdOk = Number.isFinite(Number(pin.priceUsd)) && Number(pin.priceUsd) > 0;
+  const approx = usdFirst && pin.priceCurrency === "PYG" && usdOk;
+  const pyg = pin.priceCurrency === "PYG" && !approx;
   const n = pyg ? Number(pin.priceAmount) : Number(pin.priceUsd);
   if (!Number.isFinite(n) || n <= 0) return "—";
-  const prefix = pyg ? "Gs" : "US$";
+  const prefix = pyg ? "Gs" : approx ? "≈ US$" : "US$";
   const one = new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 1 });
   // 999 500 rounds to "1000 mil"; from there on it is "1 M".
   if (n >= 999_500) return `${prefix} ${t.pinMillions(one.format(n / 1_000_000))}`;
@@ -120,12 +125,14 @@ export function CategoryMap({
   /** Category filters, forwarded verbatim so map and grid never disagree. */
   query,
   locale,
+  usdFirst = false,
 }: {
   centerLat: number;
   centerLng: number;
   zoom?: number;
   query: Record<string, string>;
   locale: Locale;
+  usdFirst?: boolean;
 }) {
   const t = getDictionary(locale).map;
   const numberLocale = locale === "en" ? "en-US" : "es-PY";
@@ -239,7 +246,7 @@ export function CategoryMap({
         link.href = listingUrl(pin);
         link.target = "_blank";
         link.rel = "noopener";
-        link.textContent = pinPrice(pin, t, numberLocale);
+        link.textContent = pinPrice(pin, t, numberLocale, usdFirst);
         // The approximate case is the honest default, so only the exact one
         // is worth distinguishing in the tooltip.
         link.title = pin.approximate ? t.approximate(pin.title) : pin.title;
@@ -253,7 +260,7 @@ export function CategoryMap({
           .addTo(map),
       );
     }
-  }, [pins, t, numberLocale]);
+  }, [pins, t, numberLocale, usdFirst]);
 
   return (
     <div className="map-view">
