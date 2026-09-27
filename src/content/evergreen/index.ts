@@ -62,6 +62,16 @@ import { ventaSanBernardinoCasas } from "./venta-san-bernardino-casas";
 import { alquilerAsuncionLomaPytaCasas } from "./alquiler-asuncion-loma-pyta-casas";
 import { alquilerAsuncionLomaPytaDepartamentos } from "./alquiler-asuncion-loma-pyta-departamentos";
 
+// English, on realestateinparaguay.com (door "en"): each pairs by hreflang
+// with the Spanish page at the same path on inmobiliaria.com.py.
+import { enAlquilerAsuncionCasas } from "./en-alquiler-asuncion-casas";
+import { enAlquilerAsuncionDepartamentos } from "./en-alquiler-asuncion-departamentos";
+import { enAlquilerTemporalAsuncion } from "./en-alquiler-temporal-asuncion";
+import { enVentaAsuncionCasas } from "./en-venta-asuncion-casas";
+import { enVentaAsuncionDepartamentos } from "./en-venta-asuncion-departamentos";
+import { enVentaEncarnacionCasas } from "./en-venta-encarnacion-casas";
+import { enVentaLuqueCasas } from "./en-venta-luque-casas";
+import { enVentaSanBernardinoCasas } from "./en-venta-san-bernardino-casas";
 export type { EvergreenPage, EvergreenPriceBand } from "./types";
 
 export const EVERGREEN_PAGES: readonly EvergreenPage[] = [
@@ -107,6 +117,14 @@ export const EVERGREEN_PAGES: readonly EvergreenPage[] = [
   ventaSanBernardinoCasas,
   alquilerAsuncionLomaPytaCasas,
   alquilerAsuncionLomaPytaDepartamentos,
+  enAlquilerAsuncionCasas,
+  enAlquilerAsuncionDepartamentos,
+  enAlquilerTemporalAsuncion,
+  enVentaAsuncionCasas,
+  enVentaAsuncionDepartamentos,
+  enVentaEncarnacionCasas,
+  enVentaLuqueCasas,
+  enVentaSanBernardinoCasas,
 ];
 
 const BY_DOOR_PATH = new Map(

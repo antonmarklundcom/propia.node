@@ -511,6 +511,17 @@ still awaits the founder's check. A rental page's `financing` section is
 about moving-in costs and shows no `/financiamiento` link.
 `npx tsx scripts/check-evergreen-file.ts <file>` checks a new content file
 before it is registered.
+**English evergreen pages (2026-09-27):** 8 more on `realestateinparaguay.com`
+(door `en`, files `en-*.ts`, claims in `docs/log/evergreen-en-claims.md`),
+each at the same path as a Spanish evergreen page. `verify:seo` allows one
+page per path **per language**; hreflang pairs the two whenever every
+version in the set is evergreen on its door (the category page's
+`everyVersionEvergreen`), otherwise only while the count would index it.
+English land pages wait on `landforsaleparaguay.com` going live.
+**Guides ↔ evergreen links:** `src/lib/guide-links.ts` (pure) relates a guide
+to a page by the words — place, type, operation — with no tags: an evergreen
+page lists up to three guides in its language, a guide lists up to four of
+the serving door's evergreen pages. Nothing shows when nothing relates.
 
 Rules that bite:
 

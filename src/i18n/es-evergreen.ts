@@ -45,4 +45,5 @@ export const esEvergreen = {
     `Hoy no hay ${what} ${fem ? "publicadas" : "publicados"} en ${where} en este portal, así que no mostramos precios: preferimos no darte un número que no podamos respaldar.`,
   financingCta: "Ver programas y calcular la cuota",
   faqTitle: "Preguntas frecuentes",
+  guidesTitle: "Guías relacionadas",
 } as const;

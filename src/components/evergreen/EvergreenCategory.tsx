@@ -46,6 +46,8 @@ import { waLink } from "@/lib/wa";
 import { faqJsonLd } from "@/lib/jsonld";
 import { briefChoices } from "@/lib/buyer-brief";
 import type { Operation, PropertyType } from "@/lib/import/types";
+import { listPublishedPosts } from "@/lib/post-queries";
+import { guidesForPage } from "@/lib/guide-links";
 import { BuyerBrief } from "@/components/BuyerBrief";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingBrowser } from "@/components/ListingBrowser";
@@ -197,6 +199,13 @@ export async function EvergreenCategory({
       : [];
     nearby = { cards, places };
   }
+
+  // Guides that name this page's place, type or operation (src/lib/guide-links.ts).
+  // Non-essential: a failed read costs the block, never the page.
+  const guides = guidesForPage(
+    canonicalPath,
+    await orDegraded(`evergreen-guides[${canonicalPath}]`, listPublishedPosts(vertical.locale), []),
+  );
 
   const facts = inventory ? categoryFacts(inventory.rows, inventory.byId, ref) : null;
   const factLine =
@@ -367,6 +376,20 @@ export async function EvergreenCategory({
             ))}
           </div>
         </section>
+
+        {guides.length > 0 && (
+          <section className="evg-section">
+            <h2 className="evg-h2">{t.guidesTitle}</h2>
+            <ul className="evg-guides">
+              {guides.map((g) => (
+                <li key={g.slug}>
+                  <Link href={`/guias/${g.slug}`}>{g.title}</Link>
+                  {g.excerpt && <p>{g.excerpt}</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </article>
 
       {related}

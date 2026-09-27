@@ -73,12 +73,13 @@ async function main() {
 
   // Shared paragraphs: within the given files and against the registry.
   const owners = new Map<string, string>();
-  const given = new Set(pages.map((p) => p.path));
-  for (const p of [...EVERGREEN_PAGES.filter((x) => !given.has(x.path)), ...pages]) {
+  const idOf = (p: EvergreenPage) => `${p.door}${p.path}`;
+  const given = new Set(pages.map(idOf));
+  for (const p of [...EVERGREEN_PAGES.filter((x) => !given.has(idOf(x))), ...pages]) {
     for (const para of new Set(evergreenParagraphs(p).map(norm))) {
       const other = owners.get(para);
-      if (other && other !== p.path) fail(`${other} & ${p.path} share: "${para.slice(0, 70)}…"`);
-      owners.set(para, p.path);
+      if (other && other !== idOf(p)) fail(`${other} & ${idOf(p)} share: "${para.slice(0, 70)}…"`);
+      owners.set(para, idOf(p));
     }
   }
 

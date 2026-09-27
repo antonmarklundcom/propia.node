@@ -44,4 +44,5 @@ export const enEvergreen = {
     `No ${what} are listed in ${where} on this site today, so we show no prices: we would rather not give you a number we cannot back.`,
   financingCta: "See programmes and estimate the payment",
   faqTitle: "Frequently asked questions",
+  guidesTitle: "Related guides",
 } satisfies Widened<typeof esEvergreen>;

@@ -3697,6 +3697,7 @@ export const esGuidesPage = {
   byAuthor: (name: string) => `Por ${name}`,
   updatedOn: (date: string) => `Actualizada el ${date}`,
   keepReading: "Seguí leyendo",
+  relatedSearches: "Buscá propiedades",
   notFound: "Nota no encontrada",
   readCtaTitle: "Pasá de leer a buscar",
   readCtaText: "Casas, departamentos y terrenos en todo Paraguay, con cuota estimada.",
