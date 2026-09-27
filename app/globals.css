@@ -6582,6 +6582,70 @@ summary.panel-btn::-webkit-details-marker {
   line-height: 1.6;
 }
 
+/* ---- Buyer brief (BuyerBrief.tsx) ---------------------------------------- */
+
+/* "Tell us what you're looking for" under an empty / thin result set and on
+   the 404. The form itself is .lead-form, so it inherits every door's theme;
+   this only frames the heading and the collapsed thin-results variant. */
+.buyer-brief {
+  margin-top: 24px;
+  min-width: 0;
+}
+
+.buyer-brief__title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.buyer-brief__intro {
+  margin: 0 0 14px;
+  color: var(--color-ink-secondary);
+  line-height: 1.6;
+}
+
+.buyer-brief--collapsed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.buyer-brief--collapsed .buyer-brief__title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.buyer-brief__open {
+  padding: 0.75rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.buyer-brief__open:hover {
+  background: var(--button-primary-bg-hover);
+}
+
+.buyer-brief__note {
+  min-height: 64px;
+}
+
 /* ---- Operation hubs (/venta, /alquiler) ---------------------------------- */
 
 /* A1: compact header on cream inside the results column. The sidebar is the

@@ -12,6 +12,8 @@ import { categoryUrl, operationSlug, typePlural } from "@/lib/urls";
 import { facetSearchParams, parseFacetParams, parseLocationSlugs } from "@/lib/facets";
 import { getFilteredCategoryListings, listCities, listCityBarrios, resolveBarrio, stockedPathsOrNull, withoutEmptyCategoryLinks, type CategoryQuery, type LocationRow } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
+import { BuyerBrief } from "./BuyerBrief";
+import { BRIEF_FEW_RESULTS, briefChoices, type BriefPrefill } from "@/lib/buyer-brief";
 
 export function listingPage(value: string | string[] | undefined) {
   const n = typeof value === "string" ? Number(value) : 1;
@@ -32,10 +34,11 @@ export async function ListingBrowser({ basePath, query, searchParams, city, barr
   const selectedBarrio = city && !barrio && barrioSlug ? await resolveBarrio(city.id, barrioSlug) : null;
   const locationIds = city && !barrio && barrioSlug ? (selectedBarrio ? [selectedBarrio.id] : []) : undefined;
   const page = listingPage(searchParams.page);
-  const [{ listings, filteredCount }, cities, barrios, stocked] = await Promise.all([
+  const doorPromise = currentVertical();
+  const [{ listings, filteredCount }, cities, barrios, stocked, door] = await Promise.all([
     getFilteredCategoryListings({ ...query, limit: 48, offset: (page - 1) * 48 }, { ...filters, locationIds }),
     listCities(), city ? listCityBarrios(city.id) : Promise.resolve([]),
-    currentVertical().then(stockedPathsOrNull),
+    doorPromise.then(stockedPathsOrNull), doorPromise,
   ]);
   const href = (changes: Record<string,string | undefined>, path = basePath) => {
     const sp = new URLSearchParams(params);
@@ -54,11 +57,23 @@ export async function ListingBrowser({ basePath, query, searchParams, city, barr
   // A page past the last one does not exist: 404 rather than a 200 "no
   // results" (a soft 404 to a crawler). Page 1 keeps its empty state.
   if (!mapView && page > totalPages) notFound();
+  // Buyer brief (src/lib/buyer-brief.ts): an empty or thin result set is where
+  // a visitor leaves, so it asks what they wanted, prefilled from this search.
+  const briefArea = barrio ?? selectedBarrio;
+  const briefPrefill: BriefPrefill = {
+    operation: query.operation,
+    propertyType: query.type ?? filters.propertyType,
+    where: city ? (briefArea ? `${briefArea.name}, ${city.name}` : city.name) : undefined,
+    budgetMaxUsd: filters.priceMax,
+    bedrooms: filters.minBedrooms,
+  };
+  const empty = filteredCount === 0 || listings.length === 0;
+  const brief = (surface: "empty" | "few") => <BuyerBrief locale={locale} surface={surface} prefill={briefPrefill} choices={briefChoices(door.filters)} idPrefix={`brief-${surface}`} collapsible={surface === "few"} />;
   const typeChoices = withoutEmptyCategoryLinks(query.type && city ? [{ label: d.category.typeLabelAny, href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug })) }, ...PROPERTY_TYPES.map(type => ({ label: d.category.typeLabel[type], href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug, barrioSlug: barrio?.slug, type })) }))] : [], stocked);
   return <CategoryFilterBar basePath={basePath} params={params} locale={locale} count={filteredCount} operation={query.operation} fixedType={query.type} typeChoices={typeChoices} locations={locations} locationLabel={city ? d.filters.barrio : d.filters.city}
     viewSwitch={<nav className="view-switch" aria-label={d.category.viewSwitchLabel}>{(["lista","mapa"] as const).map(view => <a className={`view-switch__option${(view === "mapa") === mapView ? " view-switch__option--active" : ""}`} key={view} href={href({ vista: view === "mapa" ? view : undefined, page: undefined })}>{view === "mapa" ? d.category.viewMap : d.category.viewList}</a>)}</nav>}>
     <JsonLd data={itemListJsonLd(await listingCanonicalOrigin(), listings.map(l => ({ title: locale === "en" ? l.titleEn ?? l.title : l.title, url: listingUrl(l) })))} />
-    {mapView ? <CategoryMapLazy centerLat={Number(center?.lat ?? -25.3)} centerLng={Number(center?.lng ?? -57.6)} zoom={barrio ? 14 : city ? 12 : 8} query={mapQuery} locale={locale} /> : filteredCount === 0 || listings.length === 0 ? <div className="filter-empty">{d.category.filterEmpty}<br /><a href={basePath}>{d.category.filterEmptyClear}</a></div> : <div className="category-results listing-results-grid">{listings.map(card => <ListingCard key={card.id} card={card} />)}</div>}
+    {mapView ? <CategoryMapLazy centerLat={Number(center?.lat ?? -25.3)} centerLng={Number(center?.lng ?? -57.6)} zoom={barrio ? 14 : city ? 12 : 8} query={mapQuery} locale={locale} /> : empty ? <><div className="filter-empty">{d.category.filterEmpty}<br /><a href={basePath}>{d.category.filterEmptyClear}</a></div>{brief("empty")}</> : <><div className="category-results listing-results-grid">{listings.map(card => <ListingCard key={card.id} card={card} />)}</div>{page === 1 && filteredCount < BRIEF_FEW_RESULTS && brief("few")}</>}
     {!mapView && filteredCount > 48 && <nav className="pagination" aria-label={d.category.paginationLabel}>
       {page > 1 && <a className="pagination__link" href={href({ page: page === 2 ? undefined : String(page - 1) })}>{d.category.paginationPrev}</a>}
       <span className="pagination__status">{d.category.paginationStatus(page,totalPages)}</span>

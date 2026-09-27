@@ -21,6 +21,16 @@ import { currentVertical } from "@/lib/vertical-context";
 import { emailOwnerNewLead, emailSeekerConfirmation } from "@/lib/lead-emails";
 import { isAgencyMode } from "@/lib/site-settings";
 import { esA3, REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
+import { esBrief } from "@/i18n/es-brief";
+import { OPERATIONS, PROPERTY_TYPES, type Operation, type PropertyType } from "@/lib/import/types";
+import {
+  BRIEF_CURRENCIES,
+  BRIEF_SOURCE,
+  BRIEF_SURFACES,
+  BRIEF_TIMELINES,
+  briefLeadType,
+  formatBriefMessage,
+} from "@/lib/buyer-brief";
 
 const bodySchema = z.object({
   leadType: z.enum([
@@ -72,6 +82,27 @@ const bodySchema = z.object({
    */
   report: z
     .object({ reason: z.enum(REPORT_REASONS as [ReportReason, ...ReportReason[]]) })
+    .optional(),
+  /**
+   * The buyer brief ("contanos qué buscás", `src/lib/buyer-brief.ts`) from an
+   * empty or thin search. Not a new lane and not a column: the server folds it
+   * into `message` as readable text, stamps `utm.source: "brief"`, and picks
+   * `buyer` / `renter` from the operation — the client says none of the three.
+   * Every field is bounded here; none is ever used in a query.
+   */
+  brief: z
+    .object({
+      surface: z.enum(BRIEF_SURFACES),
+      operation: z.enum(OPERATIONS as [Operation, ...Operation[]]).optional(),
+      propertyType: z.enum(PROPERTY_TYPES as [PropertyType, ...PropertyType[]]).optional(),
+      where: z.string().trim().max(140).optional(),
+      budgetMax: z.number().positive().max(1e13).optional(),
+      currency: z.enum(BRIEF_CURRENCIES).optional(),
+      bedrooms: z.number().int().min(1).max(10).optional(),
+      timeline: z.enum(BRIEF_TIMELINES).optional(),
+      note: z.string().trim().max(500).optional(),
+      path: z.string().max(300).regex(/^\//).optional(),
+    })
     .optional(),
 });
 
@@ -168,6 +199,16 @@ export async function POST(req: NextRequest) {
   }
   const report = parsed.report && listing ? parsed.report : null;
 
+  // A brief describes a search that found nothing: it is never about a
+  // listing, and never a report.
+  if (parsed.brief && (parsed.report || parsed.listingPublicId)) {
+    return NextResponse.json(
+      { ok: false, error: "invalid payload" },
+      { status: 400 },
+    );
+  }
+  const brief = parsed.brief ?? null;
+
   /**
    * Same precedence as the detail page's seller card: agent, then agency, then
    * the private owner. `owner` exists so an FSBO lead is addressed to the
@@ -242,7 +283,15 @@ export async function POST(req: NextRequest) {
           agency_slug: explicitAgency.slug,
           agency_name: explicitAgency.name,
         }
-      : parsed.utm;
+      : brief
+        ? {
+            ...(parsed.utm ?? {}),
+            // Server-stamped, like the report marker: the panel's chip and a
+            // future filter read this, so a client cannot relabel it.
+            source: BRIEF_SOURCE,
+            brief_surface: brief.surface,
+          }
+        : parsed.utm;
 
   // A report is the operator's to review — never the publisher's inbox. In
   // agency mode (docs/plan-agency-2026-09-26.md batch 3) every enquiry comes to
@@ -264,7 +313,20 @@ export async function POST(req: NextRequest) {
           : "internal";
 
   // 1. Record in MySQL first.
-  const leadType = report ? "question" : parsed.leadType;
+  const leadType = report
+    ? "question"
+    : brief
+      ? briefLeadType(brief.operation)
+      : parsed.leadType;
+  // The brief's answers become the lead's message, in Spanish whatever the
+  // door — the operator reads /admin/leads in Spanish (same rule as esPanel).
+  const message = brief
+    ? formatBriefMessage(
+        brief,
+        esBrief.lead,
+        "es-PY",
+      ).slice(0, 2000)
+    : parsed.message;
   const [res] = await db.insert(leads).values({
     leadType,
     vertical,
@@ -273,7 +335,7 @@ export async function POST(req: NextRequest) {
     name: parsed.name,
     whatsapp: parsed.whatsapp,
     email: parsed.email,
-    message: parsed.message,
+    message,
     utm,
     routedTo,
   });
@@ -287,7 +349,7 @@ export async function POST(req: NextRequest) {
     name: parsed.name,
     whatsapp: parsed.whatsapp,
     email: parsed.email,
-    message: parsed.message,
+    message,
     utm,
     routedTo,
     listing: listing
