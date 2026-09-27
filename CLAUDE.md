@@ -370,6 +370,12 @@ default, `--dry` first). It records itself as a revertible import job.
     drop `AGENCY_MODE_HIDDEN_PATHS`. Copy that becomes false in agency mode is
     listed in `docs/decisions-needed.md` for the founder's wording. Partners
     install the panel from `/agencia/app`. Plan: `docs/plan-agency-2026-09-26.md`.
+    **Partners join by invite** (2026-09-27): "Invitar socio" on each row of
+    `/admin/inmobiliarias` mints a one-use, 7-day `agency_admin` invite for
+    that agency (`invitePartnerAction`, super-admin only — staff never see
+    it), listed under "Invitaciones de socios" with copy/WhatsApp/Anular and
+    logged in `/admin/historial`. Same `agency_invites` rows and `/registro`
+    redemption as an agency's own `/agencia/equipo` invites.
 
 ## Launch track — state as of 2026-09-22
 
@@ -408,7 +414,9 @@ The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
   on the marketplace, A4 #177) and `contrast-doors` (the same on the other six
   doors through `--host-resolver-rules`, #184), and `partner-flow` (share →
   "La tomo" → stage → money → staff sees no money → revoke → delete deal;
-  writes its own users/lead/agent through SQL and removes them). The shared
+  writes its own users/lead/agent through SQL and removes them), and
+  `partner-invite` (staff sees no button → "Invitar socio" → the link creates
+  the agency's `agency_admin` → revoke → history). The shared
   contrast helper is `tests/e2e/contrast.ts`.
 - Also landed: JSON-LD nonce without a hydration warning (#179), English door
   without unsourced legal/tax/cost claims (#180, wording awaits the founder's

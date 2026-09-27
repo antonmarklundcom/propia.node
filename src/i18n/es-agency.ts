@@ -65,6 +65,8 @@ export const esAgency = {
 
   historyAction: {
     "setting.change": "Cambió un ajuste",
+    "agency.invite": "Invitó a un socio",
+    "agency.invite_revoke": "Anuló una invitación de socio",
   } as Record<string, string>,
   historyTargetLabel: { setting: "Ajuste" } as Record<string, string>,
 } as const;

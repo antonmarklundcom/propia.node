@@ -380,6 +380,18 @@ export const esPanel = {
   teamInviteUrlLabel: (role: string, expires: string) =>
     `Enlace para sumar a un ${role.toLowerCase()} — vence el ${expires}`,
 
+  // Invitar socio (/admin/inmobiliarias, super-admin only)
+  adminInviteTitle: "Invitaciones de socios",
+  adminInviteHint: (days: number) =>
+    `“Invitar socio” genera un enlace para que el responsable de esa inmobiliaria cree su cuenta y entre a su panel como administrador. Sirve una sola vez y vence a los ${days} días. Solo lo ve el super-admin.`,
+  adminInviteCreate: "Invitar socio",
+  adminInviteCreated: "Enlace generado: está en «Invitaciones de socios». Mandáselo al responsable.",
+  adminInvitesEmpty: "No hay invitaciones de socios abiertas.",
+  adminInviteUrlLabel: (agency: string, expires: string) =>
+    `${agency} — responsable, vence el ${expires}`,
+  adminInviteWhatsappText: (agency: string, url: string) =>
+    `Hola, te invito a administrar ${agency} en nuestro panel de socios. Creá tu cuenta con este enlace (sirve una sola vez): ${url}`,
+
   // Admin
   adminReviewTitle: "Cola de revisión",
   adminReviewEmpty: "No hay avisos esperando revisión.",

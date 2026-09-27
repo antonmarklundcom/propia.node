@@ -25,6 +25,8 @@ export type AdminEventAction =
   | "lead.from_email"
   | "lead.from_whatsapp"
   | "setting.change"
+  | "agency.invite"
+  | "agency.invite_revoke"
   | "deal.update"
   | "deal.stage"
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.

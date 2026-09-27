@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
+import { isSuperAdmin } from "@/lib/auth/roles";
+import {
+  INVITE_TTL_DAYS,
+  invitePath,
+  listOpenInvitesForAdmin,
+  type OpenInviteRow,
+} from "@/lib/agency-invites";
+import { requestOrigin } from "@/lib/request-origin";
 import {
   countReviewQueue,
   listAgencies,
@@ -10,12 +18,18 @@ import {
   type AgencyRow,
 } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
+import { esA1 } from "@/i18n/es-a1";
+import { InviteWhatsApp } from "../../agencia/equipo/InviteWhatsApp";
 import { adminTabs } from "../tabs";
 import {
   toggleAgencyVerifiedAction,
   toggleAgentVerifiedAction,
 } from "../actions";
-import { createAgencyAction } from "./actions";
+import {
+  createAgencyAction,
+  invitePartnerAction,
+  revokePartnerInviteAction,
+} from "./actions";
 
 export const metadata: Metadata = {
   title: `Inmobiliarias y agentes`,
@@ -64,7 +78,17 @@ function planLabel(plan: string): string {
 const FLASH: Record<string, { text: string; error?: boolean }> = {
   agency_created: { text: esPanel.agencyCreated },
   invalid: { text: esPanel.agencyInvalid, error: true },
+  invite_created: { text: esPanel.adminInviteCreated },
+  invite_revoked: { text: esPanel.teamInviteRevoked },
 };
+
+function fmtDate(d: Date): string {
+  return new Intl.DateTimeFormat("es-PY", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d);
+}
 
 export default async function AdminAgenciesPage({
   searchParams,
@@ -80,6 +104,12 @@ export default async function AdminAgenciesPage({
   ]);
 
   const flash = msg ? FLASH[msg] : undefined;
+  // "Invitar socio" mints a login to an agency's panel: super-admin only,
+  // and the actions check it again.
+  const canInvite = isSuperAdmin(user.role);
+  const [invites, origin] = canInvite
+    ? await Promise.all([listOpenInvitesForAdmin(), requestOrigin()])
+    : [[] as OpenInviteRow[], ""];
 
   return (
     <>
@@ -133,6 +163,24 @@ export default async function AdminAgenciesPage({
             </div>
           </form>
         </article>
+
+        {canInvite ? (
+          <>
+            <h2 className="panel-section__title" style={{ marginTop: 32 }}>
+              {esPanel.adminInviteTitle}
+            </h2>
+            <article className="panel-card">
+              <p className="panel-card__meta">{esPanel.adminInviteHint(INVITE_TTL_DAYS)}</p>
+              {invites.length === 0 ? (
+                <p className="panel-card__meta">{esPanel.adminInvitesEmpty}</p>
+              ) : (
+                invites.map((invite) => (
+                  <PartnerInviteRow key={invite.id} invite={invite} origin={origin} />
+                ))
+              )}
+            </article>
+          </>
+        ) : null}
 
         <h2 className="panel-section__title" style={{ marginTop: 32 }}>
           Inmobiliarias
@@ -189,6 +237,14 @@ export default async function AdminAgenciesPage({
                           {a.isVerified ? esPanel.unverify : esPanel.verify}
                         </button>
                       </form>
+                      {canInvite ? (
+                        <form action={invitePartnerAction} style={{ marginTop: 6 }}>
+                          <input type="hidden" name="agencyId" value={a.id} />
+                          <button className="panel-btn" type="submit">
+                            {esPanel.adminInviteCreate}
+                          </button>
+                        </form>
+                      ) : null}
                     </td>
                   </tr>
                   );
@@ -245,5 +301,35 @@ export default async function AdminAgenciesPage({
         )}
       </main>
     </>
+  );
+}
+
+function PartnerInviteRow({ invite, origin }: { invite: OpenInviteRow; origin: string }) {
+  const url = `${origin}${invitePath(invite.token)}`;
+  return (
+    <div className="panel-form" style={{ alignItems: "flex-end" }}>
+      <label className="panel-form__field" style={{ flexBasis: "100%" }}>
+        <span className="auth-field__label">
+          {esPanel.adminInviteUrlLabel(invite.agencyName, fmtDate(invite.expiresAt))}
+        </span>
+        <input className="auth-field__input" type="text" value={url} readOnly />
+      </label>
+      <InviteWhatsApp
+        text={esPanel.adminInviteWhatsappText(invite.agencyName, url)}
+        label={esA1.inviteWhatsappLabel}
+        sendLabel={esA1.inviteWhatsappSend}
+        hint={esA1.inviteWhatsappHint}
+        placeholder={esA1.inviteWhatsappPlaceholder}
+      />
+      <div className="panel-form__field panel-form__field--action">
+        <form action={revokePartnerInviteAction}>
+          <input type="hidden" name="inviteId" value={invite.id} />
+          <input type="hidden" name="agencyId" value={invite.agencyId} />
+          <button className="panel-btn" type="submit">
+            {esPanel.teamInviteRevoke}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
