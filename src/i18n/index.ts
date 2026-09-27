@@ -65,6 +65,7 @@ import {
 } from "./es";
 import { esA5 } from "./es-a5";
 import { esInbox } from "./es-e2";
+import { esAuthReset } from "./es-auth-reset";
 import {
   enOnboarding,
   enTranslationStatus,
@@ -119,6 +120,7 @@ import { esA4 } from "./es-a4";
 import { enA4 } from "./en-a4";
 import { esA1 } from "./es-a1";
 import { enInbox } from "./en-e2";
+import { enAuthReset } from "./en-auth-reset";
 import { enA1 } from "./en-a1";
 
 export type Locale = "es" | "en";
@@ -180,6 +182,7 @@ const esDictionary = {
   a1: esA1,
   email: esEmail,
   inbox: esInbox,
+  authReset: esAuthReset,
 } as const;
 
 /**
@@ -267,6 +270,7 @@ const enDictionary = {
   a1: enA1,
   email: enEmail,
   inbox: enInbox,
+  authReset: enAuthReset,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

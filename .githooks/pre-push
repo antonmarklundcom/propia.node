@@ -19,4 +19,6 @@ echo "pre-push: verify:rate-limit…"
 npm run --silent verify:rate-limit
 echo "pre-push: verify:inbox…"
 npm run --silent verify:inbox
+echo "pre-push: verify:reset…"
+npm run --silent verify:reset
 echo "pre-push: OK"

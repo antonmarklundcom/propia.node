@@ -313,8 +313,14 @@ default, `--dry` first). It records itself as a revertible import job.
     confirmation (repeats nothing the visitor typed — the address is
     unverified), partner "a lead was shared with you". Copy is `esEmail` /
     `enEmail`. Check with `npm run email:test -- --to <addr> [--dry]`.
-    **Not built:** password reset (migration + founder decision), price alerts,
-    expiry reminders.
+    Also sends (2026-09-27, auth PR): the password-reset link and a new
+    partner's welcome (plus a `new_partner` operator alert) — see
+    `src/lib/account-emails.ts`. **Not built:** price alerts, expiry reminders.
+    **Password reset needs no table**: `/recuperar` mails a stateless
+    HMAC link (`src/lib/auth/reset-token.ts`, `AUTH_TOKEN_SECRET`, 60 min)
+    whose MAC covers the current `password_hash`, so it dies once the
+    password changes. Hidden unless the secret AND email sending are set.
+    `npm run verify:reset` (pure) is in `verify:local` and the pre-push hook.
 15. **Inbound email — E2 lead threads + E3 `/admin/inbox` (2026-09-26,
     migration 0018, `docs/log/e2e3.md`).** A Cloudflare Email Worker
     (`workers/inbound-email/`, deployed by hand with wrangler — its README has
@@ -618,8 +624,8 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`.
-  Same thing by hand: `npm run verify:local`. The last six are pure — no database, no network —
+  `npm run verify:inbox`, `npm run verify:reset`.
+  Same thing by hand: `npm run verify:local`. The last seven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath

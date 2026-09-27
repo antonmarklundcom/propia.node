@@ -69,6 +69,22 @@ export async function siteOrigin(): Promise<string> {
 }
 
 /**
+ * Origin for a link this request puts in an *email* — a password-reset link,
+ * a partner's welcome. Stricter than `siteOrigin()`, because here the person
+ * choosing the Host header may be an attacker asking for a reset of someone
+ * else's account: whatever host they send is where the victim's link would
+ * point. So only a door we route (an enabled vertical, or the primary) is ever
+ * echoed back, and the local-dev pass-through — which would accept any
+ * `*.local` name — is honoured only outside production.
+ */
+export async function emailLinkOrigin(): Promise<string> {
+  const p = await hostParts();
+  if (!p) return PRIMARY_ORIGIN;
+  if (p.local && process.env.NODE_ENV !== "production") return `http://${p.raw}`;
+  return isOwnHost(p) ? `https://${p.bare}` : PRIMARY_ORIGIN;
+}
+
+/**
  * Whether /propiedad/{slug} is canonical on the host that served this request.
  * The primary host always owns it (same reasoning as `isOwnHost`); an enabled
  * vertical owns it only if its config says so; everything else — a feeder, a
