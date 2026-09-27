@@ -1,9 +1,21 @@
 "use client";
 
 import { Glyph } from "@/components/Glyph";
-import { useState } from "react";
-import { getDictionary, type Locale } from "@/i18n";
+import { useId, useState } from "react";
+import { getDictionary, numberLocaleFor, type Locale } from "@/i18n";
 import { waLink, waPhone } from "@/lib/wa";
+import {
+  BUYER_BUDGETS,
+  BUYER_CONTACTS,
+  BUYER_COUNTRY_MAX,
+  BUYER_PURPOSES,
+  BUYER_TIMELINES,
+  BUYER_VISIT_MAX,
+  budgetLabel,
+  buyerDetailsBlock,
+  normalizeBuyerDetails,
+  type BuyerDetails,
+} from "@/lib/buyer-details";
 
 /**
  * Shared inquiry form; the listing seller card leads with WhatsApp when available.
@@ -29,6 +41,7 @@ export function ContactForm({
   variant = "card",
   locale = "es",
   recipients,
+  foreignBuyer = false,
 }: {
   id?: string;
   /** Omit for non-listing inquiries (e.g. a project page). */
@@ -49,9 +62,23 @@ export function ContactForm({
    * so this only supplies the names. Omit it and no line is shown.
    */
   recipients?: { agent: string | null; agency: string | null; brand: string };
+  /**
+   * The foreign buyer's optional questions and an international phone field
+   * (`foreignBuyerEnquiry()` in src/design/sections.ts — the caller passes the
+   * flag, this component never looks at the door). Only a buyer enquiry is
+   * asked about a purchase; a renter's form keeps just the phone change.
+   */
+  foreignBuyer?: boolean;
 }) {
   const d = getDictionary(locale);
   const t = d.contactForm;
+  const f = t.foreign;
+  const numberLocale = numberLocaleFor(locale);
+  const askDetails = foreignBuyer && leadType === "buyer";
+  const uid = useId();
+  const [details, setDetails] = useState<BuyerDetails>({});
+  const setDetail = (key: keyof BuyerDetails, value: string) =>
+    setDetails((prev) => ({ ...prev, [key]: value || undefined }));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -71,7 +98,13 @@ export function ContactForm({
 
   const fullMessage =
     questions.length > 0 ? `${message}\n\n${questions.join(" ")}` : message;
-  const waHref = waLink(contactWhatsapp, fullMessage);
+  // The server writes the same block into the lead (app/api/leads/route.ts);
+  // here it only rides along in the WhatsApp continuation.
+  const detailsBlock = askDetails ? buyerDetailsBlock(details, f, numberLocale) : null;
+  const waHref = waLink(
+    contactWhatsapp,
+    detailsBlock ? `${fullMessage}\n\n${detailsBlock}` : fullMessage,
+  );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,6 +123,7 @@ export function ContactForm({
           whatsapp: whatsappTarget || "unknown",
           message: fullMessage,
           utm: readUtm(),
+          buyerDetails: askDetails ? (normalizeBuyerDetails(details) ?? undefined) : undefined,
         }),
       });
       captured = res.ok;
@@ -137,19 +171,30 @@ export function ContactForm({
       <label className="contact-form__field">
         <span className="contact-form__label">{t.phoneLabel}</span>
         <div className="contact-form__phone">
-          <span className="contact-form__phone-prefix" aria-hidden>
-            <Glyph name="phone" /> +595
-          </span>
+          {/* A foreign buyer's number is not Paraguayan: no +595 prefix, and
+              they are asked for their own country code instead. */}
+          {!foreignBuyer && (
+            <span className="contact-form__phone-prefix" aria-hidden>
+              <Glyph name="phone" /> +595
+            </span>
+          )}
           <input
             className="contact-form__input contact-form__input--phone"
             type="tel"
+            autoComplete="tel"
             required
             minLength={6}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder={t.phonePlaceholder}
+            placeholder={foreignBuyer ? f.phonePlaceholderIntl : t.phonePlaceholder}
+            aria-describedby={foreignBuyer ? `${uid}-phone-hint` : undefined}
           />
         </div>
+        {foreignBuyer && (
+          <span className="contact-form__hint" id={`${uid}-phone-hint`}>
+            {f.phoneHintIntl}
+          </span>
+        )}
       </label>
 
       <div className="contact-form__chips">
@@ -175,6 +220,102 @@ export function ContactForm({
           onChange={(e) => setMessage(e.target.value)}
         />
       </label>
+
+      {askDetails && (
+        <details className="contact-form__more">
+          <summary className="contact-form__more-toggle">{f.toggle}</summary>
+          <p className="contact-form__hint">{f.hint}</p>
+          <div className="contact-form__more-grid">
+            <label className="contact-form__field">
+              <span className="contact-form__label">{f.countryLabel}</span>
+              <input
+                className="contact-form__input"
+                name="buyer_country"
+                autoComplete="country-name"
+                maxLength={BUYER_COUNTRY_MAX}
+                value={details.country ?? ""}
+                onChange={(e) => setDetail("country", e.target.value)}
+                placeholder={f.countryPlaceholder}
+              />
+            </label>
+            <label className="contact-form__field">
+              <span className="contact-form__label">{f.budgetLabel}</span>
+              <select
+                className="contact-form__input contact-form__select"
+                name="buyer_budget"
+                value={details.budget ?? ""}
+                onChange={(e) => setDetail("budget", e.target.value)}
+              >
+                <option value="">{f.choose}</option>
+                {BUYER_BUDGETS.map((b) => (
+                  <option key={b} value={b}>
+                    {budgetLabel(b, f, numberLocale)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="contact-form__field">
+              <span className="contact-form__label">{f.timelineLabel}</span>
+              <select
+                className="contact-form__input contact-form__select"
+                name="buyer_timeline"
+                value={details.timeline ?? ""}
+                onChange={(e) => setDetail("timeline", e.target.value)}
+              >
+                <option value="">{f.choose}</option>
+                {BUYER_TIMELINES.map((v) => (
+                  <option key={v} value={v}>
+                    {f.timeline[v]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="contact-form__field">
+              <span className="contact-form__label">{f.visitLabel}</span>
+              <input
+                className="contact-form__input"
+                name="buyer_visit"
+                maxLength={BUYER_VISIT_MAX}
+                value={details.visit ?? ""}
+                onChange={(e) => setDetail("visit", e.target.value)}
+                placeholder={f.visitPlaceholder}
+              />
+            </label>
+            <label className="contact-form__field">
+              <span className="contact-form__label">{f.purposeLabel}</span>
+              <select
+                className="contact-form__input contact-form__select"
+                name="buyer_purpose"
+                value={details.purpose ?? ""}
+                onChange={(e) => setDetail("purpose", e.target.value)}
+              >
+                <option value="">{f.choose}</option>
+                {BUYER_PURPOSES.map((v) => (
+                  <option key={v} value={v}>
+                    {f.purpose[v]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="contact-form__field">
+              <span className="contact-form__label">{f.contactLabel}</span>
+              <select
+                className="contact-form__input contact-form__select"
+                name="buyer_contact"
+                value={details.contact ?? ""}
+                onChange={(e) => setDetail("contact", e.target.value)}
+              >
+                <option value="">{f.choose}</option>
+                {BUYER_CONTACTS.map((v) => (
+                  <option key={v} value={v}>
+                    {f.contact[v]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </details>
+      )}
 
       <button
         className="contact-form__submit"

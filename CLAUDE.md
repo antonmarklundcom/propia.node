@@ -118,6 +118,18 @@ How to read it, and the one mistake to avoid:
   and Next appends `" — <brand>"`. Do not put the brand back into a page's own
   title — it will double. OG titles do *not* inherit the template, so those
   spell the brand out.
+- **Link previews (og:image) are rendered per door** (2026-09-27):
+  `/api/og/door` (brand, tagline, the door's theme colours) and
+  `/api/og/listing/[publicId]` (cover photo, locale-aware title, price, place,
+  brand; published rows only), both in `src/lib/og-image.tsx` — route
+  handlers, not `opengraph-image.tsx`, so the Host header picks the brand.
+  The layout's `openGraph` uses the door card, but **a page that sets its own
+  `openGraph` replaces the layout's wholesale** — pass
+  `images: doorOgImages(brand)` (`src/lib/og-urls.ts`) or it shares as a bare
+  link. One render at a time per process, 4 in flight, 40 per IP per 5 min,
+  JPEG (WhatsApp drops big images), a day-long Cache-Control; bump
+  `OG_IMAGE_VERSION` when the design changes. Text passes through `ogText()`
+  so the renderer never fetches a fallback font from a third party.
 - Copy that names the brand is brand-parameterised, not constant:
   `faqSections(brand)`, `esSiteNotice.body(brand)`, `esPrecios.methodBody(brand)`,
   `inquiryPrefillFor(brand, …)`, and friends.
@@ -634,8 +646,8 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`.
-  Same thing by hand: `npm run verify:local`. The last six are pure — no database, no network —
+  `npm run verify:inbox`, `npm run verify:prices`.
+  Same thing by hand: `npm run verify:local`. The last seven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath

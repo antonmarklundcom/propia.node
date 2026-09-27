@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
@@ -23,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: `${TITLE}`,
     description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/como-funciona` },
-    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand), images: doorOgImages(brand) },
   };
 }
 

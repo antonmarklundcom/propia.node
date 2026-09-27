@@ -6,7 +6,19 @@ it; none of them blocks a phase.
 
 ## Open
 
-- **Resolved 2026-09-27 (branch `claude/cold-start-resilience`): cold home
+- **Foreign-buyer details are not in the operator's go-look alerts (2026-09-27).**
+  The English doors' enquiry answers are folded into `leads.message`
+  (`app/api/leads/route.ts`, `src/lib/buyer-details.ts`), so they reach
+  `/admin/leads`, `/agencia/leads`, `/mis-avisos/consultas`, VenderCRM and the
+  generic webhook's `lead` event. `alertOperator()`'s Telegram / email /
+  `operator_alert` text is built from `esPanel.alertNewLeadDetail` (type, name,
+  WhatsApp, listing) and never included the message, so it does not carry them
+  either; the owner email and the partner share email leave the message out on
+  purpose. Fix, if wanted: pass the details block into `alertNewLeadDetail`.
+  Also not USD-first yet on the English doors: `/comparar`'s price row and the
+  category map's price pins still show the listed currency.
+
+- **Resolved 2026-09-27 (#236): cold home
   renders 500ing on "Queue limit reached"** (found by `verify:live` the same
   day). Reproduced locally at 6 of 8 cold homes → 500; now 0 of 8, 0 of 16 and
   0 of 42 in a mixed homes + category burst, with the pool bounds untouched.

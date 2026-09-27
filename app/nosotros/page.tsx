@@ -1,6 +1,7 @@
 import { numberLocaleFor } from "@/i18n";
 import type { Dictionary } from "@/i18n";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { brandName } from "@/lib/brand-server";
 import { dict, currentLocale } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
@@ -44,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: `${c.title}`,
     description: c.description(brand),
     alternates: { canonical: `${origin}/nosotros` },
-    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand) },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand), images: doorOgImages(brand) },
   };
 }
 

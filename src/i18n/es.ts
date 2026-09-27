@@ -14,6 +14,16 @@ export const esPublicUi = {
   notFound: "No encontrado",
   phonePlaceholder: "0981 123 456",
   perMonth: "/mes",
+  /** A Guaraní listing's US$ equivalent, where a door leads with US$ (displayPrice()). */
+  approxPrice: (usd: string) => `≈ ${usd}`,
+  approxPriceTitle: "Equivalente aproximado en dólares; el precio publicado es en guaraníes",
+  listedPrice: (price: string) => `Precio publicado: ${price}`,
+  /** The USD / EUR switch (CurrencySwitch) — only where a door leads with US$. */
+  currencySwitchLabel: "Mostrar precios en",
+  currencyUsd: "USD",
+  currencyEur: "EUR",
+  currencyEurTitle:
+    "Montos en euros aproximados, convertidos desde dólares con un tipo de cambio que se actualiza periódicamente",
   operations: { venta: "Venta", alquiler: "Alquiler", alquiler_temporal: "Alquiler temporal" },
   propertyTypes: { casa: "Casas", departamento: "Departamentos", terreno: "Terrenos", duplex: "Dúplex", comercial: "Locales comerciales", oficina: "Oficinas", deposito: "Depósitos", quinta: "Quintas" } as Record<string, string>,
 } as const;
@@ -83,6 +93,45 @@ export const esContactForm = {
   waLinkLabel: "WhatsApp",
   phoneLinkLabel: "Ver teléfono",
   fallbackText: "No pudimos guardar tu consulta. Podes escribirle directo por WhatsApp.",
+  /**
+   * The foreign buyer's optional questions (foreignBuyerEnquiry() in
+   * src/design/sections.ts). Only the English marketplace doors render them
+   * today; this is the Spanish half of the contract, and the labels the
+   * answers are written into the lead message with (src/lib/buyer-details.ts).
+   */
+  foreign: {
+    toggle: "Agregá detalles para recibir una respuesta más rápida y mejor",
+    hint: "Todo es opcional. Ayuda al vendedor a responder lo que te importa.",
+    choose: "Elegí…",
+    countryLabel: "País de residencia",
+    countryPlaceholder: "Ej.: Argentina",
+    budgetLabel: "Presupuesto (US$)",
+    budgetUnder: (max: string) => `Hasta ${max}`,
+    budgetBetween: (min: string, max: string) => `${min} – ${max}`,
+    budgetOver: (min: string) => `Más de ${min}`,
+    timelineLabel: "¿Cuándo pensás comprar?",
+    timeline: {
+      now: "Ahora",
+      "3-6m": "En 3–6 meses",
+      "6-12m": "En 6–12 meses",
+      exploring: "Solo estoy mirando",
+    },
+    visitLabel: "¿Planeás visitar Paraguay?",
+    visitPlaceholder: "Fechas, o «todavía no»",
+    purposeLabel: "Para qué",
+    purpose: { live: "Para vivir", invest: "Inversión", retire: "Retiro", other: "Otro" },
+    contactLabel: "Contacto preferido",
+    contact: { whatsapp: "WhatsApp", email: "Email", video: "Videollamada" },
+    blockHeading: "Datos del comprador",
+    lineCountry: "País",
+    lineBudget: "Presupuesto",
+    lineTimeline: "Plazo",
+    lineVisit: "Visita a Paraguay",
+    linePurpose: "Para qué",
+    lineContact: "Contacto preferido",
+    phonePlaceholderIntl: "+54 11 2345 6789",
+    phoneHintIntl: "Con el código de país",
+  },
 } as const;
 
 /** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
@@ -516,6 +565,7 @@ export const esPanel = {
     "user.password": "Puso una contraseña nueva",
     "user.delete": "Borró un usuario",
     "lead.from_email": "Convirtió un email en consulta",
+    "lead.from_whatsapp": "Registró una consulta de WhatsApp",
   } as Record<string, string>,
   staffCannotPublish:
     "Publicar y borrar definitivamente quedan para el superadmin. Podés dejarlo en revisión.",
@@ -1031,9 +1081,15 @@ export const listingStatusLabel: Record<string, string> = {
  * Per-listing WhatsApp prefill: names the property and links back to it, so
  * the seller knows exactly which listing the message is about (and the
  * portal gets attribution in the chat itself).
+ *
+ * `ref` is the listing's reference code (`listingRef()` in src/lib/urls.ts,
+ * the public_id in capitals). It is the one part of the message that survives
+ * a buyer trimming the link: the operator copies it from the chat into
+ * "Registrar consulta de WhatsApp" on /admin/leads and the lead is tied to
+ * the right listing.
  */
-export function inquiryPrefillFor(brand: string, title: string, url: string): string {
-  return `Hola, vi esta propiedad en ${brand} y me interesa: ${title}\n${url}`;
+export function inquiryPrefillFor(brand: string, title: string, url: string, ref: string): string {
+  return `Hola, vi esta propiedad en ${brand} y me interesa: ${title} (Ref. ${ref})\n${url}`;
 }
 
 /** Public agent profile page (/agente/[slug]) — mirrors the agency profile. */
@@ -1826,6 +1882,30 @@ export const esMap = {
 } as const;
 
 /** Category grid: /[operacion]/[...segments]. */
+/** Singular / plural noun per property type, for counted phrases. */
+const ES_TYPE_NOUN: Record<string, readonly [string, string]> = {
+  casa: ["casa", "casas"],
+  departamento: ["departamento", "departamentos"],
+  terreno: ["terreno", "terrenos"],
+  duplex: ["dúplex", "dúplex"],
+  comercial: ["local comercial", "locales comerciales"],
+  oficina: ["oficina", "oficinas"],
+  deposito: ["depósito", "depósitos"],
+  quinta: ["quinta", "quintas"],
+};
+
+function esCountNoun(n: number, type: string | null): string {
+  const [one, many] = (type && ES_TYPE_NOUN[type]) || ["propiedad", "propiedades"];
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** "a", "a y b", "a, b y c". */
+function esList(items: string[]): string {
+  return items.length <= 1
+    ? (items[0] ?? "")
+    : `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
+}
+
 export const esCategory = {
   operationLabel: {
     venta: "venta",
@@ -1848,8 +1928,60 @@ export const esCategory = {
     `${typeLabel} en ${opLabel} en ${where}`,
   titlePaged: (title: string, page: number) => `${title} — página ${page}`,
   metaNotFound: "No encontrado",
-  metaDescription: (count: number, title: string, brand: string) =>
-    `${count} ${title.toLowerCase()} en ${brand}. Encontrá tu próxima propiedad con cuota estimada y financiamiento.`,
+  /**
+   * Count, type, place and — when the page has prices — the lowest asking
+   * price, all counted from the page's own rows. The old sentence promised a
+   * cuota on every page, which is false on rentals and on doors that show
+   * none (`showCuota()`). Under ~155 characters: the brand tail goes first.
+   */
+  metaDescription: (p: {
+    count: number;
+    type: string | null;
+    opLabel: string;
+    where: string;
+    fromPrice: string | null;
+    monthly: boolean;
+    brand: string;
+  }) => {
+    const from = p.fromPrice ? `, desde ${p.fromPrice}${p.monthly ? " por mes" : ""}` : "";
+    const head = `${esCountNoun(p.count, p.type)} en ${p.opLabel} en ${p.where}${from}.`;
+    const full = `${head} Compará precios y ubicaciones en el mapa en ${p.brand}.`;
+    return full.length <= 155 ? full : head;
+  },
+  /** "5 terrenos", "1 local comercial", "12 propiedades" — `type` null = any. */
+  countNoun: (n: number, type: string | null) => esCountNoun(n, type),
+  /**
+   * The category intro (only on indexable pages). Every clause is a count the
+   * page itself made on this door's rows; a clause with nothing true to say
+   * is left out rather than padded.
+   */
+  intro: (p: {
+    count: number;
+    type: string | null;
+    opLabel: string;
+    where: string;
+    barrioCount: number;
+  }) =>
+    `Hay ${esCountNoun(p.count, p.type)} en ${p.opLabel} en ${p.where}${
+      p.barrioCount >= 2 ? `, con avisos en ${p.barrioCount} barrios` : ""
+    }.`,
+  /** items: ["12 casas", "8 terrenos"]. */
+  introTypes: (items: string[]) => `Por tipo: ${esList(items)}.`,
+  introPrice: (p: { min: string; max: string; monthly: boolean }) =>
+    p.min === p.max
+      ? `Precio publicado: ${p.min}${p.monthly ? " por mes" : ""}.`
+      : `Precios publicados de ${p.min} a ${p.max}${p.monthly ? " por mes" : ""} (en dólares o su equivalente en guaraníes).`,
+  relatedAria: "Búsquedas relacionadas",
+  relatedTypesTitle: (place: string) => `También en ${place}`,
+  relatedBarriosTitle: (typeLabel: string | null, city: string) =>
+    typeLabel ? `${typeLabel} por barrio en ${city}` : `Por barrio en ${city}`,
+  relatedSiblingBarriosTitle: (typeLabel: string, city: string) =>
+    `${typeLabel} en otros barrios de ${city}`,
+  relatedCitiesTitle: (typeLabel: string, opLabel: string) =>
+    `${typeLabel} en ${opLabel} en otras ciudades`,
+  /** A barrio link on a page without a type: "Casas en Recoleta". */
+  relatedBarrioLink: (typeLabel: string, barrio: string) => `${typeLabel} en ${barrio}`,
+  breadcrumbLabel: "Ruta de navegación",
   breadcrumbHome: "Inicio",
   count: (n: number) => `${n} ${n === 1 ? "propiedad" : "propiedades"} disponibles.`,
   emptyTypeNotice: (typeLabel: string, opLabel: string, city: string) =>

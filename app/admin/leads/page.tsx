@@ -10,7 +10,10 @@ import {
   countLeadsByVertical,
   countRecentLeads,
   countReviewQueue,
+  leadHistoryFor,
   leadPhoneKey,
+  listLeadHistory,
+  type LeadHistoryRow,
   type AdminLeadRow,
   type LeadFollowUp,
 } from "@/lib/panel-queries";
@@ -48,12 +51,18 @@ import { isSuperAdmin } from "@/lib/auth/roles";
 import { updateLeadAction } from "./actions";
 import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
 import { esA3, type ReportReason } from "@/i18n/es-a3";
+import { esBrief } from "@/i18n/es-brief";
+import { BRIEF_SOURCE } from "@/lib/buyer-brief";
 import { OWNER_PANEL_SOURCE } from "@/lib/owner-realtor-request";
 import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
 import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
 import { LeadEmailThread } from "@/components/panel/EmailThread";
 import { leadEmailAction } from "./actions";
+import { WhatsappLeadForm } from "./WhatsappLeadForm";
+import { esWa } from "@/i18n/es-wa";
+import { WHATSAPP_MANUAL_SOURCE } from "@/lib/whatsapp-lead";
+import { currentVertical } from "@/lib/vertical-context";
 
 /** A listing report (A3): a `question` lead marked `utm.source`. */
 function isReport(lead: AdminLeadRow): boolean {
@@ -213,6 +222,65 @@ function groupByPhone(rows: AdminLeadRow[]): AdminLeadRow[][] {
   return [...groups.values()];
 }
 
+/** The lead types "Registrar consulta de WhatsApp" offers (plus "auto"). */
+const WA_FORM_TYPES = ["buyer", "renter", "seller", "valuation", "landlord", "question"];
+
+/** How many of a person's other leads a card lists before "y N más". */
+const HISTORY_SHOWN = 5;
+
+/**
+ * "También consultó por N más": the same person's other leads (same WhatsApp
+ * number or same email), each with its listing, date and door. Sliced from
+ * the page's one history query; nothing here reads the database.
+ */
+function LeadHistory({
+  lead,
+  history,
+}: {
+  lead: AdminLeadRow;
+  history: readonly LeadHistoryRow[];
+}) {
+  const others = leadHistoryFor(lead, history);
+  if (others.length === 0) return null;
+  const key = leadPhoneKey(lead.whatsapp);
+  const more = others.length - HISTORY_SHOWN;
+  return (
+    <details className="panel-card__body">
+      <summary>{esWa.historyTitle(others.length)}</summary>
+      <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+        {others.slice(0, HISTORY_SHOWN).map((h) => (
+          <li key={h.id}>
+            {h.listingTitle && h.listingPublicId && h.listingSlug ? (
+              <Link
+                href={listingUrl({ slug: h.listingSlug, publicId: h.listingPublicId })}
+                target="_blank"
+              >
+                {h.listingTitle}
+              </Link>
+            ) : (
+              <span>
+                {esWa.historyNoListing} · {LEAD_TYPE_LABEL[h.leadType] ?? h.leadType}
+              </span>
+            )}
+            {" · "}
+            {formatWhen(new Date(h.createdAt))}
+            {" · "}
+            {siteLabel(h.vertical)}
+            {h.byEmail ? ` · ${esWa.historySameEmail}` : null}
+          </li>
+        ))}
+      </ul>
+      {more > 0 ? (
+        /^\d{6,9}$/.test(key) ? (
+          <Link href={leadsHref({ tel: key })}>{esWa.historyMore(more)}</Link>
+        ) : (
+          <span>{esWa.historyMore(more)}</span>
+        )
+      ) : null}
+    </details>
+  );
+}
+
 function formatWhen(d: Date): string {
   return new Intl.DateTimeFormat("es-PY", {
     day: "2-digit",
@@ -273,7 +341,7 @@ export default async function AdminLeadsPage({
   // Which numbers on this page wrote more than once (one GROUP BY), who each
   // lead is shared with, the partners it could be shared with, and — for the
   // super-admin — how those partners answer. One query each for the page.
-  const [repeats, sharesByLead, shareTargets, board, origin, threads] = await Promise.all([
+  const [repeats, sharesByLead, shareTargets, board, origin, threads, history, door] = await Promise.all([
     countLeadsByPhoneKey(
       rows.map((r) => leadPhoneKey(r.whatsapp)),
       internalOnly,
@@ -285,7 +353,21 @@ export default async function AdminLeadsPage({
     // Email threads (wave E2) of exactly the rows this page lists — the
     // rows already carry the staff rule, so the threads inherit it.
     listLeadThreads(rows.map((r) => r.id)),
+    // Buyer history: the same people's other leads, one query for the page.
+    // Skipped on the one-number view, where every card already is the history.
+    activeTel
+      ? Promise.resolve([] as LeadHistoryRow[])
+      : listLeadHistory({
+          phoneKeys: rows.map((r) => leadPhoneKey(r.whatsapp)),
+          emails: rows.map((r) => r.email),
+          internalOnly,
+        }),
+    currentVertical(),
   ]);
+  // The doors "Registrar consulta de WhatsApp" can file a lead under.
+  const waSites = Object.entries(VERTICALS)
+    .filter(([, v]) => v.enabled)
+    .map(([host, v]) => ({ key: v.key, label: host }));
   const replyAvailable = leadEmailReplyAvailable();
   const partnerPanelUrl = `${origin}/agencia/leads`;
   // Where "Guardar" on a card sends the operator back to.
@@ -380,9 +462,19 @@ export default async function AdminLeadsPage({
                   : null}
               </span>
             ) : null}
+            {lead.utm?.source === WHATSAPP_MANUAL_SOURCE ? (
+              <span className="panel-chip panel-chip--active">
+                {esWa.sourceChip}
+              </span>
+            ) : null}
             {lead.utm?.source === "vender" ? (
               <span className="panel-chip panel-chip--active">
                 /vender
+              </span>
+            ) : null}
+            {lead.utm?.source === BRIEF_SOURCE ? (
+              <span className="panel-chip panel-chip--active">
+                {esBrief.adminBadge}
               </span>
             ) : null}
             {lead.listingTitle &&
@@ -416,8 +508,10 @@ export default async function AdminLeadsPage({
       </div>
 
       {lead.message ? (
-        <div className="panel-card__body">{lead.message}</div>
+        <div className="panel-card__body panel-card__body--message">{lead.message}</div>
       ) : null}
+
+      <LeadHistory lead={lead} history={history} />
 
       <LeadEmailThread
         messages={threads.get(lead.id) ?? []}
@@ -525,6 +619,15 @@ export default async function AdminLeadsPage({
         {recentLeads > 0 ? (
           <p className="panel-note">{esPanel.adminLeadsRecent(recentLeads)}</p>
         ) : null}
+
+        <WhatsappLeadForm
+          sites={waSites}
+          defaultSite={door.key}
+          types={WA_FORM_TYPES.map((value) => ({
+            value,
+            label: LEAD_TYPE_LABEL[value] ?? value,
+          }))}
+        />
 
         <nav className="panel-chips">
           {LEAD_TYPES.map((t) => {
