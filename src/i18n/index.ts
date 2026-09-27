@@ -65,6 +65,7 @@ import {
 } from "./es";
 import { esA5 } from "./es-a5";
 import { esInbox } from "./es-e2";
+import { esTelegram } from "./es-telegram";
 import {
   enOnboarding,
   enTranslationStatus,
@@ -119,6 +120,7 @@ import { esA4 } from "./es-a4";
 import { enA4 } from "./en-a4";
 import { esA1 } from "./es-a1";
 import { enInbox } from "./en-e2";
+import { enTelegram } from "./en-telegram";
 import { enA1 } from "./en-a1";
 import { esBrief } from "./es-brief";
 import { enBrief } from "./en-brief";
@@ -184,6 +186,7 @@ const esDictionary = {
   a1: esA1,
   email: esEmail,
   inbox: esInbox,
+  telegram: esTelegram,
   brief: esBrief,
   wa: esWa,
 } as const;
@@ -273,6 +276,7 @@ const enDictionary = {
   a1: enA1,
   email: enEmail,
   inbox: enInbox,
+  telegram: enTelegram,
   brief: enBrief,
   wa: enWa,
 } satisfies Dictionary;
