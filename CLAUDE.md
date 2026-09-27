@@ -391,6 +391,18 @@ default, `--dry` first). It records itself as a revertible import job.
     blocked", not "the site is down". Button in `/admin/operaciones`; CLI
     `npm run check:live -- --dry`. Checks in `verify:telegram`.
 
+17. **Admin insight pages (2026-09-27).** `/admin/calidad` scores every
+    published / in-review listing (`src/lib/listing-score.ts`, pure) — built on
+    `listingQualityChecks()` (`src/lib/listing-quality.ts`, the form checklist
+    agents see) plus watermarked cover, missing bedrooms and no contact, so the
+    admin score and the agent's checklist never disagree; per-agency summary,
+    worst first. `/admin/google` reads Search Console per door
+    (`src/lib/search-console.ts`, no SDK: a signed JWT, read-only scope,
+    28 days ending two days ago, cached 6 h — a failed read is never cached) and
+    shows each evergreen page's clicks/impressions/position. Off until
+    `GSC_SERVICE_ACCOUNT_JSON` is set; the page shows the setup steps. Both
+    super-admin only.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
