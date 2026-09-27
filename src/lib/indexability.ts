@@ -4,6 +4,11 @@
  * BOTH the page templates and the sitemap generator call this function.
  * Never duplicate this logic anywhere else: this rule is what separates
  * programmatic SEO from a doorway-page penalty.
+ *
+ * One curated exception (founder decision 2026-09-27, ARCHITECTURE.md §4.3):
+ * a path in the evergreen registry (`src/content/evergreen/index.ts`) is
+ * indexable at any count on its owner door. Callers pass `evergreen` from
+ * `isEvergreenPath(path, door)`; every other page keeps the rule below.
  */
 
 export type Indexability =
@@ -18,11 +23,18 @@ export interface PageSignals {
   parentIndexable?: boolean;
   /** Parent page URL for the 0-count redirect (e.g. barrio/tipo → barrio). */
   parentUrl?: string;
+  /**
+   * The page is on the evergreen registry for the door serving it. It then
+   * carries its own content (500–900 words) and a lead block, so it is not
+   * thin at 0 listings — that is the whole condition for the exception.
+   */
+  evergreen?: boolean;
 }
 
 const MIN_INDEXABLE = 3;
 
 export function getIndexability(page: PageSignals): Indexability {
+  if (page.evergreen) return { state: "index" };
   if (page.listingCount === 0) {
     return { state: "gone", redirectTo: page.parentUrl };
   }

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { atBothWidths } from "./contrast";
 
-for (const path of ["/", "/venta", "/precios"]) {
+for (const path of ["/", "/venta", "/precios", "/venta/luque/casas"]) {
   test(`small text contrast >= 4.5:1 on ${path}`, async ({ page }) => {
     expect(await atBothWidths(page, path)).toEqual([]);
   });

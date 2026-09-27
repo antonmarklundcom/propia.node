@@ -126,6 +126,8 @@ import { enAuthReset } from "./en-auth-reset";
 import { enA1 } from "./en-a1";
 import { esBrief } from "./es-brief";
 import { enBrief } from "./en-brief";
+import { esEvergreen } from "./es-evergreen";
+import { enEvergreen } from "./en-evergreen";
 import { esWa } from "./es-wa";
 import { enWa } from "./en-wa";
 
@@ -190,6 +192,7 @@ const esDictionary = {
   inbox: esInbox,
   telegram: esTelegram,
   brief: esBrief,
+  evergreen: esEvergreen,
   wa: esWa,
   authReset: esAuthReset,
 } as const;
@@ -281,6 +284,7 @@ const enDictionary = {
   inbox: enInbox,
   telegram: enTelegram,
   brief: enBrief,
+  evergreen: enEvergreen,
   wa: enWa,
   authReset: enAuthReset,
 } satisfies Dictionary;

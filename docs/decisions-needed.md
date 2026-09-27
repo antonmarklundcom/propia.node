@@ -236,3 +236,51 @@ still change it); (b) lock only once `paid_at` is set; (c) leave it open and
 make `/admin/negocios` count paid shares only on `won` deals. Recommendation:
 (a) — a closed deal is the operator's to reopen. Small change either way
 (one guard in `setPartnerDealStage` + a read-only selector).
+
+## 2026-09-27 — Evergreen pages: which door owns the land pages? (S9)
+
+`docs/seo-evergreen-keywords.md` maps 8 land searches to evergreen pages
+(`/venta/aregua/terrenos` 110, `/venta/luque/terrenos` 70, `/venta/itaugua/terrenos`
+50, `/venta/ciudad-del-este/terrenos` 50, Ypacaraí, Limpio, Encarnación,
+Capiatá). Today the same terreno grid is self-canonical on both
+`terreno.com.py` and `inmobiliaria.com.py` (`docs/plan-seo-doors-2026-09-27.md`
+§4.1), so they compete for one spot.
+
+Options: (a) the land evergreen pages live on `terreno.com.py` (land-only
+content: cuotas, loteamientos, títulos, servicios), and later
+`inmobiliaria.com.py`'s `/venta/<city>/terrenos` grids canonicalise to it
+(the `ownsCategories` flag, S8); (b) they live on `inmobiliaria.com.py` and
+`terreno.com.py` owns land guides and the national land hub instead (the
+SEO-doors plan's S1(a)).
+
+**Recommendation: (a)** — it matches the stated intent that `terreno.com.py`
+is the land specialist, every door starts at zero authority so there is no
+stronger domain to protect yet, and it is reversible with one flag. The
+registry's `door` field makes either answer a one-line change per page; no
+land page is written until this is answered.
+
+## 2026-09-27 — Places missing from the location tree (S10)
+
+The biggest land search in the keyword export, `terrenos en san bernardino`
+(210, plus ~10 variants), has no URL: San Bernardino is not in
+`src/lib/ops/location-tree.ts`. Same for Loma Pytã (an Asunción barrio; ~90
+for cheap house rentals), Emboscada, Villarrica, Caaguazú, Coronel Oviedo,
+Concepción, Atyrá — and Luque's barrios (`alquiler de casa en 4to barrio
+luque` 110; Laurelty, Yukyry, Zárate Isla, Isla Bogado, Mora Cué, Palma Loma).
+Adding a place is a small code change plus `npm run seed:locations` and
+`npm run cron:geo` on production, but its department and centroid are facts
+someone should check. Question: add San Bernardino (Cordillera) and Loma
+Pytã first? Recommendation: yes, those two — together they carry more search
+volume than any other missing place.
+
+## 2026-09-27 — Evergreen keyword map: three judgement calls to confirm
+
+1. `departamento en asuncion` (1 300/mo, no "venta"/"alquiler" in it) is put
+   on `/alquiler/asuncion/departamentos`, because every other Asunción
+   apartment cluster is rental. Swap to `/venta/asuncion/departamentos` if
+   buyers are who type it.
+2. `casas en remate en asunción` (30) sits on `/venta/asuncion/casas`, but the
+   portal has no foreclosure listings; drop it rather than imply we do?
+3. The national searches (`casas en paraguay` 210, `venta de casas baratas en
+   paraguay` 170, `terrenos baratos en paraguay` 140 …) have no indexable page
+   until decision F-f (a clean `/venta/casas` URL) is made.
