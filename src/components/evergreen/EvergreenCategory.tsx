@@ -347,9 +347,13 @@ export async function EvergreenCategory({
           {page.financing.paragraphs.map((p) => (
             <p key={p}>{p}</p>
           ))}
-          <Link className="panel-btn" href="/financiamiento">
-            {t.financingCta}
-          </Link>
+          {/* A rental page's section is about the cost of moving in; the
+              mortgage programmes only apply to a purchase. */}
+          {operation === "venta" && (
+            <Link className="panel-btn" href="/financiamiento">
+              {t.financingCta}
+            </Link>
+          )}
         </section>
 
         <section className="evg-section">

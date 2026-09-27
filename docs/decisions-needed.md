@@ -239,6 +239,10 @@ make `/admin/negocios` count paid shares only on `won` deals. Recommendation:
 
 ## 2026-09-27 — Evergreen pages: which door owns the land pages? (S9)
 
+**Answered 2026-09-27 (founder): (a), `terreno.com.py`.** The land evergreen
+pages ship on door `terreno` in evergreen PR 2. Still open: S8 (whether
+`inmobiliaria.com.py`'s `/venta/<city>/terrenos` grids canonicalise to it).
+
 `docs/seo-evergreen-keywords.md` maps 8 land searches to evergreen pages
 (`/venta/aregua/terrenos` 110, `/venta/luque/terrenos` 70, `/venta/itaugua/terrenos`
 50, `/venta/ciudad-del-este/terrenos` 50, Ypacaraí, Limpio, Encarnación,
@@ -261,6 +265,13 @@ land page is written until this is answered.
 
 ## 2026-09-27 — Places missing from the location tree (S10)
 
+**Answered 2026-09-27 (founder): yes, both.** Added to
+`src/lib/ops/location-tree.ts` in evergreen PR 2, with four evergreen pages
+(San Bernardino terrenos + casas, Loma Pytã casas + departamentos). **The
+centroids are approximate and need checking**, and production needs
+`npm run seed:locations` then `npm run cron:geo` right after the merge —
+until then those four URLs 404 while the sitemap already lists them.
+
 The biggest land search in the keyword export, `terrenos en san bernardino`
 (210, plus ~10 variants), has no URL: San Bernardino is not in
 `src/lib/ops/location-tree.ts`. Same for Loma Pytã (an Asunción barrio; ~90
@@ -274,6 +285,11 @@ Pytã first? Recommendation: yes, those two — together they carry more search
 volume than any other missing place.
 
 ## 2026-09-27 — Evergreen keyword map: three judgement calls to confirm
+
+**Answered 2026-09-27 (founder):** (1) both — `departamento en asuncion` is a
+secondary on the rental *and* the sale page, and each page targets its own
+long tail (alquiler: 1 dormitorio, monoambiente, amoblado, centro; venta:
+comprar, usados, en pozo, financiados); (2) dropped; (3) still waits on F-f.
 
 1. `departamento en asuncion` (1 300/mo, no "venta"/"alquiler" in it) is put
    on `/alquiler/asuncion/departamentos`, because every other Asunción

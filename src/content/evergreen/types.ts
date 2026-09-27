@@ -56,7 +56,12 @@ export interface EvergreenPage {
   prices: EvergreenSection;
   /** What to check before buying / renting here. */
   checklist: { title: string; intro: string; items: readonly string[] };
-  /** Links /financiamiento from the page. */
+  /**
+   * On a venta page: how the purchase gets paid for, and the page links
+   * /financiamiento. On a rental page: what it costs to move in (garantía,
+   * depósito, contrato) — no /financiamiento link, the programmes are for
+   * buyers.
+   */
   financing: EvergreenSection;
   /** 4–6 questions; also emitted as FAQPage JSON-LD. */
   faq: readonly { q: string; a: string }[];

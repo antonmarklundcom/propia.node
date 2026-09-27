@@ -166,3 +166,12 @@ it; none of them blocks a phase.
   bot's replies follow the linked user's locale, else the Telegram app's
   language. The operator's own reminder alert and the panel screens stay
   Spanish.
+
+- **Open: Ypacaraí sits under Paraguarí in the location tree (found 2026-09-27, evergreen PR 2).**
+  `src/lib/ops/location-tree.ts` lists Ypacaraí as a child of the Paraguarí
+  departamento; the town is in Central. URLs use the city slug only
+  (`/venta/ypacarai/terrenos`), so no page is wrong today, but its
+  `locations.full_slug` (`paraguari/ypacarai`) and any departamento-level
+  grouping are. Moving it changes a `full_slug` on production, so it wants a
+  look at what `seed:locations` does with a moved node before it is edited —
+  not done in this PR.
