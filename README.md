@@ -234,6 +234,19 @@ Side effect: form leads on those listings then route to the `agency` lane, not
 `npm run seed:demo-seller -- --remove` (after a `--dry`) undoes it. The English
 guides take the same shape: `npm run seed:guias-en -- --dry`, then without it.
 
+### After a deploy or an hPanel change: `npm run verify:live`
+
+```powershell
+npm run verify:live
+```
+
+Fetches every live domain and checks its canonical, hreflang, `robots.txt`,
+sitemap, redirects and health endpoints against `src/config/verticals.ts`.
+Read-only, no credentials. Needs the internet, so it is not part of
+`verify:local` or the pre-push hook. What each failure usually means (for
+example, a wrong hreflang/`x-default` ⇒ `NEXT_PUBLIC_CANONICAL_HOST` in hPanel
+is not `inmobiliaria.com.py`, fix it and rebuild): `docs/log/verify-live.md`.
+
 ## Founder-only items — still open
 
 The site is **live** on `realestateinparaguay.com` (Hostinger Node.js app,
