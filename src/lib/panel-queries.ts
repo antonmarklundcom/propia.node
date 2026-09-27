@@ -761,6 +761,100 @@ export async function countLeadsByPhoneKey(
   return new Map(rows.map((r) => [String(r.k), Number(r.n)]));
 }
 
+/** One earlier or later lead from the same person, for the history line. */
+export interface LeadHistoryRow {
+  id: number;
+  createdAt: Date;
+  vertical: string;
+  leadType: (typeof leads.$inferSelect)["leadType"];
+  /** `leadPhoneKey()` of the row's number, computed in SQL. */
+  phoneKey: string;
+  /** Lowercased, or null. */
+  email: string | null;
+  listingTitle: string | null;
+  listingPublicId: string | null;
+  listingSlug: string | null;
+}
+
+/** Cap for one page's history: 300 cards times a handful of repeats each. */
+const HISTORY_LIMIT = 1500;
+
+/**
+ * Buyer history for /admin/leads: every lead from any of the given WhatsApp
+ * numbers (by `leadPhoneKey()`) or email addresses, newest first. One query
+ * for the whole page, not one per card — `leadHistoryFor()` below slices it
+ * per lead in TS. Same scan trade as `countLeadsByPhoneKey()`: the phone key
+ * is not sargable, which the portal's lead volume affords.
+ *
+ * `internalOnly` is the staff predicate, same as every other lead read on
+ * the page: a staff user never learns of a lead in another lane.
+ */
+export async function listLeadHistory(p: {
+  phoneKeys: string[];
+  emails: (string | null)[];
+  internalOnly?: boolean;
+}): Promise<LeadHistoryRow[]> {
+  const keys = [...new Set(p.phoneKeys.filter((k) => /^\d{6,9}$/.test(k)))];
+  const emails = [
+    ...new Set(
+      p.emails
+        .map((e) => e?.trim().toLowerCase() ?? "")
+        .filter((e) => e.includes("@")),
+    ),
+  ];
+  const who = or(
+    keys.length ? inArray(PHONE_KEY_SQL, keys) : undefined,
+    emails.length ? inArray(sql`lower(${leads.email})`, emails) : undefined,
+  );
+  if (!who) return [];
+  const rows = await db
+    .select({
+      id: leads.id,
+      createdAt: leads.createdAt,
+      vertical: leads.vertical,
+      leadType: leads.leadType,
+      phoneKey: sql<string>`${PHONE_KEY_SQL}`,
+      email: sql<string | null>`lower(${leads.email})`,
+      listingTitle: listings.title,
+      listingPublicId: listings.publicId,
+      listingSlug: listings.slug,
+    })
+    .from(leads)
+    .leftJoin(listings, eq(leads.listingId, listings.id))
+    .where(and(who, p.internalOnly ? eq(leads.routedTo, "internal") : undefined))
+    .orderBy(desc(leads.createdAt))
+    .limit(HISTORY_LIMIT);
+  // A raw sql<> column is not mapped by drizzle: MariaDB hands a DATETIME
+  // back as a Date through the typed column above, and the key as a string
+  // or a number depending on the driver — normalise it here, once.
+  return rows.map((r) => ({
+    ...r,
+    phoneKey: String(r.phoneKey ?? ""),
+    email: r.email ? String(r.email) : null,
+  }));
+}
+
+/**
+ * The other leads from the same person as `lead`: same phone key, or the same
+ * email. Pure — slices the page's one history query.
+ */
+export function leadHistoryFor(
+  lead: { id: number; whatsapp: string; email: string | null },
+  history: readonly LeadHistoryRow[],
+): (LeadHistoryRow & { byEmail: boolean })[] {
+  const key = leadPhoneKey(lead.whatsapp);
+  const phoneOk = /^\d{6,9}$/.test(key);
+  const email = lead.email?.trim().toLowerCase() || null;
+  const out: (LeadHistoryRow & { byEmail: boolean })[] = [];
+  for (const h of history) {
+    if (h.id === lead.id) continue;
+    const byPhone = phoneOk && h.phoneKey === key;
+    const byEmail = !byPhone && email !== null && h.email === email;
+    if (byPhone || byEmail) out.push({ ...h, byEmail });
+  }
+  return out;
+}
+
 /** Lead count per follow-up state, for the status chips on /admin/leads. */
 export async function countLeadsByStatus(
   internalOnly = false,

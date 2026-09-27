@@ -516,6 +516,7 @@ export const esPanel = {
     "user.password": "Puso una contraseña nueva",
     "user.delete": "Borró un usuario",
     "lead.from_email": "Convirtió un email en consulta",
+    "lead.from_whatsapp": "Registró una consulta de WhatsApp",
   } as Record<string, string>,
   staffCannotPublish:
     "Publicar y borrar definitivamente quedan para el superadmin. Podés dejarlo en revisión.",
@@ -1031,9 +1032,15 @@ export const listingStatusLabel: Record<string, string> = {
  * Per-listing WhatsApp prefill: names the property and links back to it, so
  * the seller knows exactly which listing the message is about (and the
  * portal gets attribution in the chat itself).
+ *
+ * `ref` is the listing's reference code (`listingRef()` in src/lib/urls.ts,
+ * the public_id in capitals). It is the one part of the message that survives
+ * a buyer trimming the link: the operator copies it from the chat into
+ * "Registrar consulta de WhatsApp" on /admin/leads and the lead is tied to
+ * the right listing.
  */
-export function inquiryPrefillFor(brand: string, title: string, url: string): string {
-  return `Hola, vi esta propiedad en ${brand} y me interesa: ${title}\n${url}`;
+export function inquiryPrefillFor(brand: string, title: string, url: string, ref: string): string {
+  return `Hola, vi esta propiedad en ${brand} y me interesa: ${title} (Ref. ${ref})\n${url}`;
 }
 
 /** Public agent profile page (/agente/[slug]) — mirrors the agency profile. */

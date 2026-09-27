@@ -2588,8 +2588,8 @@ export const enAgencyProfile = {
     `${n === 1 ? "1 published property" : `${n} published properties`} by ${agencyName} on ${brand}.`,
 } as const;
 
-export function inquiryPrefillFor(brand: string, title: string, url: string): string {
-  return `Hello, I saw this property on ${brand} and I am interested: ${title}\n${url}`;
+export function inquiryPrefillFor(brand: string, title: string, url: string, ref: string): string {
+  return `Hello, I saw this property on ${brand} and I am interested: ${title} (Ref. ${ref})\n${url}`;
 }
 
 export function agentInquiryPrefillFor(brand: string, agentName: string, url: string): string {
