@@ -68,7 +68,7 @@ export interface LeadPayload {
  * provider means no alert, never a logged line pretending to be one.
  */
 export interface OperatorAlert {
-  kind: "new_lead" | "review_submitted" | "new_email" | "share_reminder" | "new_partner";
+  kind: "new_lead" | "review_submitted" | "new_email" | "share_reminder" | "new_partner" | "site_health";
   /** One line, already in the operator's language. */
   title: string;
   detail?: string;
@@ -304,6 +304,22 @@ export async function alertOperator(alert: OperatorAlert): Promise<void> {
     getCrm().notifyOperator(alert),
     telegramConfig() ? sendTelegram(operatorAlertText(alert)) : null,
     to ? sendOperatorEmail(to, alert) : null,
+  ]);
+}
+
+/**
+ * A site-health alert — a page that stopped loading, a server error — for the
+ * operator's phone and inbox only. Never the CRM webhook: that channel carries
+ * leads and is read by a pipeline, not a person. Same rules as
+ * `alertOperator()`: never throws, and with no channel configured nothing is
+ * sent and nothing pretends it was.
+ */
+export async function alertOperatorSystem(alert: { title: string; detail?: string; url?: string }): Promise<void> {
+  const to = operatorEmail();
+  const full: OperatorAlert = { kind: "site_health", ...alert };
+  await Promise.allSettled([
+    telegramConfig() ? sendTelegram(operatorAlertText(full)) : null,
+    to ? sendOperatorEmail(to, full) : null,
   ]);
 }
 

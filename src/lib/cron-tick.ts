@@ -30,6 +30,7 @@ import "server-only";
 import { runPartnerReminders } from "@/lib/ops/partner-reminders";
 import { runAnalytics } from "@/lib/ops/analytics";
 import { runGeo } from "@/lib/ops/geo";
+import { runLiveCheck } from "@/lib/ops/live-check";
 import { runSessions } from "@/lib/ops/sessions";
 import { runTranslate } from "@/lib/ops/translate";
 import { finishOpsRun, lastSuccessfulRunAt, startOpsRun } from "@/lib/ops/runs";
@@ -109,6 +110,13 @@ const TASKS: CronTask[] = [
       }
       return r;
     },
+  },
+  {
+    // Loads each live door's key pages once a day; alerts the operator when
+    // one stops answering 200. The same check also runs after every deploy
+    // (instrumentation.ts).
+    name: "live-check",
+    run: () => daily("check:live", () => runLiveCheck({ dry: false, reason: "revisión diaria" })),
   },
   {
     // Expired `sessions` rows; nothing a visitor reads, so no cache tag.

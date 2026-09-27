@@ -377,6 +377,20 @@ default, `--dry` first). It records itself as a revertible import job.
     logged in `/admin/historial`. Same `agency_invites` rows and `/registro`
     redemption as an agency's own `/agencia/equipo` invites.
 
+16. **Site-health alerts (2026-09-27).** `instrumentation.ts` (root, Node
+    runtime only): `onRequestError` sends a server error to the operator
+    (`alertOperatorSystem()` in `src/lib/crm.ts` — Telegram + `OPERATOR_EMAIL`,
+    never the CRM webhook), throttled in `src/lib/error-alerts.ts`; `register()`
+    runs `check:live` (`src/lib/ops/live-check.ts`) a minute after every server
+    start, i.e. after every deploy, and the hourly tick runs it once a day. It
+    loads each live door's home, evergreen paths and a sitemap sample and names
+    every non-200 (redirects included — a sitemap URL must not bounce).
+    `NOT_LIVE_YET` in that file excludes `alquiler.com.py` and
+    `landforsaleparaguay.com`: **remove a host from it the day its DNS is live.**
+    A run where every URL fails the same way says "the check is probably
+    blocked", not "the site is down". Button in `/admin/operaciones`; CLI
+    `npm run check:live -- --dry`. Checks in `verify:telegram`.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

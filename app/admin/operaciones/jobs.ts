@@ -38,6 +38,7 @@ import { runPriceUsd } from "@/lib/ops/price-usd";
 import { runMedians } from "@/lib/ops/medians";
 import { runGeo } from "@/lib/ops/geo";
 import { runAnalytics } from "@/lib/ops/analytics";
+import { runLiveCheck } from "@/lib/ops/live-check";
 import { esAnalytics } from "@/i18n/es-analytics";
 import { runFx } from "@/lib/ops/fx";
 import { runResync } from "@/lib/ops/resync";
@@ -184,6 +185,16 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runAnalytics(o),
+      revalidate: null,
+    },
+    {
+      job: "check:live",
+      label: esPanel.opsLiveCheckLabel,
+      description: esPanel.opsLiveCheckDescription,
+      writes: esPanel.opsLiveCheckWrites,
+      requiresLimit: false,
+      disabledReason: null,
+      run: (o) => runLiveCheck({ ...o, reason: "desde /admin" }),
       revalidate: null,
     },
     {
