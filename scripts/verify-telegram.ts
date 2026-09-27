@@ -26,6 +26,8 @@ import {
   telegramCopy,
   titleIn,
 } from "../src/lib/telegram-text";
+import { errorKey, planErrorAlert, resetErrorThrottle } from "../src/lib/error-alerts";
+import { liveHosts, sampleSitemap, sitemapLocs } from "../src/lib/ops/live-check";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -152,6 +154,47 @@ function main() {
   check("titleIn: English reader, not yet translated", titleIn("en", { title: "Casa", titleEn: null }) === "Casa");
   check("titleIn: Spanish reader", titleIn("es", { title: "Casa", titleEn: "House" }) === "Casa");
   check("titleIn: no listing", titleIn("en", undefined) === null);
+
+  // Server-error alerts (src/lib/error-alerts.ts): throttled, never on control flow.
+  resetErrorThrottle();
+  const ctx = { path: "/propiedad/casa-123", method: "GET", host: "inmobiliaria.com.py" };
+  const t0 = 1_000_000_000_000;
+  check("an error alerts", planErrorAlert(new Error("boom"), ctx, t0) !== null);
+  check(
+    "the same error on the same kind of page is quiet within the hour",
+    planErrorAlert(new Error("boom"), { ...ctx, path: "/propiedad/casa-456" }, t0 + 60_000) === null,
+  );
+  const again = planErrorAlert(new Error("boom"), ctx, t0 + 61 * 60_000);
+  check("…alerts again after an hour, with the repeat count", again?.detail.includes("1 veces") === true, again?.detail);
+  check(
+    "a redirect is control flow, never an alert",
+    planErrorAlert(Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;replace;/x;307;" }), ctx, t0) === null,
+  );
+  check(
+    "a notFound() is control flow, never an alert",
+    planErrorAlert(Object.assign(new Error("x"), { digest: "NEXT_HTTP_ERROR_FALLBACK;404" }), ctx, t0) === null,
+  );
+  resetErrorThrottle();
+  let sent = 0;
+  for (let i = 0; i < 30; i++) if (planErrorAlert(new Error(`bug ${"abcdefghijklmnopqrstuvwxyz"[i % 26]}${i}`), { ...ctx, path: `/p${"xyz"[i % 3]}` }, t0)) sent++;
+  check("a burst is capped: ten alerts plus one 'muted' line an hour", sent === 11, String(sent));
+  check("ids and numbers do not split one bug into many", errorKey("row 12 missing", "/a/12") === errorKey("row 99 missing", "/a/99"));
+
+  // Live check (src/lib/ops/live-check.ts): what it loads.
+  const xml = `<urlset><url><loc>https://a.com/</loc></url><url><loc>https://a.com/venta?x=1&amp;y=2</loc></url></urlset>`;
+  check("sitemap <loc> values are read and unescaped", sitemapLocs(xml).join() === "https://a.com/,https://a.com/venta?x=1&y=2");
+  const many = [
+    ...Array.from({ length: 50 }, (_, i) => `https://a.com/venta/c${i}`),
+    ...Array.from({ length: 50 }, (_, i) => `https://a.com/propiedad/p${i}`),
+    "https://b.com/venta/other-host",
+  ];
+  const picked = sampleSitemap(many, "a.com");
+  check("the sitemap sample is bounded", picked.length === 25, String(picked.length));
+  check("…holds a few listing pages", picked.filter((u) => u.includes("/propiedad/")).length === 5);
+  check("…and never another host's URL", picked.every((u) => u.startsWith("https://a.com/")));
+  const hosts = liveHosts();
+  check("unpurchased / unconfirmed doors are not checked", !hosts.includes("alquiler.com.py") && !hosts.includes("landforsaleparaguay.com"), hosts.join());
+  check("the marketplace primary is checked", hosts.includes("inmobiliaria.com.py"));
 
   console.log(
     failures === 0 ? "\nAll Telegram checks passed.\n" : `\n${failures} Telegram check(s) FAILED.\n`,

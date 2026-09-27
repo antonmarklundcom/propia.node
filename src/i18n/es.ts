@@ -866,6 +866,11 @@ export const esPanel = {
     "Borra las sesiones que ya vencieron y quedaron en la tabla. No desloguea a nadie que esté trabajando.",
   opsSessionsWrites: "Borra filas de sessions con fecha de vencimiento pasada.",
 
+  opsLiveCheckLabel: "Revisar que el sitio cargue",
+  opsLiveCheckDescription:
+    "Abre la portada, las páginas evergreen y una muestra del sitemap de cada dominio en vivo, y lista toda URL que no responda bien (404, error, redirección o sin respuesta). Corre sola después de cada deploy y una vez por día.",
+  opsLiveCheckWrites: "No escribe nada. En modo real, si algo falla, avisa por Telegram y correo (si están configurados).",
+
   opsSeedFinancingLabel: "Cargar programas de financiación",
   opsSeedFinancingDescription:
     "Vuelve a escribir las condiciones de AFD y Che Róga Porã tal como están en el código. Las tasas del código son provisorias.",

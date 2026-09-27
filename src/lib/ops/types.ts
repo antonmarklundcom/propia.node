@@ -62,6 +62,7 @@ export type OpsJob =
   | "backfill:images"
   | "crm:backfill"
   | "cron:analytics"
+  | "check:live"
   | "financing.edit";
 
 /**
