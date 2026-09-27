@@ -2637,6 +2637,7 @@ export const enGuidesPage = {
   byAuthor: (name: string) => `By ${name}`,
   updatedOn: (date: string) => `Updated ${date}`,
   keepReading: "Keep reading",
+  relatedSearches: "Browse properties",
   notFound: "Article not found",
   readCtaTitle: "From reading to searching",
   // No "estimated monthly payment": the English door does not show cuotas.

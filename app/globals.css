@@ -10747,6 +10747,26 @@ summary.panel-btn::-webkit-details-marker {
   color: var(--color-ink-secondary);
 }
 
+/* Related guides on an evergreen page, related searches on a guide. */
+.evg-guides {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.evg-guides a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.evg-guides p {
+  margin: 4px 0 0;
+  color: var(--color-ink-secondary);
+}
+
 @media (min-width: 960px) {
   .evg-hero {
     grid-template-columns: minmax(0, 1.25fr) minmax(340px, 1fr);

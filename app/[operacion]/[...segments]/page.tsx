@@ -35,7 +35,8 @@ import {
   parseTypePlural,
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
-import { evergreenPageFor, evergreenPathsFor } from "@/content/evergreen";
+import { VERTICALS } from "@/config/verticals";
+import { evergreenPageFor, evergreenPathsFor, isEvergreenPath } from "@/content/evergreen";
 import { EvergreenCategory } from "@/components/evergreen/EvergreenCategory";
 import { formatUsd } from "@/lib/format";
 import {
@@ -289,10 +290,26 @@ export async function generateMetadata({
   const indexed = ix.state === "index" && page === 1 && !userFiltered;
   // An evergreen page is indexed below the count rule, where its other-
   // language version (which follows the ordinary rule) may be a 404: pair
-  // it only while the count alone would have indexed it too.
+  // it only while the count alone would have indexed it too — or when every
+  // version in the set is itself evergreen on its door, so each one is a
+  // 200, indexable page whatever its stock.
+  const languages = indexed
+    ? await pageLanguageAlternates({
+        path: r.canonicalPath,
+        scope: "site",
+        family: vertical.family,
+      })
+    : undefined;
+  const everyVersionEvergreen =
+    !!languages &&
+    Object.values(languages).every((url) => {
+      const door = VERTICALS[new URL(url).host];
+      return !!door && isEvergreenPath(r.canonicalPath, door.key);
+    });
   const pairable =
     indexed &&
-    getIndexability({ listingCount: count, parentIndexable }).state === "index";
+    (getIndexability({ listingCount: count, parentIndexable }).state === "index" ||
+      everyVersionEvergreen);
 
   const baseTitle = evergreen?.h1 ?? r.title;
   const title = page > 1 ? t.titlePaged(baseTitle, page) : baseTitle;
@@ -316,13 +333,7 @@ export async function generateMetadata({
     description,
     alternates: {
       canonical,
-      languages: pairable
-        ? await pageLanguageAlternates({
-            path: r.canonicalPath,
-            scope: "site",
-            family: vertical.family,
-          })
-        : undefined,
+      languages: pairable ? languages : undefined,
     },
     // og:title doesn't inherit title.template, so the brand is explicit (F47).
     openGraph: { title: `${title} — ${brand}`, description, images: doorOgImages(brand) },

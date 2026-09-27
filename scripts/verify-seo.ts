@@ -64,6 +64,7 @@ import {
   evergreenWordCount,
   isEvergreenPath,
 } from "../src/content/evergreen";
+import { guidesForPage, pagesForGuide } from "../src/lib/guide-links";
 import { getIndexability } from "../src/lib/indexability";
 import { TREE, flatten } from "../src/lib/ops/location-tree";
 
@@ -1016,12 +1017,17 @@ for (const page of EVERGREEN_PAGES) {
       seededCity(shape.citySlug) &&
       (shape.kind !== "barrio-type" || seededBarrio(shape.citySlug, shape.barrioSlug)),
   );
+  // One page per URL per language: the Spanish and English doors may each
+  // carry their own version of a path (hreflang pairs them), but two doors in
+  // one language would be the duplicate the canonical tag exists to prevent.
+  const pageOwner = Object.values(VERTICALS).find((v) => v.key === page.door);
+  const pathLocale = `${pageOwner?.locale ?? "?"}|${page.path}`;
   check(
-    `(l) ${page.path} is the only keyword page for its URL`,
-    !seenPaths.has(page.path),
-    `also ${seenPaths.get(page.path)}`,
+    `(l) ${page.path} (${page.door}) is the only keyword page for its URL in its language`,
+    !seenPaths.has(pathLocale),
+    `also ${seenPaths.get(pathLocale)}`,
   );
-  seenPaths.set(page.path, page.keyword);
+  seenPaths.set(pathLocale, `${page.door}: ${page.keyword}`);
   check(
     `(l) ${page.path}'s main keyword "${page.keyword}" targets no other page`,
     !seenKeywords.has(page.keyword),
@@ -1037,25 +1043,29 @@ for (const page of EVERGREEN_PAGES) {
 
   const owner = Object.values(VERTICALS).find((v) => v.key === page.door);
   check(
-    `(l) ${page.path}'s door "${page.door}" is a Spanish door that serves marketplace pages`,
-    !!owner && owner.locale === "es" && marketplacePagesEnabled(owner.key),
-    "the content files are Spanish-only in this phase",
+    `(l) ${page.path}'s door "${page.door}" serves marketplace pages`,
+    !!owner && marketplacePagesEnabled(owner.key),
   );
 
   const keys = [...new Set(Object.values(VERTICALS).map((v) => v.key))];
+  // The doors that carry a content file for this path (one per language).
+  const pathOwners = EVERGREEN_PAGES.filter((p) => p.path === page.path)
+    .map((p) => p.door)
+    .sort()
+    .join();
   const indexableOn = keys.filter(
     (k) =>
       getIndexability({ listingCount: 0, evergreen: isEvergreenPath(page.path, k) }).state === "index",
   );
   check(
-    `(l) ${page.path} is indexable at 0 listings only on its owner door`,
-    indexableOn.join() === page.door,
+    `(l) ${page.path} is indexable at 0 listings only on the door(s) with a page for it`,
+    [...indexableOn].sort().join() === pathOwners,
     indexableOn.join(),
   );
   const inSitemapOf = keys.filter((k) => evergreenPathsFor(k).includes(page.path));
   check(
-    `(l) ${page.path} is added to its owner door's sitemap and no other's`,
-    inSitemapOf.join() === page.door,
+    `(l) ${page.path} is in the sitemap of the door(s) with a page for it and no other's`,
+    [...inSitemapOf].sort().join() === pathOwners,
     inSitemapOf.join(),
   );
 
@@ -1083,16 +1093,47 @@ for (const page of EVERGREEN_PAGES) {
   );
 }
 
+// Guides ↔ evergreen links (src/lib/guide-links.ts): relatedness from the words.
+{
+  const g = (slug: string, title: string, excerpt = "") => ({ slug, title, excerpt });
+  const guides = [
+    g("comprar-casa-luque", "Cómo comprar una casa en Luque"),
+    g("alquilar-en-asuncion", "Alquilar en Asunción: la garantía y el contrato"),
+    g("mercado", "Cómo comprar sin apuro"),
+    g("buying", "Buying property in Paraguay", "Deeds, the escribano and paying for a house"),
+  ];
+  const forLuque = guidesForPage("/venta/luque/casas", guides).map((x) => x.slug);
+  check("(l) guide links: a guide naming the city and type comes first", forLuque[0] === "comprar-casa-luque", forLuque.join());
+  check("(l) guide links: an operation word alone does not relate a guide", !forLuque.includes("mercado"), forLuque.join());
+  check(
+    "(l) guide links: a rental guide is not offered on another city's sale page",
+    !forLuque.includes("alquilar-en-asuncion"),
+    forLuque.join(),
+  );
+  check(
+    "(l) guide links: English words relate English guides",
+    guidesForPage("/venta/asuncion/casas", guides).some((x) => x.slug === "buying"),
+  );
+  const onDoor = EVERGREEN_PAGES.filter((p) => p.door === "inmobiliaria");
+  const fromGuide = pagesForGuide("Todo sobre alquilar una casa en Lambaré: garantía y contrato", onDoor).map((p) => p.path);
+  check("(l) guide links: a guide links the evergreen page it is about", fromGuide[0] === "/alquiler/lambare/casas", fromGuide.join());
+  check(
+    "(l) guide links: a guide links only its door's pages",
+    pagesForGuide("terrenos en Areguá a cuotas", onDoor).every((p) => p.door === "inmobiliaria"),
+  );
+}
+
 // No two content files share a paragraph — the whole difference between an
 // evergreen page and a doorway page with the city swapped.
 const norm = (x: string) => x.toLowerCase().replace(/\s+/g, " ").trim();
 const owners = new Map<string, string>();
 const shared: string[] = [];
 for (const page of EVERGREEN_PAGES) {
+  const id = `${page.door}${page.path}`;
   for (const para of new Set(evergreenParagraphs(page).map(norm))) {
     const other = owners.get(para);
-    if (other && other !== page.path) shared.push(`${other} & ${page.path}: "${para.slice(0, 60)}…"`);
-    owners.set(para, page.path);
+    if (other && other !== id) shared.push(`${other} & ${id}: "${para.slice(0, 60)}…"`);
+    owners.set(para, id);
   }
 }
 check("(l) no two evergreen pages share a paragraph", shared.length === 0, shared.join(" | "));

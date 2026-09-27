@@ -12,6 +12,9 @@ import { Markdown } from "@/components/Markdown";
 import { imageUrl, imageThumbUrl } from "@/lib/format";
 import { markdownToPlainText } from "@/lib/markdown";
 import { getPublishedPost } from "@/lib/post-queries";
+import { EVERGREEN_PAGES } from "@/content/evergreen";
+import { pagesForGuide } from "@/lib/guide-links";
+import { currentVertical } from "@/lib/vertical-context";
 import { currentLocale, dict } from "@/i18n/server";
 import { numberLocaleFor } from "@/i18n";
 import { CtaBand, Section } from "@/components/MarketingUI";
@@ -76,6 +79,13 @@ export default async function GuiaPage({ params }: Params) {
   if (!detail) notFound();
 
   const { post, authorName, readingMinutes, related } = detail;
+  // Evergreen pages this guide is about, among the ones this door owns
+  // (src/lib/guide-links.ts) — a link to a page indexable here.
+  const vertical = await currentVertical();
+  const searches = pagesForGuide(
+    `${post.title} ${post.excerpt ?? ""} ${post.body}`,
+    EVERGREEN_PAGES.filter((p) => p.door === vertical.key),
+  );
   const origin = await siteOrigin();
   const cover = imageUrl(post.coverR2Key);
   const published = formatDate(post.publishedAt, numberLocale);
@@ -151,6 +161,18 @@ export default async function GuiaPage({ params }: Params) {
           <Markdown source={post.body} />
         </Section>
       </article>
+
+      {searches.length > 0 && (
+        <Section width="narrow" title={c.relatedSearches}>
+          <ul className="evg-guides">
+            {searches.map((p) => (
+              <li key={p.path}>
+                <Link href={p.path}>{p.h1}</Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
 
       {related.length > 0 && (
         <Section tone="muted" title={c.keepReading}>
