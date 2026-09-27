@@ -37,6 +37,7 @@ import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verti
 import type { InventoryRow } from "./category-context";
 import { facetConds, verticalConds, publishedFacetWhere } from "./facet-sql";
 import { categoryUrl, parseOperation, parseTypePlural } from "./urls";
+import { evergreenPathsFor } from "../content/evergreen";
 import type { ListingFacets, SortOption } from "./facets";
 
 export type { SortOption } from "./facets";
@@ -143,6 +144,55 @@ export function getCategoryInventory(
   return cachedCategoryInventory(vertical.key, operation);
 }
 
+/**
+ * How many of a category's published rows fall in each USD price band — the
+ * evergreen page's price chips (`src/content/evergreen/`). Each band is the
+ * same `facetConds()` predicate a `?precio_min=&precio_max=` link applies to
+ * the grid, so a chip's count is exactly what the tap shows.
+ *
+ * Takes the vertical as a KEY (it enters the cache key, like
+ * `getCategoryInventory()`); tagged `listings`, whose writers already cover
+ * every change to what is published; ten minutes is the backstop.
+ */
+const cachedPriceBandCounts = unstable_cache(
+  async (
+    verticalKey: VerticalKey,
+    operation: Operation,
+    locationIds: number[],
+    type: PropertyType | null,
+    bands: { min?: number; max?: number }[],
+  ): Promise<number[]> => {
+    if (bands.length === 0) return [];
+    const vertical = Object.values(VERTICALS).find((v) => v.key === verticalKey) ?? null;
+    const cols: Record<string, SQL<number>> = {};
+    bands.forEach((b, i) => {
+      const cond = and(...facetConds({ priceMin: b.min, priceMax: b.max })) ?? sql`1 = 1`;
+      cols[`b${i}`] = sql<number>`coalesce(sum(case when ${cond} then 1 else 0 end), 0)`.mapWith(Number);
+    });
+    const [row] = await db
+      .select(cols)
+      .from(listings)
+      .where(publishedFacetWhere({ operation, propertyType: type ?? undefined, locationIds }, vertical));
+    return bands.map((_, i) => Number((row as Record<string, number> | undefined)?.[`b${i}`] ?? 0));
+  },
+  ["queries:priceBandCounts"],
+  { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings] },
+);
+
+export function getPriceBandCounts(
+  vertical: VerticalConfig,
+  q: { operation: Operation; locationIds: number[]; type: PropertyType | null },
+  bands: readonly { min?: number; max?: number }[],
+): Promise<number[]> {
+  return cachedPriceBandCounts(
+    vertical.key,
+    q.operation,
+    q.locationIds,
+    q.type,
+    bands.map((b) => ({ min: b.min, max: b.max })),
+  );
+}
+
 /** City and city/type destinations with real stock; no query per tile. */
 export function stockedNavigationPaths(
   inventory: Awaited<ReturnType<typeof listNavigationInventory>>,
@@ -156,9 +206,17 @@ export function stockedNavigationPaths(
   return paths;
 }
 
-/** The stocked set for chrome: null when the read fails, which keeps every link. */
+/**
+ * The stocked set for chrome: null when the read fails, which keeps every link.
+ * The door's evergreen paths (`src/content/evergreen/`) are always in it —
+ * they render 200 at any stock, so a menu link to one never dead-ends.
+ */
 export async function stockedPathsOrNull(vertical: VerticalConfig): Promise<Set<string> | null> {
-  return listNavigationInventory(vertical).then(stockedNavigationPaths).catch((err: unknown) => {
+  return listNavigationInventory(vertical).then((inventory) => {
+    const paths = stockedNavigationPaths(inventory);
+    for (const path of evergreenPathsFor(vertical.key)) paths.add(path);
+    return paths;
+  }).catch((err: unknown) => {
     logDegraded(`nav-inventory[${vertical.key}]`, err);
     return null;
   });
@@ -176,6 +234,8 @@ function isCityCategoryPath(path: string): boolean {
  * Drops links to a city or city/type category with no stock on this door:
  * that page 404s (city) or redirects to its parent (type). Everything else,
  * barrio paths included, passes unchanged; a null set keeps every link.
+ * Evergreen paths are in the stocked set (`stockedPathsOrNull()`), so they
+ * are never dropped.
  */
 export function withoutEmptyCategoryLinks<T extends { href: string }>(
   links: readonly T[],

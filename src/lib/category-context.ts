@@ -18,10 +18,12 @@
  *   apply (`src/lib/indexability.ts`), including the barrio page's
  *   parent-indexable requirement. A link into a noindex page spends a crawl on
  *   a URL we asked Google to ignore; a link into a `gone` page is a 404 or a
- *   redirect.
+ *   redirect. An evergreen page (`src/content/evergreen/`) is indexable on its
+ *   owner door at any count, so the caller hands in that door's evergreen
+ *   paths and they are linked even at 0 — with no count shown.
  */
 import { getIndexability } from "./indexability";
-import { categoryUrl } from "./urls";
+import { categoryUrl, parseCategorySegments, parseOperation } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
 
 /** One `(location, type)` cell of the door's published inventory. */
@@ -219,8 +221,26 @@ export function relatedCategoryLinks(
   rows: InventoryRow[],
   byId: Map<number, InventoryLocation>,
   page: CategoryPageRef,
+  /** Paths evergreen on this door (`evergreenPathsFor(door)`): indexable at any count. */
+  evergreen: ReadonlySet<string> = new Set(),
 ): RelatedGroups {
   const t = tally(rows, byId);
+  const linkable = (href: string, count: number, parentIndexable?: boolean) =>
+    evergreen.has(href) || indexable(count, parentIndexable);
+  // Evergreen city/type (or city) pages for this operation, by city id — the
+  // ones the tally cannot see when they have no stock.
+  const cityIdBySlug = new Map<string, number>();
+  for (const l of byId.values()) if (l.level === "ciudad") cityIdBySlug.set(l.slug, l.id);
+  const evergreenCells: { cityId: number; type: PropertyType | null; href: string }[] = [];
+  for (const href of evergreen) {
+    const [opSeg, ...rest] = href.split("/").filter(Boolean);
+    if (parseOperation(opSeg ?? "") !== page.operation) continue;
+    const shape = parseCategorySegments(rest);
+    if (!shape || shape.kind === "barrio-type") continue;
+    const cityId = cityIdBySlug.get(shape.citySlug);
+    if (cityId == null) continue;
+    evergreenCells.push({ cityId, type: shape.kind === "city-type" ? shape.type : null, href });
+  }
   const op = page.operation;
   const city = byId.get(page.cityId);
   const citySlug = city?.slug;
@@ -242,14 +262,15 @@ export function relatedCategoryLinks(
       const [cityId, type] = key.split("|") as [string, PropertyType];
       if (Number(cityId) !== page.cityId) continue;
       if (type === page.type) continue;
-      if (!indexable(n)) continue;
+      const href = categoryUrl({ operation: op, citySlug, type });
+      if (!linkable(href, n)) continue;
       if (page.type == null && page.barrioId == null && narrowsNothing(n)) continue;
-      types.push({
-        href: categoryUrl({ operation: op, citySlug, type }),
-        count: n,
-        type,
-        place: city!.name,
-      });
+      types.push({ href, count: n, type, place: city!.name });
+    }
+    for (const cell of evergreenCells) {
+      if (cell.cityId !== page.cityId || cell.type == null || cell.type === page.type) continue;
+      if (types.some((l) => l.href === cell.href)) continue;
+      types.push({ href: cell.href, count: 0, type: cell.type, place: city!.name });
     }
     types.sort((a, b) => b.count - a.count || a.href.localeCompare(b.href));
   }
@@ -268,10 +289,14 @@ export function relatedCategoryLinks(
       if (page.type != null && type !== page.type) continue;
       if (barrioId === page.barrioId) continue;
       if (narrowsNothing(n)) continue;
-      const parentIndexable = indexable(t.cityType.get(`${page.cityId}|${type}`) ?? 0);
-      if (!indexable(n, parentIndexable)) continue;
+      const parentIndexable = linkable(
+        categoryUrl({ operation: op, citySlug, type }),
+        t.cityType.get(`${page.cityId}|${type}`) ?? 0,
+      );
+      const href = categoryUrl({ operation: op, citySlug, barrioSlug: barrio.slug, type });
+      if (!linkable(href, n, parentIndexable)) continue;
       barrios.push({
-        href: categoryUrl({ operation: op, citySlug, barrioSlug: barrio.slug, type }),
+        href,
         count: n,
         type,
         place: barrio.name,
@@ -287,13 +312,22 @@ export function relatedCategoryLinks(
     for (const [key, n] of t.cityType) {
       const [cityId, type] = key.split("|");
       if (type !== page.type || Number(cityId) === page.cityId) continue;
-      if (indexable(n)) candidates.push({ id: Number(cityId), count: n });
+      const slug = byId.get(Number(cityId))?.slug;
+      const href = slug ? categoryUrl({ operation: op, citySlug: slug, type: page.type }) : "";
+      if (linkable(href, n)) candidates.push({ id: Number(cityId), count: n });
     }
   } else {
     for (const [cityId, n] of t.city) {
       if (cityId === page.cityId) continue;
-      if (indexable(n)) candidates.push({ id: cityId, count: n });
+      const slug = byId.get(cityId)?.slug;
+      const href = slug ? categoryUrl({ operation: op, citySlug: slug }) : "";
+      if (linkable(href, n)) candidates.push({ id: cityId, count: n });
     }
+  }
+  for (const cell of evergreenCells) {
+    if (cell.cityId === page.cityId || cell.type !== page.type) continue;
+    if (candidates.some((c) => c.id === cell.cityId)) continue;
+    candidates.push({ id: cell.cityId, count: 0 });
   }
   candidates.sort(byProximity(city, byId));
   const cities: RelatedLink[] = [];
@@ -309,4 +343,30 @@ export function relatedCategoryLinks(
   }
 
   return { types, barrios, cities };
+}
+
+/**
+ * Cities with stock of the page's type (every type on an untyped page) for
+ * the operation, nearest first — what an evergreen page at 0 stock shows
+ * instead of an empty grid, clearly labelled as nearby. Any count counts
+ * here: these are listings to look at, not links into thin pages.
+ */
+export function nearbyStockedCities(
+  rows: InventoryRow[],
+  byId: Map<number, InventoryLocation>,
+  page: CategoryPageRef,
+  limit = 3,
+): { id: number; count: number }[] {
+  const t = tally(rows, byId);
+  const out: { id: number; count: number }[] = [];
+  if (page.type != null) {
+    for (const [key, n] of t.cityType) {
+      const [cityId, type] = key.split("|");
+      if (type === page.type && Number(cityId) !== page.cityId && n > 0)
+        out.push({ id: Number(cityId), count: n });
+    }
+  } else {
+    for (const [cityId, n] of t.city) if (cityId !== page.cityId && n > 0) out.push({ id: cityId, count: n });
+  }
+  return out.sort(byProximity(byId.get(page.cityId), byId)).slice(0, limit);
 }

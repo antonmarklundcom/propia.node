@@ -175,6 +175,8 @@ Types pluralized (casas, departamentos, terrenos); operations as nouns
 inventory derived from `locations.listing_counts`; top ~200 pages seeded via
 `generateStaticParams`, long tail renders on first hit.
 
+### 4.3 Thin-page rule, and the evergreen exception
+
 **Thin-page rule — non-negotiable, single source of truth in
 `src/lib/indexability.ts`**, called by BOTH page templates and the sitemap
 generator: count ≥ 3 → indexable + sitemap; 1–2 → renders but
@@ -182,6 +184,25 @@ generator: count ≥ 3 → indexable + sitemap; 1–2 → renders but
 parent — a true 410 would need a route handler and buys nothing over 404 for
 deindexing. Barrio pages
 additionally require an indexable parent city page.
+
+**The evergreen exception (founder decision, 2026-09-27).** A curated list of
+category URLs — the registry in `src/content/evergreen/index.ts`, and nothing
+else — is exempt from the count rule **on its owner door only**: indexable at
+any count (0 included), rendered 200 instead of 404/redirect, in that door's
+sitemap, never dropped from its menus, and linked by the related-links module
+even with no stock. Each entry is a typed content file
+(`src/content/evergreen/<operation>-<city>-<type>.ts`) carrying 500–900 words
+of text written for that page alone, a lead block (the buyer brief) and live
+chips counted from the door's rows — which is what keeps it from being a thin
+or doorway page. The page is the existing category URL (same canonical, same
+hreflang logic — pairs emitted only while the count alone would index it). No
+new route, no schema change. Why: when 47 demo listings were deleted most
+city pages vanished; searches like "casas en venta luque" need a page that
+survives a stock of 0. **Every URL not on the registry keeps the rule above
+unchanged.** `npm run verify:seo` (block l) checks the registry: parseable
+category URLs, one page per URL and per main keyword, indexable and in the
+sitemap only on the owner door, no paragraph shared between two pages.
+Keyword map: `docs/seo-evergreen-keywords.md`.
 
 Structured data: `RealEstateListing` + `Offer` (+ `Residence`/`LandParcel`),
 `BreadcrumbList` everywhere, `ItemList` on categories, `FAQPage` on guides,

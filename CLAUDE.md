@@ -471,6 +471,38 @@ same constraint that keeps every route dynamic.
 also the zero-match category surface, and it must not become a 500 during the
 exact incident where MySQL is the thing that is unwell.
 
+## Evergreen category pages — the one exception to the thin-page rule
+
+Founder decision 2026-09-27 (ARCHITECTURE.md §4.3). **`src/content/evergreen/index.ts`
+is the only list of evergreen paths**; each entry is a typed Spanish content
+file next to it and names its owner door (`door`, a `VerticalKey`). On that
+door the path is indexable at any count, renders 200 at 0 listings (never
+`notFound()`/redirect), is in the sitemap, stays in menus
+(`stockedPathsOrNull()` adds it) and is linked by `relatedCategoryLinks()`.
+On every other door, and for every other URL, the count rule is unchanged.
+State as of PR 1: **one page, the pilot `/venta/luque/casas` on
+`inmobiliaria.com.py`**; the other 37 in `docs/seo-evergreen-keywords.md`
+wait on the founder's review of that map (and 8 land pages on decision S9 —
+which door owns land).
+
+Rules that bite:
+
+- **Everything reads the registry.** A new caller of `getIndexability()` for a
+  category passes `evergreen: isEvergreenPath(path, vertical.key)`, or the
+  page and the sitemap disagree. A barrio page's parent counts as indexable
+  when the city/type parent is evergreen — page, sitemap and related links
+  all apply that.
+- **No number in a content file.** Counts, prices and band chips come from the
+  door's rows (`getCategoryInventory()`, `getPriceBandCounts()`); `verify:seo`
+  refuses a digit in the prose. Every factual claim goes in `claimsToVerify`.
+- **No two pages share a paragraph** (`verify:seo` block l), and each carries
+  500–900 words. A template with the city swapped is the doorway pattern.
+- hreflang on an evergreen page is emitted only while the count alone would
+  index it: its English twin follows the ordinary rule and may be a 404.
+- The page body is `src/components/evergreen/EvergreenCategory.tsx`; its UI
+  strings are `esEvergreen` / `enEvergreen` (`src/i18n/es-evergreen.ts`).
+  The brief posts with `surface: "evergreen"`.
+
 ## Listing filters — one vocabulary, two files
 
 Every surface that narrows a listing set goes through the same layer. Adding a

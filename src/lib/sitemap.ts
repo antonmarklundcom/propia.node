@@ -22,6 +22,7 @@ import {
   projects,
 } from "../db/schema";
 import { getIndexability } from "./indexability";
+import { evergreenPathsFor } from "../content/evergreen";
 import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl, agencyUrl, agentUrl, parseOperation } from "./urls";
 import {
@@ -215,14 +216,20 @@ export async function buildSitemapEntries(
     }
   }
 
+  // Evergreen paths (src/content/evergreen/) are indexable at any count on
+  // their owner door — the same `evergreen` signal the page passes to
+  // getIndexability() — so they are submitted even with no stock, and they
+  // count as an indexable parent for the barrio rule below.
+  const evergreen = new Set(vertical ? evergreenPathsFor(vertical.key) : []);
+  const categoryPaths = new Set<string>();
+
   for (const [key, n] of cityCount) {
     const [op, cityId] = key.split("|");
     const city = locById.get(Number(cityId));
     if (!city) continue;
-    if (servesMarketplace && getIndexability({ listingCount: n }).state === "index") {
-      entries.push({
-        path: categoryUrl({ operation: op as Operation, citySlug: city.slug }),
-      });
+    const path = categoryUrl({ operation: op as Operation, citySlug: city.slug });
+    if (servesMarketplace && getIndexability({ listingCount: n, evergreen: evergreen.has(path) }).state === "index") {
+      categoryPaths.add(path);
     }
   }
 
@@ -231,18 +238,21 @@ export async function buildSitemapEntries(
     const [op, cityId, type] = key.split("|");
     const city = locById.get(Number(cityId));
     if (!city) continue;
-    if (getIndexability({ listingCount: n }).state === "index") {
+    const path = categoryUrl({
+      operation: op as Operation,
+      citySlug: city.slug,
+      type: type as PropertyType,
+    });
+    if (getIndexability({ listingCount: n, evergreen: evergreen.has(path) }).state === "index") {
       cityTypeIndexable.add(key);
-      if (servesMarketplace)
-      entries.push({
-        path: categoryUrl({
-          operation: op as Operation,
-          citySlug: city.slug,
-          type: type as PropertyType,
-        }),
-      });
+      if (servesMarketplace) categoryPaths.add(path);
     }
   }
+  // An evergreen city/type page with no stock is still an indexable parent.
+  const evergreenParent = (op: string, citySlug: string, type: string) =>
+    evergreen.has(
+      categoryUrl({ operation: op as Operation, citySlug, type: type as PropertyType }),
+    );
 
   for (const [key, n] of barrioTypeCount) {
     const [op, barrioId, type] = key.split("|");
@@ -255,21 +265,27 @@ export async function buildSitemapEntries(
     // all-types city page. Keying this on the city count submitted URLs the
     // template rendered noindex — Search Console's "submitted URL not
     // selected as canonical" (audit F8).
-    const parentIndexable = cityTypeIndexable.has(`${op}|${city.id}|${type}`);
+    const parentIndexable =
+      cityTypeIndexable.has(`${op}|${city.id}|${type}`) ||
+      evergreenParent(op, city.slug, type);
+    const path = categoryUrl({
+      operation: op as Operation,
+      citySlug: city.slug,
+      barrioSlug: barrio.slug,
+      type: type as PropertyType,
+    });
     if (
       servesMarketplace &&
-      getIndexability({ listingCount: n, parentIndexable }).state === "index"
+      getIndexability({ listingCount: n, parentIndexable, evergreen: evergreen.has(path) })
+        .state === "index"
     ) {
-      entries.push({
-        path: categoryUrl({
-          operation: op as Operation,
-          citySlug: city.slug,
-          barrioSlug: barrio.slug,
-          type: type as PropertyType,
-        }),
-      });
+      categoryPaths.add(path);
     }
   }
+
+  // …and the evergreen paths with no published row at all on this door.
+  if (servesMarketplace) for (const path of evergreen) categoryPaths.add(path);
+  for (const path of categoryPaths) entries.push({ path });
 
   // 3. Price pages — only cities with a defensible sample, which is the same
   //    rule the page's own robots meta applies. Sitemap and page must agree.

@@ -21,10 +21,12 @@ export function listingPage(value: string | string[] | undefined) {
   return Number.isSafeInteger(n) && n > 1 ? Math.min(n, 1000000) : 1;
 }
 /** Existing facets only; the path and the door always remain independent constraints. */
-export async function ListingBrowser({ basePath, query, searchParams, city, barrio }: {
+export async function ListingBrowser({ basePath, query, searchParams, city, barrio, hideBrief = false }: {
   basePath: string; query: CategoryQuery;
   searchParams: Record<string, string | string[] | undefined>;
   city?: LocationRow; barrio?: LocationRow | null;
+  /** The page already carries the brief (the evergreen lead block): don't render a second one. */
+  hideBrief?: boolean;
 }) {
   const [d, locale] = await Promise.all([dict(), currentLocale()]);
   const params = Object.fromEntries(Object.entries(searchParams).filter((entry): entry is [string,string] => typeof entry[1] === "string"));
@@ -69,7 +71,7 @@ export async function ListingBrowser({ basePath, query, searchParams, city, barr
     bedrooms: filters.minBedrooms,
   };
   const empty = filteredCount === 0 || listings.length === 0;
-  const brief = (surface: "empty" | "few") => <BuyerBrief locale={locale} surface={surface} prefill={briefPrefill} choices={briefChoices(door.filters)} idPrefix={`brief-${surface}`} collapsible={surface === "few"} />;
+  const brief = (surface: "empty" | "few") => hideBrief ? null : <BuyerBrief locale={locale} surface={surface} prefill={briefPrefill} choices={briefChoices(door.filters)} idPrefix={`brief-${surface}`} collapsible={surface === "few"} />;
   const typeChoices = withoutEmptyCategoryLinks(query.type && city ? [{ label: d.category.typeLabelAny, href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug })) }, ...PROPERTY_TYPES.map(type => ({ label: d.category.typeLabel[type], href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug, barrioSlug: barrio?.slug, type })) }))] : [], stocked);
   return <CategoryFilterBar basePath={basePath} params={params} locale={locale} count={filteredCount} operation={query.operation} fixedType={query.type} typeChoices={typeChoices} locations={locations} locationLabel={city ? d.filters.barrio : d.filters.city}
     viewSwitch={<nav className="view-switch" aria-label={d.category.viewSwitchLabel}>{(["lista","mapa"] as const).map(view => <a className={`view-switch__option${(view === "mapa") === mapView ? " view-switch__option--active" : ""}`} key={view} href={href({ vista: view === "mapa" ? view : undefined, page: undefined })}>{view === "mapa" ? d.category.viewMap : d.category.viewList}</a>)}</nav>}>

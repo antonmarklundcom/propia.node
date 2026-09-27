@@ -37,6 +37,8 @@ export function BuyerBrief({
   choices,
   idPrefix,
   collapsible = false,
+  title: titleOverride,
+  intro: introOverride,
 }: {
   locale: Locale;
   surface: BriefSurface;
@@ -46,6 +48,9 @@ export function BuyerBrief({
   idPrefix: string;
   /** Thin results: start as one line and a button, not a whole form. */
   collapsible?: boolean;
+  /** Heading / intro override — the evergreen page words them for its search. */
+  title?: string;
+  intro?: string;
 }) {
   const dict = getDictionary(locale);
   const t = dict.brief;
@@ -86,7 +91,7 @@ export function BuyerBrief({
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const title = surface === "few" ? t.titleFew : t.titleEmpty;
+  const title = titleOverride ?? (surface === "few" ? t.titleFew : t.titleEmpty);
   const id = (field: string) => `${idPrefix}-${field}`;
 
   async function onSubmit(e: React.FormEvent) {
@@ -172,7 +177,7 @@ export function BuyerBrief({
   return (
     <section className="buyer-brief" aria-labelledby={id("title")}>
       <h2 className="buyer-brief__title" id={id("title")}>{title}</h2>
-      <p className="buyer-brief__intro">{t.intro}</p>
+      <p className="buyer-brief__intro">{introOverride ?? t.intro}</p>
       <form className="lead-form" id={id("form")} onSubmit={onSubmit}>
         <div className="lead-form__row">
           {choices.operations.length > 1 && (

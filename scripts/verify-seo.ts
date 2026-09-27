@@ -52,7 +52,20 @@ import {
   type InventoryLocation,
   type InventoryRow,
 } from "../src/lib/category-context";
-import { categoryUrl } from "../src/lib/urls";
+import {
+  categoryUrl,
+  parseCategorySegments,
+  parseOperation,
+} from "../src/lib/urls";
+import {
+  EVERGREEN_PAGES,
+  evergreenParagraphs,
+  evergreenPathsFor,
+  evergreenWordCount,
+  isEvergreenPath,
+} from "../src/content/evergreen";
+import { getIndexability } from "../src/lib/indexability";
+import { TREE, flatten } from "../src/lib/ops/location-tree";
 
 let failures = 0;
 
@@ -965,6 +978,154 @@ check(
   factsA.minUsd === 50_000 && factsA.maxUsd === 150_000,
   `${factsA.minUsd}–${factsA.maxUsd}`,
 );
+
+
+console.log("\n(l) evergreen category pages (src/content/evergreen/, ARCHITECTURE.md §4.3)");
+
+const seededCity = (slug: string) =>
+  flatten(TREE, "").some((n) => n.level === "ciudad" && n.slug === slug);
+const seededBarrio = (citySlug: string, barrioSlug: string) =>
+  flatten(TREE, "").some(
+    (n) => n.level === "barrio" && n.slug === barrioSlug && n.parentFullSlug?.split("/").pop() === citySlug,
+  );
+
+check("(l) the registry is not empty", EVERGREEN_PAGES.length > 0);
+const seenPaths = new Map<string, string>();
+const seenKeywords = new Map<string, string>();
+for (const page of EVERGREEN_PAGES) {
+  const [opSeg, ...rest] = page.path.split("/").filter(Boolean);
+  const op = parseOperation(opSeg ?? "");
+  const shape = op ? parseCategorySegments(rest) : null;
+  const rebuilt =
+    op && shape
+      ? categoryUrl({
+          operation: op,
+          citySlug: shape.citySlug,
+          barrioSlug: shape.kind === "barrio-type" ? shape.barrioSlug : undefined,
+          type: shape.kind === "city" ? undefined : shape.type,
+        })
+      : null;
+  check(
+    `(l) ${page.path} is a parseable category URL in canonical form`,
+    rebuilt === page.path,
+    String(rebuilt),
+  );
+  check(
+    `(l) ${page.path} names a city${shape?.kind === "barrio-type" ? " and barrio" : ""} in the location tree`,
+    !!shape &&
+      seededCity(shape.citySlug) &&
+      (shape.kind !== "barrio-type" || seededBarrio(shape.citySlug, shape.barrioSlug)),
+  );
+  check(
+    `(l) ${page.path} is the only keyword page for its URL`,
+    !seenPaths.has(page.path),
+    `also ${seenPaths.get(page.path)}`,
+  );
+  seenPaths.set(page.path, page.keyword);
+  check(
+    `(l) ${page.path}'s main keyword "${page.keyword}" targets no other page`,
+    !seenKeywords.has(page.keyword),
+    `also ${seenKeywords.get(page.keyword)}`,
+  );
+  seenKeywords.set(page.keyword, page.path);
+  for (const kw of page.secondaryKeywords) {
+    check(
+      `(l) ${page.path}: secondary "${kw}" is not another page's main keyword`,
+      !seenKeywords.has(kw) || seenKeywords.get(kw) === page.path,
+    );
+  }
+
+  const owner = Object.values(VERTICALS).find((v) => v.key === page.door);
+  check(
+    `(l) ${page.path}'s door "${page.door}" is a Spanish door that serves marketplace pages`,
+    !!owner && owner.locale === "es" && marketplacePagesEnabled(owner.key),
+    "the content files are Spanish-only in this phase",
+  );
+
+  const keys = [...new Set(Object.values(VERTICALS).map((v) => v.key))];
+  const indexableOn = keys.filter(
+    (k) =>
+      getIndexability({ listingCount: 0, evergreen: isEvergreenPath(page.path, k) }).state === "index",
+  );
+  check(
+    `(l) ${page.path} is indexable at 0 listings only on its owner door`,
+    indexableOn.join() === page.door,
+    indexableOn.join(),
+  );
+  const inSitemapOf = keys.filter((k) => evergreenPathsFor(k).includes(page.path));
+  check(
+    `(l) ${page.path} is added to its owner door's sitemap and no other's`,
+    inSitemapOf.join() === page.door,
+    inSitemapOf.join(),
+  );
+
+  const words = evergreenWordCount(page);
+  check(`(l) ${page.path} carries 500–900 words of its own`, words >= 500 && words <= 900, `${words} words`);
+  check(`(l) ${page.path} has 4–6 FAQ entries`, page.faq.length >= 4 && page.faq.length <= 6, String(page.faq.length));
+  const bandsOk =
+    page.priceBands.length >= 3 &&
+    page.priceBands.length <= 4 &&
+    page.priceBands.every((b, i, all) =>
+      (b.min != null || b.max != null) &&
+      (b.min == null || b.max == null || b.min < b.max) &&
+      (i === 0 || (all[i - 1].max != null && b.min != null && b.min > all[i - 1].max!)),
+    );
+  check(`(l) ${page.path} has 3–4 ascending, non-overlapping price bands`, bandsOk);
+  check(`(l) ${page.path} lists its claims to verify`, page.claimsToVerify.length > 0);
+  check(
+    `(l) ${page.path}'s content carries no digits (numbers come from our rows)`,
+    evergreenParagraphs(page).every((x) => !/\d/.test(x)),
+  );
+  check(
+    `(l) ${page.path}'s meta description fits in 155 characters`,
+    page.metaDescription.length <= 155,
+    String(page.metaDescription.length),
+  );
+}
+
+// No two content files share a paragraph — the whole difference between an
+// evergreen page and a doorway page with the city swapped.
+const norm = (x: string) => x.toLowerCase().replace(/\s+/g, " ").trim();
+const owners = new Map<string, string>();
+const shared: string[] = [];
+for (const page of EVERGREEN_PAGES) {
+  for (const para of new Set(evergreenParagraphs(page).map(norm))) {
+    const other = owners.get(para);
+    if (other && other !== page.path) shared.push(`${other} & ${page.path}: "${para.slice(0, 60)}…"`);
+    owners.set(para, page.path);
+  }
+}
+check("(l) no two evergreen pages share a paragraph", shared.length === 0, shared.join(" | "));
+
+// The related-links module links an evergreen page even with no stock on
+// this door, and never one that is not evergreen here.
+{
+  const evLoc: InventoryLocation[] = [
+    { id: 1, name: "Ciudad X", slug: "ciudad-x", level: "ciudad", parentId: null, lat: -25, lng: -57 },
+    { id: 2, name: "Ciudad Y", slug: "ciudad-y", level: "ciudad", parentId: null, lat: -25.1, lng: -57.1 },
+  ];
+  const evById = new Map(evLoc.map((l) => [l.id, l]));
+  const evRows: InventoryRow[] = [
+    { locationId: 1, propertyType: "casa", count: 5, minUsd: 1, maxUsd: 2 },
+  ];
+  const ref: CategoryPageRef = { operation: "venta", cityId: 1, barrioId: null, type: "casa" };
+  const withEv = relatedCategoryLinks(evRows, evById, ref, new Set(["/venta/ciudad-y/casas", "/venta/ciudad-x/terrenos"]));
+  const without = relatedCategoryLinks(evRows, evById, ref);
+  check(
+    "(l) related links include an evergreen page at 0 stock (other city, same type)",
+    withEv.cities.some((l) => l.href === "/venta/ciudad-y/casas" && l.count === 0),
+    JSON.stringify(withEv.cities),
+  );
+  check(
+    "(l) …and an evergreen sibling type in the same city",
+    withEv.types.some((l) => l.href === "/venta/ciudad-x/terrenos" && l.count === 0),
+    JSON.stringify(withEv.types),
+  );
+  check(
+    "(l) …and neither when the path is not evergreen on this door",
+    without.cities.length === 0 && without.types.length === 0,
+  );
+}
 
 console.log(
   failures === 0

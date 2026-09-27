@@ -35,6 +35,8 @@ import {
   parseTypePlural,
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
+import { evergreenPageFor, evergreenPathsFor } from "@/content/evergreen";
+import { EvergreenCategory } from "@/components/evergreen/EvergreenCategory";
 import { formatUsd } from "@/lib/format";
 import {
   bestMedianFor,
@@ -141,10 +143,25 @@ const pageContext = cache(async (r: Resolved, vertical: VerticalConfig) => {
     type: r.type,
   };
   return {
+    rows,
+    byId,
     facts: categoryFacts(rows, byId, ref),
-    related: relatedCategoryLinks(rows, byId, ref),
+    related: relatedCategoryLinks(rows, byId, ref, new Set(evergreenPathsFor(vertical.key))),
   };
 });
+
+/**
+ * Whether the parent a barrio page needs indexable is: its city/type page
+ * with ≥ 3 listings on this door, or an evergreen one (indexable at any
+ * count on its owner door). The sitemap and the related links apply the
+ * same rule, so the three never disagree.
+ */
+async function barrioParentIndexable(r: Resolved, vertical: VerticalConfig): Promise<boolean | undefined> {
+  if (!r.barrio || !r.type) return undefined;
+  const parentPath = categoryUrl({ operation: r.operation, citySlug: r.city.slug, type: r.type });
+  if (evergreenPageFor(parentPath, vertical.key)) return true;
+  return (await countFor(r.operation, await subtreeIds(r.city.id), r.type, vertical)) >= 3;
+}
 
 /**
  * Where an empty typed page sends the visitor: the nearest level up that has
@@ -156,8 +173,13 @@ const pageContext = cache(async (r: Resolved, vertical: VerticalConfig) => {
 async function emptyRedirectTarget(r: Resolved, vertical: VerticalConfig): Promise<string> {
   const type = r.type!;
   const cityIds = await subtreeIds(r.city.id);
-  if (r.barrio && (await countFor(r.operation, cityIds, type, vertical)) > 0) {
-    return categoryUrl({ operation: r.operation, citySlug: r.city.slug, type });
+  const cityTypePath = categoryUrl({ operation: r.operation, citySlug: r.city.slug, type });
+  if (
+    r.barrio &&
+    (evergreenPageFor(cityTypePath, vertical.key) ||
+      (await countFor(r.operation, cityIds, type, vertical)) > 0)
+  ) {
+    return cityTypePath;
   }
   if ((await countFor(r.operation, cityIds, null, vertical)) > 0) {
     return `${categoryUrl({ operation: r.operation, citySlug: r.city.slug })}?tipo_vacio=${typePlural(type)}`;
@@ -242,18 +264,15 @@ export async function generateMetadata({
   const userFiltered = hasListingUserParams(metadataParams);
   const vertical = await currentVertical();
   const count = await countFor(r.operation, r.locationIds, r.type, vertical);
-  const parentIndexable = r.barrio
-    ? (await countFor(
-        r.operation,
-        await subtreeIds(r.city.id),
-        r.type,
-        vertical,
-      )) >= 3
-    : undefined;
+  const parentIndexable = await barrioParentIndexable(r, vertical);
+  // Evergreen (src/content/evergreen/): indexable at any count on its owner
+  // door only — `vertical.key` is the door serving this request.
+  const evergreen = evergreenPageFor(r.canonicalPath, vertical.key);
   const ix = getIndexability({
     listingCount: count,
     parentIndexable,
     parentUrl: r.parentUrl,
+    evergreen: !!evergreen,
   });
 
   // Deep pages (?page=2+) self-canonicalise and stay out of the index while
@@ -268,15 +287,22 @@ export async function generateMetadata({
   // and a thin category are both noindex here, and pairing a noindex URL with
   // its translation asks Google to weigh a page we asked it to ignore.
   const indexed = ix.state === "index" && page === 1 && !userFiltered;
+  // An evergreen page is indexed below the count rule, where its other-
+  // language version (which follows the ordinary rule) may be a 404: pair
+  // it only while the count alone would have indexed it too.
+  const pairable =
+    indexed &&
+    getIndexability({ listingCount: count, parentIndexable }).state === "index";
 
-  const title = page > 1 ? t.titlePaged(r.title, page) : r.title;
+  const baseTitle = evergreen?.h1 ?? r.title;
+  const title = page > 1 ? t.titlePaged(baseTitle, page) : baseTitle;
   // The lowest asking price comes from the same cached aggregate the intro
   // reads; `count` stays the authoritative COUNT above. A failed aggregate
   // costs the price clause, never the page.
   const facts = await pageContext(r, vertical)
     .then((c) => c.facts)
     .catch(() => null);
-  const description = t.metaDescription({
+  const description = evergreen && count === 0 ? evergreen.metaDescription : t.metaDescription({
     count,
     type: nounType(r, vertical),
     opLabel: t.operationLabel[r.operation],
@@ -290,7 +316,7 @@ export async function generateMetadata({
     description,
     alternates: {
       canonical,
-      languages: indexed
+      languages: pairable
         ? await pageLanguageAlternates({
             path: r.canonicalPath,
             scope: "site",
@@ -330,18 +356,15 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   // a visitor's price/bedroom filter must never change whether this page
   // is indexable or gate it behind the 404/redirect below.
   const count = await countFor(r.operation, r.locationIds, r.type, vertical);
-  const parentIndexable = r.barrio
-    ? (await countFor(
-        r.operation,
-        await subtreeIds(r.city.id),
-        r.type,
-        vertical,
-      )) >= 3
-    : undefined;
+  const parentIndexable = await barrioParentIndexable(r, vertical);
+  // An evergreen page renders 200 at any count on its owner door, never the
+  // 404 / redirect below (ARCHITECTURE.md §4.3).
+  const evergreen = evergreenPageFor(r.canonicalPath, vertical.key);
   const ix = getIndexability({
     listingCount: count,
     parentIndexable,
     parentUrl: r.parentUrl,
+    evergreen: !!evergreen,
   });
 
   if (ix.state === "gone") {
@@ -387,8 +410,10 @@ export default async function CategoryPage({ params, searchParams }: Params) {
 
   // The same URL-hierarchy the redirects walk: operation hub › city ›
   // city/type › barrio/type. Every ancestor holds at least this page's
-  // listings on this door, so none of them is empty (404) or a redirect.
-  const crumbs = [
+  // listings on this door, so none of them is empty (404) or a redirect —
+  // except under an evergreen page at 0 stock, whose empty ancestors are
+  // dropped below (unless evergreen themselves).
+  const allCrumbs = [
     { name: t.breadcrumbHome, url: "/" },
     { name: d.hub.copy[r.operation].label, url: `/${operationSlug(r.operation)}` },
     { name: r.city.name, url: categoryUrl({ operation: r.operation, citySlug: r.city.slug }) },
@@ -400,6 +425,28 @@ export default async function CategoryPage({ params, searchParams }: Params) {
       : []),
     ...(r.barrio ? [{ name: r.barrio.name, url: r.canonicalPath }] : []),
   ];
+  const cityIdsForCrumbs = await subtreeIds(r.city.id);
+  const ancestorEmpty = async (url: string): Promise<boolean> => {
+    if (url === r.canonicalPath || evergreenPageFor(url, vertical.key)) return false;
+    const [, , , typeSeg] = url.split("/");
+    if (url.split("/").length < 3) return false; // "/" and the operation hub always render
+    const ty = typeSeg ? parseTypePlural(typeSeg) : null;
+    return (await countFor(r.operation, cityIdsForCrumbs, ty, vertical)) === 0;
+  };
+  const kept =
+    evergreen && count === 0
+      ? (
+          await Promise.all(
+            allCrumbs.map(async (c) => ((await ancestorEmpty(c.url)) ? null : c)),
+          )
+        ).filter((c): c is (typeof allCrumbs)[number] => c !== null)
+      : allCrumbs;
+  // A dropped city crumb would leave "Casas" without its place: the last
+  // crumb then carries the page's own H1.
+  const crumbs =
+    evergreen && kept.length < allCrumbs.length
+      ? kept.map((c, i) => (i === kept.length - 1 ? { ...c, name: evergreen.h1 } : c))
+      : kept;
 
   // The intro describes the canonical listing set, so it shows only where
   // that set is what the page is about: page 1, no visitor filter, indexable.
@@ -468,8 +515,116 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     }
   }
 
+  const breadcrumbs = (
+    <nav className="breadcrumb-nav category-breadcrumb" aria-label={t.breadcrumbLabel}>
+      {crumbs.map((crumb, i) => (
+        <span key={crumb.url} className="category-breadcrumb__item">
+          {i > 0 && <span aria-hidden>›</span>}
+          {i === crumbs.length - 1 ? (
+            <span className="breadcrumb-nav__current" aria-current="page">
+              {crumb.name}
+            </span>
+          ) : (
+            <Link className="breadcrumb-nav__link" href={crumb.url}>
+              {crumb.name}
+            </Link>
+          )}
+        </span>
+      ))}
+    </nav>
+  );
+
+  // Related searches: only pages indexable on this door (see
+  // src/lib/category-context.ts), so it never links into a noindex, an
+  // empty or a redirected category. An evergreen target can have no stock;
+  // it shows no count rather than a 0.
+  const related = relatedGroups.length > 0 && (
+    <nav className="category-related" aria-label={t.relatedAria}>
+      {relatedGroups.map((group) => (
+        <section key={group.key} className="category-related__group">
+          <h2 className="category-related__title">{group.title}</h2>
+          <ul className="category-related__list">
+            {group.links.map((link) => (
+              <li key={link.href}>
+                <Link className="category-related__link" href={link.href}>
+                  {link.label}
+                </Link>{" "}
+                {link.count > 0 && (
+                  <span className="category-related__count">
+                    {link.count.toLocaleString(numberLocale)}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </nav>
+  );
+
+  // Internal link module: market context for this city. Only rendered when
+  // the medians job has something defensible to show, so we never link into
+  // an empty page.
+  const pricesAside = cityHasPrices && (
+    <aside className="precios-cta">
+      <span>
+        {contextCell
+          ? d.precios.contextMedian({
+              typeLabel: t.typeLabel[contextCell.propertyType],
+              operationLabel:
+                d.precios.contextOperationLabel[contextCell.operation] ??
+                contextCell.operation,
+              city: r.city.name,
+              median:
+                contextCell.medianPriceUsd != null
+                  ? formatUsd(contextCell.medianPriceUsd, numberLocale)
+                  : "—",
+              perM2:
+                contextCell.medianPriceM2Usd != null
+                  ? formatUsd(contextCell.medianPriceM2Usd, numberLocale)
+                  : null,
+              sample: contextCell.sampleSize,
+            })
+          : d.precios.relatedPrices(r.city.name)}
+      </span>
+      <Link className="panel-btn" href={`/precios/${r.city.slug}`}>
+        {d.precios.relatedPricesCta}
+      </Link>
+    </aside>
+  );
+
+  const marketplaceClass =
+    vertical.key === "inmobiliaria" || vertical.key === "en" ? "c3b-marketplace c3b-category" : undefined;
+
+  if (evergreen) {
+    return (
+      <main
+        className={[marketplaceClass, "evg-page"].filter(Boolean).join(" ")}
+        style={{ maxWidth: 1440, margin: "0 auto", padding: "1rem" }}
+      >
+        <JsonLd data={[breadcrumbJsonLd(origin, crumbs)]} />
+        <EvergreenCategory
+          page={evergreen}
+          operation={r.operation}
+          city={r.city}
+          barrio={r.barrio}
+          type={r.type}
+          canonicalPath={r.canonicalPath}
+          locationIds={r.locationIds}
+          vertical={vertical}
+          count={count}
+          searchParams={sp}
+          inventory={context ? { rows: context.rows, byId: context.byId } : null}
+          breadcrumbs={breadcrumbs}
+          related={related}
+          pricesAside={pricesAside}
+        />
+      </main>
+    );
+  }
+
   return (
-    <main className={vertical.key === "inmobiliaria" || vertical.key === "en" ? "c3b-marketplace c3b-category" : undefined} style={{ maxWidth: 1440, margin: "0 auto", padding: "1rem" }}>
+    <main className={marketplaceClass} style={{ maxWidth: 1440, margin: "0 auto", padding: "1rem" }}>
       {ix.state === "index" && (
         <JsonLd
           data={[
@@ -478,22 +633,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         />
       )}
 
-      <nav className="breadcrumb-nav category-breadcrumb" aria-label={t.breadcrumbLabel}>
-        {crumbs.map((crumb, i) => (
-          <span key={crumb.url} className="category-breadcrumb__item">
-            {i > 0 && <span aria-hidden>›</span>}
-            {i === crumbs.length - 1 ? (
-              <span className="breadcrumb-nav__current" aria-current="page">
-                {crumb.name}
-              </span>
-            ) : (
-              <Link className="breadcrumb-nav__link" href={crumb.url}>
-                {crumb.name}
-              </Link>
-            )}
-          </span>
-        ))}
-      </nav>
+      {breadcrumbs}
 
       <h1 className="category-title">{r.title}</h1>
 
@@ -511,62 +651,9 @@ export default async function CategoryPage({ params, searchParams }: Params) {
 
       <ListingBrowser basePath={r.canonicalPath} query={baseQuery} searchParams={sp} city={r.city} barrio={r.barrio} />
 
-      {/* Related searches: only pages indexable on this door (see
-          src/lib/category-context.ts), so it never links into a noindex,
-          an empty or a redirected category. */}
-      {relatedGroups.length > 0 && (
-        <nav className="category-related" aria-label={t.relatedAria}>
-          {relatedGroups.map((group) => (
-            <section key={group.key} className="category-related__group">
-              <h2 className="category-related__title">{group.title}</h2>
-              <ul className="category-related__list">
-                {group.links.map((link) => (
-                  <li key={link.href}>
-                    <Link className="category-related__link" href={link.href}>
-                      {link.label}
-                    </Link>{" "}
-                    <span className="category-related__count">
-                      {link.count.toLocaleString(numberLocale)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </nav>
-      )}
+      {related}
 
-      {/* Internal link module: market context for this city. Only rendered
-          when the medians job has something defensible to show, so we never
-          link into an empty page. */}
-      {cityHasPrices && (
-        <aside className="precios-cta">
-          <span>
-            {contextCell
-              ? d.precios.contextMedian({
-                  typeLabel: t.typeLabel[contextCell.propertyType],
-                  operationLabel:
-                    d.precios.contextOperationLabel[contextCell.operation] ??
-                    contextCell.operation,
-                  city: r.city.name,
-                  median:
-                    contextCell.medianPriceUsd != null
-                      ? formatUsd(contextCell.medianPriceUsd, numberLocale)
-                      : "—",
-                  perM2:
-                    contextCell.medianPriceM2Usd != null
-                      ? formatUsd(contextCell.medianPriceM2Usd, numberLocale)
-                      : null,
-                  sample: contextCell.sampleSize,
-                })
-              : d.precios.relatedPrices(r.city.name)}
-          </span>
-          <Link className="panel-btn" href={`/precios/${r.city.slug}`}>
-            {d.precios.relatedPricesCta}
-          </Link>
-        </aside>
-      )}
-
+      {pricesAside}
     </main>
   );
 }
