@@ -416,7 +416,7 @@ export default async function AdminLeadsPage({
       </div>
 
       {lead.message ? (
-        <div className="panel-card__body">{lead.message}</div>
+        <div className="panel-card__body panel-card__body--message">{lead.message}</div>
       ) : null}
 
       <LeadEmailThread

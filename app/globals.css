@@ -10290,3 +10290,98 @@ summary.panel-btn::-webkit-details-marker {
 }
 @media (max-width: 480px) { .listing-browser .listing-results-grid { grid-template-columns: minmax(0,1fr); } }
 @media (prefers-reduced-motion: reduce) { .listing-spinner { animation: none; } }
+
+/* == Foreign buyer enquiry + USD-first prices (English marketplace doors) == */
+.contact-form__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-ink-secondary);
+}
+.contact-form__more {
+  border: 1px solid var(--color-border);
+}
+.contact-form__more-toggle {
+  display: list-item;
+  min-height: 44px;
+  padding: 11px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.contact-form__more-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.contact-form__more[open] > .contact-form__more-toggle {
+  border-bottom: 1px solid var(--color-border);
+}
+.contact-form__more > .contact-form__hint {
+  padding: 10px 12px 0;
+}
+.contact-form__more-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+.contact-form__select {
+  appearance: auto;
+}
+.listing-card__price-alt {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+}
+.listing-cta-bar__listed {
+  font-size: 12px;
+  color: var(--color-ink-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A lead's message keeps its line breaks (the buyer-details block, /vender's lines). */
+.panel-card__body--message {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* USD / EUR (FxSwap + CurrencySwitch): the server renders both, the
+   attribute CurrencySwitch sets on <html> decides which one shows. */
+:root:not([data-currency="eur"]) .fx--eur,
+:root[data-currency="eur"] .fx--usd {
+  display: none !important;
+}
+.currency-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--header-border, var(--color-border));
+}
+.currency-switch__btn {
+  min-width: 40px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--header-nav-color, var(--color-ink));
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.currency-switch__btn[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+.currency-switch__btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+@media (max-width: 430px) {
+  .currency-switch__btn {
+    min-width: 36px;
+    padding: 0 6px;
+  }
+}

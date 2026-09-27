@@ -6,6 +6,18 @@ it; none of them blocks a phase.
 
 ## Open
 
+- **Foreign-buyer details are not in the operator's go-look alerts (2026-09-27).**
+  The English doors' enquiry answers are folded into `leads.message`
+  (`app/api/leads/route.ts`, `src/lib/buyer-details.ts`), so they reach
+  `/admin/leads`, `/agencia/leads`, `/mis-avisos/consultas`, VenderCRM and the
+  generic webhook's `lead` event. `alertOperator()`'s Telegram / email /
+  `operator_alert` text is built from `esPanel.alertNewLeadDetail` (type, name,
+  WhatsApp, listing) and never included the message, so it does not carry them
+  either; the owner email and the partner share email leave the message out on
+  purpose. Fix, if wanted: pass the details block into `alertNewLeadDetail`.
+  Also not USD-first yet on the English doors: `/comparar`'s price row and the
+  category map's price pins still show the listed currency.
+
 - **Listing sidebar follow-up (2026-09-21): stored USD conversion.** Gs listings kept the `price_usd` of the rate they were written with (7300 on the demo rows). **Fixed in code 2026-09-22: `npm run cron:price-usd`** re-derives it from the latest `fx_rates` row (plan §4 rule); it still has to be run on production, between `cron:fx` and `cron:cuotas`. (The map pins' Spanish-only USD formatting noted here was fixed in #191: pins use the listing's own currency and the door's locale.)
 
 - **Resolved 2026-09-26: the two `previous_json` readers that assumed MySQL 8's

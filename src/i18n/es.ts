@@ -14,6 +14,16 @@ export const esPublicUi = {
   notFound: "No encontrado",
   phonePlaceholder: "0981 123 456",
   perMonth: "/mes",
+  /** A Guaraní listing's US$ equivalent, where a door leads with US$ (displayPrice()). */
+  approxPrice: (usd: string) => `≈ ${usd}`,
+  approxPriceTitle: "Equivalente aproximado en dólares; el precio publicado es en guaraníes",
+  listedPrice: (price: string) => `Precio publicado: ${price}`,
+  /** The USD / EUR switch (CurrencySwitch) — only where a door leads with US$. */
+  currencySwitchLabel: "Mostrar precios en",
+  currencyUsd: "USD",
+  currencyEur: "EUR",
+  currencyEurTitle:
+    "Montos en euros aproximados, convertidos desde dólares con un tipo de cambio que se actualiza periódicamente",
   operations: { venta: "Venta", alquiler: "Alquiler", alquiler_temporal: "Alquiler temporal" },
   propertyTypes: { casa: "Casas", departamento: "Departamentos", terreno: "Terrenos", duplex: "Dúplex", comercial: "Locales comerciales", oficina: "Oficinas", deposito: "Depósitos", quinta: "Quintas" } as Record<string, string>,
 } as const;
@@ -83,6 +93,45 @@ export const esContactForm = {
   waLinkLabel: "WhatsApp",
   phoneLinkLabel: "Ver teléfono",
   fallbackText: "No pudimos guardar tu consulta. Podes escribirle directo por WhatsApp.",
+  /**
+   * The foreign buyer's optional questions (foreignBuyerEnquiry() in
+   * src/design/sections.ts). Only the English marketplace doors render them
+   * today; this is the Spanish half of the contract, and the labels the
+   * answers are written into the lead message with (src/lib/buyer-details.ts).
+   */
+  foreign: {
+    toggle: "Agregá detalles para recibir una respuesta más rápida y mejor",
+    hint: "Todo es opcional. Ayuda al vendedor a responder lo que te importa.",
+    choose: "Elegí…",
+    countryLabel: "País de residencia",
+    countryPlaceholder: "Ej.: Argentina",
+    budgetLabel: "Presupuesto (US$)",
+    budgetUnder: (max: string) => `Hasta ${max}`,
+    budgetBetween: (min: string, max: string) => `${min} – ${max}`,
+    budgetOver: (min: string) => `Más de ${min}`,
+    timelineLabel: "¿Cuándo pensás comprar?",
+    timeline: {
+      now: "Ahora",
+      "3-6m": "En 3–6 meses",
+      "6-12m": "En 6–12 meses",
+      exploring: "Solo estoy mirando",
+    },
+    visitLabel: "¿Planeás visitar Paraguay?",
+    visitPlaceholder: "Fechas, o «todavía no»",
+    purposeLabel: "Para qué",
+    purpose: { live: "Para vivir", invest: "Inversión", retire: "Retiro", other: "Otro" },
+    contactLabel: "Contacto preferido",
+    contact: { whatsapp: "WhatsApp", email: "Email", video: "Videollamada" },
+    blockHeading: "Datos del comprador",
+    lineCountry: "País",
+    lineBudget: "Presupuesto",
+    lineTimeline: "Plazo",
+    lineVisit: "Visita a Paraguay",
+    linePurpose: "Para qué",
+    lineContact: "Contacto preferido",
+    phonePlaceholderIntl: "+54 11 2345 6789",
+    phoneHintIntl: "Con el código de país",
+  },
 } as const;
 
 /** Valuation tool (/tasacion) — the seller-side magnet. Honest by design. */
