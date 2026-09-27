@@ -120,6 +120,8 @@ import { enA4 } from "./en-a4";
 import { esA1 } from "./es-a1";
 import { enInbox } from "./en-e2";
 import { enA1 } from "./en-a1";
+import { esBrief } from "./es-brief";
+import { enBrief } from "./en-brief";
 import { esWa } from "./es-wa";
 import { enWa } from "./en-wa";
 
@@ -182,6 +184,7 @@ const esDictionary = {
   a1: esA1,
   email: esEmail,
   inbox: esInbox,
+  brief: esBrief,
   wa: esWa,
 } as const;
 
@@ -270,6 +273,7 @@ const enDictionary = {
   a1: enA1,
   email: enEmail,
   inbox: enInbox,
+  brief: enBrief,
   wa: enWa,
 } satisfies Dictionary;
 

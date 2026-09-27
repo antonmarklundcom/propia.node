@@ -51,6 +51,8 @@ import { isSuperAdmin } from "@/lib/auth/roles";
 import { updateLeadAction } from "./actions";
 import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
 import { esA3, type ReportReason } from "@/i18n/es-a3";
+import { esBrief } from "@/i18n/es-brief";
+import { BRIEF_SOURCE } from "@/lib/buyer-brief";
 import { OWNER_PANEL_SOURCE } from "@/lib/owner-realtor-request";
 import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
@@ -468,6 +470,11 @@ export default async function AdminLeadsPage({
             {lead.utm?.source === "vender" ? (
               <span className="panel-chip panel-chip--active">
                 /vender
+              </span>
+            ) : null}
+            {lead.utm?.source === BRIEF_SOURCE ? (
+              <span className="panel-chip panel-chip--active">
+                {esBrief.adminBadge}
               </span>
             ) : null}
             {lead.listingTitle &&
