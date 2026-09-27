@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { redirect } from "next/navigation";
 import { dict } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
@@ -34,6 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: `${t.metaTitle} — ${brand}`,
       description: t.metaDescription(brand),
+      images: doorOgImages(brand),
     },
   };
 }

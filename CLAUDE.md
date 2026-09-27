@@ -118,6 +118,18 @@ How to read it, and the one mistake to avoid:
   and Next appends `" — <brand>"`. Do not put the brand back into a page's own
   title — it will double. OG titles do *not* inherit the template, so those
   spell the brand out.
+- **Link previews (og:image) are rendered per door** (2026-09-27):
+  `/api/og/door` (brand, tagline, the door's theme colours) and
+  `/api/og/listing/[publicId]` (cover photo, locale-aware title, price, place,
+  brand; published rows only), both in `src/lib/og-image.tsx` — route
+  handlers, not `opengraph-image.tsx`, so the Host header picks the brand.
+  The layout's `openGraph` uses the door card, but **a page that sets its own
+  `openGraph` replaces the layout's wholesale** — pass
+  `images: doorOgImages(brand)` (`src/lib/og-urls.ts`) or it shares as a bare
+  link. One render at a time per process, 4 in flight, 40 per IP per 5 min,
+  JPEG (WhatsApp drops big images), a day-long Cache-Control; bump
+  `OG_IMAGE_VERSION` when the design changes. Text passes through `ogText()`
+  so the renderer never fetches a fallback font from a third party.
 - Copy that names the brand is brand-parameterised, not constant:
   `faqSections(brand)`, `esSiteNotice.body(brand)`, `esPrecios.methodBody(brand)`,
   `inquiryPrefillFor(brand, …)`, and friends.

@@ -2,6 +2,7 @@ import { numberLocaleFor } from "@/i18n";
 import type { Dictionary } from "@/i18n";
 import { dict, currentLocale } from "@/i18n/server";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
@@ -29,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: c.metaTitle,
     description: c.description,
     alternates: { canonical: `${await siteOrigin()}/proyectos` },
-    openGraph: { title: `${c.title} — ${brand}`, description: c.description },
+    openGraph: { title: `${c.title} — ${brand}`, description: c.description, images: doorOgImages(brand) },
   };
 }
 

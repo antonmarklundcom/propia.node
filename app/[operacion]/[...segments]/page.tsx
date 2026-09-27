@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { dict } from "@/i18n/server";
@@ -220,7 +221,7 @@ export async function generateMetadata({
         : undefined,
     },
     // og:title doesn't inherit title.template, so the brand is explicit (F47).
-    openGraph: { title: `${title} — ${brand}`, description },
+    openGraph: { title: `${title} — ${brand}`, description, images: doorOgImages(brand) },
     robots: indexed
         ? { index: true, follow: true }
         : { index: false, follow: true },

@@ -33,6 +33,7 @@ import {
   siteOrigin,
 } from "@/lib/origin";
 import { pageLanguageAlternates } from "@/lib/alternates-server";
+import { listingOgImageUrl, OG_IMAGE_SIZE } from "@/lib/og-urls";
 import { verticalAdmits } from "@/lib/facet-sql";
 import { VERTICALS } from "@/config/verticals";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
@@ -120,7 +121,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     })
       ? allLanguages
       : undefined;
-  const cover = imageUrl(detail.images[0]?.r2Key ?? null);
+  // The branded preview card (photo, price, place, this door's brand), on the
+  // origin that served this request — a feeder's og:url canonicalises away,
+  // but the card it shows carries the feeder's own brand, like the page does.
+  const ogImage = listingOgImageUrl(
+    await siteOrigin(),
+    listing.publicId,
+    listing.updatedAt,
+  );
   return {
     title: t.metaTitle(title, formatPrice(listing, locale === "en" ? "en-US" : "es-PY")),
     description: description?.slice(0, 160) ?? title,
@@ -129,9 +137,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       // og:title doesn't inherit title.template — brand goes in by hand (F47).
       title: t.ogTitle(title, brand),
       url: canonical,
-      images: cover ? [cover] : undefined,
+      images: [{ url: ogImage, ...OG_IMAGE_SIZE, type: "image/jpeg", alt: title }],
       type: "website",
     },
+    twitter: { card: "summary_large_image" },
     // noindex only where this page is self-canonical: a feeder already
     // canonicalises away, and noindex beside a cross-domain canonical is two
     // contradicting signals.

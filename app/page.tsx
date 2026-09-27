@@ -1,6 +1,7 @@
 import { Glyph, isGlyphName } from "@/components/Glyph";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { unstable_cache } from "next/cache";
 import { dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
@@ -206,10 +207,15 @@ export async function generateMetadata(): Promise<Metadata> {
         family: vertical.family,
       }),
     },
-    // WhatsApp is how a link gets shared here, and it renders this card. 1200x630
-    // is the size every network crops to.
+    // WhatsApp is how a link gets shared here, and it renders this card: the
+    // door's own branded preview (brand, tagline, colours), 1200x630 — the size
+    // every network crops to. This object replaces the layout's openGraph, so
+    // siteName and locale are restated rather than lost.
     openGraph: {
-      images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
+      type: "website",
+      siteName: brand,
+      locale: vertical.locale === "en" ? "en_US" : "es_PY",
+      images: doorOgImages(brand),
     },
   };
 }

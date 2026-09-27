@@ -25,6 +25,7 @@ import { CompareBar } from "@/components/SavedListings";
 import { SiteNotice } from "@/components/SiteNotice";
 import { brandMeta } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
+import { doorOgImages } from "@/lib/og-urls";
 import { currentVertical } from "@/lib/vertical-context";
 import { themeFor } from "@/design/themes";
 
@@ -53,12 +54,19 @@ export async function generateMetadata(): Promise<Metadata> {
     // category tree, /precios, profiles and legal pages shared as bare links
     // (audit F7). A page's own openGraph object replaces this one wholesale —
     // pages that set one must carry their own image if they want one.
+    //
+    // The image is this door's own branded card (/api/og/door), resolved
+    // against the metadataBase above — so it is always on the domain that was
+    // asked, in that door's language and colours.
     openGraph: {
       type: "website",
       siteName: name,
       locale: locale === "en" ? "en_US" : "es_PY",
-      images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
+      images: doorOgImages(`${name} — ${tagline}`),
     },
+    // No `images` here on purpose: Next fills twitter:image from the final
+    // openGraph.images, so a page that sets its own (a listing) is followed.
+    twitter: { card: "summary_large_image" },
   };
 }
 
