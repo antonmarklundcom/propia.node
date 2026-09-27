@@ -66,6 +66,7 @@ import {
 import { esA5 } from "./es-a5";
 import { esInbox } from "./es-e2";
 import { esTelegram } from "./es-telegram";
+import { esAuthReset } from "./es-auth-reset";
 import {
   enOnboarding,
   enTranslationStatus,
@@ -121,6 +122,7 @@ import { enA4 } from "./en-a4";
 import { esA1 } from "./es-a1";
 import { enInbox } from "./en-e2";
 import { enTelegram } from "./en-telegram";
+import { enAuthReset } from "./en-auth-reset";
 import { enA1 } from "./en-a1";
 import { esBrief } from "./es-brief";
 import { enBrief } from "./en-brief";
@@ -189,6 +191,7 @@ const esDictionary = {
   telegram: esTelegram,
   brief: esBrief,
   wa: esWa,
+  authReset: esAuthReset,
 } as const;
 
 /**
@@ -279,6 +282,7 @@ const enDictionary = {
   telegram: enTelegram,
   brief: enBrief,
   wa: enWa,
+  authReset: enAuthReset,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

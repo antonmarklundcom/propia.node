@@ -6,6 +6,7 @@ import { brandName } from "@/lib/brand-server";
 import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
 import { loginAction } from "@/lib/auth/actions";
+import { isPasswordResetEnabled } from "@/lib/auth/reset-token";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = (await dict()).publicAuth;
@@ -18,11 +19,11 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; reset?: string }>;
 }) {
-  const t = (await dict()).publicAuth;
-  
-  const { error, next } = await searchParams;
+  const d = await dict();
+  const t = d.publicAuth;
+  const { error, next, reset } = await searchParams;
 
   // Already signed in → straight to the right home.
   const user = await getSessionUser();
@@ -34,6 +35,10 @@ export default async function LoginPage({
         <div className="auth-card">
           <h1 className="auth-card__title">{t.loginTitle}</h1>
           <p className="auth-card__subtitle">{t.loginSubtitle}</p>
+
+          {reset && !error ? (
+            <p className="panel-flash" role="status">{d.authReset.loginResetDone}</p>
+          ) : null}
 
           {error === "locked" ? (
             <p className="auth-error">{t.loginLocked}</p>
@@ -73,6 +78,13 @@ export default async function LoginPage({
               {t.loginSubmit}
             </button>
           </form>
+
+          {/* Only when a link can actually be delivered (AUTH_TOKEN_SECRET + email). */}
+          {isPasswordResetEnabled() ? (
+            <p className="auth-alt">
+              <Link href="/recuperar">{d.authReset.forgotLink}</Link>
+            </p>
+          ) : null}
 
           <p className="auth-alt">
             <Link href={next ? `/registro?next=${encodeURIComponent(next)}` : "/registro"}>{t.loginToRegister}</Link>

@@ -9,8 +9,15 @@
  * On success the new user is logged straight in: making someone sign up and
  * then hunt for the login form is friction with no security value.
  */
+import { after } from "next/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { esAuthReset } from "@/i18n/es-auth-reset";
+import { currentLocale } from "@/i18n/server";
+import { emailPartnerWelcome } from "@/lib/account-emails";
+import { brandName } from "@/lib/brand-server";
+import { alertOperator } from "@/lib/crm";
+import { emailLinkOrigin } from "@/lib/origin";
 import { createSession, getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
 import { safeNext } from "@/lib/auth/safe-next";
@@ -100,7 +107,55 @@ export async function registerAction(formData: FormData): Promise<void> {
 
   if (!result.ok) bounce(result.error, kind, invite, next, values);
 
+  // A new agency or independent agent is a partner the operator has to verify
+  // before sharing enquiries with them. Owners are not partners, and an
+  // invited member joins an agency that is already known — neither gets this.
+  if (kind === "agency" || kind === "independent") {
+    await notifyPartnerSignup({
+      kind,
+      name: values.name.trim(),
+      email: values.email.trim().toLowerCase(),
+      agencyName: kind === "agency" ? values.agencyName.trim() : null,
+    });
+  }
+
   await createSession(result.userId);
   // An owner's only panel is /mis-avisos (homeForRole for `consumer`).
   redirect(next ?? (kind === "owner" ? "/mis-avisos?msg=welcome" : "/agencia?msg=welcome"));
+}
+
+/**
+ * The partner's welcome email and the operator's "verify this account" alert.
+ * Both are copies of a fact already in MySQL (the account exists, unverified),
+ * so both run in `after()` and neither can fail the sign-up. `alertOperator()`
+ * is the operator's one list of channels — webhook, Telegram and
+ * `OPERATOR_EMAIL`, each only when configured — so the operator email is sent
+ * through it rather than a second time here. The welcome repeats nothing the
+ * visitor typed: the address is not verified yet.
+ */
+async function notifyPartnerSignup(p: {
+  kind: "agency" | "independent";
+  name: string;
+  email: string;
+  agencyName: string | null;
+}): Promise<void> {
+  // Read inside the request: after() runs once the headers are gone.
+  const [origin, brand, locale] = await Promise.all([
+    emailLinkOrigin(),
+    brandName(),
+    currentLocale(),
+  ]);
+  const adminUrl = `${origin}/admin/inmobiliarias`;
+  after(async () => {
+    await Promise.allSettled([
+      emailPartnerWelcome({ to: p.email, locale, brand, url: `${origin}/agencia` }),
+      alertOperator({
+        kind: "new_partner",
+        title: esAuthReset.operator.newPartnerTitle,
+        detail: esAuthReset.operator.newPartnerDetail(p),
+        url: adminUrl,
+        site: new URL(adminUrl).host,
+      }),
+    ]);
+  });
 }
