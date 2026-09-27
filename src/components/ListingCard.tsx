@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { formatPrice, formatCuota, formatUsd, formatSqft, imageThumbUrl } from "@/lib/format";
+import { displayPrice, formatPrice, formatCuota, formatUsd, formatSqft, imageThumbUrl } from "@/lib/format";
+import { usdEurRate } from "@/lib/eur-rate";
+import { FxSwap } from "@/components/FxSwap";
 import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto, isSamplePhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
 import { dict, currentLocale } from "@/i18n/server";
 import { numberLocaleFor } from "@/i18n";
 import { currentVertical } from "@/lib/vertical-context";
-import { showCuota, cardVariant, secondaryAreaUnit } from "@/design/sections";
+import { showCuota, cardVariant, secondaryAreaUnit, usdFirstPrice } from "@/design/sections";
 import { CardSaveActions } from "@/components/SavedListings";
 
 /**
@@ -97,7 +99,20 @@ async function ListingCardBody({ card }: { card: Card }) {
   }
 
   // Ficha Clara keeps the photo above a solid comparison body.
-  const { perMonth } = (await dict()).publicUi;
+  const ui = (await dict()).publicUi;
+  const perMonth = card.operation !== "venta" ? ui.perMonth : "";
+  // US$ first on the English marketplace doors, with the listed Guaraní price
+  // as a second line and an approximate EUR alternative (FxSwap); every other
+  // door gets exactly formatPrice().
+  const usdFirst = usdFirstPrice(vertical.key);
+  const price = displayPrice(card, {
+    usdFirst,
+    numberLocale,
+    approx: ui.approxPrice,
+    eurRate: usdFirst ? usdEurRate() : null,
+  });
+  const listedLine = price.listed ? ui.listedPrice(price.listed) + perMonth : null;
+  const eurListedLine = price.eur ? ui.listedPrice(price.eur.listed) + perMonth : null;
 
   return (
     <Link className="ds-photo-card listing-card listing-card--body" href={listingUrl(card)}>
@@ -144,8 +159,13 @@ async function ListingCardBody({ card }: { card: Card }) {
             resolving it here would add a query per grid. The title already
             names the barrio in practice. */}
         <div className="ds-photo-card__price listing-card__price">
-          {formatPrice(card, numberLocale)}{card.operation !== "venta" && perMonth}
+          <FxSwap usd={price.main} eur={price.eur?.main} />
+          {perMonth}
         </div>
+        {listedLine && (
+          <div className={`listing-card__price-alt${price.eur ? " fx--usd" : ""}`}>{listedLine}</div>
+        )}
+        {eurListedLine && <div className="listing-card__price-alt fx--eur">{eurListedLine}</div>}
         <div className="listing-card__title">{title}</div>
         {specs.length > 0 && (
           <div className="listing-card__specs">

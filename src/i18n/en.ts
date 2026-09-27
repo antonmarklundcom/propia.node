@@ -37,6 +37,16 @@ export const enPublicUi = {
   notFound: "Not found",
   phonePlaceholder: "0981 123 456",
   perMonth: "/month",
+  /** A Guaraní listing's US$ equivalent, where a door leads with US$ (displayPrice()). */
+  approxPrice: (usd: string) => `≈ ${usd}`,
+  approxPriceTitle: "Approximate US$ equivalent. The listed price is in guaraníes.",
+  listedPrice: (price: string) => `Listed at ${price}`,
+  /** The USD / EUR switch (CurrencySwitch) — see esPublicUi. */
+  currencySwitchLabel: "Show prices in",
+  currencyUsd: "USD",
+  currencyEur: "EUR",
+  currencyEurTitle:
+    "Euro amounts are approximate, converted from US dollars at a periodically updated rate",
   operations: { venta: "Sale", alquiler: "Rental", alquiler_temporal: "Short-term rental" },
   propertyTypes: { casa: "Houses", departamento: "Apartments", terreno: "Land", duplex: "Duplexes", comercial: "Commercial properties", oficina: "Offices", deposito: "Warehouses", quinta: "Country homes" } as Record<string, string>,
 } as const;
@@ -207,6 +217,40 @@ export const enContactForm = {
   waLinkLabel: "WhatsApp",
   phoneLinkLabel: "See phone number",
   fallbackText: "We couldn't save your inquiry. You can contact the seller directly on WhatsApp.",
+  /** The foreign buyer's optional questions — see esContactForm.foreign. */
+  foreign: {
+    toggle: "Add details to get a faster, better answer",
+    hint: "All optional. They help the seller answer what matters to you.",
+    choose: "Choose…",
+    countryLabel: "Country of residence",
+    countryPlaceholder: "e.g. Canada",
+    budgetLabel: "Budget (US$)",
+    budgetUnder: (max: string) => `Under ${max}`,
+    budgetBetween: (min: string, max: string) => `${min} – ${max}`,
+    budgetOver: (min: string) => `Over ${min}`,
+    timelineLabel: "When do you plan to buy?",
+    timeline: {
+      now: "Now",
+      "3-6m": "In 3–6 months",
+      "6-12m": "In 6–12 months",
+      exploring: "Just exploring",
+    },
+    visitLabel: "Planning a visit to Paraguay?",
+    visitPlaceholder: "Dates, or “not yet”",
+    purposeLabel: "Purpose",
+    purpose: { live: "To live in", invest: "Investment", retire: "Retirement", other: "Other" },
+    contactLabel: "Preferred contact",
+    contact: { whatsapp: "WhatsApp", email: "Email", video: "Video call" },
+    blockHeading: "Buyer details",
+    lineCountry: "Country",
+    lineBudget: "Budget",
+    lineTimeline: "Timeline",
+    lineVisit: "Visit to Paraguay",
+    linePurpose: "Purpose",
+    lineContact: "Preferred contact",
+    phonePlaceholderIntl: "+1 202 555 0143",
+    phoneHintIntl: "Include your country code",
+  },
 } as const;
 
 export const enSearchBar = {

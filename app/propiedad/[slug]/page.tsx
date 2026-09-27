@@ -18,7 +18,7 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
-import { formatPrice, formatCuota, formatUsd, formatSqft, imageUrl, imageThumbUrl } from "@/lib/format";
+import { displayPrice, formatCuota, formatUsd, formatSqft, imageUrl, imageThumbUrl } from "@/lib/format";
 import { isPlaceholderPhoto, isSamplePhoto } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -39,13 +39,23 @@ import { VERTICALS } from "@/config/verticals";
 import { getCityPrices, medianFor } from "@/lib/precios-queries";
 import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
-import { contactPrimaryFirst, showCuota, stickyMobileContactBar, secondaryAreaUnit, foreignerBox } from "@/design/sections";
+import {
+  contactPrimaryFirst,
+  showCuota,
+  stickyMobileContactBar,
+  secondaryAreaUnit,
+  foreignerBox,
+  foreignBuyerEnquiry,
+  usdFirstPrice,
+} from "@/design/sections";
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink, waPhone } from "@/lib/wa";
 import { JsonLd } from "@/components/JsonLd";
 import { Glyph, type GlyphName } from "@/components/Glyph";
 import { ListingGallery } from "@/components/ListingGallery";
 import { ContactForm } from "@/components/ContactForm";
+import { FxSwap } from "@/components/FxSwap";
+import { usdEurRate } from "@/lib/eur-rate";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
 import { PriceAlert } from "@/components/PriceAlert";
@@ -79,12 +89,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const detail = await load(slug);
   if (!detail) return { title: (await dict()).listing.metaNotFound };
   const { listing } = detail;
-  const [brand, t, locale, vertical] = await Promise.all([
+  const [brand, d, locale, vertical] = await Promise.all([
     brandName(),
-    dict().then((d) => d.listing),
+    dict(),
     currentLocale(),
     currentVertical(),
   ]);
+  const t = d.listing;
   // English requests fall back to the Spanish text when cron:translate
   // hasn't produced titleEn/descriptionEn yet — never render blank or "es"
   // copy dressed up as an English meta tag by accident.
@@ -123,7 +134,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       : undefined;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: t.metaTitle(title, formatPrice(listing, locale === "en" ? "en-US" : "es-PY")),
+    title: t.metaTitle(
+      title,
+      displayPrice(listing, {
+        usdFirst: usdFirstPrice(vertical.key),
+        numberLocale: locale === "en" ? "en-US" : "es-PY",
+        approx: d.publicUi.approxPrice,
+      }).main,
+    ),
     description: description?.slice(0, 160) ?? title,
     alternates: { canonical, languages },
     openGraph: {
@@ -208,6 +226,19 @@ export default async function ListingPage({ params }: Params) {
   }
   const vertical = await currentVertical();
   const cuota = showCuota(vertical.key) ? formatCuota(listing.cuotaGs) : null;
+  // US$ first on the English marketplace doors (a Guaraní price becomes "≈
+  // US$ …" with the listed Guaraní price beside it), with an approximate EUR
+  // alternative when USD_EUR_RATE is set; unchanged elsewhere.
+  const usdFirst = usdFirstPrice(vertical.key);
+  const price = displayPrice(listing, {
+    usdFirst,
+    numberLocale,
+    approx: d.publicUi.approxPrice,
+    eurRate: usdFirst ? usdEurRate() : null,
+  });
+  const pricePeriod = listing.operation !== "venta" ? t.priceRentPeriod : "";
+  const listedPriceLine = price.listed ? d.publicUi.listedPrice(price.listed) + pricePeriod : null;
+  const eurListedLine = price.eur ? d.publicUi.listedPrice(price.eur.listed) + pricePeriod : null;
   /**
    * Contact chain, most specific first. `ownerUser` is the FSBO tail: a
    * listing published through /publicar belongs to a person, not an agency,
@@ -221,8 +252,10 @@ export default async function ListingPage({ params }: Params) {
   const area = listing.areaM2 ?? listing.landM2;
   // English door only (guide §3/§6): "sq ft" next to every m² figure, and a
   // US$/m² line next to the native price — secondaryAreaUnit() gates both,
-  // never a vertical-key check inline. No US$/m² for a Guaraní listing: USD
-  // is never shown for a PYG-listed property (src/lib/format.ts).
+  // never a vertical-key check inline. No US$/m² for a Guaraní listing: its
+  // US$ figure is a conversion, shown only as the "≈" headline beside the
+  // listed Guaraní price (displayPrice() in src/lib/format.ts), never derived
+  // further.
   const showSqft = secondaryAreaUnit(vertical.key) === "sqft";
   const areaSqft = showSqft && area != null ? formatSqft(Number(area)) : null;
   const pricePerM2 =
@@ -407,7 +440,7 @@ export default async function ListingPage({ params }: Params) {
         entry={{
           href: listingUrl(listing),
           title,
-          price: formatPrice(listing, numberLocale),
+          price: price.main,
           operation: listing.operation,
           // realImages already excludes placeholder keys, so a listing with no
           // real photo stores no img and the card renders the fallback.
@@ -445,10 +478,25 @@ export default async function ListingPage({ params }: Params) {
         </div>
         <div className="listing-price">
           <div className="listing-price__line">
-            <span className="listing-price__amount">{formatPrice(listing, numberLocale)}</span>
-            <span className="listing-price__currency">{listing.priceCurrency === "USD" ? "USD" : "PYG"}</span>
+            <span className="listing-price__amount">
+              <FxSwap
+                usd={
+                  <span title={price.listed ? d.publicUi.approxPriceTitle : undefined}>
+                    {price.main}
+                  </span>
+                }
+                eur={price.eur && <span title={d.publicUi.currencyEurTitle}>{price.eur.main}</span>}
+              />
+            </span>
+            <span className="listing-price__currency">
+              <FxSwap usd={price.currency} eur={price.eur && d.publicUi.currencyEur} />
+            </span>
             {listing.operation !== "venta" && <span className="listing-price__period">{t.priceRentPeriod}</span>}
           </div>
+          {listedPriceLine && (
+            <span className={`listing-price__secondary${price.eur ? " fx--usd" : ""}`}>{listedPriceLine}</span>
+          )}
+          {eurListedLine && <span className="listing-price__secondary fx--eur">{eurListedLine}</span>}
           {cuota && <span className="listing-price__secondary">{d.card.cuotaLine(cuota)}</span>}
           {pricePerM2 && <span className="listing-price__secondary">{d.card.cardPerM2(pricePerM2)}</span>}
           <PriceAlert locale={locale} listingPublicId={listing.publicId} listingTitle={title} leadType={leadType} />
@@ -656,6 +704,7 @@ export default async function ListingPage({ params }: Params) {
             prefillMessage={waMessage}
             variant="card"
             locale={locale}
+            foreignBuyer={foreignBuyerEnquiry(vertical.key)}
             recipients={{
               agent: agent?.name ?? null,
               agency: agency?.name ?? null,
@@ -779,9 +828,13 @@ export default async function ListingPage({ params }: Params) {
       <div className="listing-cta-bar">
         <div className="listing-cta-bar__price">
           <span className="listing-cta-bar__amount">
-            {formatPrice(listing, numberLocale)}
-            {listing.operation !== "venta" && t.priceRentPeriod}
+            <FxSwap usd={price.main} eur={price.eur?.main} />
+            {pricePeriod}
           </span>
+          {listedPriceLine && (
+            <span className={`listing-cta-bar__listed${price.eur ? " fx--usd" : ""}`}>{listedPriceLine}</span>
+          )}
+          {eurListedLine && <span className="listing-cta-bar__listed fx--eur">{eurListedLine}</span>}
           {cuota && <span className="listing-cta-bar__cuota"><Glyph name="money" /> {cuota}</span>}
         </div>
         <div className="listing-cta-bar__actions">

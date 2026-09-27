@@ -27,6 +27,18 @@ import { currentVertical } from "@/lib/vertical-context";
 import { emailSeekerConfirmation } from "@/lib/lead-emails";
 import { isAgencyMode } from "@/lib/site-settings";
 import { esA3, REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
+import { getDictionary, numberLocaleFor } from "@/i18n";
+import { foreignBuyerEnquiry } from "@/design/sections";
+import {
+  BUYER_BUDGETS,
+  BUYER_CONTACTS,
+  BUYER_COUNTRY_MAX,
+  BUYER_PURPOSES,
+  BUYER_TIMELINES,
+  BUYER_VISIT_MAX,
+  buyerDetailsBlock,
+  buyerDetailsUtm,
+} from "@/lib/buyer-details";
 import { esBrief } from "@/i18n/es-brief";
 import { OPERATIONS, PROPERTY_TYPES, type Operation, type PropertyType } from "@/lib/import/types";
 import {
@@ -88,6 +100,24 @@ const bodySchema = z.object({
    */
   report: z
     .object({ reason: z.enum(REPORT_REASONS as [ReportReason, ...ReportReason[]]) })
+    .optional(),
+  /**
+   * The foreign buyer's optional answers (English marketplace doors,
+   * src/lib/buyer-details.ts). Every field optional and bounded; fixed choices
+   * are enums, so what lands in the message is our wording, not the client's.
+   * Honoured only on a door where `foreignBuyerEnquiry()` is true and only on
+   * a buyer enquiry about a listing — anywhere else it is dropped, not a 400.
+   */
+  buyerDetails: z
+    .object({
+      country: z.string().max(BUYER_COUNTRY_MAX).optional(),
+      budget: z.enum(BUYER_BUDGETS).optional(),
+      timeline: z.enum(BUYER_TIMELINES).optional(),
+      visit: z.string().max(BUYER_VISIT_MAX).optional(),
+      purpose: z.enum(BUYER_PURPOSES).optional(),
+      contact: z.enum(BUYER_CONTACTS).optional(),
+    })
+    .strict()
     .optional(),
   /**
    * The buyer brief ("contanos qué buscás", `src/lib/buyer-brief.ts`) from an
@@ -184,6 +214,9 @@ export async function POST(req: NextRequest) {
   }
 
   const vertical = req.headers.get("x-vertical") ?? DEFAULT_VERTICAL_KEY;
+  // The lead's own door: brand and language for the emails below, and whether
+  // the foreign buyer's answers apply here at all.
+  const door = await currentVertical();
 
   // Resolve listing context (for routing + CRM payload) if one was given.
   const listing: LeadListing | null = parsed.listingPublicId
@@ -303,15 +336,38 @@ export async function POST(req: NextRequest) {
     : brief
       ? briefLeadType(brief.operation)
       : parsed.leadType;
+
+  /**
+   * The foreign buyer's answers become a readable block under the visitor's
+   * message — the one field every reader of a lead already shows (both
+   * panels, the owner inbox, the VenderCRM and webhook copies) — plus the same
+   * answers as `buyer_*` keys in `utm`, the json the other forms mark
+   * themselves in. No column: `leads` is unchanged.
+   */
+  const buyerDetails =
+    !report && !brief && leadType === "buyer" && listing && foreignBuyerEnquiry(door.key)
+      ? parsed.buyerDetails
+      : undefined;
+  const detailsBlock = buyerDetailsBlock(
+    buyerDetails,
+    getDictionary(door.locale).contactForm.foreign,
+    numberLocaleFor(door.locale),
+  );
+  const detailsUtm = buyerDetailsUtm(buyerDetails);
+  const leadUtm = detailsUtm ? { ...(utm ?? {}), ...detailsUtm } : utm;
+
   // The brief's answers become the lead's message, in Spanish whatever the
   // door — the operator reads /admin/leads in Spanish (same rule as esPanel).
+  // Without either set of answers the message is stored exactly as sent.
   const message = brief
     ? formatBriefMessage(
         brief,
         esBrief.lead,
         "es-PY",
       ).slice(0, 2000)
-    : parsed.message;
+    : detailsBlock
+      ? [parsed.message?.trim(), detailsBlock].filter(Boolean).join("\n\n")
+      : parsed.message;
   const { leadId, payload } = await recordLead({
     leadType,
     vertical,
@@ -320,7 +376,7 @@ export async function POST(req: NextRequest) {
     whatsapp: parsed.whatsapp,
     email: parsed.email,
     message,
-    utm,
+    utm: leadUtm,
     routedTo,
   });
 
@@ -343,9 +399,8 @@ export async function POST(req: NextRequest) {
    */
   const adminUrl = `${await siteOrigin()}/admin/leads`;
   const ownerUrl = `${await siteOrigin()}/mis-avisos/consultas`;
-  // The lead's own door names the emails: brand and the seeker's language.
-  // Read here, inside the request — after() runs once the headers are gone.
-  const door = await currentVertical();
+  // The lead's own door (read above, inside the request — after() runs once
+  // the headers are gone) names the emails: brand and the seeker's language.
   const listingTitle = listing
     ? door.locale === "en"
       ? (listing.titleEn ?? listing.title)
