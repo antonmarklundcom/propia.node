@@ -755,6 +755,81 @@ export async function getListingByPublicId(
   return { listing, images, chain, agency, agent, ownerUser };
 }
 
+/** What a link-preview image of one listing needs — and nothing a draft has. */
+export interface ListingPreview {
+  publicId: string;
+  title: string;
+  titleEn: string | null;
+  operation: Operation;
+  propertyType: PropertyType;
+  priceAmount: string;
+  priceCurrency: "USD" | "PYG";
+  bedrooms: number | null;
+  bathrooms: number | null;
+  areaM2: string | null;
+  landM2: string | null;
+  coverKey: string | null;
+  chain: LocationRow[];
+}
+
+/**
+ * The lean read behind `/api/og/listing/[publicId]`: one row, its first photo
+ * and its location chain. **Published rows only** — the preview endpoint is
+ * public and takes an id, so anything looser would leak a draft's title and
+ * price to whoever guesses or kept an old link. Deliberately not cached: the
+ * image response itself carries a day-long HTTP cache, so this runs once per
+ * listing per crawler cache miss, and an uncached read has no tag to forget.
+ */
+export async function getListingPreview(
+  publicId: string,
+): Promise<ListingPreview | null> {
+  const [row] = await db
+    .select({
+      id: listings.id,
+      publicId: listings.publicId,
+      title: listings.title,
+      titleEn: listings.titleEn,
+      operation: listings.operation,
+      propertyType: listings.propertyType,
+      priceAmount: listings.priceAmount,
+      priceCurrency: listings.priceCurrency,
+      bedrooms: listings.bedrooms,
+      bathrooms: listings.bathrooms,
+      areaM2: listings.areaM2,
+      landM2: listings.landM2,
+      locationId: listings.locationId,
+    })
+    .from(listings)
+    .where(and(eq(listings.publicId, publicId), eq(listings.status, "published")))
+    .limit(1);
+  if (!row) return null;
+  const [cover, chain] = await Promise.all([
+    db
+      .select({ r2Key: listingImages.r2Key })
+      .from(listingImages)
+      .where(eq(listingImages.listingId, row.id))
+      .orderBy(asc(listingImages.position))
+      .limit(1)
+      .then((rows) => rows[0]?.r2Key ?? null),
+    locationChain(row.locationId),
+  ]);
+  return {
+    publicId: row.publicId,
+    title: row.title,
+    titleEn: row.titleEn,
+    operation: row.operation,
+    propertyType: row.propertyType,
+    priceAmount: row.priceAmount,
+    priceCurrency: row.priceCurrency,
+    bedrooms: row.bedrooms,
+    bathrooms: row.bathrooms,
+    areaM2: row.areaM2,
+    landM2: row.landM2,
+    coverKey: cover,
+    chain,
+  };
+}
+
 /** Same operación + tipo, same city subtree, excluding the listing itself. */
 export async function getSimilarListings(params: {
   excludeId: number;

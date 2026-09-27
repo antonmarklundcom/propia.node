@@ -55,6 +55,14 @@ const nextConfig: NextConfig = {
   },
   // Shared-hosting friendly: standalone output keeps the deployed footprint small.
   output: "standalone",
+  // The link-preview images (src/lib/og-image.tsx) read one font file by path
+  // at runtime, which file tracing cannot see — without this the standalone
+  // bundle would ship without it and the images fall back to the default face.
+  outputFileTracingIncludes: {
+    "/api/og/**": [
+      "./node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff",
+    ],
+  },
   experimental: {
     // Next sizes the image optimizer's sharp thread pool from the host CPU count;
     // on Hostinger shared hosting every thread counts against the account's 200 Max Processes, so pin it to 1.

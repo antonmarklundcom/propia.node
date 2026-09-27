@@ -27,6 +27,7 @@
  *   nowhere.
  */
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import { notFound, redirect } from "next/navigation";
 import { dict } from "@/i18n/server";
 import type { Locale } from "@/i18n";
@@ -107,6 +108,7 @@ export async function rentalHubMetadata(): Promise<Metadata> {
     openGraph: {
       title: `${t.hubMetaTitle} — ${brand}`,
       description: t.hubMetaDescription(brand),
+      images: doorOgImages(brand),
     },
   };
 }
@@ -154,6 +156,7 @@ export async function rentalServiceMetadata(
     openGraph: {
       title: `${c.metaTitle} — ${brand}`,
       description: c.metaDescription(brand),
+      images: doorOgImages(brand),
     },
   };
 }
@@ -226,6 +229,7 @@ export async function rentalAboutMetadata(): Promise<Metadata> {
     openGraph: {
       title: `${a.metaTitle} — ${brand}`,
       description: a.metaDescription(brand),
+      images: doorOgImages(brand),
     },
   };
 }
@@ -244,6 +248,7 @@ export async function rentalContactMetadata(): Promise<Metadata> {
     openGraph: {
       title: `${c.metaTitle} — ${brand}`,
       description: c.metaDescription(brand),
+      images: doorOgImages(brand),
     },
   };
 }

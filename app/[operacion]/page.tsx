@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
@@ -71,7 +72,7 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
       }) : undefined,
     },
     // og:title doesn't inherit title.template, so the brand is explicit (F47).
-    openGraph: { title: `${copy.h1} — ${brand}`, description: copy.lead },
+    openGraph: { title: `${copy.h1} — ${brand}`, description: copy.lead, images: doorOgImages(brand) },
   };
 }
 
