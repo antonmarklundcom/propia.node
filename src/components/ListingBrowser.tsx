@@ -12,6 +12,7 @@ import { categoryUrl, operationSlug, typePlural } from "@/lib/urls";
 import { facetSearchParams, parseFacetParams, parseLocationSlugs } from "@/lib/facets";
 import { getFilteredCategoryListings, listCities, listCityBarrios, resolveBarrio, stockedPathsOrNull, withoutEmptyCategoryLinks, type CategoryQuery, type LocationRow } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
+import { usdFirstPrice } from "@/design/sections";
 import { BuyerBrief } from "./BuyerBrief";
 import { BRIEF_FEW_RESULTS, briefChoices, type BriefPrefill } from "@/lib/buyer-brief";
 
@@ -73,7 +74,7 @@ export async function ListingBrowser({ basePath, query, searchParams, city, barr
   return <CategoryFilterBar basePath={basePath} params={params} locale={locale} count={filteredCount} operation={query.operation} fixedType={query.type} typeChoices={typeChoices} locations={locations} locationLabel={city ? d.filters.barrio : d.filters.city}
     viewSwitch={<nav className="view-switch" aria-label={d.category.viewSwitchLabel}>{(["lista","mapa"] as const).map(view => <a className={`view-switch__option${(view === "mapa") === mapView ? " view-switch__option--active" : ""}`} key={view} href={href({ vista: view === "mapa" ? view : undefined, page: undefined })}>{view === "mapa" ? d.category.viewMap : d.category.viewList}</a>)}</nav>}>
     <JsonLd data={itemListJsonLd(await listingCanonicalOrigin(), listings.map(l => ({ title: locale === "en" ? l.titleEn ?? l.title : l.title, url: listingUrl(l) })))} />
-    {mapView ? <CategoryMapLazy centerLat={Number(center?.lat ?? -25.3)} centerLng={Number(center?.lng ?? -57.6)} zoom={barrio ? 14 : city ? 12 : 8} query={mapQuery} locale={locale} /> : empty ? <><div className="filter-empty">{d.category.filterEmpty}<br /><a href={basePath}>{d.category.filterEmptyClear}</a></div>{brief("empty")}</> : <><div className="category-results listing-results-grid">{listings.map(card => <ListingCard key={card.id} card={card} />)}</div>{page === 1 && filteredCount < BRIEF_FEW_RESULTS && brief("few")}</>}
+    {mapView ? <CategoryMapLazy centerLat={Number(center?.lat ?? -25.3)} centerLng={Number(center?.lng ?? -57.6)} zoom={barrio ? 14 : city ? 12 : 8} query={mapQuery} locale={locale} usdFirst={usdFirstPrice(door.key)} /> : empty ? <><div className="filter-empty">{d.category.filterEmpty}<br /><a href={basePath}>{d.category.filterEmptyClear}</a></div>{brief("empty")}</> : <><div className="category-results listing-results-grid">{listings.map(card => <ListingCard key={card.id} card={card} />)}</div>{page === 1 && filteredCount < BRIEF_FEW_RESULTS && brief("few")}</>}
     {!mapView && filteredCount > 48 && <nav className="pagination" aria-label={d.category.paginationLabel}>
       {page > 1 && <a className="pagination__link" href={href({ page: page === 2 ? undefined : String(page - 1) })}>{d.category.paginationPrev}</a>}
       <span className="pagination__status">{d.category.paginationStatus(page,totalPages)}</span>
