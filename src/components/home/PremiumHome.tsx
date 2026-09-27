@@ -4,7 +4,7 @@ import type { VerticalConfig } from "@/config/verticals";
 import type { Dictionary, Locale } from "@/i18n";
 import { numberLocaleFor } from "@/i18n";
 import type { ListingCard as Card, LocationRow } from "@/lib/queries";
-import { listNavigationInventory, stockedNavigationPaths } from "@/lib/queries";
+import { stockedPathsOrNull } from "@/lib/queries";
 import { ListingCard } from "@/components/ListingCard";
 import { LineIcon, WhatsappGlyph } from "@/components/Glyph";
 import { Picture } from "@/components/Picture";
@@ -222,11 +222,14 @@ export async function PremiumHome({
   // lives on the home page and nowhere else, so it gets no "see all" link
   // rather than a link into a 404.
   const faqMoreHref = locale === "es" ? "/preguntas-frecuentes" : null;
-  const stockedPaths = stockedNavigationPaths(await listNavigationInventory(vertical));
+  // A failed read keeps every tile (null), the header's and footer's rule: the
+  // tiles are chrome, and a pool rejection must not 500 the whole home.
+  const stockedPaths = await stockedPathsOrNull(vertical);
+  const stocked = (href: string) => !stockedPaths || stockedPaths.has(href);
   // Filter rather than reorder: keep the curated order without empty categories.
-  const zones = zoneTiles.filter((z) => stockedPaths.has(`/venta/${z.slug}`));
+  const zones = zoneTiles.filter((z) => stocked(`/venta/${z.slug}`));
   // Projects is a separate directory, not a listing category.
-  const typeTiles = TYPE_TILES.filter((tile) => tile.key === "proyectos" || stockedPaths.has(tile.href));
+  const typeTiles = TYPE_TILES.filter((tile) => tile.key === "proyectos" || stocked(tile.href));
 
   return (
     <main className="premium-home ph-home">

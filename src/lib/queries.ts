@@ -31,7 +31,8 @@ import {
   users,
 } from "../db/schema";
 import type { Operation, PropertyType } from "./import/types";
-import { CACHE_TAGS, CACHE_TTL } from "./cache";
+import { CACHE_TAGS, CACHE_TTL, singleFlight } from "./cache";
+import { logDegraded } from "./degrade";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import type { InventoryRow } from "./category-context";
 import { facetConds, verticalConds, publishedFacetWhere } from "./facet-sql";
@@ -50,9 +51,10 @@ export type LocationRow = typeof locations.$inferSelect;
  * /tasacion and the 404 page all render a SearchBar, so before caching this
  * every one of those requests paid a round-trip for a table that only changes
  * when someone runs the seed. Cached under `locations` (src/lib/cache.ts);
- * plain scalars, so nothing to re-wrap on the way out.
+ * plain scalars, so nothing to re-wrap on the way out. Single-flighted: every
+ * door's cold home asks for the same list at once after a deploy.
  */
-const cachedCities = unstable_cache(
+const cachedCities = singleFlight("queries:listCities", unstable_cache(
   async (): Promise<Pick<LocationRow, "id" | "name" | "slug">[]> =>
     db
       .select({ id: locations.id, name: locations.name, slug: locations.slug })
@@ -61,7 +63,7 @@ const cachedCities = unstable_cache(
       .orderBy(asc(locations.name)),
   ["queries:listCities"],
   { revalidate: CACHE_TTL.locations, tags: [CACHE_TAGS.locations] },
-);
+));
 
 export async function listCities(): Promise<
   Pick<LocationRow, "id" | "name" | "slug">[]
@@ -73,8 +75,10 @@ export async function listCities(): Promise<
  * citySubtreeIds(). Counts are separate from SEO's indexability threshold.
  * The vertical object (including its key and filters) enters the cache key.
  * Existing listing writers invalidate this tag; ten minutes is the backstop.
+ * Single-flighted: the header, the footer and the home ask for it in the same
+ * render, and `unstable_cache` alone ran all three on a cold cache.
  */
-export const listNavigationInventory = unstable_cache(
+export const listNavigationInventory = singleFlight("queries:listNavigationInventory", unstable_cache(
   async (vertical: VerticalConfig) => {
     const city = alias(locations, "navigation_city");
     return db
@@ -95,7 +99,7 @@ export const listNavigationInventory = unstable_cache(
   },
   ["queries:listNavigationInventory"],
   { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings, CACHE_TAGS.locations] },
-);
+));
 
 /**
  * The door's published inventory for one operation, grouped by
@@ -154,7 +158,10 @@ export function stockedNavigationPaths(
 
 /** The stocked set for chrome: null when the read fails, which keeps every link. */
 export async function stockedPathsOrNull(vertical: VerticalConfig): Promise<Set<string> | null> {
-  return listNavigationInventory(vertical).then(stockedNavigationPaths).catch(() => null);
+  return listNavigationInventory(vertical).then(stockedNavigationPaths).catch((err: unknown) => {
+    logDegraded(`nav-inventory[${vertical.key}]`, err);
+    return null;
+  });
 }
 
 /** /{operacion}/{ciudad} or /{operacion}/{ciudad}/{tipo}: the two shapes stockedNavigationPaths() knows. */
