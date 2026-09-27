@@ -122,6 +122,8 @@ import { enInbox } from "./en-e2";
 import { enA1 } from "./en-a1";
 import { esBrief } from "./es-brief";
 import { enBrief } from "./en-brief";
+import { esWa } from "./es-wa";
+import { enWa } from "./en-wa";
 
 export type Locale = "es" | "en";
 
@@ -183,6 +185,7 @@ const esDictionary = {
   email: esEmail,
   inbox: esInbox,
   brief: esBrief,
+  wa: esWa,
 } as const;
 
 /**
@@ -271,6 +274,7 @@ const enDictionary = {
   email: enEmail,
   inbox: enInbox,
   brief: enBrief,
+  wa: enWa,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

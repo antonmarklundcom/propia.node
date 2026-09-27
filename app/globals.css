@@ -1832,6 +1832,66 @@ body {
   font-size: 14px;
 }
 
+/* Category pages: visible trail, data-driven intro and related searches.
+   The trail reuses .breadcrumb-nav (listing detail) so both read alike. */
+.category-breadcrumb {
+  margin-bottom: 8px;
+}
+
+.category-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-intro {
+  max-width: 72ch;
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-ink-secondary);
+}
+
+.category-related {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px 32px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.category-related__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.category-related__list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-related__link {
+  font-size: 14px;
+  color: var(--color-link, var(--color-primary));
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.category-related__link:hover {
+  text-decoration: underline;
+}
+
+.category-related__count {
+  font-size: 13px;
+  color: var(--color-ink-secondary);
+}
+
 /* ---- Site footer -------------------------------------------------------- */
 /* Deep green ground, gold hairlines, uppercase column titles. The teal-on-teal
    greys the old footer used have no equivalent in the editorial palette — the

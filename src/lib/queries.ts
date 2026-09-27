@@ -32,7 +32,8 @@ import {
 } from "../db/schema";
 import type { Operation, PropertyType } from "./import/types";
 import { CACHE_TAGS, CACHE_TTL } from "./cache";
-import type { VerticalConfig } from "@/config/verticals";
+import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
+import type { InventoryRow } from "./category-context";
 import { facetConds, verticalConds, publishedFacetWhere } from "./facet-sql";
 import { categoryUrl, parseOperation, parseTypePlural } from "./urls";
 import type { ListingFacets, SortOption } from "./facets";
@@ -95,6 +96,48 @@ export const listNavigationInventory = unstable_cache(
   ["queries:listNavigationInventory"],
   { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings, CACHE_TAGS.locations] },
 );
+
+/**
+ * The door's published inventory for one operation, grouped by
+ * `(location, type)` with the `price_usd` bounds of each cell — everything a
+ * category page's intro and related-links module need (`category-context.ts`)
+ * in one aggregate instead of a COUNT per candidate link.
+ *
+ * Takes the vertical as a KEY, not a config: the key is what enters the cache
+ * key (the `cachedDirectoryZones` pattern in `directory-queries.ts`), so a door
+ * with hard filters gets its own entry and never serves its listing set to
+ * another door — CLAUDE.md's live cross-door leak. Tagged `listings`, whose
+ * writers (`revalidateListings()`, and `revalidateLocations()` through it)
+ * already cover every write that changes which rows are published or where
+ * they sit; ten minutes is the backstop. Plain numbers only, so nothing to
+ * re-wrap on the way out of the cache.
+ */
+const cachedCategoryInventory = unstable_cache(
+  async (verticalKey: VerticalKey, operation: Operation): Promise<InventoryRow[]> => {
+    const vertical = Object.values(VERTICALS).find((v) => v.key === verticalKey) ?? null;
+    const rows = await db
+      .select({
+        locationId: listings.locationId,
+        propertyType: listings.propertyType,
+        count: sql<number>`count(*)`.mapWith(Number),
+        minUsd: sql<number>`min(${listings.priceUsd})`.mapWith(Number),
+        maxUsd: sql<number>`max(${listings.priceUsd})`.mapWith(Number),
+      })
+      .from(listings)
+      .where(publishedFacetWhere({ operation }, vertical))
+      .groupBy(listings.locationId, listings.propertyType);
+    return rows;
+  },
+  ["queries:categoryInventory"],
+  { revalidate: CACHE_TTL.listings, tags: [CACHE_TAGS.listings] },
+);
+
+export function getCategoryInventory(
+  vertical: VerticalConfig,
+  operation: Operation,
+): Promise<InventoryRow[]> {
+  return cachedCategoryInventory(vertical.key, operation);
+}
 
 /** City and city/type destinations with real stock; no query per tile. */
 export function stockedNavigationPaths(
@@ -193,6 +236,11 @@ const locationsById = cache(async (): Promise<Map<number, LocationRow>> => {
   const rows: LocationRow[] = await db.select().from(locations);
   return new Map(rows.map((row) => [row.id, row]));
 });
+
+/** The request-scoped location table, for callers that aggregate over it. */
+export function locationIndex(): Promise<Map<number, LocationRow>> {
+  return locationsById();
+}
 
 export async function locationChain(locationId: number): Promise<LocationRow[]> {
   const byId = await locationsById();
