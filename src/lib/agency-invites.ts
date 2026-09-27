@@ -202,6 +202,37 @@ export async function revokeAgencyInvite(params: {
   return res.affectedRows === 1;
 }
 
+export interface OpenInviteRow {
+  id: number;
+  token: string;
+  agencyId: number;
+  agencyName: string;
+  role: InviteRole;
+  expiresAt: Date;
+}
+
+/**
+ * Every still-redeemable invite across agencies, newest first — the
+ * super-admin's "Invitar socio" list in /admin/inmobiliarias. Staff never
+ * see it: a link in this list is a login to someone else's agency panel.
+ */
+export async function listOpenInvitesForAdmin(): Promise<OpenInviteRow[]> {
+  return db
+    .select({
+      id: agencyInvites.id,
+      token: agencyInvites.token,
+      agencyId: agencyInvites.agencyId,
+      agencyName: agencies.name,
+      role: agencyInvites.role,
+      expiresAt: agencyInvites.expiresAt,
+    })
+    .from(agencyInvites)
+    .innerJoin(agencies, eq(agencyInvites.agencyId, agencies.id))
+    .where(and(isNull(agencyInvites.usedAt), gt(agencyInvites.expiresAt, new Date())))
+    .orderBy(desc(agencyInvites.createdAt))
+    .limit(50);
+}
+
 /** Open invites for an agency — shown as a count next to the generator. */
 export async function countOpenInvites(agencyId: number): Promise<number> {
   const [row] = await db
