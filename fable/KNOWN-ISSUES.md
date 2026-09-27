@@ -18,6 +18,20 @@ it; none of them blocks a phase.
   Also not USD-first yet on the English doors: `/comparar`'s price row and the
   category map's price pins still show the listed currency.
 
+- **Four cold home renders at once 500 on "Queue limit reached" (found by
+  `verify:live`, 2026-09-27).** Against a freshly started local production
+  build (MariaDB 11.8, four listings), four doors' home pages requested in
+  parallel failed with `Error: Queue limit reached` from mysql2 — each cold
+  home fires several queries at once, and the pool is 6 connections with a
+  queue of 24 (`src/db/index.ts`, deliberately bounded after the 503
+  incident). With the data cache warm, or two at a time, it never happened.
+  Production has the same bounds per process, so a crawler hitting several
+  doors right after a deploy could see the same 500s. `verify:live` runs two
+  requests at a time for this reason. Possible fixes (not made — the pool
+  bounds are not an agent's to edit): fewer parallel queries in the home
+  payload, or catching a pool-queue rejection per rail instead of failing the
+  page.
+
 - **Listing sidebar follow-up (2026-09-21): stored USD conversion.** Gs listings kept the `price_usd` of the rate they were written with (7300 on the demo rows). **Fixed in code 2026-09-22: `npm run cron:price-usd`** re-derives it from the latest `fx_rates` row (plan §4 rule); it still has to be run on production, between `cron:fx` and `cron:cuotas`. (The map pins' Spanish-only USD formatting noted here was fixed in #191: pins use the listing's own currency and the door's locale.)
 
 - **Resolved 2026-09-26: the two `previous_json` readers that assumed MySQL 8's

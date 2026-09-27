@@ -14,6 +14,7 @@ import {
 import {
   parseListingPublicId,
   listingUrl,
+  listingRef,
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
@@ -269,7 +270,12 @@ export default async function ListingPage({ params }: Params) {
   const origin = await listingCanonicalOrigin();
   const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
-  const waMessage = d.inquiryPrefillFor(brand, locale === "en" ? title : listing.title, canonical);
+  const waMessage = d.inquiryPrefillFor(
+    brand,
+    locale === "en" ? title : listing.title,
+    canonical,
+    listingRef(listing.publicId),
+  );
   const waHref = waLink(contactWhatsapp, waMessage);
 
   const city = chain.find((c) => c.level === "ciudad");
