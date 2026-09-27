@@ -9,7 +9,7 @@
 import "server-only";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { leads, listings, listingViewsDaily } from "@/db/schema";
+import { analyticsEvents, leads, listings, listingViewsDaily } from "@/db/schema";
 import { listingScopeWhere, type EditScope } from "@/lib/listing-edit";
 import { isVisitorEnquiry } from "@/lib/report-queries";
 
@@ -78,6 +78,11 @@ export interface ListingStats {
   views: number;
   /** Leads inside the reporting window. */
   leads: number;
+  /**
+   * WhatsApp button taps inside the window (first-party analytics, batch 5).
+   * A tap is intent, not proof a conversation happened — shown apart from leads.
+   */
+  waClicks: number;
 }
 
 /**
@@ -101,7 +106,7 @@ export async function getPanelListingStats(
   const ids = owned.map((r) => r.id);
   if (ids.length === 0) return new Map();
 
-  const [viewRows, leadRows] = await Promise.all([
+  const [viewRows, leadRows, waRows] = await Promise.all([
     db
       .select({
         listingId: listingViewsDaily.listingId,
@@ -132,13 +137,30 @@ export async function getPanelListingStats(
         ),
       )
       .groupBy(leads.listingId),
+    db
+      .select({
+        listingId: analyticsEvents.listingId,
+        n: sql<number>`count(*)`,
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          inArray(analyticsEvents.listingId, ids),
+          eq(analyticsEvents.event, "wa_click"),
+          gte(analyticsEvents.day, since),
+        ),
+      )
+      .groupBy(analyticsEvents.listingId)
+      // Statistics must never take the panel down (e.g. the table missing on a
+      // database that has not run migration 0019 yet).
+      .catch(() => [] as Array<{ listingId: number | null; n: number }>),
   ]);
 
   const out = new Map<number, ListingStats>();
   const bump = (id: number): ListingStats => {
     const existing = out.get(id);
     if (existing) return existing;
-    const fresh = { listingId: id, views: 0, leads: 0 };
+    const fresh = { listingId: id, views: 0, leads: 0, waClicks: 0 };
     out.set(id, fresh);
     return fresh;
   };
@@ -147,12 +169,16 @@ export async function getPanelListingStats(
   for (const row of leadRows) {
     if (row.listingId != null) bump(row.listingId).leads = Number(row.n);
   }
+  for (const row of waRows) {
+    if (row.listingId != null) bump(row.listingId).waClicks = Number(row.n);
+  }
   return out;
 }
 
 export interface StatsTotals {
   views: number;
   leads: number;
+  waClicks: number;
   /** Listings that got at least one view in the window. */
   listingsSeen: number;
 }
@@ -160,13 +186,15 @@ export interface StatsTotals {
 export function totalsFrom(stats: Map<number, ListingStats>): StatsTotals {
   let views = 0;
   let leads = 0;
+  let waClicks = 0;
   let listingsSeen = 0;
   for (const s of stats.values()) {
     views += s.views;
     leads += s.leads;
+    waClicks += s.waClicks;
     if (s.views > 0) listingsSeen += 1;
   }
-  return { views, leads, listingsSeen };
+  return { views, leads, waClicks, listingsSeen };
 }
 
 export interface DailyPoint {

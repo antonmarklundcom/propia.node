@@ -20,6 +20,7 @@
 
 import { operatorEmail, renderEmail, sendEmail } from "@/lib/email";
 import { esEmail } from "@/i18n/es";
+import { sendTelegramTo } from "@/lib/telegram";
 
 export interface LeadPayload {
   /**
@@ -67,7 +68,7 @@ export interface LeadPayload {
  * provider means no alert, never a logged line pretending to be one.
  */
 export interface OperatorAlert {
-  kind: "new_lead" | "review_submitted" | "new_email";
+  kind: "new_lead" | "review_submitted" | "new_email" | "share_reminder";
   /** One line, already in the operator's language. */
   title: string;
   detail?: string;
@@ -259,27 +260,11 @@ function telegramConfig(): { token: string; chatId: string } | null {
   return token && chatId ? { token, chatId } : null;
 }
 
+/** The operator's own chat, through the same sender every partner alert uses. */
 async function sendTelegram(text: string): Promise<CrmResult> {
   const cfg = telegramConfig();
   if (!cfg) return { ok: false, error: "telegram not configured" };
-  try {
-    const res = await fetch(
-      `https://api.telegram.org/bot${cfg.token}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          chat_id: cfg.chatId,
-          text,
-          disable_web_page_preview: true,
-        }),
-        signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
-      },
-    );
-    return res.ok ? { ok: true } : { ok: false, error: `telegram ${res.status}` };
-  } catch (e) {
-    return { ok: false, error: isTimeout(e) ? "telegram timeout" : String(e) };
-  }
+  return sendTelegramTo(cfg.chatId, text);
 }
 
 function operatorAlertText(alert: OperatorAlert): string {

@@ -17,6 +17,8 @@
  *   answers 200 `duplicate`.
  * - **Alert after the response** — `alertOperator()` in `after()`, never on
  *   a duplicate, never on our own machine mail or an auto-reply (mail loops).
+ *   A reply to a lead also pings, on Telegram, the partners who hold an
+ *   active share of it (`telegramEmailReplyNotice()`, plan-agency batch 4).
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { alertOperator } from "@/lib/crm";
@@ -24,6 +26,7 @@ import { esInbox } from "@/i18n/es-e2";
 import { inboundSecret, verifyInbound } from "@/lib/inbox-address";
 import { INBOUND_BODY_MAX_BYTES, inboundPayloadSchema, storeInbound } from "@/lib/inbox";
 import { siteOrigin } from "@/lib/origin";
+import { telegramEmailReplyNotice } from "@/lib/partner-alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -91,15 +94,22 @@ export async function POST(req: NextRequest) {
     const origin = await siteOrigin();
     after(async () => {
       const t = esInbox.alert;
-      await alertOperator({
-        kind: "new_email",
-        title: stored.leadId ? t.leadReplyTitle : t.inboxTitle(stored.mailbox),
-        detail: t.detail(stored.fromName ?? stored.fromAddress, stored.subject),
-        url: stored.leadId
-          ? `${origin}/admin/inbox?vista=consultas`
-          : `${origin}/admin/inbox/${stored.threadKey}`,
-        site: new URL(origin).host,
-      });
+      await Promise.allSettled([
+        alertOperator({
+          kind: "new_email",
+          title: stored.leadId ? t.leadReplyTitle : t.inboxTitle(stored.mailbox),
+          detail: t.detail(stored.fromName ?? stored.fromAddress, stored.subject),
+          url: stored.leadId
+            ? `${origin}/admin/inbox?vista=consultas`
+            : `${origin}/admin/inbox/${stored.threadKey}`,
+          site: new URL(origin).host,
+        }),
+        // Batch 4: partners holding an active share of this lead, on Telegram
+        // if they linked a chat. No sender, subject or text — only "look".
+        stored.leadId
+          ? telegramEmailReplyNotice({ leadId: stored.leadId, inboxUrl: `${origin}/agencia/leads` })
+          : null,
+      ]);
     });
   }
 

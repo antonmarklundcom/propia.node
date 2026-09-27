@@ -3,19 +3,23 @@
 /**
  * /admin/leads actions: follow-up state and note, D3 matching (propose up to
  * three professionals for a directory seller lead, record the hand-off), and
- * sharing a lead with a partner so it shows in their /agencia/leads.
+ * sharing a lead with a partner so it shows in their /agencia/leads, and the
+ * lead's deal (super-admin only).
  *
  * Matching messages nobody: the WhatsApp link is the delivery, a human
  * clicks it, and `markMatchSent` records that it happened — the same rule as
  * `alertOperator`/`sendOtp`: never write a line that pretends a message was
- * delivered. The one outbound message here is the share notice email (wave
- * E1), sent after the response and only when email is configured.
+ * delivered. The one outbound message here is the share notice — by email
+ * (wave E1) and on Telegram to partners who linked a chat (plan-agency batch
+ * 4) — sent after the response and only on the channels that are configured.
  */
 import { isStaff } from "@/lib/auth/roles";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
-import { requireStaffOrAbove } from "@/lib/auth/guards";
+import { requireStaffOrAbove, requireSuperAdmin } from "@/lib/auth/guards";
+import { parseOperatorDealForm } from "@/lib/deal-form";
+import { upsertOperatorDeal } from "@/lib/deals";
 import {
   markMatchSent,
   proposeMatches,
@@ -29,6 +33,7 @@ import {
   type ShareTarget,
 } from "@/lib/lead-assignments";
 import { emailShareNotice } from "@/lib/lead-emails";
+import { telegramShareNotice } from "@/lib/partner-alerts";
 import { BRAND_NAME } from "@/lib/brand";
 import { siteOrigin } from "@/lib/origin";
 import { recordAdminEvent } from "@/lib/admin-events";
@@ -192,17 +197,22 @@ export async function shareLeadsAction(formData: FormData): Promise<void> {
     after(async () => {
       try {
         const recipients = await shareRecipients(who);
-        await Promise.allSettled(
-          recipients.map((r) =>
-            emailShareNotice({
-              to: r.email,
-              locale: r.locale,
-              brand: BRAND_NAME,
-              count,
-              url: inboxUrl,
-            }),
+        await Promise.allSettled([
+          ...recipients.map((r) =>
+            r.email
+              ? emailShareNotice({
+                  to: r.email,
+                  locale: r.locale,
+                  brand: BRAND_NAME,
+                  count,
+                  url: inboxUrl,
+                })
+              : null,
           ),
-        );
+          // Batch 4: the same "go look" on Telegram, to whoever linked a chat.
+          // No buyer data — see src/lib/partner-alerts.ts.
+          telegramShareNotice({ target: who, leadIds: shared, inboxUrl }),
+        ]);
       } catch {
         /* the share row is the record; an unsent notice is not an incident */
       }
@@ -242,6 +252,47 @@ export async function leadEmailAction(formData: FormData): Promise<void> {
   const target = backTarget(formData);
   revalidatePath(ROUTE);
   redirect(`${target}${target.includes("?") ? "&" : "?"}msg=${code}`);
+}
+
+/**
+ * Save a lead's deal (plan-agency batch 6) — super-admin only. The guard
+ * redirects anyone else, and `upsertOperatorDeal()` re-checks the role itself,
+ * because it is the one writer of the money columns: staff and partners are
+ * refused there too, whoever calls it.
+ */
+export async function saveDealAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  const target = backTarget(formData);
+  // Back to the same card, its "Negocio" block open (`negocio=`), so an
+  // error is read next to the form that caused it.
+  const to = (msg: string, leadId: number) =>
+    leadId ? `${withMsg(target, msg)}&negocio=${leadId}#lead-${leadId}` : withMsg(target, msg);
+
+  const input = parseOperatorDealForm(formData);
+  if (!input) {
+    redirect(to("deal_invalid", toId(formData.get("leadId"))));
+  }
+
+  const res = await upsertOperatorDeal(user, input);
+  if (!res.ok) {
+    const msg =
+      res.error === "forbidden"
+        ? "deal_forbidden"
+        : res.error === "bad_partner"
+          ? "deal_partner"
+          : "deal_invalid";
+    redirect(to(msg, input.leadId));
+  }
+  if (res.changed.length > 0) {
+    await recordAdminEvent(user.id, "deal.update", "lead", input.leadId, {
+      stage: input.stage,
+      changed: res.changed.join(","),
+    });
+  }
+
+  revalidatePath(ROUTE);
+  revalidatePath("/admin/negocios");
+  redirect(to("deal_saved", input.leadId));
 }
 
 /* ------------------------------------------------------------------ */

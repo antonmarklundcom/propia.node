@@ -26,6 +26,8 @@ import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { currentVertical } from "@/lib/vertical-context";
 import { emailSeekerConfirmation } from "@/lib/lead-emails";
 import { isAgencyMode } from "@/lib/site-settings";
+import { recordAnalyticsEvent } from "@/lib/analytics";
+import { listingUrl } from "@/lib/urls";
 import { esA3, REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
 import { getDictionary, numberLocaleFor } from "@/i18n";
 import { foreignBuyerEnquiry } from "@/design/sections";
@@ -379,6 +381,26 @@ export async function POST(req: NextRequest) {
     utm: leadUtm,
     routedTo,
   });
+
+  // The funnel's last step for /admin/analitica. In-memory only (written in
+  // batches by src/lib/analytics.ts); a report is not an enquiry.
+  if (!report) {
+    const refererPath = (() => {
+      try {
+        return new URL(req.headers.get("referer") ?? "").pathname;
+      } catch {
+        return null;
+      }
+    })();
+    recordAnalyticsEvent({
+      event: "lead_submit",
+      path: listing ? listingUrl(listing) : (refererPath ?? "/"),
+      listingId: listing?.id ?? null,
+      vertical,
+      ip,
+      userAgent: req.headers.get("user-agent"),
+    });
+  }
 
   // The owner lane is the FSBO seller (D8): their go-look ping, delivered
   // only when a webhook (or, for the email copy, Cloudflare Email Sending) is

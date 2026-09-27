@@ -24,7 +24,9 @@ export type AdminEventAction =
   | "agent.join_agency"
   | "lead.from_email"
   | "lead.from_whatsapp"
-  | "setting.change";
+  | "setting.change"
+  | "deal.update"
+  | "deal.stage";
 
 export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting";
 

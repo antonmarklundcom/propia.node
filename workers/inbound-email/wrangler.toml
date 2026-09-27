@@ -15,6 +15,15 @@ INBOUND_URL = "https://inmobiliaria.com.py/api/inbound-email"
 #                         Gmail): every message the app does not accept goes there
 #   COPY_TO               optional: a copy of EVERY message also goes here (keep
 #                         the Gmail safety net while the inbox is new)
+#   CRON_SECRET           the same value as CRON_SECRET in hPanel: the bearer
+#                         for the hourly POST to /api/cron/tick (plan-agency
+#                         batch 4). Unset = the cron does nothing.
+# Optional var: CRON_URL overrides https://inmobiliaria.com.py/api/cron/tick.
+
+# The app's hourly scheduler (partner reminders, …) — `scheduled` in src/index.ts.
+# Minute 17, not :00, to stay off the top-of-the-hour rush.
+[triggers]
+crons = ["17 * * * *"]
 
 [observability]
 enabled = true

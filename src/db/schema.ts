@@ -377,6 +377,16 @@ export const leadAssignments = mysqlTable(
     stateAt: datetime("state_at"),
     /** NULL = access active. */
     revokedAt: datetime("revoked_at"),
+    /**
+     * The partner's own note on the lead (plan-agency batch 2) — theirs to
+     * write, shown to them and to the operator. `note` above is the operator's.
+     */
+    partnerNote: text("partner_note"),
+    /**
+     * When the "you have not answered this lead" reminder went out (batch 4).
+     * NULL = never reminded; one reminder per assignment, then the operator.
+     */
+    remindedAt: datetime("reminded_at"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -776,6 +786,12 @@ export const users = mysqlTable("users", {
     .notNull()
     .default("consumer"),
   locale: mysqlEnum("locale", ["es", "en"]).notNull().default("es"),
+  /**
+   * Telegram chat that receives this user's alerts (plan-agency batch 4). Set
+   * only by the bot's webhook after the user opened their own signed
+   * `t.me/<bot>?start=` link; NULL = no Telegram alerts.
+   */
+  telegramChatId: varchar("telegram_chat_id", { length: 40 }),
   createdAt: createdAt(),
 });
 
@@ -1116,4 +1132,110 @@ export const emailAttachments = mysqlTable(
     createdAt: createdAt(),
   },
   (t) => [index("idx_email").on(t.emailId)],
+);
+
+/* ------------------------------------------------------------------ */
+/* 2.13 Agency mode: deals and first-party analytics (0019)            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The commission ledger (plan-agency batch 6): what became of a lead the
+ * operator worked with a partner. One deal per lead. Money fields are entered
+ * by the operator from the written agreement — the app stores them and adds
+ * them up, it never decides a rate. The partner may move `stage`; only the
+ * super-admin writes the money columns.
+ */
+export const deals = mysqlTable(
+  "deals",
+  {
+    id: id(),
+    leadId: fk("lead_id").notNull(),
+    listingId: fk("listing_id"),
+    /** The partner working it; 0 = none (same convention as lead_assignments). */
+    agencyId: fk("agency_id").notNull().default(0),
+    agentId: fk("agent_id").notNull().default(0),
+    stage: mysqlEnum("stage", ["open", "viewing", "offer", "reserved", "won", "lost"])
+      .notNull()
+      .default("open"),
+    lostReason: mysqlEnum("lost_reason", [
+      "unavailable",
+      "price",
+      "financing",
+      "slow_response",
+      "bought_elsewhere",
+      "not_serious",
+      "other",
+    ]),
+    salePriceUsd: decimal("sale_price_usd", { precision: 14, scale: 2 }),
+    /** Total commission on the sale, percent. */
+    commissionPct: decimal("commission_pct", { precision: 5, scale: 2 }),
+    /** The operator's share of that commission, percent. */
+    mySharePct: decimal("my_share_pct", { precision: 5, scale: 2 }),
+    /** The operator's share in USD, as agreed/invoiced — typed, not derived. */
+    myShareUsd: decimal("my_share_usd", { precision: 14, scale: 2 }),
+    paidAt: datetime("paid_at"),
+    note: text("note"),
+    createdByUserId: fk("created_by_user_id").notNull(),
+    stageAt: datetime("stage_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("uq_lead").on(t.leadId),
+    index("idx_stage").on(t.stage, t.stageAt),
+    index("idx_agency").on(t.agencyId, t.createdAt),
+    index("idx_agent").on(t.agentId, t.createdAt),
+  ],
+);
+
+/**
+ * Raw first-party analytics (plan-agency batch 5). No cookies: `visitor_hash`
+ * is a hash of IP + user agent + a salt that changes daily, so a visitor
+ * cannot be followed across days. Written in batches, never per request.
+ * Pruned after the retention setting (365 days by default); the daily rollup
+ * below is kept forever.
+ */
+export const analyticsEvents = mysqlTable(
+  "analytics_events",
+  {
+    id: id(),
+    ts: datetime("ts").notNull(),
+    day: date("day", { mode: "string" }).notNull(),
+    /** The door's VerticalKey. */
+    vertical: varchar("vertical", { length: 20 }).notNull(),
+    event: mysqlEnum("event", ["page_view", "wa_click", "lead_submit"]).notNull(),
+    path: varchar("path", { length: 255 }).notNull(),
+    listingId: fk("listing_id"),
+    referrerHost: varchar("referrer_host", { length: 120 }),
+    utmSource: varchar("utm_source", { length: 60 }),
+    utmMedium: varchar("utm_medium", { length: 60 }),
+    utmCampaign: varchar("utm_campaign", { length: 100 }),
+    device: mysqlEnum("device", ["mobile", "tablet", "desktop"]).notNull(),
+    visitorHash: char("visitor_hash", { length: 16 }).notNull(),
+  },
+  (t) => [
+    index("idx_day").on(t.day, t.vertical, t.event),
+    index("idx_listing").on(t.listingId, t.day),
+  ],
+);
+
+/**
+ * One row per day × door × event × dimension value — what /admin/analitica
+ * reads for anything older than today. `dim` is `total`, `path`, `listing`,
+ * `referrer`, `utm_source`, `utm_campaign` or `device`; `value` is that
+ * dimension's value ('' for `total`).
+ */
+export const analyticsDaily = mysqlTable(
+  "analytics_daily",
+  {
+    day: date("day", { mode: "string" }).notNull(),
+    vertical: varchar("vertical", { length: 20 }).notNull(),
+    event: mysqlEnum("event", ["page_view", "wa_click", "lead_submit"]).notNull(),
+    dim: varchar("dim", { length: 20 }).notNull(),
+    value: varchar("value", { length: 191 }).notNull(),
+    count: int("count", { unsigned: true }).notNull().default(0),
+    uniques: int("uniques", { unsigned: true }).notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.day, t.vertical, t.event, t.dim, t.value] }),
+  ],
 );

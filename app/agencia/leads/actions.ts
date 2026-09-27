@@ -9,8 +9,38 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAgencyContext } from "@/lib/auth/guards";
-import { setShareState, REALTOR_STATES, type ShareState } from "@/lib/lead-assignments";
+import {
+  setPartnerNote,
+  setShareState,
+  REALTOR_STATES,
+  type ShareState,
+} from "@/lib/lead-assignments";
 import { handleLeadEmailForm } from "@/lib/inbox-access";
+import { parsePartnerStageForm } from "@/lib/deal-form";
+import { setPartnerDealStage } from "@/lib/deals";
+import { recordAdminEvent } from "@/lib/admin-events";
+
+/**
+ * The realtor's own note on a shared lead (plan-agency batch 2 column). Same
+ * rule as the answer: `setPartnerNote()` scopes the write with
+ * `sharedWithPanel()`, so a forged or revoked assignment id saves nothing.
+ */
+export async function setPartnerNoteAction(formData: FormData): Promise<void> {
+  const ctx = await requireAgencyContext();
+  const assignmentId = Number(formData.get("assignmentId"));
+
+  const ok =
+    Number.isInteger(assignmentId) &&
+    assignmentId > 0 &&
+    (await setPartnerNote({
+      assignmentId,
+      note: String(formData.get("partnerNote") ?? ""),
+      viewer: { agencyId: ctx.agencyId, userId: ctx.user.id },
+    })) > 0;
+
+  revalidatePath("/agencia/leads");
+  redirect(`/agencia/leads?msg=${ok ? "note_saved" : "note_invalid"}`);
+}
 
 export async function setShareStateAction(formData: FormData): Promise<void> {
   const ctx = await requireAgencyContext();
@@ -41,4 +71,33 @@ export async function leadEmailAction(formData: FormData): Promise<void> {
   const code = await handleLeadEmailForm(ctx.user, formData);
   revalidatePath("/agencia/leads");
   redirect(`/agencia/leads?msg=${code}`);
+}
+
+/**
+ * The partner moves the deal of a lead shared with them (plan-agency batch
+ * 6). Stage and lost reason only — the form has no money field and
+ * `setPartnerDealStage()` writes none; it applies `sharedWithPanel()` to the
+ * read and the write, so a forged lead id that is not theirs changes nothing.
+ */
+export async function setDealStageAction(formData: FormData): Promise<void> {
+  const ctx = await requireAgencyContext();
+  const input = parsePartnerStageForm(formData);
+  const res = input
+    ? await setPartnerDealStage({
+        viewer: { agencyId: ctx.agencyId, userId: ctx.user.id },
+        input,
+      })
+    : "invalid";
+  if (res === "ok" && input) {
+    // The operator's history: which partner moved which deal, and to what.
+    await recordAdminEvent(ctx.user.id, "deal.stage", "lead", input.leadId, {
+      stage: input.stage,
+      ...(input.lostReason ? { lost_reason: input.lostReason } : {}),
+    });
+  }
+
+  revalidatePath("/agencia/leads");
+  revalidatePath("/admin/negocios");
+  const anchor = input ? `#shared-${input.leadId}` : "";
+  redirect(`/agencia/leads?msg=${res === "ok" ? "deal_saved" : "deal_invalid"}${anchor}`);
 }

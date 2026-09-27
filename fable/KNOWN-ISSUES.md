@@ -142,3 +142,17 @@ it; none of them blocks a phase.
   `Cannot read properties of undefined (reading 'toLowerCase')`. Seen on the
   docker-compose `mysql:8.4` image; production is MariaDB 11.8, where it runs.
   Fixed with `AS table_name` aliases in that SELECT (`src/lib/ops/migrations.ts`).
+
+- **Telegram link tokens never expire (found 2026-09-27, #226 review).**
+  `src/lib/telegram.ts` derives the `/start` token as an HMAC of the user id,
+  so a forwarded or screenshotted `t.me/…?start=` link can re-link that
+  partner's alerts to another chat at any time, silently. Alerts carry no
+  buyer data (listing title + panel link), so exposure is small. Fix: put an
+  issue time in the token and reject it after ~1 h, or refuse to replace an
+  already-linked chat.
+
+- **Telegram partner alerts are always Spanish (found 2026-09-27, #226 review).**
+  `src/lib/partner-alerts.ts` builds every message from `esTelegram`, although
+  `shareRecipients()` returns each partner's `locale` and the email notice
+  uses it. An English-locale partner gets the email in English, Telegram in
+  Spanish. Fix: add an `enTelegram` peer and pick per recipient.

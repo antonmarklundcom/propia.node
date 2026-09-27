@@ -15,13 +15,14 @@
  *
  * Cleans up the rows it created, so it is safe to re-run.
  */
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import {
   adminEvents,
   agencies,
   agencyInvites,
   agents,
+  deals,
   leadAssignments,
   leads,
   leadMatches,
@@ -48,13 +49,31 @@ import { getEditableListing, updateListing } from "../src/lib/listing-edit";
 import { isStaff, isStaffOrAbove, isSuperAdmin, isAgencyRole } from "../src/lib/auth/roles";
 import { proposeMatches, markMatchSent } from "../src/lib/matching";
 import {
+  activeShareTargets,
+  claimShareReminder,
   getSharedLeads,
   isLeadSharedWithPanel,
+  listSharesForLeads,
+  PARTNER_NOTE_MAX,
   revokeShare,
+  setPartnerNote,
   setShareState,
   shareLeads,
+  type PanelViewer,
+  shareRecipients,
+  sharesToRemind,
 } from "../src/lib/lead-assignments";
+import { telegramChatsFor } from "../src/lib/partner-alerts";
+import { linkTelegramChat, unlinkTelegramChat } from "../src/lib/telegram-accounts";
 import { userMaySeeLead } from "../src/lib/inbox-access";
+import { parseOperatorDealForm, parsePartnerStageForm } from "../src/lib/deal-form";
+import {
+  dealSummary,
+  getDealByLead,
+  getPartnerDealStages,
+  setPartnerDealStage,
+  upsertOperatorDeal,
+} from "../src/lib/deals";
 import { verifyPassword } from "../src/lib/auth/password";
 import { createAgencyInvite, getUsableInvite } from "../src/lib/agency-invites";
 import { listAgencyJoinEvents } from "../src/lib/admin-events";
@@ -553,6 +572,283 @@ async function main() {
       reshared.revokedAt === null && reshared.state === "pending" && reshared.stateAt === null,
       `${reshared.state} ${String(reshared.revokedAt)}`,
     );
+
+    /* ---------------------------------------------------------------- */
+    /* The deal ledger (plan-agency batch 6)                            */
+    /* ---------------------------------------------------------------- */
+    /**
+     * A partner moves the stage of a deal on a lead actively shared with
+     * them — `sharedWithPanel()`, the same rule their list reads with — and
+     * never a money column. Only the super-admin writes money, and the writer
+     * itself refuses anyone else.
+     */
+    const form = (fields: Record<string, string>) => {
+      const fd = new FormData();
+      for (const [k, v] of Object.entries(fields)) fd.set(k, v);
+      return fd;
+    };
+    const opFields = {
+      leadId: String(sharedLeadId),
+      stage: "won",
+      lostReason: "price",
+      partner: `agency:${agencyId}`,
+      salePriceUsd: "150000",
+      commissionPct: "4",
+      mySharePct: "30",
+      myShareUsd: "1800.50",
+      paidAt: "2026-09-15",
+      note: "Verify deal",
+    };
+    check("deal form: a valid operator form parses", parseOperatorDealForm(form(opFields)) !== null);
+    check(
+      "deal form: a lost reason is dropped unless the stage is lost",
+      parseOperatorDealForm(form(opFields))?.lostReason === null,
+    );
+    check(
+      "deal form: empty money fields are NULL, not 0",
+      parseOperatorDealForm(form({ ...opFields, salePriceUsd: "", myShareUsd: " " }))?.salePriceUsd === null,
+    );
+    for (const [label, patch] of [
+      ["a percentage over 100", { commissionPct: "100.01" }],
+      ["three decimals", { mySharePct: "3.125" }],
+      ["a negative price", { salePriceUsd: "-1" }],
+      ["an impossible date", { paidAt: "2026-02-30" }],
+      ["an unknown stage", { stage: "closed" }],
+      ["a malformed partner", { partner: "agency:x" }],
+    ] as const) {
+      check(`deal form: ${label} is refused`, parseOperatorDealForm(form({ ...opFields, ...patch })) === null);
+    }
+    check(
+      "deal form: the partner form has no way to carry money",
+      JSON.stringify(parsePartnerStageForm(form({ leadId: String(sharedLeadId), stage: "offer", myShareUsd: "9" }))) ===
+        JSON.stringify({ leadId: sharedLeadId, stage: "offer", lostReason: null }),
+    );
+    check(
+      "deal form: a partner cannot set a deal back to open",
+      parsePartnerStageForm(form({ leadId: String(sharedLeadId), stage: "open" })) === null,
+    );
+
+    const opInput = parseOperatorDealForm(form(opFields))!;
+    for (const role of ["staff", "agency_admin", "agent", "consumer", "developer"] as const) {
+      const r = await upsertOperatorDeal({ id: agencyOwner.userId, role }, opInput);
+      check(`the operator money writer refuses a ${role}`, !r.ok && r.error === "forbidden");
+    }
+    check("…and wrote nothing", (await getDealByLead(sharedLeadId)) === null);
+
+    const stage = (leadId: number, viewer: PanelViewer, s: "viewing" | "offer" | "reserved" | "won" | "lost", lostReason: "price" | null = null) =>
+      setPartnerDealStage({ viewer, input: { leadId, stage: s, lostReason } });
+
+    check("another agency cannot open a deal on a lead not shared with it", (await stage(sharedLeadId, viewerB, "viewing")) === "forbidden");
+    check("a partner cannot open a deal on a lead never shared", (await stage(agencyLaneLeadId, viewerA, "viewing")) === "forbidden");
+    check("…no deal row appeared", (await getDealByLead(sharedLeadId)) === null && (await getDealByLead(agencyLaneLeadId)) === null);
+
+    check("the target agency opens the deal by moving its stage", (await stage(sharedLeadId, viewerA, "viewing")) === "ok");
+    const opened = await getDealByLead(sharedLeadId);
+    check(
+      "the partner-opened deal is theirs, created by them, with no money",
+      opened?.agencyId === agencyId &&
+        opened.agentId === 0 &&
+        opened.stage === "viewing" &&
+        opened.salePriceUsd === null &&
+        opened.myShareUsd === null &&
+        opened.paidAt === null,
+      JSON.stringify(opened),
+    );
+    const [openedRaw] = await db.select({ by: deals.createdByUserId }).from(deals).where(eq(deals.leadId, sharedLeadId));
+    check("created_by_user_id is the partner user", openedRaw?.by === agencyOwner.userId);
+
+    check(
+      "the operator cannot name a partner the lead was never shared with",
+      (await upsertOperatorDeal({ id: agencyOwner.userId, role: "admin" }, { ...opInput, partner: { agencyId: otherAgencyId, agentId: 0 } }))
+        .ok === false,
+    );
+    const paidBefore = Number((await dealSummary()).paidAllUsd ?? 0);
+    const saved = await upsertOperatorDeal({ id: agencyOwner.userId, role: "admin" }, opInput);
+    check("the super-admin writes the money fields", saved.ok && !saved.created && saved.changed.includes("my_share_usd"));
+    const withMoney = await getDealByLead(sharedLeadId);
+    check(
+      "money is stored exactly as typed",
+      withMoney?.salePriceUsd != null &&
+        Number(withMoney.salePriceUsd) === 150000 &&
+        Number(withMoney.commissionPct) === 4 &&
+        Number(withMoney.mySharePct) === 30 &&
+        Number(withMoney.myShareUsd) === 1800.5 &&
+        withMoney.paidAt?.toISOString().slice(0, 10) === "2026-09-15",
+      JSON.stringify(withMoney),
+    );
+    check(
+      "the paid share is counted in the summary",
+      Math.abs(Number((await dealSummary()).paidAllUsd ?? 0) - paidBefore - 1800.5) < 0.001,
+    );
+
+    check("the partner can still move the stage", (await stage(sharedLeadId, viewerA, "lost", "price")) === "ok");
+    const afterPartner = await getDealByLead(sharedLeadId);
+    check(
+      "a partner stage write never changes a money field",
+      afterPartner?.stage === "lost" &&
+        afterPartner.lostReason === "price" &&
+        afterPartner.salePriceUsd === withMoney?.salePriceUsd &&
+        afterPartner.commissionPct === withMoney?.commissionPct &&
+        afterPartner.mySharePct === withMoney?.mySharePct &&
+        afterPartner.myShareUsd === withMoney?.myShareUsd &&
+        afterPartner.paidAt?.getTime() === withMoney?.paidAt?.getTime() &&
+        afterPartner.note === withMoney?.note &&
+        afterPartner.agencyId === agencyId,
+      JSON.stringify(afterPartner),
+    );
+    await stage(sharedLeadId, viewerA, "offer", "price");
+    check("a lost reason does not survive leaving 'lost'", (await getDealByLead(sharedLeadId))?.lostReason === null);
+
+    const stagesA = await getPartnerDealStages(viewerA, [sharedLeadId]);
+    check("the partner sees the stage of their deal", stagesA.get(sharedLeadId)?.stage === "offer");
+    check(
+      "…and nothing else of it",
+      JSON.stringify(Object.keys(stagesA.get(sharedLeadId) ?? {}).sort()) === JSON.stringify(["lostReason", "stage"]),
+    );
+    check("another agency sees no deal stage", !(await getPartnerDealStages(viewerB, [sharedLeadId])).has(sharedLeadId));
+    check(
+      "a second partner the lead is shared with does not see another partner's deal",
+      !(await getPartnerDealStages(viewerIndep, [sharedLeadId])).has(sharedLeadId),
+    );
+    check(
+      "…nor move it",
+      (await stage(sharedLeadId, viewerIndep, "won")) === "forbidden" &&
+        (await getDealByLead(sharedLeadId))?.stage === "offer",
+    );
+
+    const [liveShareA] = await db
+      .select({ id: leadAssignments.id })
+      .from(leadAssignments)
+      .where(and(eq(leadAssignments.leadId, sharedLeadId), eq(leadAssignments.agencyId, agencyId)));
+    await revokeShare({ assignmentId: liveShareA.id, internalOnly: false });
+    check(
+      "after a revoke the partner cannot move the deal",
+      (await stage(sharedLeadId, viewerA, "won")) === "forbidden" &&
+        (await getDealByLead(sharedLeadId))?.stage === "offer",
+    );
+    check("…nor see its stage", !(await getPartnerDealStages(viewerA, [sharedLeadId])).has(sharedLeadId));
+    // Restore the share for the checks below (partner note, reminders, exports).
+    await shareLeads({
+      leadIds: [sharedLeadId],
+      target: { kind: "agency", id: agencyId },
+      note: null,
+      byUserId: agencyOwner.userId,
+      internalOnly: false,
+    });
+
+    /* ---------------------------------------------------------------- */
+    /* Partner note, reminders, Telegram recipients (plan-agency b4)    */
+    /* ---------------------------------------------------------------- */
+    /**
+     * The partner note is written and read through `sharedWithPanel()`, so
+     * the same people who can answer a share — and nobody else — can write
+     * its note. The reminder claim and the Telegram recipient lookup are
+     * checked here too, because both decide who is pinged about a lead.
+     */
+    const shareAId = shareA.assignmentId;
+    check(
+      "partner note: the target agency saves a note on its share",
+      (await setPartnerNote({ assignmentId: shareAId, note: "  Verify partner note  ", viewer: viewerA })) === 1,
+    );
+    check(
+      "partner note: saving the same text again still matches the row",
+      (await setPartnerNote({ assignmentId: shareAId, note: "Verify partner note", viewer: viewerA })) === 1,
+    );
+    check(
+      "partner note: the target agency reads it back, trimmed",
+      (await getSharedLeads(viewerA)).find((l) => l.assignmentId === shareAId)?.partnerNote ===
+        "Verify partner note",
+    );
+    check(
+      "partner note: another agency cannot write it",
+      (await setPartnerNote({ assignmentId: shareAId, note: "hijack", viewer: viewerB })) === 0,
+    );
+    check(
+      "partner note: an independent agent cannot write an agency share's note",
+      (await setPartnerNote({ assignmentId: shareAId, note: "hijack", viewer: viewerIndep })) === 0,
+    );
+    check(
+      "partner note: another agency cannot read it",
+      (await getSharedLeads(viewerB)).every((l) => l.assignmentId !== shareAId && l.partnerNote !== "Verify partner note"),
+    );
+    check(
+      "partner note: the operator sees it next to the share",
+      ((await listSharesForLeads([sharedLeadId])).get(sharedLeadId) ?? []).some(
+        (s) => s.id === shareAId && s.partnerNote === "Verify partner note",
+      ),
+    );
+    check(
+      "partner note: capped at PARTNER_NOTE_MAX",
+      (await setPartnerNote({ assignmentId: shareAId, note: "x".repeat(PARTNER_NOTE_MAX + 50), viewer: viewerA })) === 1 &&
+        (await getSharedLeads(viewerA)).find((l) => l.assignmentId === shareAId)?.partnerNote?.length === PARTNER_NOTE_MAX,
+    );
+    await setPartnerNote({ assignmentId: shareAId, note: "Verify partner note", viewer: viewerA });
+
+    // Telegram recipients follow the share: the agency admin with a chat.
+    const verifyChat = "900000000" + String(stamp).slice(-6);
+    check("telegram: a verified link stores the chat", await linkTelegramChat(agencyOwner.userId, verifyChat));
+    check(
+      "telegram: the agency's admin is a recipient of its shares",
+      (await shareRecipients({ kind: "agency", id: agencyId })).some(
+        (r) => r.userId === agencyOwner.userId && r.telegramChatId === verifyChat,
+      ),
+    );
+    check(
+      "telegram: an active share's lead reaches that chat",
+      (await telegramChatsFor(await activeShareTargets(sharedLeadId))).includes(verifyChat),
+    );
+    check(
+      "telegram: another agency's shares do not reach it",
+      !(await telegramChatsFor([{ kind: "agency", id: otherAgencyId }])).includes(verifyChat),
+    );
+
+    // Reminders: only an old, pending, unreminded, active share is due, and a
+    // claim is taken once.
+    await db.update(leadAssignments).set({ createdAt: sql`now() - interval 5 hour` }).where(eq(leadAssignments.id, shareAId));
+    const dueNow = await sharesToRemind({ olderThanHours: 4, limit: 10_000 });
+    check("reminders: a 5 h old pending share is due", dueNow.some((s) => s.id === shareAId));
+    check(
+      "reminders: a fresh share is not due",
+      !(await sharesToRemind({ olderThanHours: 6, limit: 10_000 })).some((s) => s.id === shareAId),
+    );
+    check("reminders: the first claim takes it", await claimShareReminder(shareAId));
+    check("reminders: a second claim does not", !(await claimShareReminder(shareAId)));
+    check(
+      "reminders: a reminded share is no longer due",
+      !(await sharesToRemind({ olderThanHours: 4, limit: 10_000 })).some((s) => s.id === shareAId),
+    );
+    await db
+      .update(leadAssignments)
+      .set({ createdAt: sql`now()`, remindedAt: null })
+      .where(eq(leadAssignments.id, shareAId));
+
+    // Revoked: gone from the panel, the note is frozen, nobody is pinged.
+    await revokeShare({ assignmentId: shareAId, internalOnly: false });
+    check("getSharedLeads still hides a revoked share", (await getSharedLeads(viewerA)).every((l) => l.assignmentId !== shareAId));
+    check(
+      "partner note: a revoked share's note cannot be written",
+      (await setPartnerNote({ assignmentId: shareAId, note: "late", viewer: viewerA })) === 0,
+    );
+    check(
+      "telegram: a revoked share is not an alert target",
+      !(await activeShareTargets(sharedLeadId)).some((t) => t.kind === "agency" && t.id === agencyId),
+    );
+    await db.update(leadAssignments).set({ createdAt: sql`now() - interval 5 hour` }).where(eq(leadAssignments.id, shareAId));
+    check(
+      "reminders: a revoked share is never due",
+      !(await sharesToRemind({ olderThanHours: 4, limit: 10_000 })).some((s) => s.id === shareAId),
+    );
+    check("reminders: a revoked share cannot be claimed", !(await claimShareReminder(shareAId)));
+    await db.update(leadAssignments).set({ createdAt: sql`now()` }).where(eq(leadAssignments.id, shareAId));
+    check("telegram: /stop clears the chat", (await unlinkTelegramChat(verifyChat)) >= 1);
+    // Restore the active share the checks below rely on.
+    await shareLeads({
+      leadIds: [sharedLeadId],
+      target: { kind: "agency", id: agencyId },
+      note: null,
+      byUserId: agencyOwner.userId,
+      internalOnly: false,
+    });
 
     /* ---------------------------------------------------------------- */
     /* Lead exports and per-agent numbers (build A1)                    */
@@ -1309,6 +1605,7 @@ async function main() {
     // Clean up in FK order: leads before the listings they point at, listings
     // and sessions before the rows those point at.
     if (createdLeadIds.length) {
+      await db.delete(deals).where(inArray(deals.leadId, createdLeadIds));
       await db.delete(leadAssignments).where(inArray(leadAssignments.leadId, createdLeadIds));
       await db.delete(leads).where(inArray(leads.id, createdLeadIds));
     }
