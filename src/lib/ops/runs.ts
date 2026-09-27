@@ -86,6 +86,22 @@ export async function lastRunByJob(): Promise<Map<string, OpsRunRow>> {
   return out;
 }
 
+/**
+ * When `job` last finished a real (non-dry) run without throwing, or null if it
+ * never has. The hourly tick's once-a-day gate (`src/lib/cron-tick.ts`): a
+ * button press on `/admin/operaciones` counts too, since it did the same work.
+ * Newest by id, like `lastRunByJob()`; `idx_job_started` narrows it to the job.
+ */
+export async function lastSuccessfulRunAt(job: OpsJob): Promise<Date | null> {
+  const [row] = await db
+    .select({ finishedAt: opsRuns.finishedAt })
+    .from(opsRuns)
+    .where(and(eq(opsRuns.job, job), eq(opsRuns.dry, false), eq(opsRuns.ok, true)))
+    .orderBy(desc(opsRuns.id))
+    .limit(1);
+  return row?.finishedAt ?? null;
+}
+
 /** Newest first, optionally filtered — the history view (S3). */
 export async function listOpsRuns(opts: {
   job?: string;

@@ -40,6 +40,8 @@ still wins. Also outstanding: `npm run cron:translate` (needs
 database) has not been run yet, so `title_en`/`description_en` are still
 empty for every listing — the English site is live and correctly wired, but
 currently shows the Spanish-fallback text everywhere until that job runs.
+Once either key is set in hPanel, the hourly `/api/cron/tick` runs it on its
+own (see the i18n section).
 
 Consequences that bite:
 
@@ -537,7 +539,10 @@ labels, section titles, form copy. The listing *content* layer
 (`title_en`/`description_en`) is wired to be read (see below) but is
 currently empty for every row: `npm run cron:translate` has not been run
 against the live database yet, so English visitors see the Spanish text via
-the fallback until it does.
+the fallback until it does. **Since 2026-09-27 the hourly `/api/cron/tick`
+(`src/lib/cron-tick.ts`) runs it** — 15 rows a tick, 35 s
+budget — as soon as `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` is set in hPanel;
+with neither set the tick skips it quietly (`docs/log/cron-tick-jobs.md`).
 
 - **Strings live in `src/i18n/es.ts`.** Buyer-facing copy — home, the operation
   hubs, the category grid, `SearchBar`, `CategoryFilterBar`, `ListingCard` and
@@ -614,7 +619,12 @@ the fallback until it does.
   serves `locale: "en"`** — `DATABASE_URL="…" GEMINI_API_KEY="…" npm run
   cron:translate` (`--dry` first) — every listing is currently showing its
   Spanish fallback on the English door until this has run at least once, and
-  again on a schedule after that as `translation_hash` picks up edits.
+  again on a schedule after that as `translation_hash` picks up edits. The
+  schedule is the hourly tick (`src/lib/cron-tick.ts`): once a key is in
+  hPanel it works through the backlog 15 rows an hour with no hPanel cron
+  entry, which also runs `cron:geo` and `cron:sessions` once a day. The tick
+  deliberately does **not** run `cron:fx`, `cron:cuotas`, `cron:resync` or
+  `backfill:images` — see the comment at the top of that file.
 - **The detail page, `ListingCard`, and `generateMetadata` read
   `title_en`/`description_en`** as of the 2026-09-04 flip
   (`app/propiedad/[slug]/page.tsx`, `src/components/ListingCard.tsx`,
