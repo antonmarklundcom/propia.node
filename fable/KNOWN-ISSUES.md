@@ -6,19 +6,20 @@ it; none of them blocks a phase.
 
 ## Open
 
-- **Four cold home renders at once 500 on "Queue limit reached" (found by
-  `verify:live`, 2026-09-27).** Against a freshly started local production
-  build (MariaDB 11.8, four listings), four doors' home pages requested in
-  parallel failed with `Error: Queue limit reached` from mysql2 — each cold
-  home fires several queries at once, and the pool is 6 connections with a
-  queue of 24 (`src/db/index.ts`, deliberately bounded after the 503
-  incident). With the data cache warm, or two at a time, it never happened.
-  Production has the same bounds per process, so a crawler hitting several
-  doors right after a deploy could see the same 500s. `verify:live` runs two
-  requests at a time for this reason. Possible fixes (not made — the pool
-  bounds are not an agent's to edit): fewer parallel queries in the home
-  payload, or catching a pool-queue rejection per rail instead of failing the
-  page.
+- **Resolved 2026-09-27 (branch `claude/cold-start-resilience`): cold home
+  renders 500ing on "Queue limit reached"** (found by `verify:live` the same
+  day). Reproduced locally at 6 of 8 cold homes → 500; now 0 of 8, 0 of 16 and
+  0 of 42 in a mixed homes + category burst, with the pool bounds untouched.
+  Three changes: `singleFlight()` in `src/lib/cache.ts` (Next 15.5's
+  `unstable_cache` runs every concurrent miss — the header, footer and home
+  each ran the same navigation read), the home payload's ten reads capped at
+  two at a time, and `src/lib/degrade.ts` — a non-essential section rejected
+  by a full pool queue is retried once, then renders empty for that request
+  only (never cached), while a SQL error or every section failing still
+  fails the page. Still true by design: under a full multi-second stall,
+  essential category/hub reads (`resolveCity`, the grid, the hub counts) 500.
+  `verify:live` still paces itself two requests at a time; that is politeness
+  to production now, not a workaround.
 
 - **Listing sidebar follow-up (2026-09-21): stored USD conversion.** Gs listings kept the `price_usd` of the rate they were written with (7300 on the demo rows). **Fixed in code 2026-09-22: `npm run cron:price-usd`** re-derives it from the latest `fx_rates` row (plan §4 rule); it still has to be run on production, between `cron:fx` and `cron:cuotas`. (The map pins' Spanish-only USD formatting noted here was fixed in #191: pins use the listing's own currency and the door's locale.)
 

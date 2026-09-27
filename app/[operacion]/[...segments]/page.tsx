@@ -34,6 +34,7 @@ import {
 } from "@/lib/precios-queries";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { siteOrigin } from "@/lib/origin";
+import { orDegraded } from "@/lib/degrade";
 import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingBrowser, listingPage as parsePage } from "@/components/ListingBrowser";
@@ -279,7 +280,13 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     typeof sp.tipo_vacio === "string" ? parseTypePlural(sp.tipo_vacio) : null;
 
   // Does this city have a price page worth linking to? Cheap: one aggregate.
-  const cityPrices = await cityPricesFor(r.city.slug);
+  // An aside, not the grid: under pool pressure it renders as "no prices" for
+  // this request (never cached — src/lib/degrade.ts) instead of a 500.
+  const cityPrices = await orDegraded(
+    `city-prices[${r.city.slug}]`,
+    cityPricesFor(r.city.slug),
+    null,
+  );
   const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
 
   /**

@@ -418,6 +418,22 @@ queries don't run. Tags, TTLs and the invalidation helpers live in
   re-wraps them in its exported wrapper — see `listFinancingPrograms` and the
   `revive*` helpers in `post-queries.ts` — not in each consumer.
 
+**A cold cache is a burst, and the pool is bounded on purpose** (6 + 24 queued,
+`src/db/index.ts`, never an agent's to edit). Every merge deploys with an
+empty data cache, and `unstable_cache` runs *every* concurrent miss — before
+2026-09-27 eight cold homes at once answered 500 "Queue limit reached". Three
+rules keep that closed:
+
+- A cached reader hit from several places in one render, or by every door at
+  once, is wrapped in `singleFlight()` (`src/lib/cache.ts`) around its
+  `unstable_cache`. Only there: the result must depend on its arguments alone.
+- A page that needs many reads runs them through `loadSections()`
+  (`src/lib/degrade.ts`) with a small concurrency cap, not one `Promise.all`.
+- Only a **non-essential** section degrades, only on pool pressure (never on a
+  SQL error), and the degraded value is **thrown out of** the cached function
+  (`PartialResult`) so it is never stored. The grid, the listing, a hub's own
+  counts still fail the page: that is an outage, not a section.
+
 **The sitemap has two halves and they are not interchangeable.**
 `src/lib/sitemap.ts` decides *what* is listed — the half that must agree with
 `getIndexability()` and `hostOwnsListingDetail()`, and where a new page type
