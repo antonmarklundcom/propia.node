@@ -26,6 +26,7 @@ import { allowRequest } from "@/lib/rate-limit";
 import {
   registerAccount,
   type AccountKind,
+  type AgencyPlan,
   type RegistrationError,
 } from "@/lib/registration";
 
@@ -50,6 +51,7 @@ function bounce(
   invite: string,
   next: string | null,
   values: { name: string; email: string; agencyName: string; whatsapp: string },
+  plan?: AgencyPlan | null,
 ): never {
   // Explicit non-password fields only; URLSearchParams preserves their text.
   const q = new URLSearchParams({ error, kind, ...values });
@@ -57,6 +59,9 @@ function bounce(
   // quietly create an unaffiliated account instead of joining the agency.
   if (invite) q.set("invite", invite);
   if (next) q.set("next", next);
+  // Same reason: a mistyped password on a `?plan=destacado` link should not
+  // silently drop back to the free plan on retry.
+  if (plan) q.set("plan", plan);
   redirect(`/registro?${q.toString()}`);
 }
 
@@ -69,6 +74,9 @@ export async function registerAction(formData: FormData): Promise<void> {
   const rawKind = String(formData.get("kind") ?? "");
   const invite = String(formData.get("invite") ?? "").trim();
   const next = safeNext(String(formData.get("next") ?? ""));
+  const rawPlan = String(formData.get("plan") ?? "");
+  const plan: AgencyPlan | null =
+    rawPlan === "destacado" || rawPlan === "partner" ? rawPlan : null;
   const values = {
     name: String(formData.get("name") ?? ""),
     email: String(formData.get("email") ?? ""),
@@ -91,7 +99,7 @@ export async function registerAction(formData: FormData): Promise<void> {
   // cannot be rotated by a spoofed x-forwarded-for.
   const ip = clientIpFrom(await headers());
   if (!allowRequest(`register|${ip}`, REGISTER_MAX, REGISTER_WINDOW_MS)) {
-    bounce("throttled", kind, invite, next, values);
+    bounce("throttled", kind, invite, next, values, plan);
   }
 
   const result = await registerAccount({
@@ -103,9 +111,11 @@ export async function registerAction(formData: FormData): Promise<void> {
     // An owner has no agency; never let a filled-in field suggest one.
     agencyName: kind === "owner" ? null : values.agencyName || null,
     inviteToken: invite || null,
+    // registerAccount itself ignores this unless kind === "agency".
+    plan,
   });
 
-  if (!result.ok) bounce(result.error, kind, invite, next, values);
+  if (!result.ok) bounce(result.error, kind, invite, next, values, plan);
 
   // A new agency or independent agent is a partner the operator has to verify
   // before sharing enquiries with them. Owners are not partners, and an

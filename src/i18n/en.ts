@@ -114,6 +114,8 @@ export const enPublicAuth = {
   registerKindInvite: (agencyName: string) => `Join ${agencyName}`,
   registerInviteNote: (agencyName: string, role: string) => `${agencyName} invited you to join its team as ${role}. Create your account and your listings will belong to that agency.`,
   registerErrorInvite: "This invitation is no longer valid: it may have expired or already been used. Ask the agency to send a new one.",
+  registerPlanNoteDestacado: "You're signing up for the Destacado plan.",
+  registerPlanNotePartner: "You're signing up for the Partner plan.",
   teamRoleAdmin: "Manager", teamRoleAgent: "Agent",
   loginMetaTitle: "Sign in", registerMetaTitle: "Create your account",
   registerDescription: (brand: string) => `List your properties on ${brand}. Free accounts for agencies and independent agents in Paraguay.`,
