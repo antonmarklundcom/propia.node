@@ -2,11 +2,17 @@
  * The pure half of page-speed measurement (`src/lib/web-vitals.ts` is the
  * server half): which page type a path is, the 75th percentile, and Google's
  * published "good / needs improvement / poor" thresholds for each metric.
- * No `next/*`, no drizzle — `verify:telegram`'s site-health block drives it.
+ * No `next/*`, no drizzle — `verify:telegram`'s site-health block drives it,
+ * and the analytics beacon (a client component) imports it.
  */
 
 export const VITAL_METRICS = ["LCP", "INP", "CLS", "FCP", "TTFB"] as const;
 export type VitalMetric = (typeof VITAL_METRICS)[number];
+
+/** Next also reports its own timings (`Next.js-hydration`, …): those are not stored. */
+export function isVitalMetricName(m: string): m is VitalMetric {
+  return (VITAL_METRICS as readonly string[]).includes(m);
+}
 
 /**
  * Google's Core Web Vitals thresholds (web.dev/articles/vitals): at or

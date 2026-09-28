@@ -17,7 +17,7 @@ import { db } from "@/db";
 import { webVitals } from "@/db/schema";
 import { analyticsDay, deviceOf, isTrackedPath, normalizePath } from "@/lib/analytics";
 import { isBotUserAgent } from "@/lib/view-tracking";
-import { p75, pageTypeOf, VITAL_METRICS, type PageType, type VitalMetric } from "@/lib/web-vitals-shared";
+import { isVitalMetricName, p75, pageTypeOf, type PageType, type VitalMetric } from "@/lib/web-vitals-shared";
 
 type Row = typeof webVitals.$inferInsert;
 
@@ -39,16 +39,12 @@ export interface VitalInput {
   userAgent: string | null;
 }
 
-export function isVitalMetric(m: string): m is VitalMetric {
-  return (VITAL_METRICS as readonly string[]).includes(m);
-}
-
 /** Queue one measurement. Synchronous and never throws. */
 export function recordWebVital(input: VitalInput): void {
   try {
     const ua = input.userAgent ?? "";
     if (isBotUserAgent(ua)) return;
-    if (!isVitalMetric(input.metric)) return;
+    if (!isVitalMetricName(input.metric)) return;
     if (!Number.isFinite(input.value) || input.value < 0 || input.value > MAX_VALUE) return;
     const path = normalizePath(input.path);
     if (!path || !isTrackedPath(path)) return;
@@ -169,10 +165,10 @@ export async function countWebVitalsBefore(day: string): Promise<number> {
   }
 }
 
+/**
+ * Errors propagate: the job calls this only after `countWebVitalsBefore()`
+ * found rows, so the table exists and a failure is a real one.
+ */
 export async function deleteWebVitalsBefore(day: string): Promise<void> {
-  try {
-    await db.delete(webVitals).where(sql`${webVitals.day} < ${day}`);
-  } catch {
-    /* table not created yet */
-  }
+  await db.delete(webVitals).where(sql`${webVitals.day} < ${day}`);
 }

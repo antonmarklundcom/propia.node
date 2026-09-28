@@ -1,11 +1,11 @@
 /**
  * The analytics beacon (docs/plan-agency-2026-09-26.md batch 5): a handful of
- * page views and WhatsApp clicks from one visit, sent by
+ * page views, WhatsApp clicks and page-speed measurements from one visit, sent by
  * `src/components/AnalyticsBeacon.tsx` when the tab is hidden or ten events
  * have queued — about one request per visit, not one per page.
  *
  * Nothing here touches the database: events go into the in-memory buffer in
- * `src/lib/analytics.ts`, which writes them in batches. Always 204, so a
+ * `src/lib/analytics.ts` (vitals: `src/lib/web-vitals.ts`), which write them in batches. Always 204, so a
  * malformed or rate-limited beacon costs the visitor nothing either.
  */
 import { NextRequest } from "next/server";
@@ -14,17 +14,21 @@ import { recordAnalyticsEvent } from "@/lib/analytics";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
 import { currentVertical } from "@/lib/vertical-context";
+import { recordWebVital } from "@/lib/web-vitals";
 
 const beaconSchema = z.object({
   events: z
     .array(
       z.object({
-        e: z.enum(["pv", "wa"]),
+        e: z.enum(["pv", "wa", "wv"]),
         p: z.string().max(2000),
         r: z.string().max(2000).optional(),
         us: z.string().max(200).optional(),
         um: z.string().max(200).optional(),
         uc: z.string().max(200).optional(),
+        // Page speed (`wv`): metric name and value; recordWebVital() checks both.
+        m: z.string().max(10).optional(),
+        v: z.number().optional(),
       }),
     )
     .max(20),
@@ -62,6 +66,12 @@ export async function POST(req: NextRequest) {
   const ownHost = req.headers.get("host");
   for (const ev of parsed.events) {
     if (!allowRequest(`beacon-ev|${ip}`, BEACON_MAX_EVENTS, BEACON_WINDOW_MS)) break;
+    if (ev.e === "wv") {
+      if (ev.m !== undefined && ev.v !== undefined) {
+        recordWebVital({ metric: ev.m, value: ev.v, path: ev.p, vertical, userAgent });
+      }
+      continue;
+    }
     recordAnalyticsEvent({
       event: ev.e === "wa" ? "wa_click" : "page_view",
       path: ev.p,

@@ -42,8 +42,34 @@ export const esAnalytics = {
   devicesHead: ["Dispositivo", "Visitantes"],
   devices: { mobile: "Celular", tablet: "Tablet", desktop: "Computadora" } as Record<string, string>,
 
+  vitalsTitle: "Velocidad (visitantes reales)",
+  vitalsIntro:
+    "Lo que tardaron las páginas en los celulares y computadoras de los visitantes, últimos 7 días. Se muestra el percentil 75: tres de cada cuatro visitas fueron así de rápidas o más. Verde, ámbar y rojo son los límites que usa Google.",
+  vitalsDevices: { mobile: "Celular", desktop: "Computadora" } as Record<string, string>,
+  vitalsPageHead: "Tipo de página",
+  vitalsSamplesHead: "Mediciones",
+  vitalsMetrics: {
+    LCP: "Carga del contenido principal (LCP)",
+    INP: "Respuesta al tocar (INP)",
+    CLS: "Saltos de la página (CLS)",
+    FCP: "Primer contenido (FCP)",
+    TTFB: "Respuesta del servidor (TTFB)",
+  } as Record<string, string>,
+  vitalsPageTypes: {
+    home: "Inicio",
+    listing: "Aviso (/propiedad)",
+    category: "Categoría",
+    hub: "Venta / alquiler (portada)",
+    guide: "Guía",
+    other: "Otras",
+  } as Record<string, string>,
+  vitalsRatings: { good: "Bien", "needs-improvement": "Mejorable", poor: "Lento" } as Record<string, string>,
+  vitalsEmpty: "Todavía no hay mediciones de velocidad en los últimos 7 días.",
+  vitalsMissing:
+    "Migración 0020 pendiente: la tabla web_vitals todavía no existe en esta base de datos. Correr npm run db:migrate para empezar a medir.",
+
   opsLabel: "Estadísticas: resumir y limpiar",
   opsDescription:
-    "Resume los días completos en totales diarios y borra los eventos detallados más viejos que la retención configurada en Ajustes.",
-  opsWrites: "Escribe analytics_daily y borra filas viejas de analytics_events.",
+    "Resume los días completos en totales diarios y borra los eventos detallados y las mediciones de velocidad más viejos que la retención configurada en Ajustes.",
+  opsWrites: "Escribe analytics_daily y borra filas viejas de analytics_events y web_vitals.",
 } as const;

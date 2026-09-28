@@ -3989,6 +3989,22 @@ body {
   color: var(--color-error);
 }
 
+/* Page-speed cells on /admin/analitica: Google's good / needs improvement /
+   poor. Explicit colours (not --color-success, which no theme defines);
+   each text/background pair is above 4.5:1. */
+.panel-vital--good {
+  background: #e6f4ea;
+  color: #1d6b35;
+}
+.panel-vital--mid {
+  background: #fdf1dc;
+  color: #7a4f00;
+}
+.panel-vital--poor {
+  background: #fbeeed;
+  color: var(--color-error);
+}
+
 /* Verified pill (agency/agent management) */
 .panel-verified {
   padding: 3px 10px;
