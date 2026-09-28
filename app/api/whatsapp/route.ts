@@ -4,7 +4,8 @@
  * - **GET** — Meta's subscription handshake: `hub.mode=subscribe`,
  *   `hub.verify_token` compared in constant time with `WHATSAPP_VERIFY_TOKEN`,
  *   `hub.challenge` echoed as text.
- * - **POST** — messages and status callbacks. `X-Hub-Signature-256` (HMAC-SHA256
+ * - **POST** — messages and status callbacks (and, in `after()`, the
+ *   auto-responder — `src/lib/whatsapp-auto.ts`, off by default). `X-Hub-Signature-256` (HMAC-SHA256
  *   of the raw body under `WHATSAPP_APP_SECRET`) is checked, timing-safe,
  *   **before** the body is parsed. The rows are written before answering (a
  *   few milliseconds; a database failure answers 500 so Meta retries, and
@@ -20,6 +21,7 @@ import { whatsappConfig } from "@/lib/whatsapp";
 import { applyWhatsAppStatus, storeInboundWhatsApp, storeWhatsAppMedia, type StoredWhatsApp } from "@/lib/whatsapp-inbox";
 import { parseWebhook, verifyHandshake, verifyWebhookSignature, WHATSAPP_WEBHOOK_MAX_BYTES } from "@/lib/whatsapp-webhook";
 import { esWhatsApp } from "@/i18n/es-whatsapp";
+import { runWhatsAppAutoResponder } from "@/lib/whatsapp-auto";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +99,9 @@ export async function POST(req: NextRequest) {
       // One alert per contact per webhook, never for a duplicate. Text only
       // says who and a short preview; the thread is the record.
       const byContact = new Map(fresh.map((s) => [s.contactPhone, s]));
+      // The auto-responder (off unless switched on in /admin/ajustes) answers
+      // the newest message of each contact at most once.
+      await Promise.allSettled([...byContact.values()].map((s) => runWhatsAppAutoResponder(s)));
       await Promise.allSettled(
         [...byContact.values()].map((s) =>
           alertOperator({

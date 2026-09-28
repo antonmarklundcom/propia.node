@@ -10,6 +10,8 @@
  * - Phones: local and international forms normalise to E.164 digits.
  * - The 24-hour window and status ordering.
  * - Config: all four required variables or the feature is off.
+ * - The auto-responder's rules (PR 3): office hours in Asunción, hand-off
+ *   topics, and every limit in `decideAutoAction()`.
  *
  * Run: npm run verify:whatsapp   (also part of npm run verify:local)
  */
@@ -25,6 +27,18 @@ import {
   WHATSAPP_WINDOW_MS,
 } from "../src/lib/whatsapp-webhook";
 import { missingWhatsAppEnv, whatsappConfig } from "../src/lib/whatsapp";
+import {
+  asuncionClock,
+  decideAutoAction,
+  describeOfficeHours,
+  isOfficeOpen,
+  needsHumanHandoff,
+  officeHoursFromForm,
+  OFFICE_HOURS_DEFAULT,
+  parseCooldownHours,
+  parseOfficeHours,
+  type AutoState,
+} from "../src/lib/whatsapp-auto-policy";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -166,6 +180,67 @@ check("default graph version", whatsappConfig(full)?.graphVersion === "v23.0");
 check("graph version override", whatsappConfig({ ...full, WHATSAPP_GRAPH_VERSION: "v25.0" })?.graphVersion === "v25.0");
 check("bad version ignored", whatsappConfig({ ...full, WHATSAPP_GRAPH_VERSION: "latest" })?.graphVersion === "v23.0");
 check("missing list", missingWhatsAppEnv({ WHATSAPP_ACCESS_TOKEN: "t" }).length === 3);
+
+console.log("auto-responder: office hours (America/Asuncion)");
+// 2026-09-28 is a Monday. Paraguay is UTC-3 all year since 2024.
+const mondayNoonPy = new Date("2026-09-28T15:00:00Z");
+check("Asunción clock", asuncionClock(mondayNoonPy).weekday === 1 && asuncionClock(mondayNoonPy).hhmm === "12:00", JSON.stringify(asuncionClock(mondayNoonPy)));
+check("weekday noon open", isOfficeOpen(OFFICE_HOURS_DEFAULT, mondayNoonPy));
+check("weekday 19:00 closed", !isOfficeOpen(OFFICE_HOURS_DEFAULT, new Date("2026-09-28T22:00:00Z")));
+check("closing minute is closed", !isOfficeOpen(OFFICE_HOURS_DEFAULT, new Date("2026-09-28T21:00:00Z")));
+check("Saturday 11:00 open", isOfficeOpen(OFFICE_HOURS_DEFAULT, new Date("2026-10-03T14:00:00Z")));
+check("Saturday 13:00 closed", !isOfficeOpen(OFFICE_HOURS_DEFAULT, new Date("2026-10-03T16:00:00Z")));
+check("Sunday closed", !isOfficeOpen(OFFICE_HOURS_DEFAULT, new Date("2026-10-04T15:00:00Z")));
+check("malformed JSON → default", parseOfficeHours("{nope") === OFFICE_HOURS_DEFAULT);
+check("reversed hours → default", parseOfficeHours(JSON.stringify({ weekdays: ["18:00", "08:00"], saturday: null, sunday: null })) === OFFICE_HOURS_DEFAULT);
+const custom = parseOfficeHours(JSON.stringify({ weekdays: ["09:00", "17:30"], saturday: null, sunday: null }));
+check("custom hours parsed", custom.weekdays?.[1] === "17:30" && custom.saturday === null);
+check("form: empty day = closed", officeHoursFromForm({ weekdaysOpen: "08:00", weekdaysClose: "18:00", saturdayOpen: "", saturdayClose: "", sundayOpen: "", sundayClose: "" })?.saturday === null);
+check("form: half a day refused", officeHoursFromForm({ weekdaysOpen: "08:00", weekdaysClose: "", saturdayOpen: "", saturdayClose: "", sundayOpen: "", sundayClose: "" }) === null);
+check("describe hours", describeOfficeHours(OFFICE_HOURS_DEFAULT, { weekdays: "lunes a viernes", saturday: "sábados", sunday: "domingos", separator: ", " }) === "lunes a viernes 08:00–18:00, sábados 08:00–12:00");
+check("cooldown default", parseCooldownHours(undefined) === 12 && parseCooldownHours("0") === 12 && parseCooldownHours("999") === 12);
+check("cooldown set", parseCooldownHours("24") === 24);
+
+console.log("auto-responder: hand-off topics");
+for (const text of ["¿Cuál es el último precio?", "Hay descuento si pago contado?", "Necesito hablar con el escribano por la escritura", "Quiero hacer un reclamo", "esto es una ESTAFA", "Is the price negotiable?", "I need to talk to my lawyer"]) {
+  check(`hand-off: ${text}`, needsHumanHandoff(text));
+}
+for (const text of ["Hola, ¿sigue disponible?", "¿Cuántos dormitorios tiene?", "Is it still available?", "Me gustaría visitarla"]) {
+  check(`no hand-off: ${text}`, !needsHumanHandoff(text));
+}
+
+console.log("auto-responder: decision");
+const base: AutoState = {
+  now: mondayNoonPy,
+  greetingEnabled: false,
+  aiEnabled: false,
+  aiConfigured: true,
+  officeOpen: true,
+  firstContact: false,
+  text: "Hola, ¿sigue disponible?",
+  humanReplied: false,
+  lastAiAt: null,
+  lastGreetingAt: null,
+  handoffSent: false,
+  cooldownHours: 12,
+};
+const hoursAgo = (h: number) => new Date(mondayNoonPy.getTime() - h * 3_600_000);
+check("both off (the default) → nothing", decideAutoAction(base).action === "none");
+check("greeting on, first contact → greeting", JSON.stringify(decideAutoAction({ ...base, greetingEnabled: true, firstContact: true })) === '{"action":"greeting","kind":"first"}');
+check("greeting on, closed → closed greeting", JSON.stringify(decideAutoAction({ ...base, greetingEnabled: true, officeOpen: false })) === '{"action":"greeting","kind":"closed"}');
+check("greeting on, open, known contact → nothing", decideAutoAction({ ...base, greetingEnabled: true }).action === "none");
+check("greeting not repeated within 12 h", decideAutoAction({ ...base, greetingEnabled: true, officeOpen: false, lastGreetingAt: hoursAgo(3) }).action === "none");
+check("greeting again after 12 h", decideAutoAction({ ...base, greetingEnabled: true, officeOpen: false, lastGreetingAt: hoursAgo(13) }).action === "greeting");
+check("no greeting after a human replied", decideAutoAction({ ...base, greetingEnabled: true, firstContact: true, humanReplied: true }).action === "none");
+check("AI on → ai", decideAutoAction({ ...base, aiEnabled: true }).action === "ai");
+check("AI on but no key → nothing", decideAutoAction({ ...base, aiEnabled: true, aiConfigured: false }).action === "none");
+check("AI never after a human replied", decideAutoAction({ ...base, aiEnabled: true, humanReplied: true }).action === "none");
+check("AI once per cooldown", decideAutoAction({ ...base, aiEnabled: true, lastAiAt: hoursAgo(2) }).action === "none");
+check("AI again after the cooldown", decideAutoAction({ ...base, aiEnabled: true, lastAiAt: hoursAgo(13) }).action === "ai");
+check("AI never after a hand-off", decideAutoAction({ ...base, aiEnabled: true, handoffSent: true }).action === "none");
+check("price topic → hand-off, not the model", JSON.stringify(decideAutoAction({ ...base, aiEnabled: true, text: "¿Aceptan una contraoferta?" })) === '{"action":"handoff","reason":"topic"}');
+check("photo without text → no AI, greeting may go", decideAutoAction({ ...base, aiEnabled: true, greetingEnabled: true, firstContact: true, text: null }).action === "greeting");
+check("AI blocked by cooldown falls back to closed greeting", decideAutoAction({ ...base, aiEnabled: true, greetingEnabled: true, officeOpen: false, lastAiAt: hoursAgo(1) }).action === "greeting");
 
 if (failures > 0) {
   console.log(`\nverify:whatsapp — ${failures} failure(s)`);

@@ -27,6 +27,11 @@ export type BusinessMode = "marketplace" | "agency";
 export const SETTING_KEYS = {
   businessMode: "business_mode",
   analyticsRawDays: "analytics_raw_days",
+  // WhatsApp auto-responder (src/lib/whatsapp-auto.ts). Both switches default off.
+  waGreeting: "wa_greeting_enabled",
+  waAi: "wa_ai_enabled",
+  waHours: "wa_office_hours",
+  waAiCooldown: "wa_ai_cooldown_hours",
 } as const;
 
 /** Uncached — for scripts and jobs, which have no Next.js cache around them. */
@@ -82,6 +87,41 @@ export function parseRawDays(value: string | undefined): number {
 
 export async function getAnalyticsRawDays(): Promise<number> {
   return parseRawDays((await readSiteSettings())[SETTING_KEYS.analyticsRawDays]);
+}
+
+/** The auto-responder's switches, parsed; every default is "off" / the built-in hours. */
+export interface WhatsAppAutoSettings {
+  greetingEnabled: boolean;
+  aiEnabled: boolean;
+  /** Raw JSON; parse with `parseOfficeHours()` (whatsapp-auto-policy.ts). */
+  officeHoursRaw: string | null;
+  cooldownRaw: string | null;
+}
+
+/**
+ * `uncached` is for the WhatsApp webhook's `after()`: the cached reader, run
+ * there on a cold server, threw and read as "everything off" (seen on a fresh
+ * `next start`), which would silently skip auto-replies after each deploy. A
+ * one-row-per-setting query per inbound message is cheap. A failed read is
+ * still "off" — the conservative answer.
+ */
+export async function getWhatsAppAutoSettings(opts: { uncached?: boolean } = {}): Promise<WhatsAppAutoSettings> {
+  let s: Record<string, string>;
+  if (opts.uncached) {
+    try {
+      s = await readSiteSettingsRaw();
+    } catch {
+      s = {};
+    }
+  } else {
+    s = await readSiteSettings();
+  }
+  return {
+    greetingEnabled: s[SETTING_KEYS.waGreeting] === "true",
+    aiEnabled: s[SETTING_KEYS.waAi] === "true",
+    officeHoursRaw: s[SETTING_KEYS.waHours] ?? null,
+    cooldownRaw: s[SETTING_KEYS.waAiCooldown] ?? null,
+  };
 }
 
 /** Upsert one setting and drop the cache. Server actions only, after an auth check. */

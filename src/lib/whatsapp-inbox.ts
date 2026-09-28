@@ -398,6 +398,52 @@ export async function attachWhatsAppChatToLead(phone: string, leadId: number): P
   return res.affectedRows;
 }
 
+/** Every message with this contact, oldest first (newest 30) — the auto-responder's context. */
+export async function listContactMessages(phone: string, limit = 30): Promise<WhatsAppMessage[]> {
+  const rows = await db
+    .select(columns)
+    .from(whatsappMessages)
+    .where(eq(whatsappMessages.contactPhone, phone))
+    .orderBy(desc(whatsappMessages.id))
+    .limit(limit);
+  return rows.reverse().map(toMessage);
+}
+
+/**
+ * What the auto-responder's limits need about one contact, in one query:
+ * did a person ever reply, and when did each kind of automatic message last go.
+ */
+export async function contactAutoStats(phone: string): Promise<{
+  humanReplied: boolean;
+  lastAiAt: Date | null;
+  lastGreetingAt: Date | null;
+  handoffSent: boolean;
+}> {
+  const [row] = await db
+    .select({
+      human: sql<string>`sum(case when ${whatsappMessages.sentByUserId} is not null then 1 else 0 end)`,
+      lastAi: sql<string | null>`max(case when ${whatsappMessages.autoKind} = 'ai' then ${whatsappMessages.createdAt} end)`,
+      lastGreeting: sql<string | null>`max(case when ${whatsappMessages.autoKind} = 'greeting' then ${whatsappMessages.createdAt} end)`,
+      handoffs: sql<string>`sum(case when ${whatsappMessages.autoKind} = 'handoff' then 1 else 0 end)`,
+    })
+    .from(whatsappMessages)
+    .where(and(eq(whatsappMessages.contactPhone, phone), eq(whatsappMessages.direction, "out")));
+  // Raw SQL aggregates bypass drizzle's Date mapping: the pool runs with
+  // timezone "Z", so the string is UTC.
+  const asDate = (v: unknown): Date | null => {
+    if (!v) return null;
+    if (v instanceof Date) return v;
+    const d = new Date(`${String(v).replace(" ", "T")}Z`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  return {
+    humanReplied: Number(row?.human ?? 0) > 0,
+    lastAiAt: asDate(row?.lastAi),
+    lastGreetingAt: asDate(row?.lastGreeting),
+    handoffSent: Number(row?.handoffs ?? 0) > 0,
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Sending                                                                     */
 /* -------------------------------------------------------------------------- */
@@ -417,7 +463,7 @@ export async function sendAndRecordWhatsApp(p: {
   leadId: number | null;
   /** NULL = automatic; then `autoKind` says which. */
   userId: number | null;
-  autoKind?: "greeting" | "ai" | null;
+  autoKind?: "greeting" | "ai" | "handoff" | null;
 }): Promise<WaSendOutcome> {
   const config = whatsappConfig();
   if (!config) return { ok: false, error: "not_configured" };

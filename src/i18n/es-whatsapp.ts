@@ -72,4 +72,41 @@ export const esWhatsApp = {
     convertName: "Nombre",
     convertSubmit: "Crear consulta",
   },
+  /**
+   * The auto-responder's messages (PR 3). Wording is a founder decision —
+   * docs/decisions-needed.md; these are the conservative defaults. They never
+   * state a fact about a property, a price or a time.
+   */
+  auto: {
+    greetingFirst: (brand: string) =>
+      `¡Hola! Gracias por escribir a ${brand}. Recibimos tu mensaje y en breve te responde un asesor.`,
+    greetingClosed: (brand: string, hours: string) =>
+      `¡Hola! Gracias por escribir a ${brand}. En este momento estamos fuera de horario (${hours}). Te respondemos apenas volvamos.`,
+    handoff: (brand: string) => `Gracias por tu mensaje. Para esto te va a contactar un asesor de ${brand} a la brevedad.`,
+    hoursWords: { weekdays: "lunes a viernes", saturday: "sábados", sunday: "domingos", separator: ", " },
+  },
+  settings: {
+    title: "WhatsApp: respuestas automáticas",
+    hint: "Solo dentro de la ventana de 24 h de WhatsApp. Cada mensaje automático queda en la conversación marcado como «automático».",
+    notConfigured: "WhatsApp no está conectado todavía: estos ajustes se guardan pero no hacen nada hasta que lo esté.",
+    greetingLabel: "Saludo automático",
+    greetingBody:
+      "Un mensaje fijo al primer mensaje de un cliente y cuando escribe fuera de horario (como máximo uno cada 12 h por cliente, y nunca después de que alguien del equipo le respondió).",
+    aiLabel: "Respuesta automática con IA",
+    aiBody:
+      "La IA responde sola, sin que nadie lo lea antes. Como máximo un mensaje por cliente cada N horas, nunca después de que alguien del equipo respondió, y pasa a un asesor cualquier tema de precio, legal, documentos o reclamos, o cuando no está segura.",
+    aiNeedsKey: "Necesita GEMINI_API_KEY o ANTHROPIC_API_KEY en hPanel.",
+    cooldownLabel: "Horas entre respuestas de IA al mismo cliente",
+    hoursTitle: "Horario de atención (hora de Asunción)",
+    hoursHint: "Dejá los dos campos vacíos para un día cerrado.",
+    weekdays: "Lunes a viernes",
+    saturday: "Sábado",
+    sunday: "Domingo",
+    open: "Abre",
+    close: "Cierra",
+    previewTitle: "Textos que se envían",
+    save: "Guardar respuestas automáticas",
+    saved: "Respuestas automáticas guardadas.",
+    invalid: "Revisá los horarios (formato HH:MM, apertura antes del cierre) y las horas entre respuestas (1 a 168).",
+  },
 } as const;

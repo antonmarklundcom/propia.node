@@ -62,7 +62,20 @@ export interface AiReplyContext {
   messages: AiReplyMessage[];
   /** The person who will send it, for the sign-off. */
   agentName: string | null;
+  /**
+   * `auto` = sent without a person reading it first (the WhatsApp
+   * auto-responder, when the founder switches it on). Adds the stricter
+   * instruction below. Default `draft`.
+   */
+  mode?: "draft" | "auto";
 }
+
+/** Appended to the user turn when nobody will read the reply before it goes out. */
+export const AI_REPLY_AUTO_RULES = `This reply is sent AUTOMATICALLY, with no person reading it first. Be extra careful:
+- Answer only what CONTEXT answers directly. For anything else, say an advisor from the team will reply shortly.
+- Do not agree to or propose any visit time, price, discount, reservation or document. Offer that an advisor will coordinate it.
+- Do not sign with a person's name; sign with the business name.
+- Set "confident" to false unless the answer is fully supported by CONTEXT.`;
 
 const LEAD_TYPE_WORDS: Record<string, string> = {
   buyer: "wants to buy",
@@ -190,6 +203,7 @@ export function buildAiReplyPrompt(ctx: AiReplyContext): string | null {
     const from = m.direction === "in" ? "customer" : "us";
     parts.push(`<message from="${from}">\n${fence(m.body)}\n</message>`);
   }
+  if (ctx.mode === "auto") parts.push(AI_REPLY_AUTO_RULES);
   parts.push("Draft the next reply from us to the customer, following every rule.");
   return parts.join("\n\n");
 }

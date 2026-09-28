@@ -342,3 +342,15 @@ migration 0021). Working with these defaults; say if any should change:
 5. **Privacy:** WhatsApp messages and media are now stored in the database and
    the private R2 bucket. The privacy policy should say so — founder wording.
 
+## 2026-09-28 — WhatsApp auto-response: policy (founder)
+
+Shipped with both switches OFF (`/admin/ajustes`). Decide before turning on:
+1. **What may the AI say unsupervised?** Today: only facts from the listing
+   row; price negotiation, legal/documents/taxes, complaints and anything the
+   model is unsure of get the hand-off line instead. Never after a person
+   replied; once per contact per 12 h (setting).
+2. **Office hours** default Mon–Fri 08:00–18:00, Sat 08:00–12:00, Sun closed
+   (Asunción). Correct?
+3. **Wording** of the three texts (`esWhatsApp.auto` in `src/i18n/es-whatsapp.ts`):
+   first-contact greeting, out-of-hours greeting, hand-off line.
+
