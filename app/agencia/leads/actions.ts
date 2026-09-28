@@ -17,6 +17,7 @@ import {
 } from "@/lib/lead-assignments";
 import { handleLeadEmailForm } from "@/lib/inbox-access";
 import { suggestLeadEmailReply, type SuggestOutcome } from "@/lib/ai-reply";
+import { handleLeadWhatsAppForm } from "@/lib/whatsapp-access";
 import { parsePartnerStageForm } from "@/lib/deal-form";
 import { setPartnerDealStage } from "@/lib/deals";
 import { recordAdminEvent } from "@/lib/admin-events";
@@ -111,4 +112,16 @@ export async function setDealStageAction(formData: FormData): Promise<void> {
 export async function suggestLeadReplyAction(leadId: number): Promise<SuggestOutcome> {
   const ctx = await requireAgencyContext();
   return suggestLeadEmailReply(ctx.user, Number(leadId));
+}
+
+/**
+ * A partner's WhatsApp block: read-only — "Marcar como leído" only. The
+ * business number is the founder's (docs/decisions-needed.md), so a reply
+ * from this panel is refused whatever the form says.
+ */
+export async function leadWhatsAppAction(formData: FormData): Promise<void> {
+  const ctx = await requireAgencyContext();
+  const code = await handleLeadWhatsAppForm(ctx.user, formData, false);
+  revalidatePath("/agencia/leads");
+  redirect(`/agencia/leads?msg=${code}`);
 }

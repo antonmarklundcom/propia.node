@@ -68,7 +68,7 @@ export interface LeadPayload {
  * provider means no alert, never a logged line pretending to be one.
  */
 export interface OperatorAlert {
-  kind: "new_lead" | "review_submitted" | "new_email" | "share_reminder" | "new_partner" | "site_health";
+  kind: "new_lead" | "review_submitted" | "new_email" | "new_whatsapp" | "share_reminder" | "new_partner" | "site_health";
   /** One line, already in the operator's language. */
   title: string;
   detail?: string;

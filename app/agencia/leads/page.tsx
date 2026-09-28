@@ -17,7 +17,10 @@ import {
   REALTOR_STATES,
   type PanelViewer,
 } from "@/lib/lead-assignments";
-import { leadEmailAction, setDealStageAction, setPartnerNoteAction, setShareStateAction, suggestLeadReplyAction } from "./actions";
+import { leadEmailAction, leadWhatsAppAction, setDealStageAction, setPartnerNoteAction, setShareStateAction, suggestLeadReplyAction } from "./actions";
+import { LeadWhatsAppThread } from "@/components/panel/WhatsAppThread";
+import { listLeadWhatsApp, type WhatsAppMessage } from "@/lib/whatsapp-inbox";
+import { LEAD_WHATSAPP_FLASH } from "@/lib/whatsapp-access";
 import { isAiReplyEnabled } from "@/lib/ai-reply";
 import { esTelegram } from "@/i18n/es-telegram";
 import { esInbox } from "@/i18n/es-e2";
@@ -61,6 +64,7 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   note_saved: { text: esTelegram.note.saved },
   note_invalid: { text: esTelegram.note.invalid, error: true },
   ...LEAD_EMAIL_FLASH,
+  ...LEAD_WHATSAPP_FLASH,
   ...Object.fromEntries(
     Object.entries(esDeals.partnerFlash).map(([k, text]) => [k, { text, error: k !== "deal_saved" }]),
   ),
@@ -111,6 +115,24 @@ function DealStageForm({ leadId, deal }: { leadId: number; deal: PartnerDealStag
         </button>
       </div>
     </form>
+  );
+}
+
+/**
+ * A lead's WhatsApp messages on the business number, read-only for a partner
+ * (they answer from their own WhatsApp). Nothing when the customer never wrote
+ * there. A read failure (migration 0021 not applied) shows nothing.
+ */
+function WhatsAppBlock({ leadId, threads }: { leadId: number; threads: Map<number, WhatsAppMessage[]> }) {
+  return (
+    <LeadWhatsAppThread
+      messages={threads.get(leadId) ?? []}
+      action={leadWhatsAppAction}
+      hidden={{ leadId }}
+      canReply={false}
+      phone={null}
+      lastInboundAt={null}
+    />
   );
 }
 
@@ -185,7 +207,10 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
     return <p className="panel-empty">{esPanel.agencyLeadsEmpty}</p>;
   }
   // Threads of exactly the leads this list shows (wave E2).
-  const threads = await listLeadThreads(leads.map((l) => l.id));
+  const [threads, waThreads] = await Promise.all([
+    listLeadThreads(leads.map((l) => l.id)),
+    listLeadWhatsApp(leads.map((l) => l.id)).catch(() => new Map<number, WhatsAppMessage[]>()),
+  ]);
 
   return (
     <>
@@ -225,6 +250,7 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
             <div className="panel-card__body panel-card__body--message">{lead.message}</div>
           ) : null}
           <EmailBlock leadId={lead.id} email={lead.email} threads={threads} />
+          <WhatsAppBlock leadId={lead.id} threads={waThreads} />
         </article>
       ))}
     </>
@@ -240,9 +266,10 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
 async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: string }) {
   const shared = await getSharedLeads(viewer);
   if (shared.length === 0) return null;
-  const [threads, dealStages] = await Promise.all([
+  const [threads, dealStages, waThreads] = await Promise.all([
     listLeadThreads(shared.map((l) => l.id)),
     getPartnerDealStages(viewer, shared.map((l) => l.id)),
+    listLeadWhatsApp(shared.map((l) => l.id)).catch(() => new Map<number, WhatsAppMessage[]>()),
   ]);
 
   return (
@@ -294,6 +321,7 @@ async function SharedLeads({ viewer, origin }: { viewer: PanelViewer; origin: st
             <div className="panel-card__body panel-card__body--message">{lead.message}</div>
           ) : null}
           <EmailBlock leadId={lead.id} email={lead.email} threads={threads} />
+          <WhatsAppBlock leadId={lead.id} threads={waThreads} />
 
           <form action={setShareStateAction} className="panel-form">
             <input type="hidden" name="assignmentId" value={lead.assignmentId} />

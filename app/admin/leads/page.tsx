@@ -58,7 +58,12 @@ import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
 import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
 import { LeadEmailThread } from "@/components/panel/EmailThread";
-import { leadEmailAction, suggestLeadReplyAction } from "./actions";
+import { leadEmailAction, leadWhatsAppAction, suggestLeadReplyAction, suggestLeadWhatsAppReplyAction } from "./actions";
+import { LeadWhatsAppThread } from "@/components/panel/WhatsAppThread";
+import { getWhatsAppContacts, listLeadWhatsApp, type WhatsAppContact, type WhatsAppMessage } from "@/lib/whatsapp-inbox";
+import { LEAD_WHATSAPP_FLASH } from "@/lib/whatsapp-access";
+import { normalizeWaPhone } from "@/lib/whatsapp-webhook";
+import { isWhatsAppConfigured } from "@/lib/whatsapp";
 import { isAiReplyEnabled } from "@/lib/ai-reply";
 import { DealPanel, DealStageReadOnly } from "./DealPanel";
 import { esDeals } from "@/i18n/es-deals";
@@ -208,6 +213,7 @@ const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
   share_invalid: { text: esPanel.shareFlashInvalid, error: true },
   share_revoked: { text: esPanel.shareFlashRevoked },
   ...LEAD_EMAIL_FLASH,
+  ...LEAD_WHATSAPP_FLASH,
   converted: { text: esInbox.flash.converted },
   ...Object.fromEntries(
     Object.entries(esDeals.flash).map(([k, text]) => [k, { text, error: !esDeals.flashOk.includes(k) }]),
@@ -385,6 +391,14 @@ export default async function AdminLeadsPage({
     superAdmin ? getDealsForLeads(leadIds) : Promise.resolve(new Map<number, DealRow>()),
     superAdmin ? Promise.resolve(new Map<number, DealStageRow>()) : getDealStagesForLeads(leadIds),
   ]);
+  // WhatsApp threads of exactly these rows (they carry the staff rule), and
+  // each number's 24-hour window. A read failure (migration 0021 not applied
+  // yet) leaves the cards without a WhatsApp block rather than failing the page.
+  const [waThreads, waContacts] = await Promise.all([
+    listLeadWhatsApp(leadIds).catch(() => new Map<number, WhatsAppMessage[]>()),
+    getWhatsAppContacts(rows.map((r) => normalizeWaPhone(r.whatsapp) ?? "")).catch(() => new Map<string, WhatsAppContact>()),
+  ]);
+  const waSendable = isWhatsAppConfigured();
   const openDealLead = Number(negocio) || 0;
   // The doors "Registrar consulta de WhatsApp" can file a lead under.
   const waSites = Object.entries(VERTICALS)
@@ -542,6 +556,16 @@ export default async function AdminLeadsPage({
         replyTo={leadReplyRecipient(threads.get(lead.id) ?? [], lead.email)}
         unavailable={replyAvailable ? null : esInbox.thread.replyUnavailable}
         suggest={isAiReplyEnabled() ? suggestLeadReplyAction.bind(null, lead.id) : undefined}
+      />
+
+      <LeadWhatsAppThread
+        messages={waThreads.get(lead.id) ?? []}
+        action={leadWhatsAppAction}
+        hidden={{ leadId: lead.id, back: backHref }}
+        canReply={waSendable}
+        phone={normalizeWaPhone(lead.whatsapp)}
+        lastInboundAt={waContacts.get(normalizeWaPhone(lead.whatsapp) ?? "")?.lastInboundAt ?? null}
+        suggest={isAiReplyEnabled() ? suggestLeadWhatsAppReplyAction.bind(null, lead.id) : undefined}
       />
 
       <form action={updateLeadAction} className="panel-form">

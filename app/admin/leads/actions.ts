@@ -38,7 +38,8 @@ import { BRAND_NAME } from "@/lib/brand";
 import { siteOrigin } from "@/lib/origin";
 import { recordAdminEvent } from "@/lib/admin-events";
 import { handleLeadEmailForm } from "@/lib/inbox-access";
-import { suggestLeadEmailReply, type SuggestOutcome } from "@/lib/ai-reply";
+import { suggestLeadEmailReply, suggestLeadWhatsAppReply, type SuggestOutcome } from "@/lib/ai-reply";
+import { handleLeadWhatsAppForm } from "@/lib/whatsapp-access";
 import {
   findLeadListing,
   leadLaneFor,
@@ -497,4 +498,23 @@ export async function logWhatsappLeadAction(
 export async function suggestLeadReplyAction(leadId: number): Promise<SuggestOutcome> {
   const user = await requireStaffOrAbove();
   return suggestLeadEmailReply(user, Number(leadId));
+}
+
+/**
+ * The WhatsApp block under a lead card: reply on the business number (inside
+ * the 24-hour window) or mark read. `handleLeadWhatsAppForm()` re-checks the
+ * lead against this user's own visibility (staff: internal lane) first.
+ */
+export async function leadWhatsAppAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const code = await handleLeadWhatsAppForm(user, formData, true);
+  const target = backTarget(formData);
+  revalidatePath(ROUTE);
+  redirect(`${target}${target.includes("?") ? "&" : "?"}msg=${code}`);
+}
+
+/** "Sugerir respuesta" on a lead's WhatsApp thread — a draft, never a send. */
+export async function suggestLeadWhatsAppReplyAction(leadId: number): Promise<SuggestOutcome> {
+  const user = await requireStaffOrAbove();
+  return suggestLeadWhatsAppReply(user, Number(leadId));
 }

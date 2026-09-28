@@ -34,7 +34,10 @@ import {
   type SendOutcome,
 } from "@/lib/inbox";
 import { esInbox } from "@/i18n/es-e2";
-import { suggestInboxReply, type SuggestOutcome } from "@/lib/ai-reply";
+import { suggestInboxReply, suggestWhatsAppChatReply, type SuggestOutcome } from "@/lib/ai-reply";
+import { attachWhatsAppChatToLead, getWhatsAppChat, getWhatsAppContact, sendAndRecordWhatsApp } from "@/lib/whatsapp-inbox";
+import { normalizeWaPhone } from "@/lib/whatsapp-webhook";
+import { waOutcomeFlash } from "@/lib/whatsapp-access";
 
 const ROUTE = "/admin/inbox";
 
@@ -183,4 +186,100 @@ export async function suggestInboxReplyAction(thread: string): Promise<SuggestOu
     return { ok: false, error: "not_found" };
   }
   return suggestInboxReply(user, thread);
+}
+
+/* -------------------------------------------------------------------------- */
+/* WhatsApp chats (docs/log/whatsapp-inbox.md)                                 */
+/* -------------------------------------------------------------------------- */
+
+const WA_ROUTE = "/admin/inbox/whatsapp";
+
+function waPhoneFrom(formData: FormData): string | null {
+  return normalizeWaPhone(String(formData.get("phone") ?? ""));
+}
+
+/**
+ * Reply on an unattached chat. Staff or above; the chat must exist (a forged
+ * number with no conversation gets nothing), and `sendAndRecordWhatsApp()`
+ * refuses outside the 24-hour window before calling Meta.
+ */
+export async function replyWhatsAppChatAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const phone = waPhoneFrom(formData);
+  const chat = phone ? await getWhatsAppChat(phone) : null;
+  if (!phone || !chat) redirect(`/admin/inbox?vista=whatsapp&msg=wa_not_found`);
+  const out = await sendAndRecordWhatsApp({ to: phone, body: String(formData.get("body") ?? ""), leadId: null, userId: user.id });
+  revalidatePath(WA_ROUTE);
+  redirect(`${WA_ROUTE}/${phone}?msg=${waOutcomeFlash(out)}`);
+}
+
+/** "Sugerir respuesta" on an unattached chat — a draft, never a send. */
+export async function suggestWhatsAppChatReplyAction(phone: string): Promise<SuggestOutcome> {
+  const user = await requireStaffOrAbove();
+  const p = typeof phone === "string" ? normalizeWaPhone(phone) : null;
+  if (!p) return { ok: false, error: "not_found" };
+  return suggestWhatsAppChatReply(user, p);
+}
+
+const waConvertSchema = z.object({
+  leadType: z.enum(["buyer", "renter", "seller", "valuation", "landlord", "question"]),
+  name: z.string().trim().max(140).optional(),
+});
+
+/**
+ * "Convertir en consulta" for a WhatsApp chat: an internal-lane lead written
+ * the way the public form writes one, `utm.source = "whatsapp:inbox"` as the
+ * marker (no `leads.source` column, on purpose), the chat moved under it, the
+ * CRM copy in `after()`. No operator alert: the operator made it.
+ */
+export async function convertWhatsAppToLeadAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const phone = waPhoneFrom(formData);
+  const chat = phone ? await getWhatsAppChat(phone) : null;
+  if (!phone || !chat) redirect(`/admin/inbox?vista=whatsapp&msg=wa_not_found`);
+  const parsed = waConvertSchema.safeParse({ leadType: formData.get("leadType"), name: formData.get("name") || undefined });
+  if (!parsed.success) redirect(`${WA_ROUTE}/${phone}?msg=wa_convert_invalid`);
+
+  const contact = await getWhatsAppContact(phone);
+  const firstIn = chat.find((m) => m.direction === "in" && m.body);
+  const message = firstIn?.body?.trim().slice(0, 2000) || null;
+  const vertical = VERTICALS[rootDomain()]?.key ?? DEFAULT_VERTICAL_KEY;
+  const utm = { source: "whatsapp:inbox" };
+  const name = (parsed.data.name ?? contact?.name ?? "").slice(0, 140) || null;
+  const whatsapp = `+${phone}`;
+
+  const [res] = await db.insert(leads).values({
+    leadType: parsed.data.leadType,
+    vertical,
+    name,
+    whatsapp,
+    message,
+    utm,
+    routedTo: "internal",
+  });
+  const leadId = Number((res as unknown as { insertId: number }).insertId);
+  await attachWhatsAppChatToLead(phone, leadId);
+  await recordAdminEvent(user.id, "lead.from_whatsapp", "lead", leadId, { source: "whatsapp:inbox" });
+
+  const payload: LeadPayload & { leadId: number } = {
+    leadId,
+    leadType: parsed.data.leadType,
+    vertical,
+    name: name ?? undefined,
+    whatsapp,
+    message: message ?? undefined,
+    utm,
+    routedTo: "internal",
+  };
+  after(async () => {
+    try {
+      await deliverLead(payload);
+    } catch {
+      /* the lead row is the record; a failed copy is not an incident */
+    }
+  });
+
+  revalidatePath("/admin/inbox");
+  revalidatePath("/admin/leads");
+  redirect(`/admin/leads?tel=${phone.slice(-9)}&msg=wa_converted`);
 }

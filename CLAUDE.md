@@ -418,6 +418,24 @@ default, `--dry` first). It records itself as a revertible import job.
     `admin_events` with token counts (hidden from `/admin/historial`);
     `/admin/ajustes` shows the month's estimated cost.
 
+19. **WhatsApp Cloud API inbox (2026-09-28, migration 0021, `docs/log/whatsapp-inbox.md`).**
+    The founder's business number through Meta's Cloud API. `src/lib/whatsapp.ts`
+    is **the only Graph API caller**; `src/lib/whatsapp-inbox.ts` the only
+    module on `whatsapp_messages` / `whatsapp_contacts`; the pure half
+    (signature, parser, phones, 24 h window) is `src/lib/whatsapp-webhook.ts`
+    (`npm run verify:whatsapp`, in `verify:local` and the pre-push hook).
+    `/api/whatsapp`: GET = Meta handshake, POST = `X-Hub-Signature-256` checked
+    before parsing, rows written before the 200 (idempotent on
+    `wa_message_id`), media + `alertOperator()` in `after()`. Off (503, panels
+    hidden) until `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
+    `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` are all set. Threads follow
+    the email inbox: a message matched to a lead (newest lead with the same last
+    nine digits) shows under the lead to whoever `userMaySeeLead()` allows; an
+    unmatched chat shows in `/admin/inbox?vista=whatsapp` (staff and above) with
+    "Convertir en consulta". **Sending: /admin only, inside the 24 h window;
+    partners read.** Templates (the only way to write outside the window) are
+    not built. Local test without Meta: `npm run whatsapp:replay`.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
@@ -761,8 +779,8 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`.
-  Same thing by hand: `npm run verify:local`. The last ten are pure — no database, no network —
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`.
+  Same thing by hand: `npm run verify:local`. The last eleven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath
@@ -806,6 +824,7 @@ that section no longer lists everything:
 | `drizzle/0018_hard_deathstrike.sql` | inbound email: `email_messages`, `email_attachments` (E2/E3, #219) | **yes, 2026-09-26** (founder, before merging #219) |
 | `drizzle/0019_fuzzy_ego.sql` | `deals`, `analytics_events`, `analytics_daily`, `lead_assignments.partner_note` / `reminded_at`, `users.telegram_chat_id` (`docs/plan-agency-2026-09-26.md` batch 2) | **yes, 2026-09-27** (founder: `db:status` → 0 pending, 20 applied, No drift) |
 | `drizzle/0020_dry_caretaker.sql` | the `web_vitals` table (page speed from real visitors, PR #244) | **no** — the founder applies it before merging #244; until then the beacon's inserts are dropped and `/admin/analitica` says "migración 0020 pendiente" |
+| `drizzle/0021_tiresome_newton_destine.sql` | `whatsapp_messages`, `whatsapp_contacts` (WhatsApp Cloud API inbox, `docs/log/whatsapp-inbox.md`) | **no** — founder applies before merging the WhatsApp PR; `db:migrate` also runs 0020 if still pending |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

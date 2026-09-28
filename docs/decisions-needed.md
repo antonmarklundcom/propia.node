@@ -320,3 +320,25 @@ Working with these defaults; say if any should change:
    should get it too (one prop on one page).
 4. **30 suggestions per user per hour.** Per process, like every limiter here.
 
+## 2026-09-28 — WhatsApp Cloud API inbox: choices made while building
+
+Built on `claude/whatsapp-inbox-nh27nk` (`docs/log/whatsapp-inbox.md`,
+migration 0021). Working with these defaults; say if any should change:
+
+1. **Partners read WhatsApp threads but cannot reply from `/agencia`.** The
+   number is the portal's; a partner writing from it speaks as the portal.
+   They answer from their own WhatsApp (the card's existing button). Letting
+   them send is one flag in `app/agencia/leads/actions.ts`.
+2. **Staff see every unmatched chat** on the business number (like hola@),
+   and the WhatsApp threads of internal-lane leads only (the existing rule).
+3. **An inbound message is attached to the newest lead with the same last
+   nine digits**, at the moment it arrives. If one person has several leads
+   (e.g. one per agency), the newest wins, and a partner who holds an older
+   lead from the same person does not see the new message. Alternative: never
+   auto-attach, operator attaches by hand.
+4. **No message templates** — outside the 24-hour window the panel offers a
+   wa.me link instead. Templates need Meta approval per wording; say which
+   ones (e.g. "seguimiento de consulta") if wanted.
+5. **Privacy:** WhatsApp messages and media are now stored in the database and
+   the private R2 bucket. The privacy policy should say so — founder wording.
+
