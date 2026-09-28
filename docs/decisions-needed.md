@@ -300,3 +300,23 @@ comprar, usados, en pozo, financiados); (2) dropped; (3) still waits on F-f.
 3. The national searches (`casas en paraguay` 210, `venta de casas baratas en
    paraguay` 170, `terrenos baratos en paraguay` 140 …) have no indexable page
    until decision F-f (a clean `/venta/casas` URL) is made.
+
+## 2026-09-28 — AI reply suggestions: choices made while building
+
+Built on `claude/ai-reply-suggestions-nh27nk` (`docs/log/ai-reply.md`).
+Working with these defaults; say if any should change:
+
+1. **Customer messages go to Google (Gemini) or Anthropic (Claude)** when an
+   operator presses "Sugerir respuesta": the lead's name, the listing, and the
+   last messages of the thread. Nothing is sent until someone clicks. The
+   privacy policy does not name AI processors today — **founder wording
+   needed** if it should (this rides on the open privacy sentence of
+   2026-09-25).
+2. **Gemini is the default provider** (cheapest: gemini-3.5-flash-lite, the
+   model `cron:translate` already uses). `AI_REPLY_PROVIDER=claude` switches to
+   claude-sonnet-5-5 — better Spanish, roughly 5–7× the cost per draft.
+3. **Partners get the button on `/agencia/leads`, FSBO owners do not** on
+   `/mis-avisos/consultas`. Every click is paid by the portal; say if owners
+   should get it too (one prop on one page).
+4. **30 suggestions per user per hour.** Per process, like every limiter here.
+

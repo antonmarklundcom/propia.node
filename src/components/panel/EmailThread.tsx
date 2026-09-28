@@ -13,6 +13,9 @@ import { esInbox } from "@/i18n/es-e2";
 import { emailFrameDocument, emailHtmlForView, hasRemoteImages } from "@/lib/inbox-html";
 import { formatEmailWhen, type InboxMessage } from "@/lib/inbox";
 import { EmailHtmlFrame } from "./EmailHtmlFrame";
+import { AiReplyTextarea } from "./AiReplyTextarea";
+import type { SuggestOutcome } from "@/lib/ai-reply-prompt";
+import { aiReplyButtonLabels, esAiReply } from "@/i18n/es-ai";
 import styles from "./inbox.module.css";
 
 const t = esInbox.thread;
@@ -91,6 +94,11 @@ export function LeadEmailThread(props: {
   replyTo: string | null;
   /** Shown instead of the box when replying is not possible yet. */
   unavailable?: string | null;
+  /**
+   * "Sugerir respuesta": a server action bound to this lead. Omitted when AI
+   * suggestions are off (`isAiReplyEnabled()`), which keeps the plain box.
+   */
+  suggest?: () => Promise<SuggestOutcome>;
 }): ReactNode {
   const { messages } = props;
   const unread = messages.filter((m) => m.direction === "in" && !m.readAt).length;
@@ -126,7 +134,18 @@ export function LeadEmailThread(props: {
           <input type="hidden" name="mode" value="reply" />
           <label className="panel-form__field" style={{ flexBasis: "100%" }}>
             <span className="auth-field__label">{t.replyLabel}</span>
-            <textarea className="auth-field__input" name="body" required maxLength={10_000} />
+            {props.suggest ? (
+              <AiReplyTextarea
+                className="auth-field__input"
+                name="body"
+                required
+                maxLength={10_000}
+                suggest={props.suggest}
+                labels={aiReplyButtonLabels(esAiReply)}
+              />
+            ) : (
+              <textarea className="auth-field__input" name="body" required maxLength={10_000} />
+            )}
           </label>
           <p className="panel-note" style={{ flexBasis: "100%", margin: 0 }}>
             {t.replyTo(props.replyTo!)}

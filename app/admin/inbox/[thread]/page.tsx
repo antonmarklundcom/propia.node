@@ -19,7 +19,10 @@ import { LEAD_EMAIL_FLASH } from "@/lib/inbox-access";
 import { esInbox } from "@/i18n/es-e2";
 import styles from "@/components/panel/inbox.module.css";
 import { adminTabs } from "../../tabs";
-import { archiveAction, convertToLeadAction, replyInboxAction } from "../actions";
+import { archiveAction, convertToLeadAction, replyInboxAction, suggestInboxReplyAction } from "../actions";
+import { AiReplyTextarea } from "@/components/panel/AiReplyTextarea";
+import { isAiReplyEnabled } from "@/lib/ai-reply";
+import { aiReplyButtonLabels, esAiReply } from "@/i18n/es-ai";
 
 export const metadata: Metadata = {
   title: esInbox.admin.metaTitle,
@@ -115,7 +118,18 @@ export default async function AdminInboxThreadPage({
               <input type="hidden" name="thread" value={thread} />
               <label className="panel-form__field" style={{ flexBasis: "100%" }}>
                 <span className="auth-field__label">{t.replyTo(to)}</span>
-                <textarea className="auth-field__input" name="body" required maxLength={10_000} />
+                {isAiReplyEnabled() ? (
+                  <AiReplyTextarea
+                    className="auth-field__input"
+                    name="body"
+                    required
+                    maxLength={10_000}
+                    suggest={suggestInboxReplyAction.bind(null, thread)}
+                    labels={aiReplyButtonLabels(esAiReply)}
+                  />
+                ) : (
+                  <textarea className="auth-field__input" name="body" required maxLength={10_000} />
+                )}
               </label>
               <p className="panel-note" style={{ flexBasis: "100%", margin: 0 }}>
                 {isRootSendingEnabled() ? t.rootSendingOn(mailbox) : t.rootSendingOff(mailbox, senderAddress()?.address ?? "")}

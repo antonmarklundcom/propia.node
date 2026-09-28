@@ -58,7 +58,8 @@ import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
 import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
 import { LeadEmailThread } from "@/components/panel/EmailThread";
-import { leadEmailAction } from "./actions";
+import { leadEmailAction, suggestLeadReplyAction } from "./actions";
+import { isAiReplyEnabled } from "@/lib/ai-reply";
 import { DealPanel, DealStageReadOnly } from "./DealPanel";
 import { esDeals } from "@/i18n/es-deals";
 import {
@@ -540,6 +541,7 @@ export default async function AdminLeadsPage({
         hidden={{ leadId: lead.id, back: backHref }}
         replyTo={leadReplyRecipient(threads.get(lead.id) ?? [], lead.email)}
         unavailable={replyAvailable ? null : esInbox.thread.replyUnavailable}
+        suggest={isAiReplyEnabled() ? suggestLeadReplyAction.bind(null, lead.id) : undefined}
       />
 
       <form action={updateLeadAction} className="panel-form">
