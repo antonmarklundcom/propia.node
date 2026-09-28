@@ -36,6 +36,7 @@ export default async function RegisterPage({
     email?: string;
     agencyName?: string;
     whatsapp?: string;
+    plan?: string;
   }>;
 }) {
   const d = await dict();
@@ -53,7 +54,11 @@ export default async function RegisterPage({
   generic: t.registerErrorGeneric,
 };
 
-  const { error, kind, invite, next, name, email, agencyName, whatsapp } = await searchParams;
+  const { error, kind, invite, next, name, email, agencyName, whatsapp, plan } = await searchParams;
+  // A marketing link like /registro?plan=destacado; anything else is ignored
+  // rather than rejected — registerAccount falls back to "free" regardless.
+  const planValue: "destacado" | "partner" | null =
+    plan === "destacado" || plan === "partner" ? plan : null;
 
   // Already signed in → straight to the right home, unless they arrived with an
   // invitation: an existing account should be able to *join* that agency rather
@@ -105,12 +110,24 @@ export default async function RegisterPage({
             </p>
           ) : null}
 
+          {!invitation && planValue === "destacado" ? (
+            <p className="auth-note">{t.registerPlanNoteDestacado}</p>
+          ) : null}
+          {!invitation && planValue === "partner" ? (
+            <p className="auth-note">{t.registerPlanNotePartner}</p>
+          ) : null}
+
           <form action={registerAction}>
             {next ? <input type="hidden" name="next" value={next} /> : null}
             {/* The token carries the agency and the role. The form asks for
                 neither — same rule as the missing `role` field. */}
             {invitation ? (
               <input type="hidden" name="invite" value={invitation.token} />
+            ) : null}
+            {/* Only meaningful for kind === "agency"; registerAccount ignores
+                it otherwise, so no harm in always sending it when present. */}
+            {!invitation && planValue ? (
+              <input type="hidden" name="plan" value={planValue} />
             ) : null}
 
             <fieldset className="auth-choice">

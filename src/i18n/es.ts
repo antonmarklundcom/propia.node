@@ -3828,6 +3828,8 @@ export const esPublicAuth = {
   registerSubmit: "Crear cuenta",
   registerPendingNote: "Tu cuenta queda activa al instante. La verificación (el ✓ en tu perfil) la aprobamos a mano después de revisar tus datos.",
   registerToLogin: "¿Ya tenés cuenta? Ingresá",
+  registerPlanNoteDestacado: "Te estás registrando en el plan Destacado.",
+  registerPlanNotePartner: "Te estás registrando en el plan Partner.",
   loginMetaTitle: "Ingresar",
   registerMetaTitle: "Creá tu cuenta",
   registerDescription: (brand: string) => `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,

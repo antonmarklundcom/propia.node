@@ -35,6 +35,9 @@ import {
  */
 export type AccountKind = "agency" | "independent" | "invite" | "owner";
 
+/** Mirrors `agencies.plan` (src/db/schema.ts). Anything else at signup is "free". */
+export type AgencyPlan = "free" | "destacado" | "partner";
+
 export interface RegistrationInput {
   kind: AccountKind;
   /** The person signing up. */
@@ -46,6 +49,15 @@ export interface RegistrationInput {
   agencyName: string | null;
   /** Invite token — required for kind === "invite", ignored otherwise. */
   inviteToken?: string | null;
+  /**
+   * The agency's starting plan, from a marketing link like
+   * `/registro?plan=destacado`. Ignored unless kind === "agency" — an invited
+   * member or independent agent has no `agencies` row of their own to carry a
+   * plan, and an unrecognised value here is the caller's bug, not the
+   * visitor's, so it silently falls back to "free" rather than failing the
+   * whole sign-up.
+   */
+  plan?: AgencyPlan | null;
 }
 
 export type RegistrationError =
@@ -158,6 +170,10 @@ export async function registerAccount(
       }
 
       if (input.kind === "agency") {
+        const plan: AgencyPlan =
+          input.plan === "destacado" || input.plan === "partner"
+            ? input.plan
+            : "free";
         const [agency] = await tx
           .insert(agencies)
           .values({
@@ -166,6 +182,7 @@ export async function registerAccount(
             email,
             whatsapp,
             isVerified: false,
+            plan,
           })
           .$returningId();
         if (!agency) throw new Error("Agency insert did not produce a row");
