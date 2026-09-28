@@ -21,6 +21,8 @@ import {
   type DimRow,
 } from "@/lib/analytics-queries";
 import { esAnalytics } from "@/i18n/es-analytics";
+import { webVitalsSummary, type VitalSummary } from "@/lib/web-vitals";
+import { PAGE_TYPES, VITAL_METRICS, vitalRating, type VitalMetric, type VitalRating } from "@/lib/web-vitals-shared";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
@@ -83,6 +85,94 @@ function DimTable({
   );
 }
 
+/** Green, amber, red — the pill shape of `.panel-status`, its own colours. */
+const RATING_CLASS: Record<VitalRating, string> = {
+  good: "panel-status panel-vital--good",
+  "needs-improvement": "panel-status panel-vital--mid",
+  poor: "panel-status panel-vital--poor",
+};
+
+function fmtVital(metric: VitalMetric, v: number): string {
+  if (metric === "CLS") return v.toLocaleString("es-PY", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  if (v < 1000) return `${Math.round(v).toLocaleString("es-PY")} ms`;
+  return `${(v / 1000).toLocaleString("es-PY", { maximumFractionDigits: 1, minimumFractionDigits: 1 })} s`;
+}
+
+/**
+ * Page speed from real visitors (src/lib/web-vitals.ts): p75 per page type
+ * and metric over the last 7 days, whatever the page's range selector says —
+ * speed is a "how is it now" number, not a trend.
+ */
+function VitalsSection({
+  summary,
+  device,
+  query,
+}: {
+  summary: VitalSummary | null;
+  device: "mobile" | "desktop";
+  query: (device: string) => string;
+}) {
+  const t = esAnalytics;
+  const rows = PAGE_TYPES.filter((p) => summary?.has(p));
+  return (
+    <article className="panel-card">
+      <h3 className="panel-section__title">{t.vitalsTitle}</h3>
+      <p className="panel-note">{t.vitalsIntro}</p>
+      <nav className="panel-chips" aria-label={t.vitalsTitle}>
+        {(["mobile", "desktop"] as const).map((d) => (
+          <Link key={d} href={query(d)} className={`panel-chip${d === device ? " panel-chip--active" : ""}`}>
+            {t.vitalsDevices[d]}
+          </Link>
+        ))}
+      </nav>
+      {summary === null ? (
+        <p className="panel-empty">{t.vitalsMissing}</p>
+      ) : rows.length === 0 ? (
+        <p className="panel-empty">{t.vitalsEmpty}</p>
+      ) : (
+        <div className="panel-table__wrap">
+          <table className="panel-table">
+            <thead>
+              <tr>
+                <th>{t.vitalsPageHead}</th>
+                {VITAL_METRICS.map((m) => (
+                  <th key={m}>{t.vitalsMetrics[m]}</th>
+                ))}
+                <th>{t.vitalsSamplesHead}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((p) => {
+                const byMetric = summary.get(p)!;
+                // Every page load reports TTFB first; the largest count is the page loads measured.
+                const samples = Math.max(...[...byMetric.values()].map((c) => c.samples));
+                return (
+                  <tr key={p}>
+                    <td>{t.vitalsPageTypes[p] ?? p}</td>
+                    {VITAL_METRICS.map((m) => {
+                      const cell = byMetric.get(m);
+                      if (!cell || cell.p75 === null) return <td key={m}>—</td>;
+                      const rating = vitalRating(m, cell.p75);
+                      return (
+                        <td key={m}>
+                          <span className={RATING_CLASS[rating]} title={`${t.vitalsRatings[rating]} · ${fmt(cell.samples)}`}>
+                            {fmtVital(m, cell.p75)}
+                          </span>
+                        </td>
+                      );
+                    })}
+                    <td>{fmt(samples)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </article>
+  );
+}
+
 /**
  * First-party analytics (docs/plan-agency-2026-09-26.md batch 5). Super-admin
  * only: it is the business's own numbers, not staff's.
@@ -90,16 +180,20 @@ function DimTable({
 export default async function AdminAnalyticsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ dias?: string; sitio?: string }>;
+  searchParams: Promise<{ dias?: string; sitio?: string; disp?: string }>;
 }) {
   const [params, user] = await Promise.all([searchParams, requireSuperAdmin()]);
   const t = esAnalytics;
   const days = RANGES.includes(Number(params.dias) as (typeof RANGES)[number]) ? Number(params.dias) : 30;
   const knownKeys = new Set(Object.values(VERTICALS).map((v) => v.key));
   const vertical = params.sitio && knownKeys.has(params.sitio as never) ? params.sitio : null;
+  // Google assesses mobile first, so that is the default view.
+  const device = params.disp === "desktop" ? "desktop" : "mobile";
+  const vitalsQuery = (d: string) =>
+    `/admin/analitica?${new URLSearchParams({ dias: String(days), ...(vertical ? { sitio: vertical } : {}), disp: d })}`;
 
   const w = await analyticsWindow(days, vertical);
-  const [reviewCount, summary, daily, pages, listingRows, referrers, utmSources, campaigns, devices] =
+  const [reviewCount, summary, daily, pages, listingRows, referrers, utmSources, campaigns, devices, vitals] =
     await Promise.all([
       countReviewQueue(),
       summaryByVertical(w),
@@ -110,6 +204,7 @@ export default async function AdminAnalyticsPage({
       topUtmSources(w),
       topUtmCampaigns(w),
       byDevice(w),
+      webVitalsSummary({ days: 7, vertical, device }),
     ]);
 
   const ids = listingRows.map((r) => Number(r.value)).filter((id) => Number.isInteger(id) && id > 0);
@@ -173,6 +268,7 @@ export default async function AdminAnalyticsPage({
                 ))}
             </select>
           </label>
+          <input type="hidden" name="disp" value={device} />
           <button className="panel-btn panel-btn--primary" type="submit">
             {t.apply}
           </button>
@@ -335,6 +431,8 @@ export default async function AdminAnalyticsPage({
             </article>
           </>
         )}
+
+        <VitalsSection summary={vitals} device={device} query={vitalsQuery} />
       </main>
     </>
   );

@@ -8,6 +8,10 @@
  * hourly from the cron tick and by hand. Raw rows are only ever deleted for
  * days that are already rolled up — the totals outlive the detail, never the
  * other way round.
+ *
+ * Page-speed measurements (`web_vitals`, src/lib/web-vitals.ts) have no
+ * rollup — /admin/analitica reads the last seven days raw — so they are
+ * simply pruned at the same retention cutoff.
  */
 import "server-only";
 import { and, lt, sql } from "drizzle-orm";
@@ -15,6 +19,7 @@ import { db } from "@/db";
 import { analyticsEvents } from "@/db/schema";
 import { analyticsDay } from "@/lib/analytics";
 import { getAnalyticsRawDays } from "@/lib/site-settings";
+import { countWebVitalsBefore, deleteWebVitalsBefore } from "@/lib/web-vitals";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
 
 /** One statement per dimension; `value` is what `analytics_daily.value` holds. */
@@ -68,7 +73,7 @@ export async function rollUpDay(day: string): Promise<void> {
 
 export async function runAnalytics(opts: OpsOptions): Promise<OpsResult> {
   return opsRun("cron:analytics", opts.dry, async (out) => {
-    out.track("dias_a_resumir", "eventos_a_borrar");
+    out.track("dias_a_resumir", "eventos_a_borrar", "vitals_a_borrar");
     const today = analyticsDay();
     const days = await daysToRoll(today);
     out.count("dias_a_resumir", days.length);
@@ -82,6 +87,8 @@ export async function runAnalytics(opts: OpsOptions): Promise<OpsResult> {
       .from(analyticsEvents)
       .where(lt(analyticsEvents.day, cutoff));
     out.count("eventos_a_borrar", Number(old?.n ?? 0));
+    const oldVitals = await countWebVitalsBefore(cutoff);
+    out.count("vitals_a_borrar", oldVitals);
     out.note(`Retención de eventos detallados: ${rawDays} días (se borra antes del ${cutoff}).`);
 
     if (opts.dry) return;
@@ -97,5 +104,6 @@ export async function runAnalytics(opts: OpsOptions): Promise<OpsResult> {
         .delete(analyticsEvents)
         .where(and(lt(analyticsEvents.day, safeCutoff), lt(analyticsEvents.day, today)));
     }
+    if (oldVitals > 0) await deleteWebVitalsBefore(cutoff);
   });
 }

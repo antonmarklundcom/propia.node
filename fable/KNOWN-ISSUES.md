@@ -175,3 +175,12 @@ it; none of them blocks a phase.
   grouping are. Moving it changes a `full_slug` on production, so it wants a
   look at what `seed:locations` does with a moved node before it is edited —
   not done in this PR.
+
+- **Open: `--color-success` is not defined anywhere (found 2026-09-28, page-speed PR #244).**
+  `.panel-status--published` in `app/globals.css` uses `var(--color-success)`,
+  which no stylesheet or theme declares, so the "Publicado" pill renders in
+  the inherited ink colour instead of green. The page-speed cells on
+  `/admin/analitica` use their own `.panel-vital--*` colours for that reason.
+  Fix: declare `--color-success` next to `--color-error` in `:root` (and check
+  the themes in `src/design/themes.ts`) — a one-line CSS change, not done here
+  to keep the PR to its subject.

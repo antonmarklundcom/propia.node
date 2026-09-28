@@ -1239,3 +1239,29 @@ export const analyticsDaily = mysqlTable(
     primaryKey({ columns: [t.day, t.vertical, t.event, t.dim, t.value] }),
   ],
 );
+
+/**
+ * Page speed as real visitors experience it (Core Web Vitals), one row per
+ * measurement the browser reports — `useReportWebVitals` in
+ * `AnalyticsBeacon`, through the same `/api/a` beacon and in-memory batch
+ * as the page views (`src/lib/web-vitals.ts`). No visitor id, no path beyond
+ * its page type: /admin/analitica shows the 75th percentile per metric and
+ * page type, which is what Google's own assessment uses. Pruned with the
+ * raw analytics events (`cron:analytics`).
+ */
+export const webVitals = mysqlTable(
+  "web_vitals",
+  {
+    id: id(),
+    day: date("day", { mode: "string" }).notNull(),
+    /** The door's VerticalKey. */
+    vertical: varchar("vertical", { length: 20 }).notNull(),
+    /** home, category, listing, hub, guide, other — `pageTypeOf()`. */
+    pageType: varchar("page_type", { length: 20 }).notNull(),
+    metric: mysqlEnum("metric", ["LCP", "INP", "CLS", "FCP", "TTFB"]).notNull(),
+    /** Milliseconds, except CLS (unitless). */
+    value: decimal("value", { precision: 10, scale: 4 }).notNull(),
+    device: mysqlEnum("device", ["mobile", "tablet", "desktop"]).notNull(),
+  },
+  (t) => [index("idx_day_metric").on(t.day, t.metric)],
+);

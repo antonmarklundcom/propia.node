@@ -28,6 +28,7 @@ import {
 } from "../src/lib/telegram-text";
 import { errorKey, planErrorAlert, resetErrorThrottle } from "../src/lib/error-alerts";
 import { liveHosts, sampleSitemap, sitemapLocs } from "../src/lib/ops/live-check";
+import { isVitalMetricName, p75, pageTypeOf, vitalRating } from "../src/lib/web-vitals-shared";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -195,6 +196,32 @@ function main() {
   const hosts = liveHosts();
   check("unpurchased / unconfirmed doors are not checked", !hosts.includes("alquiler.com.py") && !hosts.includes("landforsaleparaguay.com"), hosts.join());
   check("the marketplace primary is checked", hosts.includes("inmobiliaria.com.py"));
+
+  // Page speed (src/lib/web-vitals-shared.ts): what a path is, p75, the colours.
+  const types: Array<[string, string]> = [
+    ["/", "home"],
+    ["/?utm_source=x", "home"],
+    ["/propiedad/casa-en-luque-abc123", "listing"],
+    ["/venta", "hub"],
+    ["/alquiler-temporal", "hub"],
+    ["/venta/asuncion", "category"],
+    ["/alquiler/asuncion/departamentos#mapa", "category"],
+    ["/guias/comprar-en-paraguay", "guide"],
+    ["/guias", "other"],
+    ["/contacto", "other"],
+  ];
+  for (const [path, want] of types) check(`pageTypeOf(${path}) is ${want}`, pageTypeOf(path) === want, pageTypeOf(path));
+  check("p75 of nothing is null", p75([]) === null);
+  check("p75 of one value is that value", p75([42]) === 42);
+  check("p75 is nearest-rank, order-independent", p75([4, 1, 3, 2]) === 3 && p75([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) === 8);
+  check("LCP at the good limit is good", vitalRating("LCP", 2500) === "good");
+  check("LCP between the limits needs improvement", vitalRating("LCP", 3000) === "needs-improvement");
+  check("LCP at the poor limit is not yet poor", vitalRating("LCP", 4000) === "needs-improvement");
+  check("LCP past the poor limit is poor", vitalRating("LCP", 4001) === "poor");
+  check("CLS uses its own unitless scale", vitalRating("CLS", 0.05) === "good" && vitalRating("CLS", 0.3) === "poor");
+  check("INP 250 ms needs improvement", vitalRating("INP", 250) === "needs-improvement");
+  check("the five vitals are stored", ["LCP", "INP", "CLS", "FCP", "TTFB"].every(isVitalMetricName));
+  check("Next's own timings are not", !isVitalMetricName("Next.js-hydration") && !isVitalMetricName("FID"));
 
   console.log(
     failures === 0 ? "\nAll Telegram checks passed.\n" : `\n${failures} Telegram check(s) FAILED.\n`,

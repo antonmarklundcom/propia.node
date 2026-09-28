@@ -1,7 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useReportWebVitals } from "next/web-vitals";
 import { useEffect } from "react";
+import { isVitalMetricName } from "@/lib/web-vitals-shared";
 
 /**
  * Queues page views and WhatsApp clicks and sends them in one
@@ -9,8 +11,21 @@ import { useEffect } from "react";
  * app, or opened WhatsApp) or ten events have queued. No cookies, no storage,
  * no identifier (the visit's source lives in this tab's sessionStorage): the server derives a daily visitor hash from the request
  * itself (src/lib/analytics.ts). Staff and account pages are never queued.
+ *
+ * Page speed rides the same queue: each Core Web Vital the browser measures
+ * for the page it loaded (`{e:"wv", m, v}`, src/lib/web-vitals.ts) — one
+ * value per metric per full page load, credited to the path that was loaded.
  */
-type BeaconEvent = { e: "pv" | "wa"; p: string; r?: string; us?: string; um?: string; uc?: string };
+type BeaconEvent = {
+  e: "pv" | "wa" | "wv";
+  p: string;
+  r?: string;
+  us?: string;
+  um?: string;
+  uc?: string;
+  m?: string;
+  v?: number;
+};
 
 const PRIVATE = ["/admin", "/agencia", "/mis-avisos", "/login", "/registro"];
 const queue: BeaconEvent[] = [];
@@ -60,12 +75,31 @@ function flush(): void {
 }
 
 function push(ev: BeaconEvent): void {
-  queue.push({ ...ev, ...(visitSource ?? {}) });
+  queue.push(ev.e === "wv" ? ev : { ...ev, ...(visitSource ?? {}) });
   if (queue.length >= 10) flush();
+}
+
+/**
+ * The path of the full page load the vitals describe. The browser measures
+ * one load; INP and CLS are reported when the tab is hidden, possibly after
+ * client-side navigations, and still belong to the page that was loaded.
+ */
+let loadedPath: string | null = null;
+
+/** Module scope, so the hook's callback is stable across renders. */
+function reportVital(metric: { name: string; value: number }): void {
+  const path = loadedPath ?? window.location.pathname;
+  if (!tracked(path) || !isVitalMetricName(metric.name) || !Number.isFinite(metric.value)) return;
+  push({ e: "wv", p: path, m: metric.name, v: Math.round(metric.value * 10_000) / 10_000 });
 }
 
 export function AnalyticsBeacon() {
   const pathname = usePathname();
+  if (loadedPath === null && typeof window !== "undefined") loadedPath = window.location.pathname;
+  // Before the effects below on purpose: web-vitals registers its own
+  // visibilitychange listener first, so INP and CLS are queued before
+  // `onHide` flushes the queue (checked in a browser on 2026-09-28).
+  useReportWebVitals(reportVital);
 
   useEffect(() => {
     if (!pathname || !tracked(pathname)) return;
