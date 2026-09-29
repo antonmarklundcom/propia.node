@@ -299,10 +299,10 @@ first. Revisit with six months of data (§9) rather than on day one.
 > **Status: built, unset everywhere (PR2, 2026-09-29).** `ownsCategories`,
 > `src/lib/category-owner.ts`, `hostOwnsCategories()` /
 > `categoryCanonicalOrigin()`, the sitemap's `includeCategories`, hreflang scope
-> `"category"` and the `verify:seo` block (n) exist; no door has the flag set, so
-> behaviour is unchanged. The invariant runs with a `KNOWN_DUPLICATE_DOORS`
-> allowlist (terreno.com.py, landforsaleparaguay.com, rentparaguay.com) that each
-> flipping PR shrinks.
+> `"category"` and the `verify:seo` block (n) exist; only `landforsaleparaguay.com` has the flag set (S2), so
+> behaviour is unchanged elsewhere. The invariant runs with a `KNOWN_DUPLICATE_DOORS`
+> allowlist (terreno.com.py, rentparaguay.com; landforsaleparaguay.com was
+> flipped by S2 on 2026-09-29) that each flipping PR shrinks.
 
 Same shape as the two ownership flags that exist, so it adds no new concept.
 
@@ -434,7 +434,9 @@ Finding the searches without Google tools:
 2. The flag and the pure `equivalentCategoryPath()`, unset everywhere — no
    behaviour change, the invariant still reports.
 3. Flip one door at a time, smallest first: `landforsaleparaguay.com`
-   (newest, least to lose), then `terreno.com.py`, then the rental decision.
+   (newest, least to lose) — **DONE 2026-09-29 (S2): `ownsCategories: false`
+   on `landforsaleparaguay.com`, removed from `KNOWN_DUPLICATE_DOORS`, checks
+   in `verify:seo` block (n)** — then `terreno.com.py`, then the rental decision.
    Each flip is one line in `verticals.ts` plus the matching `verify:seo`
    expectation, in its own PR.
 4. §4.5's site pages on the land doors, same mechanism.
