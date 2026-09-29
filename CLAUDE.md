@@ -384,6 +384,34 @@ default, `--dry` first). It records itself as a revertible import job.
     `EMAIL_ROOT_SENDING=true` after the founder onboards the root domain.
     `npm run verify:inbox` (pure) is in `verify:local` and the pre-push hook.
 
+15b. **Multi-domain mailboxes (2026-09-30, migration 0023, `MIGRATION REQUIRED`,
+    `docs/log/multi-domain-mailboxes.md`).** Any number of domains, each its own
+    Cloudflare zone with a catch-all to the (domain-agnostic) `inbound-email`
+    Worker, land in this inbox. `mail_sites` / `mailboxes` / `mailbox_members`
+    are read and written only by `src/lib/mail-sites.ts`; the pure rules
+    (domain and local-part shape, who may send as whom) are `src/lib/mail-address.ts`
+    (in `verify:inbox`). **`email_messages.mailbox` is already the full address, so
+    that table did not change** — a mailbox is matched to its mail by that string.
+    Visibility is one type: **`InboxViewer` built by `inboxViewerFor()`**
+    (`src/lib/inbox-viewer.ts`) — super-admin reads everything, staff the shared
+    `hola@`/`contacto@` only, a member exactly the mailboxes in `mailbox_members`
+    (`shared: false`, so a non-staff member never sees the portal's own), reply
+    only where `can_reply` (`viewerMayWriteMailbox()`). Never build a viewer by
+    hand. `/admin/correo` (super-admin) manages sites, mailboxes and members and
+    lists mail to a registered domain that has no mailbox; `/correo` is the
+    member's inbox (list, thread, reply, archive; no compose yet). A site's
+    replies go out under its display name; **as its own address only when
+    `sending_enabled`** (the founder confirming Email Sending onboarding for that
+    domain), else from `EMAIL_FROM` with Reply-To = the mailbox
+    (`fromMailboxVerified` in `email.ts`). Operator alerts for a registered
+    domain's mail name the mailbox only, never the sender or subject. The
+    registry is optional at runtime: until the migration is applied the inbox
+    falls back to exactly the old staff / super-admin behaviour (a warning is
+    logged). **Not built:** lead reply addresses per site (`lead-…@` stay on the
+    portal's machine subdomain), notifications to members, compose for members,
+    and any Cloudflare API call — DNS, Email Routing and Email Sending are the
+    founder's dashboard steps.
+
 15. **Agency mode — built, off until the founder flips it (2026-09-26).**
     `/admin/ajustes` (super-admin) writes `site_settings.business_mode`;
     `isAgencyMode()` in `src/lib/site-settings.ts` is the only reader (cached,
@@ -860,6 +888,7 @@ that section no longer lists everything:
 | `drizzle/0020_dry_caretaker.sql` | the `web_vitals` table (page speed from real visitors, PR #244) | **no** — the founder applies it before merging #244; until then the beacon's inserts are dropped and `/admin/analitica` says "migración 0020 pendiente" |
 | `drizzle/0021_tiresome_newton_destine.sql` | `whatsapp_messages`, `whatsapp_contacts` (WhatsApp Cloud API inbox, `docs/log/whatsapp-inbox.md`) | **no** — founder applies before merging the WhatsApp PR; `db:migrate` also runs 0020 if still pending |
 | `drizzle/0022_watery_tomorrow_man.sql` | `projects.che_roga_approved` boolean NOT NULL DEFAULT false (Che Róga Porã per-project opt-in) | **no** — the founder applies it before merging that PR; until then the deployed code would 500 on every page that reads `projects` |
+| `drizzle/0023_bizarre_hellion.sql` | `mail_sites`, `mailboxes`, `mailbox_members` (multi-domain mailboxes). Three new tables, nothing altered. **Applies after 0022** | **no** — the founder applies it (after 0022) before merging that PR; without it the registry is unavailable and the inbox falls back to staff / super-admin only |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

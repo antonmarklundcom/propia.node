@@ -31,13 +31,13 @@ import { db } from "@/db";
 import { adminEvents, leads, listings, locations } from "@/db/schema";
 import { DEFAULT_VERTICAL_KEY, VERTICALS, type VerticalConfig } from "@/config/verticals";
 import type { SessionUser } from "@/lib/auth/session";
-import { isSuperAdmin } from "@/lib/auth/roles";
 import { recordAdminEvent } from "@/lib/admin-events";
 import { allowRequest } from "@/lib/rate-limit";
 import { formatPrice } from "@/lib/format";
 import { detailOwnerForLocale } from "@/lib/origin";
 import { listingUrl } from "@/lib/urls";
 import { getInboxThread, listLeadThreads, type InboxMessage } from "@/lib/inbox";
+import { inboxViewerFor } from "@/lib/inbox-viewer";
 import { rootDomain } from "@/lib/inbox-address";
 import { userMaySeeLead } from "@/lib/inbox-access";
 import { getWhatsAppChat, getWhatsAppContact, listLeadWhatsApp, whatsappToAiMessages } from "@/lib/whatsapp-inbox";
@@ -365,7 +365,7 @@ export async function suggestLeadEmailReply(user: SessionUser, leadId: number): 
 /** "Sugerir respuesta" on an /admin/inbox thread. Staff: shared mailboxes only (the query's rule). */
 export async function suggestInboxReply(user: SessionUser, threadKey: string): Promise<SuggestOutcome> {
   if (!isAiReplyEnabled()) return { ok: false, error: "disabled" };
-  const messages = await getInboxThread({ userId: user.id, superAdmin: isSuperAdmin(user.role) }, threadKey);
+  const messages = await getInboxThread(await inboxViewerFor(user), threadKey);
   if (!messages) return { ok: false, error: "not_found" };
   const door = VERTICALS[rootDomain()] ?? doorByKey(DEFAULT_VERTICAL_KEY);
   const last = messages[messages.length - 1];

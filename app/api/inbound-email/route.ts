@@ -25,6 +25,8 @@ import { alertOperator } from "@/lib/crm";
 import { esInbox } from "@/i18n/es-e2";
 import { inboundSecret, verifyInbound } from "@/lib/inbox-address";
 import { INBOUND_BODY_MAX_BYTES, inboundPayloadSchema, storeInbound } from "@/lib/inbox";
+import { splitMailbox } from "@/lib/mail-address";
+import { sitesSending } from "@/lib/mail-sites";
 import { siteOrigin } from "@/lib/origin";
 import { telegramEmailReplyNotice } from "@/lib/partner-alerts";
 
@@ -92,13 +94,18 @@ export async function POST(req: NextRequest) {
 
   if (stored.status === "stored" && stored.alert) {
     const origin = await siteOrigin();
+    // Mail to a registered client domain is that client's, not the operator's:
+    // the alert says an email arrived at the mailbox and nothing about who
+    // wrote or what it says. (The super-admin can still open the thread.)
+    const domain = splitMailbox(stored.mailbox)?.domain;
+    const clientMail = domain ? (await sitesSending().catch(() => [])).some((s) => s.domain === domain) : false;
     after(async () => {
       const t = esInbox.alert;
       await Promise.allSettled([
         alertOperator({
           kind: "new_email",
           title: stored.leadId ? t.leadReplyTitle : t.inboxTitle(stored.mailbox),
-          detail: t.detail(stored.fromName ?? stored.fromAddress, stored.subject),
+          detail: clientMail ? undefined : t.detail(stored.fromName ?? stored.fromAddress, stored.subject),
           url: stored.leadId
             ? `${origin}/admin/inbox?vista=consultas`
             : `${origin}/admin/inbox/${stored.threadKey}`,

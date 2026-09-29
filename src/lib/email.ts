@@ -57,6 +57,14 @@ export interface EmailMessage {
    * caller set one). See `senderFor()`.
    */
   fromMailbox?: string;
+  /**
+   * `fromMailbox` is on a domain that is onboarded in Cloudflare Email Sending
+   * (a registered mail site with `sending_enabled`, `src/lib/mail-sites.ts`):
+   * send AS that address whatever its domain. The caller decides this from the
+   * registry — this module stays pure — and a wrong `true` only makes
+   * Cloudflare refuse the send, which is reported like any other failure.
+   */
+  fromMailboxVerified?: boolean;
   cc?: string[];
   /** Threading (wave E2/E3): the Message-ID being answered, and the chain before it. */
   inReplyTo?: string;
@@ -131,10 +139,17 @@ export function isRootSendingEnabled(): boolean {
  * sender when root sending is on and the address is on the root domain;
  * otherwise the sender is `EMAIL_FROM` and the mailbox is where replies go.
  */
-export function senderFor(msg: Pick<EmailMessage, "fromName" | "fromMailbox" | "replyTo">): {
+export function senderFor(msg: Pick<EmailMessage, "fromName" | "fromMailbox" | "fromMailboxVerified" | "replyTo">): {
   from: Address | null;
   replyTo: string | undefined;
 } {
+  if (msg.fromMailbox && msg.fromMailboxVerified) {
+    const address = normalizeAddress(msg.fromMailbox);
+    if (address) {
+      const name = oneLine(msg.fromName ?? "");
+      return { from: name ? { address, name } : { address }, replyTo: msg.replyTo };
+    }
+  }
   const mailbox = msg.fromMailbox ? rootMailboxLocal(msg.fromMailbox) : null;
   if (msg.fromMailbox && mailbox && isRootSendingEnabled()) {
     const name = oneLine(msg.fromName ?? "");

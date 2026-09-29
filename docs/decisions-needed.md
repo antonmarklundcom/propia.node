@@ -354,3 +354,25 @@ Shipped with both switches OFF (`/admin/ajustes`). Decide before turning on:
 3. **Wording** of the three texts (`esWhatsApp.auto` in `src/i18n/es-whatsapp.ts`):
    first-contact greeting, out-of-hours greeting, hand-off line.
 
+
+## 2026-09-30 — Multi-domain mailboxes: policy (founder)
+
+Built (`docs/log/multi-domain-mailboxes.md`). Before letting anyone else's mail
+in:
+1. **Whose account.** Every registered domain's mail, and any member's reply,
+   goes through this one Cloudflare account and this database. If the domains
+   are your own sites, fine. If they are **other businesses'**, Cloudflare's
+   answers were: Email Service is for *transactional* mail only, its reputation
+   is per domain but its daily quota is per account, and what one domain's abuse
+   suspension does to the others is undocumented. Recommendation: for other
+   people's domains use a **separate Cloudflare account** (and a separate
+   deployment), not this one.
+2. **Reading other people's mail.** As super-admin you can open every thread in
+   every registered mailbox. That is a data-protection question for the
+   businesses (and for a hospital, patient data): say who may hold it, for how
+   long, and put it in their terms and the privacy policy. Nothing here expires
+   or deletes mail.
+3. **Members are existing users.** Nobody is invited by email from here; the
+   person must already have an account. Say if you want an invite flow.
+4. **Member notifications.** Nothing tells a member that mail arrived. Options:
+   an email or Telegram per new message (the send quota is shared), or none.

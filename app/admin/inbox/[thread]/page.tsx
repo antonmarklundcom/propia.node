@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { EmailMessageView } from "@/components/panel/EmailThread";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { isStaff, isSuperAdmin } from "@/lib/auth/roles";
+import { isStaff } from "@/lib/auth/roles";
 import { countRecentLeads, countReviewQueue } from "@/lib/panel-queries";
 import {
   countUnreadInbox,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/inbox";
 import { isEmailConfigured, isRootSendingEnabled, senderAddress } from "@/lib/email";
 import { guessWhatsapp } from "@/lib/inbox-address";
+import { inboxViewerFor } from "@/lib/inbox-viewer";
 import { LEAD_EMAIL_FLASH } from "@/lib/inbox-access";
 import { esInbox } from "@/i18n/es-e2";
 import styles from "@/components/panel/inbox.module.css";
@@ -58,7 +59,7 @@ export default async function AdminInboxThreadPage({
 }) {
   const [{ thread }, { msg }, user] = await Promise.all([params, searchParams, requireStaffOrAbove()]);
   if (!isThreadKey(thread) || thread.startsWith("lead-")) notFound();
-  const viewer = { userId: user.id, superAdmin: isSuperAdmin(user.role) };
+  const viewer = await inboxViewerFor(user);
   const messages = await getInboxThread(viewer, thread);
   if (!messages) notFound();
 

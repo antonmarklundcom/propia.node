@@ -35,9 +35,11 @@ export type AdminEventAction =
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
   | "deal.delete"
   // Che Róga Porã approved / revoked for a project (app/admin/proyectos).
-  | "project.che_roga";
+  | "project.che_roga"
+  // A mail site, mailbox or membership created, changed or removed (app/admin/correo).
+  | "mail.change";
 
-export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting" | "email" | "whatsapp" | "project";
+export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting" | "email" | "whatsapp" | "project" | "mail";
 
 type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 

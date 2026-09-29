@@ -10,6 +10,7 @@ import { esPanel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
+import { inboxViewerFor } from "@/lib/inbox-viewer";
 import { countUnreadInbox } from "@/lib/inbox";
 import { approveAction, rejectAction } from "./actions";
 
@@ -31,7 +32,7 @@ export default async function AdminReviewPage() {
   const [queue, recentLeads, unreadEmail, health] = await Promise.all([
     getReviewQueue(),
     countRecentLeads(24, isStaff(user.role)),
-    countUnreadInbox({ userId: user.id, superAdmin: isSuperAdmin(user.role) }),
+    inboxViewerFor(user).then(countUnreadInbox),
     /**
      * Cached for five minutes and never tagged (`src/lib/health.ts`), so this
      * adds a handful of counts to the first render of each window and nothing to

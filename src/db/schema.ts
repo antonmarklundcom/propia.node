@@ -1143,6 +1143,65 @@ export const emailAttachments = mysqlTable(
 );
 
 /* ------------------------------------------------------------------ */
+/* Mail sites, mailboxes and who reads them (multi-domain inbox)       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A domain whose mail lands in this app: its Cloudflare zone has Email Routing
+ * on with a catch-all to the `inbound-email` Worker, which is domain-agnostic.
+ * `sending_enabled` is the founder's word that the domain is also onboarded in
+ * Cloudflare Email Sending — only then may a reply go out AS `<mailbox>@<domain>`;
+ * until then it goes from `EMAIL_FROM` with the mailbox as Reply-To. `active =
+ * false` hides the site's mailboxes from their members without deleting them.
+ * Only `src/lib/mail-sites.ts` reads or writes these three tables.
+ */
+export const mailSites = mysqlTable(
+  "mail_sites",
+  {
+    id: id(),
+    /** Lower-case bare domain (`hospital.com.py`). */
+    domain: varchar("domain", { length: 190 }).notNull(),
+    /** The name mail from this site is sent under. */
+    displayName: varchar("display_name", { length: 160 }).notNull(),
+    sendingEnabled: boolean("sending_enabled").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("uq_domain").on(t.domain)],
+);
+
+/**
+ * `<local_part>@<site domain>`. The address is the key `email_messages.mailbox`
+ * already stores in full, so no column on that table changed: a mailbox is
+ * matched to its messages by that string, not by an id.
+ */
+export const mailboxes = mysqlTable(
+  "mailboxes",
+  {
+    id: id(),
+    siteId: fk("site_id").notNull(),
+    /** Lower-case, `[a-z0-9._+-]`, never starting `lead-` (those are lead reply addresses). */
+    localPart: varchar("local_part", { length: 64 }).notNull(),
+    label: varchar("label", { length: 120 }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("uq_site_local").on(t.siteId, t.localPart), index("idx_site").on(t.siteId)],
+);
+
+/** A user who may read a mailbox, and whether they may also reply from it. */
+export const mailboxMembers = mysqlTable(
+  "mailbox_members",
+  {
+    id: id(),
+    mailboxId: fk("mailbox_id").notNull(),
+    userId: fk("user_id").notNull(),
+    canReply: boolean("can_reply").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("uq_mailbox_user").on(t.mailboxId, t.userId), index("idx_user").on(t.userId)],
+);
+
+/* ------------------------------------------------------------------ */
 /* 2.13 Agency mode: deals and first-party analytics (0019)            */
 /* ------------------------------------------------------------------ */
 

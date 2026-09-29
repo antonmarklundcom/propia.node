@@ -11,9 +11,9 @@
  */
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
-import { isStaffOrAbove, isSuperAdmin } from "@/lib/auth/roles";
 import { getAttachment, safeFilename, viewerMayReadMailbox } from "@/lib/inbox";
 import { userMaySeeLead } from "@/lib/inbox-access";
+import { inboxViewerFor } from "@/lib/inbox-viewer";
 import { getPrivateObject } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
@@ -34,10 +34,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   // One answer for "missing" and "not yours": the id space is not a probe.
   if (!att?.r2Key) return notFound();
 
+  // The viewer carries the rule: staff read the shared mailboxes, the
+  // super-admin all, a member only the mailboxes they were given (and never
+  // hola@/contacto@ — `shared` is false without a staff role).
   const allowed = att.leadId
     ? await userMaySeeLead(user, att.leadId)
-    : isStaffOrAbove(user.role) &&
-      viewerMayReadMailbox({ userId: user.id, superAdmin: isSuperAdmin(user.role) }, att.mailbox);
+    : viewerMayReadMailbox(await inboxViewerFor(user), att.mailbox);
   if (!allowed) return notFound();
 
   const bytes = await getPrivateObject(att.r2Key);

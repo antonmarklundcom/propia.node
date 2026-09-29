@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { WhatsAppMessageView, WhatsAppReplyBox } from "@/components/panel/WhatsAppThread";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { isStaff, isSuperAdmin } from "@/lib/auth/roles";
+import { isStaff } from "@/lib/auth/roles";
 import { countRecentLeads, countReviewQueue } from "@/lib/panel-queries";
 import { countUnreadInbox } from "@/lib/inbox";
 import { isAiReplyEnabled } from "@/lib/ai-reply";
@@ -16,6 +16,7 @@ import { esWhatsApp } from "@/i18n/es-whatsapp";
 import styles from "@/components/panel/inbox.module.css";
 import { adminTabs } from "../../../tabs";
 import { convertWhatsAppToLeadAction, replyWhatsAppChatAction, suggestWhatsAppChatReplyAction } from "../../actions";
+import { inboxViewerFor } from "@/lib/inbox-viewer";
 
 export const metadata: Metadata = {
   title: esWhatsApp.admin.view,
@@ -56,7 +57,7 @@ export default async function AdminWhatsAppChatPage({
 
   // Opening the chat is reading it.
   await markWhatsAppChatRead(phone);
-  const viewer = { userId: user.id, superAdmin: isSuperAdmin(user.role) };
+  const viewer = await inboxViewerFor(user);
   const [contact, reviewCount, recentLeads, unread] = await Promise.all([
     getWhatsAppContact(phone),
     countReviewQueue(),

@@ -41,6 +41,8 @@ import {
   SHARED_MAILBOXES,
 } from "@/lib/inbox-address";
 import { sanitizeEmailHtml } from "@/lib/inbox-html";
+import { displayNameFor, mayBeSentAsMailbox, type SiteSending } from "@/lib/mail-address";
+import { listMailSites, sitesSending } from "@/lib/mail-sites";
 import { deletePrivateObjects, isR2Configured, putPrivateObject } from "@/lib/r2";
 
 /* -------------------------------------------------------------------------- */
@@ -432,35 +434,72 @@ async function withAttachments(rows: Omit<InboxMessage, "attachments">[]): Promi
   return rows.map((r) => ({ ...r, attachments: byEmail.get(r.id) ?? [] }));
 }
 
-/** Who is reading /admin/inbox. Staff see the shared mailboxes only. */
+/**
+ * Who is reading an inbox. Built by `inboxViewerFor()` (`inbox-viewer.ts`) so
+ * every caller agrees; the three ways to read a mailbox are:
+ *
+ * - **super-admin** — every non-lead thread;
+ * - **staff** — the shared mailboxes (`hola@`, `contacto@`) only;
+ * - **a member** — the mailboxes a super-admin gave them in `mailbox_members`
+ *   (`mailboxes`), and reply from those marked `canReply` (`writableMailboxes`).
+ *
+ * The optional fields default to the old behaviour, so a viewer built as
+ * `{ userId, superAdmin }` is still a staff-or-above reader of the shared
+ * mailboxes and nothing else.
+ */
 export interface InboxViewer {
   userId: number;
   superAdmin: boolean;
+  /** Full addresses readable through membership. */
+  mailboxes?: readonly string[];
+  /** The subset of `mailboxes` the viewer may also send from. */
+  writableMailboxes?: readonly string[];
+  /** False for a member with no staff role: `hola@`/`contacto@` are not theirs. Default true. */
+  shared?: boolean;
 }
 
 function sharedMailboxAddresses(): string[] {
   return SHARED_MAILBOXES.map((l) => `${l}@${rootDomain()}`);
 }
 
-/** The inbox-thread predicate for this viewer: not a lead thread, and a mailbox they may read. */
-function inboxScope(viewer: InboxViewer): SQL {
-  return viewer.superAdmin
-    ? isNull(emailMessages.leadId)
-    : and(isNull(emailMessages.leadId), inArray(emailMessages.mailbox, sharedMailboxAddresses()))!;
+/** Every address this (non-super) viewer may read. */
+function readableMailboxes(viewer: InboxViewer): string[] {
+  return [...(viewer.shared === false ? [] : sharedMailboxAddresses()), ...(viewer.mailboxes ?? [])];
 }
 
-/** Mailboxes this viewer may send from in /admin/inbox. */
+/** The inbox-thread predicate for this viewer: not a lead thread, and a mailbox they may read. */
+function inboxScope(viewer: InboxViewer): SQL {
+  if (viewer.superAdmin) return isNull(emailMessages.leadId);
+  const readable = readableMailboxes(viewer);
+  // `inArray` with no values is an error on some drizzle versions; nothing readable matches nothing.
+  return readable.length
+    ? and(isNull(emailMessages.leadId), inArray(emailMessages.mailbox, readable))!
+    : sql`1 = 0`;
+}
+
+/** The registry is optional at runtime: before its migration is applied the inbox must still work. */
+async function registeredMailboxes(): Promise<string[]> {
+  try {
+    return (await listMailSites()).filter((s) => s.active).flatMap((s) => s.mailboxes.map((m) => m.address));
+  } catch (e) {
+    console.warn(`[inbox] mail-site registry unavailable: ${e instanceof Error ? e.name : "error"}`);
+    return [];
+  }
+}
+
+/** Mailboxes this viewer may send from. */
 export async function composeMailboxes(viewer: InboxViewer): Promise<string[]> {
-  const shared = sharedMailboxAddresses();
-  if (!viewer.superAdmin) return shared;
-  // The founder's own mailboxes are whichever root addresses mail arrived at.
+  const shared = viewer.shared === false ? [] : sharedMailboxAddresses();
+  if (!viewer.superAdmin) return [...shared, ...(viewer.writableMailboxes ?? [])];
+  // The founder's own mailboxes are whichever root addresses mail arrived at,
+  // plus every mailbox registered for a mail site.
   const seen = await db
     .selectDistinct({ mailbox: emailMessages.mailbox })
     .from(emailMessages)
     .where(and(isNull(emailMessages.leadId), eq(emailMessages.direction, "in")))
     .limit(50);
   const root = seen.map((r) => r.mailbox).filter((m) => rootMailboxLocal(m) !== null);
-  return [...new Set([...shared, ...root])];
+  return [...new Set([...shared, ...root, ...(await registeredMailboxes())])];
 }
 
 export interface InboxThreadSummary {
@@ -654,7 +693,16 @@ export async function getAttachment(id: number) {
 
 /** Whether an inbox (non-lead) message in this mailbox is readable by the viewer. */
 export function viewerMayReadMailbox(viewer: InboxViewer, mailbox: string): boolean {
-  return viewer.superAdmin || sharedMailboxAddresses().includes(mailbox);
+  return viewer.superAdmin || readableMailboxes(viewer).includes(mailbox);
+}
+
+/** Whether the viewer may send FROM this mailbox: a shared one (staff), any (super-admin), or a `canReply` membership. */
+export function viewerMayWriteMailbox(viewer: InboxViewer, mailbox: string): boolean {
+  return (
+    viewer.superAdmin ||
+    (viewer.shared !== false && sharedMailboxAddresses().includes(mailbox)) ||
+    (viewer.writableMailboxes ?? []).includes(mailbox)
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -858,6 +906,8 @@ export async function sendInboxReply(p: {
   if (!to) return { ok: false, error: "no_recipient" };
   // The mailbox the conversation is in: where the last inbound message arrived.
   const mailbox = [...thread].reverse().find((m) => m.direction === "in")?.mailbox ?? defaultMailbox();
+  // Reading a mailbox is not writing from it: a read-only member stops here.
+  if (!viewerMayWriteMailbox(p.viewer, mailbox)) return { ok: false, error: "not_found" };
   const subject = replySubject(thread[thread.length - 1].subject || thread[0].subject);
   const quote = quoteOf([...thread].reverse().find((m) => m.direction === "in"), p.quoteHeader);
   const html = replyHtml(body, quote);
@@ -910,24 +960,42 @@ async function sendAndRecordInbox(p: {
   threadKey: string;
   brand: string;
 }): Promise<SendOutcome> {
+  // A registered mail site sends under its own name, and as its own address
+  // once its Email Sending onboarding is confirmed (`sending_enabled`).
+  let sites: SiteSending[] = [];
+  try {
+    sites = await sitesSending();
+  } catch {
+    /* registry not migrated yet: behave exactly as before */
+  }
+  const siteName = displayNameFor(sites, p.mailbox);
+  const fromName = siteName ?? p.brand;
+  const fromMailboxVerified = mayBeSentAsMailbox(sites, p.mailbox);
+  // A registered site whose Email Sending is not confirmed still sends from the
+  // portal's address, so the customer's answer must come back to the MAILBOX,
+  // not to the portal: Reply-To is the mailbox. (Root mailboxes get theirs from
+  // `senderFor()`; a verified site is the sender itself and needs none.)
+  const replyTo = siteName && !fromMailboxVerified ? p.mailbox : undefined;
   const result = await sendEmail({
     to: p.to,
     cc: p.cc,
     subject: p.subject,
     html: p.html,
     text: p.text,
-    fromName: p.brand,
+    fromName,
     fromMailbox: p.mailbox,
+    fromMailboxVerified,
+    replyTo,
     inReplyTo: p.inReplyTo,
     references: p.references,
   });
-  // What the message really went out as: the mailbox itself with root
-  // sending on, else `EMAIL_FROM` with the mailbox as Reply-To.
-  const sentAs = senderFor({ fromName: p.brand, fromMailbox: p.mailbox }).from?.address ?? p.mailbox;
+  // What the message really went out as: the mailbox itself with root sending
+  // on or a verified site, else `EMAIL_FROM` with the mailbox as Reply-To.
+  const sentAs = senderFor({ fromName, fromMailbox: p.mailbox, fromMailboxVerified, replyTo }).from?.address ?? p.mailbox;
   await recordOutbound({
     mailbox: p.mailbox,
     fromAddress: sentAs,
-    fromName: p.brand,
+    fromName,
     to: p.to,
     cc: p.cc,
     subject: p.subject,

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { isStaff, isSuperAdmin } from "@/lib/auth/roles";
+import { isStaff } from "@/lib/auth/roles";
 import { countRecentLeads, countReviewQueue } from "@/lib/panel-queries";
 import {
   composeMailboxes,
@@ -12,6 +12,7 @@ import {
   listRecentLeadReplies,
 } from "@/lib/inbox";
 import { isInboundConfigured, SHARED_MAILBOXES, rootDomain } from "@/lib/inbox-address";
+import { inboxViewerFor } from "@/lib/inbox-viewer";
 import { isEmailConfigured, isRootSendingEnabled, senderAddress } from "@/lib/email";
 import { LEAD_EMAIL_FLASH } from "@/lib/inbox-access";
 import { esInbox } from "@/i18n/es-e2";
@@ -46,7 +47,7 @@ export default async function AdminInboxPage({
   searchParams: Promise<{ vista?: string; msg?: string; redactar?: string }>;
 }) {
   const [{ vista, msg, redactar }, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
-  const viewer = { userId: user.id, superAdmin: isSuperAdmin(user.role) };
+  const viewer = await inboxViewerFor(user);
   const internalOnly = isStaff(user.role);
   const view: View = vista === "archivados" || vista === "consultas" || vista === "whatsapp" ? vista : "bandeja";
   const email = view !== "whatsapp";

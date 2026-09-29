@@ -16,12 +16,12 @@ import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { DEFAULT_VERTICAL_KEY, VERTICALS } from "@/config/verticals";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { isSuperAdmin } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
 import { BRAND_NAME } from "@/lib/brand";
 import { deliverLead, type LeadPayload } from "@/lib/crm";
 import { recordAdminEvent } from "@/lib/admin-events";
 import { rootDomain } from "@/lib/inbox-address";
+import { inboxViewerFor } from "@/lib/inbox-viewer";
 import {
   attachThreadToLead,
   composeInbox,
@@ -41,8 +41,8 @@ import { waOutcomeFlash } from "@/lib/whatsapp-access";
 
 const ROUTE = "/admin/inbox";
 
-function viewerOf(user: SessionUser): InboxViewer {
-  return { userId: user.id, superAdmin: isSuperAdmin(user.role) };
+function viewerOf(user: SessionUser): Promise<InboxViewer> {
+  return inboxViewerFor(user);
 }
 
 function threadKeyFrom(formData: FormData): string | null {
@@ -62,7 +62,7 @@ export async function replyInboxAction(formData: FormData): Promise<void> {
   const thread = threadKeyFrom(formData);
   if (!thread) redirect(`${ROUTE}?msg=email_not_found`);
   const out = await sendInboxReply({
-    viewer: viewerOf(user),
+    viewer: await viewerOf(user),
     threadKey: thread,
     body: String(formData.get("body") ?? ""),
     brand: BRAND_NAME,
@@ -79,7 +79,7 @@ export async function composeAction(formData: FormData): Promise<void> {
     .map((a) => a.trim())
     .filter(Boolean);
   const out = await composeInbox({
-    viewer: viewerOf(user),
+    viewer: await viewerOf(user),
     mailbox: String(formData.get("mailbox") ?? ""),
     to: String(formData.get("to") ?? ""),
     cc,
@@ -96,7 +96,7 @@ export async function archiveAction(formData: FormData): Promise<void> {
   const user = await requireStaffOrAbove();
   const thread = threadKeyFrom(formData);
   const archive = formData.get("archive") === "1";
-  const n = thread ? await setInboxThreadArchived(viewerOf(user), thread, archive) : 0;
+  const n = thread ? await setInboxThreadArchived(await viewerOf(user), thread, archive) : 0;
   revalidatePath(ROUTE);
   if (n === 0) redirect(`${ROUTE}?msg=email_not_found`);
   redirect(archive ? `${ROUTE}?msg=archived` : `${ROUTE}/${thread}?msg=unarchived`);
@@ -118,7 +118,7 @@ const convertSchema = z.object({
  */
 export async function convertToLeadAction(formData: FormData): Promise<void> {
   const user = await requireStaffOrAbove();
-  const viewer = viewerOf(user);
+  const viewer = await viewerOf(user);
   const thread = threadKeyFrom(formData);
   const messages = thread ? await getInboxThread(viewer, thread) : null;
   if (!thread || !messages) redirect(`${ROUTE}?msg=email_not_found`);

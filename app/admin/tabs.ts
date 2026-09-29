@@ -5,6 +5,7 @@ import { esAgency } from "@/i18n/es-agency";
 import { esAnalytics } from "@/i18n/es-analytics";
 import { esDeals } from "@/i18n/es-deals";
 import { esProjects } from "@/i18n/es-projects";
+import { esMailSites } from "@/i18n/es-mail-sites";
 
 /**
  * The /admin tabs, with the active one flagged and the review count badged.
@@ -23,6 +24,7 @@ export function adminTabs(
     | "listings"
     | "quality"
     | "projects"
+    | "mail"
     | "google"
     | "leads"
     | "deals"
@@ -107,6 +109,13 @@ export function adminTabs(
       group: "manage",
       label: esProjects.tab,
       active: active === "projects",
+    },
+    {
+      // Super-admin only, like Calidad and Proyectos.
+      href: "/admin/correo",
+      group: "manage",
+      label: esMailSites.tab,
+      active: active === "mail",
     },
     {
       href: "/admin/importar",
