@@ -437,7 +437,7 @@ Finding the searches without Google tools:
    in `verify:seo` block (n)** — then `terreno.com.py` — **DONE 2026-09-29 (S1(a)): `ownsCategories: false`, removed from `KNOWN_DUPLICATE_DOORS`, `verify:seo` block (n) S1 checks; its 9 evergreen land pages stay owned by it and the marketplace's copies canonicalise to it (`categoryTarget()`, `docs/decisions-needed.md` 2026-09-29)** — then the rental decision — **DONE 2026-09-29 (S3(a)): `ownsCategories: false` on `rentparaguay.com`; its English rental grids canonicalise to the same path on `realestateinparaguay.com` (which also owns the English rental evergreen pages), out of its sitemap, no hreflang; `KNOWN_DUPLICATE_DOORS` is now empty; `verify:seo` block (n) S3 checks**.
    Each flip is one line in `verticals.ts` plus the matching `verify:seo`
    expectation, in its own PR.
-4. §4.5's site pages on the land doors, same mechanism.
+4. §4.5's site pages on the land doors, same mechanism — **DONE 2026-09-29 (S4(a)): the sibling flag `ownsSitePages: false` on `terreno.com.py`, `landforsaleparaguay.com` and (found to submit the same pages in its sitemap, contrary to §4.5) `rentparaguay.com`; `src/lib/site-page-owner.ts`, `sitePageOrigin()`, sitemap `includeSitePages`, `verify:seo` block (o)**.
 5. The feeders' unique pages (§8), one PR per page type, each with its
    threshold and its own sitemap entry on its own door only.
 6. Measure with what the site already sees, not with Google: search-engine

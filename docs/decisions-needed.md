@@ -405,3 +405,37 @@ emits price, project and guide pages (`sitemap.ts` sections 3, 6, 7 gate only
 on `servesMarketplace`, which is true for the rental family) although the
 plan (section 4.5) says it does not. Verify on the live sitemap before S4's
 scope is finalised.
+
+
+## 2026-09-29 — Land doors' copies of guides, prices and projects (S4(a))
+
+Done as the plan recommends (S4(a)): on `terreno.com.py`,
+`landforsaleparaguay.com` and `rentparaguay.com` the marketplace's guides,
+price pages, project/developer pages and explainers (financing, FAQ, how it
+works, data, appraisal, plans, for-agencies) canonicalise to the same path on
+`inmobiliaria.com.py` / `realestateinparaguay.com` and leave those doors'
+sitemaps. Their home, operation hubs, category pages, `/nosotros`,
+`/contacto`, `/terminos` and `/privacidad` stay their own.
+
+Judgement calls to confirm:
+
+1. **`rentparaguay.com` was included.** The plan (4.5) says the rental doors
+   do not copy the marketplace's site pages, but `sitemap.ts` submitted price,
+   project, developer and guide pages for every door with marketplace pages
+   (the rental family included), and the routes render on it. Delegating them
+   is one line in `verticals.ts` (`ownsSitePages`) to undo.
+2. **Land-specific guides.** Guides are database rows (`posts`) with no door
+   column, so nothing in the code can tell a land-only guide ("como comprar un
+   terreno") from a general one. Under S4(a) every guide is credited to the
+   marketplace, including any that only make sense to a land buyer. If the
+   founder wants `terreno.com.py` / `landforsaleparaguay.com` to own some
+   guides, that needs a per-post owner (a `posts` column, so a migration and a
+   founder-run `db:migrate`) — not started. Until then a land guide is
+   canonical on the marketplace, where its `pagesForGuide()` links to the
+   marketplace's evergreen pages.
+3. **`/nosotros`, `/terminos`, `/privacidad` stay self-canonical** on every
+   door: they name the door as the operator, so they are that door's own page
+   even though the wording overlaps. Say if you would rather delegate them.
+4. **`/financiamiento` and `/preguntas-frecuentes` on the English door** carry
+   the wording awaiting the founder's signature (CLAUDE.md, #180); nothing
+   changes there, they are just now the owner's page only.

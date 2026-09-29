@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { dict } from "@/i18n/server";
@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${TITLE}`,
     description: DESCRIPTION(brand),
-    alternates: { canonical: `${await siteOrigin()}/como-funciona` },
+    alternates: { canonical: `${await sitePageOrigin("/como-funciona")}/como-funciona` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand), images: doorOgImages(brand) },
   };
 }
@@ -89,7 +89,7 @@ const RENT_TIPS = [
 ];
 
 export default async function ComoFuncionaPage() {
-  const origin = await siteOrigin();
+  const origin = await sitePageOrigin("/como-funciona");
   // What the "Verificado" mark means (A3, Seeker 9) — every verified badge
   // links to #verificado. From the dictionary, so it reads in the door's
   // language even though the rest of this page is still Spanish-only.

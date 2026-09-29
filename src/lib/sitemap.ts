@@ -24,6 +24,7 @@ import {
 import { getIndexability } from "./indexability";
 import { EVERGREEN_PAGES, evergreenPathsFor } from "../content/evergreen";
 import { categoryTarget } from "./category-owner";
+import { isSitePagePath } from "./site-page-owner";
 import { categoryOwnerForLocale } from "./origin";
 import { citiesWithPrices } from "./precios-queries";
 import { categoryUrl, agencyUrl, agentUrl, parseCategorySegments, parseOperation, type CategoryShape } from "./urls";
@@ -85,6 +86,15 @@ export interface SitemapOptions {
    */
   includeCategories?: boolean;
   /**
+   * Whether to emit the site pages — the marketplace's guides, price pages,
+   * project and developer pages and hand-authored explainers
+   * (`isSitePagePath()`, site-page-owner.ts). The same rule once more, for
+   * `ownsSitePages`: a door that canonicalises them to another door's must not
+   * submit them. The caller passes `hostOwnsSitePages()` from `origin.ts`.
+   * Default true — the flag is unset on every door that is not a feeder.
+   */
+  includeSitePages?: boolean;
+  /**
    * The door this sitemap is for. Its `filters` narrow the published rows the
    * same way they narrow every page on that host — a sitemap that lists URLs
    * the host would render empty is the same Search Console error as listing
@@ -100,6 +110,7 @@ export async function buildSitemapEntries(
     includeListingDetail = true,
     includeDirectory = true,
     includeCategories = true,
+    includeSitePages = true,
     vertical = null,
   } = opts;
   // The directory door serves none of the marketplace's page types — it 301s
@@ -187,6 +198,7 @@ export async function buildSitemapEntries(
   const entries: SitemapEntry[] = staticPaths
     .filter((path) => path !== "/vender" || venderAllowed)
     .filter(hubIndexable)
+    .filter((path) => includeSitePages || !isSitePagePath(path))
     .filter((path) => includeDirectory || !DIRECTORY_INDEX_PATHS.includes(path))
     .map((path) => ({ path }));
 
@@ -348,7 +360,7 @@ export async function buildSitemapEntries(
 
   // 3. Price pages — only cities with a defensible sample, which is the same
   //    rule the page's own robots meta applies. Sitemap and page must agree.
-  const priceCities = servesMarketplace ? await citiesWithPrices() : [];
+  const priceCities = servesMarketplace && includeSitePages ? await citiesWithPrices() : [];
   for (const city of priceCities) {
     entries.push({ path: `/precios/${city.slug}` });
   }
@@ -398,7 +410,7 @@ export async function buildSitemapEntries(
   //    thin-page risk to gate on — a project page carries its own units and a
   //    developer page its own projects — but a developer with no project at
   //    all is excluded, matching the noindex its page sets for that case.
-  const projectRows = servesMarketplace
+  const projectRows = servesMarketplace && includeSitePages
     ? await db
         .select({ slug: projects.slug, developerId: projects.developerId })
         .from(projects)
@@ -429,7 +441,7 @@ export async function buildSitemapEntries(
   //    rest of the site rather than erroring. Only the door's own language:
   //    an English guide on a Spanish door is noindex (app/guias/[slug]).
   const postLocale = vertical?.locale ?? DEFAULT_LOCALE;
-  for (const post of servesMarketplace ? await listPublishedPostSlugs(postLocale) : []) {
+  for (const post of servesMarketplace && includeSitePages ? await listPublishedPostSlugs(postLocale) : []) {
     entries.push({
       path: `/guias/${post.slug}`,
       lastmod: post.updatedAt ?? undefined,

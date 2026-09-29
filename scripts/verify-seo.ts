@@ -23,6 +23,7 @@ import {
   categoryOwnerForLocale,
   detailOwnerForLocale,
   directoryOwnerForLocale,
+  sitePageOwnerForLocale,
 } from "../src/lib/origin";
 import {
   categoryOwnerHost,
@@ -38,6 +39,14 @@ import {
   DIRECTORY_SITEMAP_PATHS,
   MARKETPLACE_PATH_ROOTS,
 } from "../src/config/site-nav";
+import {
+  SITE_PAGE_PATHS,
+  SITE_PAGE_PREFIXES,
+  isSitePagePath,
+  ownsSitePageSet,
+  sitePageOwnerHost,
+  sitePageTarget,
+} from "../src/lib/site-page-owner";
 import {
   chromeShowLogin,
   chromeShowNewsletter,
@@ -1743,6 +1752,165 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
         !JSON.stringify(all).includes("land"),
       JSON.stringify(all),
     );
+  }
+}
+
+// Site-page ownership (S4(a), docs/plan-seo-doors-2026-09-27.md §4.5): the
+// marketplace's guides, price pages, project/developer pages and explainers
+// have one owner per language. Analogous to (n), and allowlist-free.
+{
+  console.log("\n(o) site-page ownership (ownsSitePages, S4a)");
+  const SAMPLES = [
+    ...SITE_PAGE_PATHS,
+    ...SITE_PAGE_PREFIXES.map((prefix) => `${prefix}some-slug`),
+  ];
+  // Pages that are the door's own, deliberately NOT site pages.
+  const OWN_PATHS = ["/", "/venta", "/alquiler", "/alquiler-temporal", "/nosotros", "/contacto", "/terminos", "/privacidad", "/vender", "/agentes", "/inmobiliarias", "/venta/luque", "/venta/luque/terrenos"];
+
+  // Every hand-authored marketplace sitemap path is classified on purpose: a
+  // site page (delegated by a feeder) or one of the door's own. A page added
+  // to site-nav.ts and to neither list fails here, so it cannot quietly
+  // become a duplicate on the land doors.
+  {
+    const unclassified = MARKETPLACE_SITEMAP_PATHS.filter((path) => !isSitePagePath(path) && !OWN_PATHS.includes(path));
+    check("(o) every marketplace sitemap path is classified as a site page or one of the door's own", unclassified.length === 0, unclassified.join(", "));
+    const orphans = SITE_PAGE_PATHS.filter((path) => !MARKETPLACE_SITEMAP_PATHS.includes(path));
+    check("(o) every site page path is in MARKETPLACE_SITEMAP_PATHS", orphans.length === 0, orphans.join(", "));
+    check("(o) no path is both a site page and one of the door's own", OWN_PATHS.every((path) => !isSitePagePath(path)));
+  }
+
+  // The live table: which doors own site pages, per language, allowlist-free.
+  const doors = servedDoors(CANONICAL_HOST).filter((d) => marketplacePagesEnabled(d.config.key));
+  for (const locale of ["es", "en"] as const) {
+    const owners = doors.filter((d) => d.config.locale === locale && ownsSitePageSet(d.config));
+    check(
+      `(o) exactly one served ${locale} door owns site pages`,
+      owners.length === 1,
+      owners.map((d) => d.host).join(", ") || "none",
+    );
+  }
+  check(
+    "(o) the site-page owner per locale is the marketplace primary / its translation",
+    sitePageOwnerForLocale("es") === "inmobiliaria.com.py" && sitePageOwnerForLocale("en") === "realestateinparaguay.com",
+    `${sitePageOwnerForLocale("es")} / ${sitePageOwnerForLocale("en")}`,
+  );
+  const FLIPPED_SITE_PAGE_FEEDERS = new Set<string>(["terreno.com.py", "landforsaleparaguay.com", "rentparaguay.com"]);
+  check(
+    "(o) the flag is false on exactly the flipped doors, unset on the rest",
+    Object.entries(VERTICALS).every(([host, v]) =>
+      FLIPPED_SITE_PAGE_FEEDERS.has(host)
+        ? v.ownsSitePages === false && !ownsSitePageSet(v)
+        : v.ownsSitePages === undefined && ownsSitePageSet(v),
+    ),
+  );
+  {
+    const bad: string[] = [];
+    for (const d of doors) {
+      for (const path of SAMPLES) {
+        const t = sitePageTarget({ table: VERTICALS, servingHost: d.host, path, siteOwner: sitePageOwnerForLocale });
+        if (ownsSitePageSet(d.config)) {
+          if (t.kind !== "self") bad.push(`${d.host} ${path} is an owner but delegates`);
+          continue;
+        }
+        if (t.kind !== "other") { bad.push(`${d.host} ${path} does not delegate`); continue; }
+        const target = VERTICALS[t.host];
+        // Same language, marketplace family, served, and itself self-canonical.
+        if (!target || target.locale !== d.config.locale || target.family !== "marketplace" || !target.enabled) bad.push(`${d.host} ${path} -> ${t.host} is not a served marketplace door in ${d.config.locale}`);
+        else if (sitePageTarget({ table: VERTICALS, servingHost: t.host, path, siteOwner: sitePageOwnerForLocale }).kind !== "self") bad.push(`${d.host} ${path} -> ${t.host} canonicalises onward`);
+      }
+    }
+    check("(o) every non-owner delegates every site page to the same path on its language's owner, with no chain", bad.length === 0, bad.slice(0, 3).join("; "));
+  }
+  check(
+    "(o) the three feeders point at the right owner",
+    ["terreno.com.py", "landforsaleparaguay.com", "rentparaguay.com"].every((host) => {
+      const t = sitePageTarget({ table: VERTICALS, servingHost: host, path: "/guias/x", siteOwner: sitePageOwnerForLocale });
+      return t.kind === "other" && t.host === (VERTICALS[host].locale === "es" ? "inmobiliaria.com.py" : "realestateinparaguay.com");
+    }),
+  );
+  check(
+    "(o) a feeder's own pages (home, hubs, categories, about, contact, legal, directory) stay self-canonical on every door",
+    doors.every((d) =>
+      OWN_PATHS.every((path) => sitePageTarget({ table: VERTICALS, servingHost: d.host, path, siteOwner: sitePageOwnerForLocale }).kind === "self"),
+    ),
+  );
+  check(
+    "(o) an unknown host (preview deploy) is self",
+    sitePageTarget({ table: VERTICALS, servingHost: "x.hostingersite.com", path: "/guias/x", siteOwner: sitePageOwnerForLocale }).kind === "self",
+  );
+
+  // Pure rule.
+  check("(o) isSitePagePath: exact, prefix and near-miss", isSitePagePath("/guias") && isSitePagePath("/guias/a-b") && isSitePagePath("/proyecto/x") && !isSitePagePath("/guias/") && !isSitePagePath("/guiasx") && !isSitePagePath("/proyecto") && !isSitePagePath("/venta/guias"));
+  {
+    const c = (over: Partial<VerticalConfig>): VerticalConfig =>
+      ({ key: "terreno", brand: "X", locale: "es", family: "marketplace", copy: "land", enabled: true, ownsListingDetail: false, ...over }) as VerticalConfig;
+    const table = (flag: boolean | undefined): Record<string, VerticalConfig> => ({
+      "owner.test": c({ key: "inmobiliaria" }),
+      "owner-en.test": c({ key: "en", locale: "en" }),
+      "land.test": c({ key: "terreno", ownsSitePages: flag }),
+      "land-en.test": c({ key: "land", locale: "en", ownsSitePages: flag }),
+      "rent.test": c({ key: "rent", locale: "en", family: "rental", ownsSitePages: flag }),
+    });
+    // The same collision test as the live table, over a synthetic one.
+    const collisions = (t: Record<string, VerticalConfig>) =>
+      (["es", "en"] as const).flatMap((locale) =>
+        Object.entries(t).filter(([, v]) => v.locale === locale && ownsSitePageSet(v)).length > 1 ? [locale] : [],
+      );
+    check("(o) synthetic, flag unset: two doors own site pages in each language (the invariant bites)", collisions(table(undefined)).length === 2);
+    check("(o) synthetic, feeders opted out: one owner per language", collisions(table(false)).length === 0);
+    const off = table(false);
+    const so = (l: VerticalConfig["locale"]) => sitePageOwnerHost(off, l, ["owner.test"], "x");
+    check("(o) synthetic: owner per language is the owner door, never a feeder or a rental door", so("es") === "owner.test" && so("en") === "owner-en.test");
+    check(
+      "(o) synthetic: the owner opting out hands the language to the next marketplace door",
+      sitePageOwnerHost({ ...table(undefined), "owner.test": { ...c({ key: "inmobiliaria" }), ownsSitePages: false } }, "es", ["owner.test"], "x") === "land.test",
+    );
+    check(
+      "(o) synthetic: a rental-family door delegates to the marketplace owner in its own language",
+      (() => {
+        const t = sitePageTarget({ table: off, servingHost: "rent.test", path: "/precios/luque", siteOwner: so });
+        return t.kind === "other" && t.host === "owner-en.test";
+      })(),
+    );
+    check(
+      "(o) synthetic: flag unset delegates nothing",
+      SAMPLES.every((path) => sitePageTarget({ table: table(undefined), servingHost: "land.test", path, siteOwner: (l) => sitePageOwnerHost(table(undefined), l, ["owner.test"], "x") }).kind === "self"),
+    );
+  }
+
+  // Wiring, at source level: every site page reads its canonical through
+  // sitePageOrigin(), and the sitemap gates on the same predicate.
+  {
+    const src = (rel: string) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
+    const pageFor = (path: string) => `app${path.replace(/^(\/[^/]+)\/$/, "$1")}/page.tsx`;
+    const files = [
+      ...SITE_PAGE_PATHS.map(pageFor),
+      "app/guias/[slug]/page.tsx",
+      "app/precios/[ciudad]/page.tsx",
+      "app/proyecto/[slug]/page.tsx",
+      "app/desarrolladora/[slug]/page.tsx",
+    ];
+    const bad = files.filter((f) => {
+      let text: string;
+      try { text = src(f); } catch { return true; }
+      return !text.includes("sitePageOrigin(") || /canonical:\s*`\$\{await siteOrigin\(\)\}/.test(text);
+    });
+    check("(o) every site page builds its canonical through sitePageOrigin()", bad.length === 0, bad.join(", "));
+    const sm = src("src/lib/sitemap.ts");
+    check(
+      "(o) the sitemap drops site pages (static list, prices, projects, developers, guides) where the door does not own them",
+      sm.includes("includeSitePages || !isSitePagePath(path)") &&
+        sm.includes("servesMarketplace && includeSitePages ? await citiesWithPrices()") &&
+        sm.includes("const projectRows = servesMarketplace && includeSitePages") &&
+        sm.includes("servesMarketplace && includeSitePages ? await listPublishedPostSlugs"),
+    );
+    check(
+      "(o) both sitemap routes pass hostOwnsSitePages()",
+      src("app/sitemap.xml/route.ts").includes("hostOwnsSitePages()") && src("app/sitemap/[chunk]/route.ts").includes("hostOwnsSitePages()"),
+    );
+    // No site page emits hreflang today; if one starts to, it must follow the owner rule.
+    const withAlternates = files.filter((f) => src(f).includes("pageLanguageAlternates"));
+    check("(o) no site page emits hreflang (a new one needs an owners-only scope first)", withAlternates.length === 0, withAlternates.join(", "));
   }
 }
 

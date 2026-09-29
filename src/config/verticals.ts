@@ -118,6 +118,20 @@ export interface VerticalConfig {
    * until the PR that flips each one — empty since S3a; the machinery stays.
    */
   ownsCategories?: boolean;
+  /**
+   * Whether this door's copies of the marketplace's own content pages —
+   * guides, price pages, project and developer pages, and the hand-authored
+   * explainers (`SITE_PAGE_PATHS` in `src/lib/site-page-owner.ts`) — are
+   * canonical HERE (decision S4(a), docs/plan-seo-doors-2026-09-27.md §4.5).
+   * The sibling of `ownsCategories`: **unset means true**; a door set to
+   * `false` canonicalises each of those pages to the SAME PATH on the
+   * marketplace door that owns them in the door's own language, and leaves
+   * them out of its sitemap. Its home, hubs, categories, `/nosotros`,
+   * `/contacto` and legal pages are not site pages and stay its own.
+   * Set to `false` on `terreno.com.py`, `landforsaleparaguay.com` and
+   * `rentparaguay.com`.
+   */
+  ownsSitePages?: boolean;
 }
 
 export const VERTICALS: Record<string, VerticalConfig> = {
@@ -138,6 +152,9 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     // they stay self-canonical, indexable and in its sitemap, and
     // inmobiliaria.com.py's copies of those paths canonicalise here.
     ownsCategories: false,
+    // S4(a): its copies of the marketplace's guides, price, project and other
+    // site pages canonicalise to the same path on the marketplace owner.
+    ownsSitePages: false,
   },
   /**
    * The rental family's Spanish door (fable/plan-rentparaguay.md §1). Not a
@@ -209,6 +226,9 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     // self-canonical; a /venta path has no equivalent (operation filter) and
     // is noindex, as before.
     ownsCategories: false,
+    // S4(a): its copies of the marketplace's guides, price, project and other
+    // site pages canonicalise to the same path on the marketplace owner.
+    ownsSitePages: false,
   },
   /**
    * The realtor directory — a seller-first lead-gen door, not a second
@@ -320,6 +340,9 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     // canonicalise to realestateinparaguay.com and leave its sitemap. Its
     // home and its national `/venta` hub are unique and stay self-canonical.
     ownsCategories: false,
+    // S4(a): its copies of the marketplace's guides, price, project and other
+    // site pages canonicalise to the same path on the marketplace owner.
+    ownsSitePages: false,
   },
   /**
    * FLIPPED 2026-09-04 (PLAN.md D6): the Spanish marketplace primary. Same

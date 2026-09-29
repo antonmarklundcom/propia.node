@@ -24,6 +24,7 @@ import {
 } from "@/config/verticals";
 import { EVERGREEN_PAGES } from "../content/evergreen";
 import { categoryOwnerHost, categoryTarget, ownsCategoryPages } from "./category-owner";
+import { sitePageOwnerHost, sitePageTarget, ownsSitePageSet } from "./site-page-owner";
 import type { CategoryShape } from "./urls";
 import type { Operation } from "./import/types";
 import { rawHostFrom } from "./host";
@@ -311,4 +312,63 @@ export async function categoryCanonicalFor(
   if (t.kind === "self") return self;
   if (t.kind === "none") return null;
   return { origin: `https://${t.host}`, path: t.path, delegated: true };
+}
+
+/* ------------------------------------------------------------------------ *
+ * Site pages — guides, prices, projects and the hand-authored explainers
+ * (decision S4(a); the pure rule and the path list are `site-page-owner.ts`).
+ *
+ * The trio again, over `ownsSitePages`. Unset = true, so a door not flipped
+ * behaves exactly as before.
+ * ------------------------------------------------------------------------ */
+
+/** Which served host owns site pages in a language (marketplace primary first). */
+export function sitePageOwnerForLocale(
+  locale: VerticalConfig["locale"],
+): string {
+  return sitePageOwnerHost(
+    VERTICALS,
+    locale,
+    [MARKETPLACE_PRIMARY_HOST, CANONICAL_HOST],
+    CANONICAL_HOST,
+  );
+}
+
+function ownsSitePageHost(p: HostParts): boolean {
+  if (p.local) return true;
+  const v = VERTICALS[p.bare];
+  // As `ownsCategoryHost`: a host that is not an enabled door speaks through
+  // `siteOrigin()`, and the primary owns what no row says otherwise.
+  if (!v || !v.enabled || p.bare === CANONICAL_HOST) return true;
+  return ownsSitePageSet(v);
+}
+
+/**
+ * Origin for a site page's canonical: `siteOrigin()` where this door owns the
+ * page, otherwise the door that owns it in the door's own language. `path` is
+ * the page's path, so a door only delegates the paths that ARE site pages
+ * (`SITE_PAGE_PATHS` / `SITE_PAGE_PREFIXES`) — call it from every site page
+ * with that page's own path, and pages that are not site pages keep
+ * `siteOrigin()`.
+ */
+export async function sitePageOrigin(path: string): Promise<string> {
+  const p = await hostParts();
+  const self = await siteOrigin();
+  if (!p || p.local || !isOwnHost(p)) return self;
+  const t = sitePageTarget({
+    table: VERTICALS,
+    servingHost: p.bare,
+    path,
+    siteOwner: sitePageOwnerForLocale,
+  });
+  return t.kind === "self" ? self : `https://${t.host}`;
+}
+
+/**
+ * Same question as a boolean, for the sitemap: a host must never submit a URL
+ * it canonicalises away.
+ */
+export async function hostOwnsSitePages(): Promise<boolean> {
+  const p = await hostParts();
+  return p ? ownsSitePageHost(p) : true;
 }
