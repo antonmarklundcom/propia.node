@@ -75,6 +75,7 @@ import {
 } from "../src/content/evergreen";
 import { guidesForPage, pagesForGuide } from "../src/lib/guide-links";
 import { propertyHost, reportWindow, serviceAccount, signedAssertion } from "../src/lib/search-console";
+import { readFileSync } from "node:fs";
 import { createVerify, generateKeyPairSync } from "node:crypto";
 import { getIndexability } from "../src/lib/indexability";
 import { TREE, flatten } from "../src/lib/ops/location-tree";
@@ -1285,7 +1286,6 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
   // real duplicate, so this list can only shrink.
   const KNOWN_DUPLICATE_DOORS = new Set<string>([
     "terreno.com.py", // removed by the PR that flips this door
-    "landforsaleparaguay.com", // removed by the PR that flips this door
     "rentparaguay.com", // removed by the PR that flips this door
   ]);
 
@@ -1305,11 +1305,16 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
     );
   }
 
-  // Live table: the flag is unset on every door, so every door owns its own —
-  // this PR changed no behaviour.
+  // Live table: only the doors flipped so far have the flag; the rest are
+  // unset (= owns). Flip one door at a time, adding it here.
+  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com"]);
   check(
-    "(n) the flag is unset on every live door (unset = owns)",
-    Object.values(VERTICALS).every((v) => v.ownsCategories === undefined && ownsCategoryPages(v)),
+    "(n) the flag is false on exactly the flipped doors, unset on the rest",
+    Object.entries(VERTICALS).every(([host, v]) =>
+      FLIPPED_CATEGORY_FEEDERS.has(host)
+        ? v.ownsCategories === false && !ownsCategoryPages(v)
+        : v.ownsCategories === undefined && ownsCategoryPages(v),
+    ),
   );
   check(
     "(n) the category owner per locale is the marketplace primary / its translation",
@@ -1329,6 +1334,70 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
       return JSON.stringify(a) === JSON.stringify(b) && a !== undefined;
     });
     check('(n) scope "category" pairs exactly what scope "site" pairs while the flag is unset', same);
+  }
+
+  // S2: landforsaleparaguay.com on the LIVE table.
+  {
+    const land = VERTICALS["landforsaleparaguay.com"];
+    const enOwner = categoryOwnerForLocale("en");
+    const target = (shape: CategoryShape, op: Op) => {
+      const p = equivalentCategoryPath(land, shape, op);
+      return p === null ? null : `https://${enOwner}${p}`;
+    };
+    check("(n) S2: the English category owner is realestateinparaguay.com", enOwner === "realestateinparaguay.com", enOwner);
+    check(
+      "(n) S2: its city page canonicalises to the owner's typed land page",
+      target({ kind: "city", citySlug: "luque" }, "venta") === "https://realestateinparaguay.com/venta/luque/terrenos",
+    );
+    check(
+      "(n) S2: its city-type page canonicalises to the same path on the owner",
+      target({ kind: "city-type", citySlug: "luque", type: "terreno" }, "alquiler") === "https://realestateinparaguay.com/alquiler/luque/terrenos",
+    );
+    check(
+      "(n) S2: its barrio page canonicalises to the same path on the owner",
+      target({ kind: "barrio-type", citySlug: "asuncion", barrioSlug: "recoleta", type: "terreno" }, "venta") ===
+        "https://realestateinparaguay.com/venta/asuncion/recoleta/terrenos",
+    );
+    check(
+      "(n) S2: a non-land type page has no equivalent (empty there, noindex)",
+      target({ kind: "city-type", citySlug: "luque", type: "casa" }, "venta") === null,
+    );
+    // Sitemap: the page passes hostOwnsCategories() (= ownsCategoryPages for a
+    // served door) to buildSitemapEntries' includeCategories.
+    check("(n) S2: it owns no category pages, so includeCategories is false in its sitemap", !ownsCategoryPages(land));
+    // No hreflang on a delegating page (real table, real serving host).
+    check(
+      "(n) S2: no category hreflang is emitted from landforsaleparaguay.com",
+      alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+        path: "/venta/luque/terrenos", scope: "category", family: "marketplace",
+        servingHost: "landforsaleparaguay.com",
+      }) === undefined,
+    );
+    const fromOwner = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+      path: "/venta/luque/terrenos", scope: "category", family: "marketplace",
+      servingHost: "realestateinparaguay.com",
+    });
+    check(
+      "(n) S2: the owner's category hreflang never names it",
+      !!fromOwner && !JSON.stringify(fromOwner).includes("landforsaleparaguay"),
+      JSON.stringify(fromOwner),
+    );
+    // Its unique pages stay its own: the home and the national hub. The hub
+    // (app/[operacion]/page.tsx) and the sitemap's hub paths must not read the
+    // category-ownership predicate, or the door would delegate/omit them.
+    const hubSrc = readFileSync(new URL("../app/[operacion]/page.tsx", import.meta.url), "utf8");
+    check(
+      "(n) S2: the operation hub page never delegates (no category-owner call, self-canonical)",
+      !/hostOwnsCategories|categoryCanonicalOrigin|equivalentCategoryPath/.test(hubSrc) &&
+        hubSrc.includes("canonical: `${await siteOrigin()}/${operationSlug(op)}`"),
+    );
+    const smSrc = readFileSync(new URL("../src/lib/sitemap.ts", import.meta.url), "utf8");
+    check(
+      "(n) S2: includeCategories gates only category paths, not the hub / static paths",
+      (smSrc.match(/includeCategories/g) ?? []).length === 3 &&
+        smSrc.includes("const servesCategories = servesMarketplace && includeCategories;") &&
+        !/staticPaths[^\n]*servesCategories|\.filter\([^)]*servesCategories/.test(smSrc),
+    );
   }
 
   // equivalentCategoryPath()
