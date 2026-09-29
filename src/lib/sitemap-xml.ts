@@ -39,7 +39,7 @@ export const CHUNK_SIZE = 10_000;
 /**
  * The entry list loads every published row, so concurrent Googlebot fetches
  * used to each pay the full scan (audit F43, the half that was already fixed).
- * One cache entry per (owns-listing-detail, vertical) pair; the origin prefix
+ * One cache entry per (owns-listing-detail, owns-directory, owns-categories, vertical) tuple; the origin prefix
  * stays per-request. `lastmod` survives the JSON round trip as an ISO string,
  * which the XML wants anyway — hence `Date | string` on the entry below.
  *
@@ -50,11 +50,13 @@ const cachedEntries = unstable_cache(
   async (
     includeListingDetail: boolean,
     includeDirectory: boolean,
+    includeCategories: boolean,
     verticalKey: VerticalKey,
   ) =>
     buildSitemapEntries({
       includeListingDetail,
       includeDirectory,
+      includeCategories,
       vertical: Object.values(VERTICALS).find((v) => v.key === verticalKey),
     }),
   ["sitemap-entries"],
@@ -78,10 +80,11 @@ const cachedEntries = unstable_cache(
 export async function sitemapEntries(
   includeListingDetail: boolean,
   includeDirectory: boolean,
+  includeCategories: boolean,
   verticalKey: VerticalKey,
 ): Promise<SitemapEntry[]> {
   const [entries, agencyMode] = await Promise.all([
-    cachedEntries(includeListingDetail, includeDirectory, verticalKey),
+    cachedEntries(includeListingDetail, includeDirectory, includeCategories, verticalKey),
     isAgencyMode(),
   ]);
   // Agency mode redirects these pages (AGENCY_MODE_HIDDEN_PATHS); a sitemap

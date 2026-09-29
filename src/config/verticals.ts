@@ -97,6 +97,26 @@ export interface VerticalConfig {
    * (en, there is no English directory door).
    */
   ownsDirectory?: boolean;
+  /**
+   * Whether this door's category pages — `/{operacion}/{ciudad}[/{barrio}]
+   * [/{tipo}]` — are canonical HERE (decision S8,
+   * docs/plan-seo-doors-2026-09-27.md §7). Same shape as `ownsListingDetail` /
+   * `ownsDirectory`, per locale.
+   *
+   * **Unset means true**, so adding the field changed nothing: every door
+   * still self-canonicalises its category pages. A door set to `false` stops
+   * competing — each of its category pages canonicalises to the EQUIVALENT
+   * page (the same listing set, `equivalentCategoryPath()` in
+   * `src/lib/category-owner.ts`) on the marketplace door that owns categories
+   * in the door's own language, a page with no single equivalent goes noindex,
+   * and the door's sitemap and hreflang drop them. Nothing redirects; visitors
+   * still get every page.
+   *
+   * Set on no door as of PR2 (2026-09-29). `verify:seo` carries the
+   * `KNOWN_DUPLICATE_DOORS` allowlist of doors that still duplicate the
+   * marketplace until the PR that flips each one.
+   */
+  ownsCategories?: boolean;
 }
 
 export const VERTICALS: Record<string, VerticalConfig> = {
