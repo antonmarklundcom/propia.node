@@ -112,7 +112,7 @@ export interface VerticalConfig {
    * and the door's sitemap and hreflang drop them. Nothing redirects; visitors
    * still get every page.
    *
-   * Set to `false` on `landforsaleparaguay.com` only (S2). `verify:seo` carries the
+   * Set to `false` on `landforsaleparaguay.com` (S2) and `terreno.com.py` (S1a). `verify:seo` carries the
    * `KNOWN_DUPLICATE_DOORS` allowlist of doors that still duplicate the
    * marketplace until the PR that flips each one.
    */
@@ -129,6 +129,14 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "land",
     enabled: true,
     ownsListingDetail: false,
+    // S1(a) (docs/plan-seo-doors-2026-09-27.md §9): its city/barrio/type grids
+    // canonicalise to inmobiliaria.com.py's equivalent page and leave its
+    // sitemap; its home and national `/venta` hub are unique and stay
+    // self-canonical. EXCEPT its own evergreen land pages (S9): evergreen
+    // ownership outranks this flag (`categoryTarget()`, category-owner.ts) —
+    // they stay self-canonical, indexable and in its sitemap, and
+    // inmobiliaria.com.py's copies of those paths canonicalise here.
+    ownsCategories: false,
   },
   /**
    * The rental family's Spanish door (fable/plan-rentparaguay.md §1). Not a

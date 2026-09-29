@@ -4,7 +4,7 @@
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
 an intention that has not happened yet. Read both before building.
 
-Last verified against the code: 2026-09-29 (alquiler.com.py disabled, S6; rest of the file last verified 2026-09-22).
+Last verified against the code: 2026-09-29 (terreno.com.py flipped to a category feeder, S1(a); alquiler.com.py disabled, S6; rest of the file last verified 2026-09-22).
 
 ## Domains — read this before touching canonicals, metadata or BRAND_NAME
 
@@ -21,7 +21,7 @@ table.
 | `propia.com.py` | **NOT owned, and as of 2026-08-17 no longer in the code.** Its `verticals.ts` entry (and the `"propia"` vertical key) is deleted, the `hola@propia.com.py` contact fallback is gone, and the founder has ruled out *propia* as a brand name anywhere a client or realtor can see it. ARCHITECTURE.md and README.md still name it — that is stale prose, not a fact. `inmobiliaria.com.py` is the `.com.py` domain it was standing in for; do **not** reintroduce it as a fallback for anything. |
 | `inmobiliarios.com.py` (plural) | **Owned (confirmed by the founder 2026-09-10, correcting the old "not owned" line here). The realtor directory door — code landed 2026-09-10 (D1/D2/D1b/D4), DNS live and `ownsDirectory` flipped onto it the same day.** Not a marketplace: a seller-first lead-gen directory (`family: "directory"`, `mode: "directory"`, `fable-plan-realtor-terreno-rental.md` Stage 1 D). Brand "Inmobiliarios Paraguay", Spanish, `ownsListingDetail: false`, **`ownsDirectory: true`** (the Spanish owner of the directory page type — see the row below). Every marketplace path (`/venta`, `/propiedad`, `/publicar`, `/precios`, `/proyectos`, …) 308s to `https://inmobiliaria.com.py<path>` from `middleware.ts`. Distinct from the singular above — do not conflate them. |
 | `ownsDirectory` (a flag, not a domain) | Which host is canonical for `/agentes`, `/agente/*`, `/inmobiliarias`, `/inmobiliaria/*` — the `ownsListingDetail` pattern, **per locale**. Today: `inmobiliarios.com.py` (es, since the 2026-09-10 go-live) and `realestateinparaguay.com` (en). The marketplace doors still render those pages but canonicalise to the owner and omit them from their sitemaps. `verify:seo` asserts one owner per locale and that the Spanish owner is the directory door. |
-| `terreno.com.py` | **Owned, enabled, consolidated onto this app 2026-09-04** from its own former standalone Node deployment — retire that deployment separately (infra, not this repo). Terrenos-only feeder (`filters: { property_type: ["terreno"] }`), Spanish, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` and its sitemap omits them. |
+| `terreno.com.py` | **Owned, enabled, consolidated onto this app 2026-09-04** from its own former standalone Node deployment — retire that deployment separately (infra, not this repo). Terrenos-only feeder (`filters: { property_type: ["terreno"] }`), Spanish, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `inmobiliaria.com.py` and its sitemap omits them. **`ownsCategories: false` since 2026-09-29 (S1(a)):** its city/barrio/type grids canonicalise to `inmobiliaria.com.py`'s equivalent page (untyped city page → `/<op>/<ciudad>/terrenos`, a non-land type goes noindex), leave its sitemap and emit no hreflang; its home and national `/venta` hub stay self-canonical. **Exception — its evergreen land pages (S9) stay owned by it** (self-canonical, indexable at any count, in its sitemap), and `inmobiliaria.com.py`'s copies of those paths canonicalise to `terreno.com.py` — see the evergreen section. `verify:seo` block (n) checks it. |
 | `landforsaleparaguay.com` | **Owned since 2024-06-11 ("In Account"), registered as a vertical 2026-09-17.** `terreno.com.py`'s English feeder — same `filters: { property_type: ["terreno"] }`, `locale: "en"`, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com` (the English detail owner) and its sitemap omits them. **`ownsCategories: false` since 2026-09-29 (S2, `docs/plan-seo-doors-2026-09-27.md`):** its `/venta|alquiler/<ciudad>[/<barrio>][/<tipo>]` pages canonicalise to the equivalent page on `realestateinparaguay.com` (`equivalentCategoryPath()`: an untyped city page becomes `/…/<ciudad>/terrenos`, a non-land type has no equivalent and goes noindex), drop out of its sitemap and emit no hreflang. Its home and its national `/venta` hub are unique sets and stay self-canonical, indexable and in its sitemap. `verify:seo` block (n) checks all of it. **Declared after `realestateinparaguay.com` in `verticals.ts` on purpose** — `alternatesFor()`'s only tiebreak for two non-primary same-locale doors in a family is declaration order, so an earlier entry here would hijack the marketplace family's English hreflang slot from the door that actually is its translation pair. DNS/deploy status not yet confirmed live — verify before treating it as reachable by visitors. |
 | `landforsaleinparaguay.com` | **Owned since 2024-06-11 ("In Account"), same acquisition as `landforsaleparaguay.com` above.** NOT a vertical — two near-identical English "land for sale" domains would be a duplicate-content SEO problem, not a neutral extra. It whole-host 308s to `https://landforsaleparaguay.com` from `next.config.ts`'s `redirects()`. Do not add it to `verticals.ts`. |
 | `alquiler.com.py` | **DISABLED 2026-09-29 (decision S6): the domain is taken by another party, not merely unpurchased.** `enabled: false` in `verticals.ts`, so `resolveVertical()` ignores the host and `rentparaguay.com` stands alone (no es / x-default hreflang to a domain nobody owns). The code for the rental family's Spanish door stays (brand "Alquiler Paraguay", `family: "rental"`, Spanish `/servicios/<slug>` URLs, the `localeMap("es")` redirects in `next.config.ts`), and `verify:seo` keeps a synthetic table where the Spanish rental door is served so the pairing logic stays tested. Replacement is a founder decision (S5, open): candidate `alquilar.com.py`, or none. Once a domain is bought: rename the host key in `verticals.ts`, set `enabled: true`, update the redirect map in `next.config.ts` (~line 159), `NOT_LIVE_YET` in `src/lib/ops/live-check.ts` and this doc. |
@@ -595,6 +595,19 @@ the serving door's evergreen pages. Nothing shows when nothing relates.
 
 Rules that bite:
 
+- **Evergreen ownership outranks `ownsCategories`, in both directions
+  (S1(a), 2026-09-29).** The one rule is `categoryTarget()` in
+  `src/lib/category-owner.ts`, read by the page (`categoryCanonicalFor()` in
+  `origin.ts`), the sitemap (`listsCategory()`) and `verify:seo`. A door that
+  opted out still owns its own evergreen paths (self-canonical, sitemap);
+  every other same-locale *marketplace* door serving the same listing set
+  canonicalises to the evergreen owner's URL, drops it from its sitemap and
+  emits no hreflang for it; an "equivalent page" canonical that would land on
+  such a page goes straight to the owner (no canonical chains). hreflang on an
+  owned page names the owner in its locale (`ownerHostByLocale`, x-default
+  follows). Rental doors are never touched. Today it only bites the 9 land
+  pages on `terreno.com.py` (`/venta/<ciudad>/terrenos`) vs
+  `inmobiliaria.com.py`.
 - **Everything reads the registry.** A new caller of `getIndexability()` for a
   category passes `evergreen: isEvergreenPath(path, vertical.key)`, or the
   page and the sitemap disagree. A barrio page's parent counts as indexable

@@ -26,6 +26,8 @@ import {
 } from "../src/lib/origin";
 import {
   categoryOwnerHost,
+  categoryTarget,
+  evergreenOwnersByLocale,
   equivalentCategoryPath,
   listingSetSignature,
   ownsCategoryPages,
@@ -1285,7 +1287,6 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
   // filters folded away) — the check below fails once an entry is no longer a
   // real duplicate, so this list can only shrink.
   const KNOWN_DUPLICATE_DOORS = new Set<string>([
-    "terreno.com.py", // removed by the PR that flips this door
     "rentparaguay.com", // removed by the PR that flips this door
   ]);
 
@@ -1307,7 +1308,7 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
 
   // Live table: only the doors flipped so far have the flag; the rest are
   // unset (= owns). Flip one door at a time, adding it here.
-  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com"]);
+  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com", "terreno.com.py"]);
   check(
     "(n) the flag is false on exactly the flipped doors, unset on the rest",
     Object.entries(VERTICALS).every(([host, v]) =>
@@ -1331,9 +1332,12 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
       const b = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
         path, scope: "site", family: "marketplace",
       });
-      return JSON.stringify(a) === JSON.stringify(b) && a !== undefined;
+      // Same pairs; key order follows declaration order of the doors kept.
+      const sorted = (m: Record<string, string> | undefined) =>
+        JSON.stringify(m && Object.fromEntries(Object.entries(m).sort(([x], [y]) => (x < y ? -1 : 1))));
+      return sorted(a) === sorted(b) && a !== undefined;
     });
-    check('(n) scope "category" pairs exactly what scope "site" pairs while the flag is unset', same);
+    check('(n) scope "category" pairs exactly what scope "site" pairs (same pairs, no evergreen override)', same);
   }
 
   // S2: landforsaleparaguay.com on the LIVE table.
@@ -1388,15 +1392,153 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
     const hubSrc = readFileSync(new URL("../app/[operacion]/page.tsx", import.meta.url), "utf8");
     check(
       "(n) S2: the operation hub page never delegates (no category-owner call, self-canonical)",
-      !/hostOwnsCategories|categoryCanonicalOrigin|equivalentCategoryPath/.test(hubSrc) &&
+      !/hostOwnsCategories|categoryCanonicalOrigin|categoryCanonicalFor|categoryTarget|equivalentCategoryPath/.test(hubSrc) &&
         hubSrc.includes("canonical: `${await siteOrigin()}/${operationSlug(op)}`"),
     );
     const smSrc = readFileSync(new URL("../src/lib/sitemap.ts", import.meta.url), "utf8");
     check(
       "(n) S2: includeCategories gates only category paths, not the hub / static paths",
-      (smSrc.match(/includeCategories/g) ?? []).length === 3 &&
-        smSrc.includes("const servesCategories = servesMarketplace && includeCategories;") &&
+      smSrc.includes("const servesCategories = servesMarketplace;") &&
+        smSrc.includes("if (!includeCategories && !evergreen.has(path)) return false;") &&
         !/staticPaths[^\n]*servesCategories|\.filter\([^)]*servesCategories/.test(smSrc),
+    );
+  }
+
+  // S1(a): terreno.com.py on the LIVE table — and the evergreen precedence.
+  {
+    const marketplaceHosts = Object.entries(VERTICALS)
+      .filter(([, v]) => v.enabled && v.family === "marketplace")
+      .map(([h]) => h);
+    const targetFor = (servingHost: string, shape: CategoryShape, op: Op) =>
+      categoryTarget({
+        table: VERTICALS, servingHost, shape, operation: op, pages: EVERGREEN_PAGES,
+        categoryOwner: categoryOwnerForLocale,
+        preferred: [MARKETPLACE_PRIMARY_HOST, CANONICAL_HOST],
+      });
+    const at = (t: ReturnType<typeof targetFor>) =>
+      t.kind === "other" ? `https://${t.host}${t.path}` : t.kind;
+    const terreno = "terreno.com.py";
+    const es = MARKETPLACE_PRIMARY_HOST;
+    const landPages = EVERGREEN_PAGES.filter((p) => p.door === "terreno");
+    const asPath = (path: string) => {
+      const seg = path.split("/").filter(Boolean);
+      return { op: seg[0] as Op, shape: parseCategorySegments(seg.slice(1))! };
+    };
+
+    check("(n) S1: terreno.com.py is a category feeder (ownsCategories: false)", VERTICALS[terreno].ownsCategories === false);
+    check("(n) S1: it still has evergreen land pages to keep", landPages.length > 0, String(landPages.length));
+    check(
+      "(n) S1: every land evergreen page is self-canonical on terreno.com.py (owner outranks the flag)",
+      landPages.every((p) => {
+        const { op, shape } = asPath(p.path);
+        return targetFor(terreno, shape, op).kind === "self";
+      }),
+    );
+    check(
+      "(n) S1: inmobiliaria.com.py's copy of each land evergreen path canonicalises to the terreno URL",
+      landPages.every((p) => {
+        const { op, shape } = asPath(p.path);
+        return at(targetFor(es, shape, op)) === `https://${terreno}${p.path}`;
+      }),
+    );
+    check(
+      "(n) S1: terreno's untyped city page goes straight to the owned typed page, no chain",
+      at(targetFor(terreno, { kind: "city", citySlug: "luque" }, "venta")) === `https://${terreno}/venta/luque/terrenos`,
+    );
+    check(
+      "(n) S1: a non-evergreen land page canonicalises to inmobiliaria.com.py's typed page",
+      !isEvergreenPath("/venta/asuncion/terrenos", "terreno") &&
+        at(targetFor(terreno, { kind: "city", citySlug: "asuncion" }, "venta")) === `https://${es}/venta/asuncion/terrenos` &&
+        at(targetFor(terreno, { kind: "city-type", citySlug: "asuncion", type: "terreno" }, "venta")) === `https://${es}/venta/asuncion/terrenos`,
+    );
+    check(
+      "(n) S1: a barrio land page canonicalises to the same path on inmobiliaria.com.py",
+      at(targetFor(terreno, { kind: "barrio-type", citySlug: "asuncion", barrioSlug: "recoleta", type: "terreno" }, "venta")) ===
+        `https://${es}/venta/asuncion/recoleta/terrenos`,
+    );
+    check(
+      "(n) S1: a non-land page on terreno has no equivalent (noindex)",
+      targetFor(terreno, { kind: "city-type", citySlug: "luque", type: "casa" }, "venta").kind === "none",
+    );
+    check(
+      "(n) S1: the marketplace's own non-land evergreen pages stay self-canonical",
+      EVERGREEN_PAGES.filter((p) => p.door === "inmobiliaria").every((p) => {
+        const { op, shape } = asPath(p.path);
+        return targetFor(es, shape, op).kind === "self";
+      }),
+    );
+    check(
+      "(n) S1: the English evergreen pages stay self-canonical on their owner, and an English door is unaffected",
+      EVERGREEN_PAGES.filter((p) => p.door === "en").every((p) => {
+        const { op, shape } = asPath(p.path);
+        return targetFor("realestateinparaguay.com", shape, op).kind === "self";
+      }),
+    );
+    check(
+      "(n) S1: rentparaguay.com is untouched (a rental door never delegates on evergreen ownership)",
+      EVERGREEN_PAGES.every((p) => {
+        const { op, shape } = asPath(p.path);
+        return targetFor("rentparaguay.com", shape, op).kind === "self";
+      }),
+    );
+    // No canonical chain, on any served marketplace door, for any path shape
+    // or evergreen path: the target page is itself self-canonical.
+    {
+      const probes: { op: Op; shape: CategoryShape }[] = [
+        ...allShapes(),
+        ...["asuncion", "luque", "encarnacion", "san-bernardino"].flatMap((citySlug) =>
+          OPS.flatMap((op) => [
+            { op, shape: { kind: "city", citySlug } as CategoryShape },
+            ...PROPERTY_TYPES.map((type) => ({ op, shape: { kind: "city-type", citySlug, type } as CategoryShape })),
+          ]),
+        ),
+        ...EVERGREEN_PAGES.map((p) => asPath(p.path)),
+      ];
+      const bad: string[] = [];
+      for (const host of marketplaceHosts) {
+        for (const { op, shape } of probes) {
+          const t = targetFor(host, shape, op);
+          if (t.kind !== "other") continue;
+          const seg = t.path.split("/").filter(Boolean);
+          const next = parseCategorySegments(seg.slice(1));
+          const nextOp = seg[0] as Op;
+          if (!next) { bad.push(`${host} ${t.path} unparseable`); continue; }
+          if (targetFor(t.host, next, nextOp).kind !== "self") bad.push(`${host} -> ${t.host}${t.path} is not self-canonical`);
+        }
+      }
+      check("(n) S1: no category canonical points at a page that canonicalises onward", bad.length === 0, bad.slice(0, 3).join("; "));
+    }
+    // hreflang follows the evergreen owner.
+    {
+      const owners = evergreenOwnersByLocale(VERTICALS, "/venta/luque/terrenos", EVERGREEN_PAGES, [MARKETPLACE_PRIMARY_HOST, CANONICAL_HOST]);
+      check("(n) S1: the Spanish owner of /venta/luque/terrenos is terreno.com.py", owners.es === terreno && owners.en === undefined, JSON.stringify(owners));
+      const input = { path: "/venta/luque/terrenos", scope: "category", family: "marketplace" } as const;
+      const fromTerreno = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, { ...input, servingHost: terreno, ownerHostByLocale: owners });
+      check(
+        "(n) S1: hreflang on the owned land page names the owner (es), the English door and x-default = the owner",
+        !!fromTerreno && fromTerreno.es === `https://${terreno}/venta/luque/terrenos` &&
+          fromTerreno.en === "https://realestateinparaguay.com/venta/luque/terrenos" &&
+          fromTerreno["x-default"] === fromTerreno.es,
+        JSON.stringify(fromTerreno),
+      );
+      const fromEn = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, { ...input, servingHost: "realestateinparaguay.com", ownerHostByLocale: owners });
+      check("(n) S1: the English page's hreflang is the same set (reciprocal)", JSON.stringify(fromEn) === JSON.stringify(fromTerreno));
+      const noOverride = JSON.stringify(alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, { path: "/venta/luque/casas", scope: "category", family: "marketplace" }));
+      const withOverride = JSON.stringify(alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+        path: "/venta/luque/casas", scope: "category", family: "marketplace",
+        ownerHostByLocale: evergreenOwnersByLocale(VERTICALS, "/venta/luque/casas", EVERGREEN_PAGES, [MARKETPLACE_PRIMARY_HOST, CANONICAL_HOST]),
+      }));
+      check("(n) S1: an evergreen page owned by the marketplace pair keeps its hreflang exactly", noOverride === withOverride && noOverride !== "undefined", noOverride);
+    }
+    // Sitemap: what each door lists follows the same rule (source-level).
+    const smSrc2 = readFileSync(new URL("../src/lib/sitemap.ts", import.meta.url), "utf8");
+    check(
+      "(n) S1: the sitemap lists a category path only where categoryTarget() says self",
+      smSrc2.includes("}).kind === \"self\"") && (smSrc2.match(/listsCategory\(/g) ?? []).length >= 4,
+    );
+    check(
+      "(n) S1: the category page canonicalises through categoryCanonicalFor() (the same pure rule)",
+      readFileSync(new URL("../app/[operacion]/[...segments]/page.tsx", import.meta.url), "utf8").includes("categoryCanonicalFor("),
     );
   }
 

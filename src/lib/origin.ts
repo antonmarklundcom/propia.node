@@ -22,7 +22,10 @@ import {
   VERTICALS,
   type VerticalConfig,
 } from "@/config/verticals";
-import { categoryOwnerHost, ownsCategoryPages } from "./category-owner";
+import { EVERGREEN_PAGES } from "../content/evergreen";
+import { categoryOwnerHost, categoryTarget, ownsCategoryPages } from "./category-owner";
+import type { CategoryShape } from "./urls";
+import type { Operation } from "./import/types";
 import { rawHostFrom } from "./host";
 
 const PRIMARY_ORIGIN = `https://${CANONICAL_HOST}`;
@@ -278,4 +281,34 @@ export async function categoryCanonicalOrigin(): Promise<string> {
 export async function hostOwnsCategories(): Promise<boolean> {
   const p = await hostParts();
   return p ? ownsCategoryHost(p) : true;
+}
+
+/**
+ * Where this request's category page canonicalises — `null` when the door
+ * delegates and no single equivalent page exists (self-canonical, noindex).
+ * `delegated` is true when the canonical is not this page itself, so the
+ * caller can drop hreflang (a delegating page is not a language version).
+ * The rule — `ownsCategories` plus evergreen ownership precedence — is the
+ * pure `categoryTarget()`; this only turns its answer into an origin.
+ */
+export async function categoryCanonicalFor(
+  shape: CategoryShape | null,
+  operation: Operation,
+  path: string,
+): Promise<{ origin: string; path: string; delegated: boolean } | null> {
+  const self = { origin: await siteOrigin(), path, delegated: false };
+  const p = await hostParts();
+  if (!p || p.local || !isOwnHost(p)) return self;
+  const t = categoryTarget({
+    table: VERTICALS,
+    servingHost: p.bare,
+    shape,
+    operation,
+    pages: EVERGREEN_PAGES,
+    categoryOwner: categoryOwnerForLocale,
+    preferred: [MARKETPLACE_PRIMARY_HOST, CANONICAL_HOST],
+  });
+  if (t.kind === "self") return self;
+  if (t.kind === "none") return null;
+  return { origin: `https://${t.host}`, path: t.path, delegated: true };
 }

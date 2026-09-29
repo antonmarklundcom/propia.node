@@ -354,3 +354,26 @@ Shipped with both switches OFF (`/admin/ajustes`). Decide before turning on:
 3. **Wording** of the three texts (`esWhatsApp.auto` in `src/i18n/es-whatsapp.ts`):
    first-contact greeting, out-of-hours greeting, hand-off line.
 
+
+## 2026-09-29 — terreno.com.py's evergreen land pages vs the S1(a) flip
+
+Decision S1(a) made `terreno.com.py` a category feeder (its grids canonicalise
+to `inmobiliaria.com.py`). But founder decision S9 made it the SEO owner of 9
+evergreen land pages (`/venta/<ciudad>/terrenos`: Aregua, Capiata, Ciudad del
+Este, Encarnacion, Itagua, Limpio, Luque, San Bernardino, Ypacarai), which are
+also the very paths `inmobiliaria.com.py` serves for the same rows. The two
+decisions collide on those paths.
+
+**Chosen (conservative, implemented):** S9 wins on those 9 paths. Evergreen
+ownership outranks `ownsCategories`: `terreno.com.py` keeps them
+(self-canonical, indexable at any stock, in its sitemap, hreflang paired with
+`realestateinparaguay.com`), and `inmobiliaria.com.py`'s copies canonicalise to
+`terreno.com.py`, leave its sitemap and emit no hreflang. Terreno's untyped
+city page canonicalises straight to the owned typed page. Every other land
+grid canonicalises to `inmobiliaria.com.py` as S1(a) says.
+
+**Open for the founder:** is that the intended split? The alternative is to
+let S1(a) win everywhere and move the 9 pages to `inmobiliaria.com.py`
+(re-`door` the content files, land authority builds on the marketplace
+domain). Reversing is a `door` change per file, no code. Watch the 9 pages in
+`/admin/google` for a few weeks before deciding.

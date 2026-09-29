@@ -436,7 +436,7 @@ Finding the searches without Google tools:
 3. Flip one door at a time, smallest first: `landforsaleparaguay.com`
    (newest, least to lose) — **DONE 2026-09-29 (S2): `ownsCategories: false`
    on `landforsaleparaguay.com`, removed from `KNOWN_DUPLICATE_DOORS`, checks
-   in `verify:seo` block (n)** — then `terreno.com.py`, then the rental decision.
+   in `verify:seo` block (n)** — then `terreno.com.py` — **DONE 2026-09-29 (S1(a)): `ownsCategories: false`, removed from `KNOWN_DUPLICATE_DOORS`, `verify:seo` block (n) S1 checks; its 9 evergreen land pages stay owned by it and the marketplace's copies canonicalise to it (`categoryTarget()`, `docs/decisions-needed.md` 2026-09-29)** — then the rental decision.
    Each flip is one line in `verticals.ts` plus the matching `verify:seo`
    expectation, in its own PR.
 4. §4.5's site pages on the land doors, same mechanism.

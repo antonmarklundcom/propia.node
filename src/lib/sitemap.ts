@@ -22,9 +22,11 @@ import {
   projects,
 } from "../db/schema";
 import { getIndexability } from "./indexability";
-import { evergreenPathsFor } from "../content/evergreen";
+import { EVERGREEN_PAGES, evergreenPathsFor } from "../content/evergreen";
+import { categoryTarget } from "./category-owner";
+import { categoryOwnerForLocale } from "./origin";
 import { citiesWithPrices } from "./precios-queries";
-import { categoryUrl, agencyUrl, agentUrl, parseOperation } from "./urls";
+import { categoryUrl, agencyUrl, agentUrl, parseCategorySegments, parseOperation, type CategoryShape } from "./urls";
 import {
   DIRECTORY_SITEMAP_PATHS,
   MARKETPLACE_SITEMAP_PATHS,
@@ -34,7 +36,12 @@ import { listPublishedPostSlugs } from "./post-queries";
 import { DEFAULT_LOCALE } from "@/i18n";
 import { listingUrl } from "./urls";
 import type { Operation, PropertyType } from "./import/types";
-import type { VerticalConfig } from "@/config/verticals";
+import {
+  CANONICAL_HOST,
+  MARKETPLACE_PRIMARY_HOST,
+  VERTICALS,
+  type VerticalConfig,
+} from "@/config/verticals";
 import { verticalConds } from "./facet-sql";
 import {
   marketplacePagesEnabled,
@@ -102,9 +109,10 @@ export async function buildSitemapEntries(
   const servesMarketplace = vertical
     ? marketplacePagesEnabled(vertical.key)
     : true;
-  // Category pages need both: a door that serves the marketplace's page types
-  // at all, and owns the category ones.
-  const servesCategories = servesMarketplace && includeCategories;
+  // Category pages need a door that serves the marketplace's page types at
+  // all; which of them it lists is `listsCategory()` below (ownership flag +
+  // evergreen precedence, one pure rule shared with the page's canonical).
+  const servesCategories = servesMarketplace;
   const locs = await db
     .select({
       id: locations.id,
@@ -235,13 +243,40 @@ export async function buildSitemapEntries(
   // count as an indexable parent for the barrio rule below.
   const evergreen = new Set(vertical ? evergreenPathsFor(vertical.key) : []);
   const categoryPaths = new Set<string>();
+  // A door that opted out of `ownsCategories` still lists its OWN evergreen
+  // paths, and a door that owns categories does not list a path whose
+  // evergreen owner is another door — exactly where the page's canonical
+  // points (`categoryTarget()`, category-owner.ts): a sitemap never submits
+  // a URL its page canonicalises away.
+  const servingHost = vertical
+    ? Object.entries(VERTICALS).find(([, v]) => v.key === vertical.key)?.[0]
+    : undefined;
+  const listsCategory = (operation: Operation, shape: CategoryShape, path: string): boolean => {
+    if (!servesCategories) return false;
+    if (!includeCategories && !evergreen.has(path)) return false;
+    if (!servingHost) return true;
+    return (
+      categoryTarget({
+        table: VERTICALS,
+        servingHost,
+        shape,
+        operation,
+        pages: EVERGREEN_PAGES,
+        categoryOwner: categoryOwnerForLocale,
+        preferred: [MARKETPLACE_PRIMARY_HOST, CANONICAL_HOST],
+      }).kind === "self"
+    );
+  };
 
   for (const [key, n] of cityCount) {
     const [op, cityId] = key.split("|");
     const city = locById.get(Number(cityId));
     if (!city) continue;
     const path = categoryUrl({ operation: op as Operation, citySlug: city.slug });
-    if (servesCategories && getIndexability({ listingCount: n, evergreen: evergreen.has(path) }).state === "index") {
+    if (
+      listsCategory(op as Operation, { kind: "city", citySlug: city.slug }, path) &&
+      getIndexability({ listingCount: n, evergreen: evergreen.has(path) }).state === "index"
+    ) {
       categoryPaths.add(path);
     }
   }
@@ -258,7 +293,9 @@ export async function buildSitemapEntries(
     });
     if (getIndexability({ listingCount: n, evergreen: evergreen.has(path) }).state === "index") {
       cityTypeIndexable.add(key);
-      if (servesCategories) categoryPaths.add(path);
+      if (listsCategory(op as Operation, { kind: "city-type", citySlug: city.slug, type: type as PropertyType }, path)) {
+        categoryPaths.add(path);
+      }
     }
   }
   // An evergreen city/type page with no stock is still an indexable parent.
@@ -288,7 +325,11 @@ export async function buildSitemapEntries(
       type: type as PropertyType,
     });
     if (
-      servesCategories &&
+      listsCategory(
+        op as Operation,
+        { kind: "barrio-type", citySlug: city.slug, barrioSlug: barrio.slug, type: type as PropertyType },
+        path,
+      ) &&
       getIndexability({ listingCount: n, parentIndexable, evergreen: evergreen.has(path) })
         .state === "index"
     ) {
@@ -297,7 +338,12 @@ export async function buildSitemapEntries(
   }
 
   // …and the evergreen paths with no published row at all on this door.
-  if (servesCategories) for (const path of evergreen) categoryPaths.add(path);
+  for (const path of evergreen) {
+    const seg = path.split("/").filter(Boolean);
+    const operation = parseOperation(seg[0]);
+    const shape = parseCategorySegments(seg.slice(1));
+    if (operation && shape && listsCategory(operation, shape, path)) categoryPaths.add(path);
+  }
   for (const path of categoryPaths) entries.push({ path });
 
   // 3. Price pages — only cities with a defensible sample, which is the same
