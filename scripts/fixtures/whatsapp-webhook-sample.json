@@ -1,0 +1,27 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "WABA_ID",
+      "changes": [
+        {
+          "field": "messages",
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": { "display_phone_number": "595 21 000 0000", "phone_number_id": "PHONE_NUMBER_ID" },
+            "contacts": [{ "profile": { "name": "Ana Prueba" }, "wa_id": "595981000111" }],
+            "messages": [
+              {
+                "from": "595981000111",
+                "id": "wamid.REPLAY_TEXT_ID",
+                "timestamp": "TIMESTAMP",
+                "type": "text",
+                "text": { "body": "Hola, ¿sigue disponible la casa en Villa Morra? ¿Se puede visitar el sábado?" }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

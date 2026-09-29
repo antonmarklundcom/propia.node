@@ -66,6 +66,7 @@ import {
 import { esA5 } from "./es-a5";
 import { esInbox } from "./es-e2";
 import { esAiReply } from "./es-ai";
+import { esWhatsApp } from "./es-whatsapp";
 import { esTelegram } from "./es-telegram";
 import { esAuthReset } from "./es-auth-reset";
 import {
@@ -123,6 +124,7 @@ import { enA4 } from "./en-a4";
 import { esA1 } from "./es-a1";
 import { enInbox } from "./en-e2";
 import { enAiReply } from "./en-ai";
+import { enWhatsApp } from "./en-whatsapp";
 import { enTelegram } from "./en-telegram";
 import { enAuthReset } from "./en-auth-reset";
 import { enA1 } from "./en-a1";
@@ -193,6 +195,7 @@ const esDictionary = {
   email: esEmail,
   inbox: esInbox,
   aiReply: esAiReply,
+  whatsappInbox: esWhatsApp,
   telegram: esTelegram,
   brief: esBrief,
   evergreen: esEvergreen,
@@ -286,6 +289,7 @@ const enDictionary = {
   email: enEmail,
   inbox: enInbox,
   aiReply: enAiReply,
+  whatsappInbox: enWhatsApp,
   telegram: enTelegram,
   brief: enBrief,
   evergreen: enEvergreen,

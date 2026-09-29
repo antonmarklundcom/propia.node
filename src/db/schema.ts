@@ -1265,3 +1265,85 @@ export const webVitals = mysqlTable(
   },
   (t) => [index("idx_day_metric").on(t.day, t.metric)],
 );
+
+/* ------------------------------------------------------------------ */
+/* WhatsApp Cloud API inbox (0021, docs/log/whatsapp-inbox.md)          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Every WhatsApp message the business number received (Meta's webhook,
+ * `app/api/whatsapp/route.ts`) or sent from a panel. `src/lib/whatsapp-inbox.ts`
+ * is the only module that reads or writes it; `src/lib/whatsapp.ts` the only
+ * Graph API caller.
+ *
+ * Threads work like the email inbox: a message with `lead_id` shows under
+ * that lead (to exactly who may see the lead, `userMaySeeLead()`); one without
+ * shows in /admin/inbox as the contact's chat, keyed by `contact_phone`.
+ */
+export const whatsappMessages = mysqlTable(
+  "whatsapp_messages",
+  {
+    id: id(),
+    /**
+     * Meta's `wamid.…`. Unique so a webhook retry stores nothing twice. NULL
+     * only for an outbound send Meta refused before giving it an id — the row
+     * is kept, with `error`, so the thread says "not sent" rather than
+     * pretending (the `alertOperator()` rule).
+     */
+    waMessageId: varchar("wa_message_id", { length: 128 }),
+    direction: mysqlEnum("direction", ["in", "out"]).notNull(),
+    /** E.164 without the plus, as Meta sends it (`595981123456`). */
+    fromPhone: varchar("from_phone", { length: 20 }).notNull(),
+    toPhone: varchar("to_phone", { length: 20 }).notNull(),
+    /** The customer's side of the conversation — whichever of from/to is not ours. */
+    contactPhone: varchar("contact_phone", { length: 20 }).notNull(),
+    /** Our number's Graph id (`WHATSAPP_PHONE_NUMBER_ID` at the time). */
+    phoneNumberId: varchar("phone_number_id", { length: 40 }).notNull(),
+    leadId: fk("lead_id"),
+    /** Text, or a media caption. NULL for media without one. */
+    body: text("body"),
+    /** Meta's message type: text, image, audio, video, document, sticker, location, … */
+    type: varchar("type", { length: 20 }).notNull(),
+    /** Private R2 key of downloaded media; NULL = not stored (R2 off, too big, failed). */
+    mediaR2Key: varchar("media_r2_key", { length: 255 }),
+    mediaMime: varchar("media_mime", { length: 127 }),
+    mediaFilename: varchar("media_filename", { length: 255 }),
+    /** Outbound delivery state from Meta's status callbacks. NULL for inbound. */
+    status: mysqlEnum("status", ["sent", "delivered", "read", "failed"]),
+    error: varchar("error", { length: 500 }),
+    /** Who pressed Send. NULL on an outbound row = an automatic message (see `auto_kind`). */
+    sentByUserId: fk("sent_by_user_id"),
+    /**
+     * Set on automatic outbound messages only: `greeting` (the static
+     * welcome / out-of-hours line) or `ai` (an unsupervised AI reply). Shown
+     * as "automático" in the thread. Used by the auto-responder's own limits.
+     */
+    autoKind: varchar("auto_kind", { length: 20 }),
+    /** Inbound: first opened in a panel. NULL = unread. */
+    readAt: datetime("read_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("uq_wa_message").on(t.waMessageId),
+    index("idx_contact").on(t.contactPhone, t.createdAt),
+    index("idx_lead").on(t.leadId, t.createdAt),
+    index("idx_unread").on(t.direction, t.readAt),
+  ],
+);
+
+/**
+ * One row per customer number that ever wrote. `last_inbound_at` drives
+ * Meta's 24-hour customer-service window: a free-form reply is allowed only
+ * within 24 h of the customer's last message (templates, which lift that, are
+ * not built).
+ */
+export const whatsappContacts = mysqlTable("whatsapp_contacts", {
+  id: id(),
+  /** E.164 without the plus. */
+  phone: varchar("phone", { length: 20 }).notNull().unique(),
+  /** The WhatsApp profile name the customer set, as Meta reports it. */
+  name: varchar("name", { length: 140 }),
+  lastInboundAt: datetime("last_inbound_at"),
+  createdAt: createdAt(),
+  updatedAt: datetime("updated_at"),
+});

@@ -27,4 +27,6 @@ echo "pre-push: verify:reset…"
 npm run --silent verify:reset
 echo "pre-push: verify:ai-reply…"
 npm run --silent verify:ai-reply
+echo "pre-push: verify:whatsapp…"
+npm run --silent verify:whatsapp
 echo "pre-push: OK"

@@ -18,6 +18,10 @@ import { esInbox } from "@/i18n/es-e2";
 import styles from "@/components/panel/inbox.module.css";
 import { adminTabs } from "../tabs";
 import { composeAction } from "./actions";
+import { isWhatsAppConfigured, missingWhatsAppEnv } from "@/lib/whatsapp";
+import { countUnreadWhatsAppChats, listWhatsAppChats } from "@/lib/whatsapp-inbox";
+import { LEAD_WHATSAPP_FLASH } from "@/lib/whatsapp-access";
+import { esWhatsApp } from "@/i18n/es-whatsapp";
 
 export const metadata: Metadata = {
   title: esInbox.admin.metaTitle,
@@ -30,10 +34,11 @@ const t = esInbox.admin;
 
 const FLASH: Record<string, { text: string; error?: boolean }> = {
   ...LEAD_EMAIL_FLASH,
+  ...LEAD_WHATSAPP_FLASH,
   archived: { text: esInbox.flash.archived },
 };
 
-type View = "bandeja" | "archivados" | "consultas";
+type View = "bandeja" | "archivados" | "consultas" | "whatsapp";
 
 export default async function AdminInboxPage({
   searchParams,
@@ -43,15 +48,20 @@ export default async function AdminInboxPage({
   const [{ vista, msg, redactar }, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
   const viewer = { userId: user.id, superAdmin: isSuperAdmin(user.role) };
   const internalOnly = isStaff(user.role);
-  const view: View = vista === "archivados" || vista === "consultas" ? vista : "bandeja";
+  const view: View = vista === "archivados" || vista === "consultas" || vista === "whatsapp" ? vista : "bandeja";
+  const email = view !== "whatsapp";
 
-  const [reviewCount, recentLeads, unread, mailboxes, threads, leadReplies] = await Promise.all([
+  const [reviewCount, recentLeads, unread, mailboxes, threads, leadReplies, waChats, waUnread] = await Promise.all([
     countReviewQueue(),
     countRecentLeads(24, internalOnly),
     countUnreadInbox(viewer),
     composeMailboxes(viewer),
-    view === "consultas" ? Promise.resolve([]) : listInboxThreads(viewer, { archived: view === "archivados" }),
+    view === "bandeja" || view === "archivados" ? listInboxThreads(viewer, { archived: view === "archivados" }) : Promise.resolve([]),
     view === "consultas" ? listRecentLeadReplies(internalOnly) : Promise.resolve([]),
+    view === "whatsapp" ? listWhatsAppChats() : Promise.resolve([]),
+    // The chip badge: the table exists only once migration 0021 is applied,
+    // and a missing count must not take the email inbox down with it.
+    countUnreadWhatsAppChats().catch(() => 0),
   ]);
   const flash = msg ? FLASH[msg] : undefined;
   const sender = senderAddress()?.address ?? "";
@@ -66,6 +76,7 @@ export default async function AdminInboxPage({
     >
       {label}
       {v === "bandeja" && unread > 0 ? <span className="panel-tab__count">{unread}</span> : null}
+      {v === "whatsapp" && waUnread > 0 ? <span className="panel-tab__count">{waUnread}</span> : null}
     </Link>
   );
 
@@ -81,17 +92,22 @@ export default async function AdminInboxPage({
         {flash ? <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p> : null}
 
         <h2 className="panel-section__title">{t.title}</h2>
-        <p className="panel-note">{t.hint(shownMailboxes)}</p>
-        {!isInboundConfigured() ? <p className="panel-note">{t.notConfigured}</p> : null}
-        {!isEmailConfigured() ? <p className="panel-note">{t.sendingNotConfigured}</p> : null}
+        {email ? (
+          <>
+            <p className="panel-note">{t.hint(shownMailboxes)}</p>
+            {!isInboundConfigured() ? <p className="panel-note">{t.notConfigured}</p> : null}
+            {!isEmailConfigured() ? <p className="panel-note">{t.sendingNotConfigured}</p> : null}
+          </>
+        ) : null}
 
         <nav className="panel-chips">
           {chip("bandeja", t.viewInbox)}
           {chip("archivados", t.viewArchived)}
           {chip("consultas", t.viewLeads)}
+          {chip("whatsapp", esWhatsApp.admin.view)}
         </nav>
 
-        {isEmailConfigured() ? (
+        {email && isEmailConfigured() ? (
           <details className="panel-card" open={redactar === "1"}>
             <summary>
               <strong>{t.compose}</strong>
@@ -135,7 +151,41 @@ export default async function AdminInboxPage({
           </details>
         ) : null}
 
-        {view === "consultas" ? (
+        {view === "whatsapp" ? (
+          <>
+            <p className="panel-note">{esWhatsApp.admin.hint}</p>
+            {!isWhatsAppConfigured() ? (
+              <p className="panel-note">{esWhatsApp.admin.notConfigured(missingWhatsAppEnv().join(", "))}</p>
+            ) : null}
+            {waChats.length === 0 ? (
+              <p className="panel-empty">{esWhatsApp.admin.empty}</p>
+            ) : (
+              <ul className={`panel-card ${styles.threadList}`}>
+                {waChats.map((c) => (
+                  <li key={c.phone}>
+                    <Link
+                      className={`${styles.threadItem}${c.unread ? ` ${styles.threadUnread}` : ""}`}
+                      href={`/admin/inbox/whatsapp/${c.phone}`}
+                    >
+                      <div className={styles.row}>
+                        <span className={styles.threadSubject}>{c.name ? `${c.name} · +${c.phone}` : `+${c.phone}`}</span>
+                        <span className={styles.snippet}>{formatEmailWhen(c.last.createdAt)}</span>
+                      </div>
+                      <div className={styles.snippet}>
+                        {esWhatsApp.admin.messages(c.count)}
+                        {c.unread ? ` · ${t.unreadCount(c.unread)}` : ""}
+                      </div>
+                      <div className={styles.snippet}>
+                        {c.last.direction === "out" ? `${esWhatsApp.thread.outbound}: ` : ""}
+                        {c.last.body ?? `[${esWhatsApp.thread.types[c.last.type] ?? c.last.type}]`}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : view === "consultas" ? (
           leadReplies.length === 0 ? (
             <p className="panel-empty">{t.leadRepliesEmpty}</p>
           ) : (

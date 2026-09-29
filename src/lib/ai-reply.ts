@@ -40,6 +40,7 @@ import { listingUrl } from "@/lib/urls";
 import { getInboxThread, listLeadThreads, type InboxMessage } from "@/lib/inbox";
 import { rootDomain } from "@/lib/inbox-address";
 import { userMaySeeLead } from "@/lib/inbox-access";
+import { getWhatsAppChat, getWhatsAppContact, listLeadWhatsApp, whatsappToAiMessages } from "@/lib/whatsapp-inbox";
 import {
   AI_REPLY_GEMINI_SCHEMA,
   AI_REPLY_SCHEMA,
@@ -359,6 +360,40 @@ export async function suggestInboxReply(user: SessionUser, threadKey: string): P
     lead: null,
     listing: null,
     messages: messages.map(emailToMessage),
+    agentName: user.name?.trim() || null,
+  });
+}
+
+/** "Sugerir respuesta" on a lead's WhatsApp thread. */
+export async function suggestLeadWhatsAppReply(user: SessionUser, leadId: number): Promise<SuggestOutcome> {
+  if (!isAiReplyEnabled()) return { ok: false, error: "disabled" };
+  const base = await loadLeadReplyContext(user, leadId);
+  if (!base) return { ok: false, error: "not_found" };
+  const thread = (await listLeadWhatsApp([leadId])).get(leadId) ?? [];
+  return draftReplyFor(
+    user,
+    { type: "lead", id: leadId },
+    leadContext(base, "whatsapp", whatsappToAiMessages(thread), user.name?.trim() || null),
+  );
+}
+
+/**
+ * "Sugerir respuesta" on an unattached WhatsApp chat in /admin/inbox. The
+ * caller is staff or above (the business number's chats are theirs to read).
+ */
+export async function suggestWhatsAppChatReply(user: SessionUser, phone: string): Promise<SuggestOutcome> {
+  if (!isAiReplyEnabled()) return { ok: false, error: "disabled" };
+  const messages = await getWhatsAppChat(phone);
+  if (!messages) return { ok: false, error: "not_found" };
+  const contact = await getWhatsAppContact(messages[0].contactPhone);
+  const door = VERTICALS[rootDomain()] ?? doorByKey(DEFAULT_VERTICAL_KEY);
+  return draftReplyFor(user, { type: "whatsapp", id: messages[messages.length - 1].id }, {
+    channel: "whatsapp",
+    brand: door.brand,
+    locale: door.locale,
+    lead: contact?.name ? { type: "question", name: contact.name, message: null } : null,
+    listing: null,
+    messages: whatsappToAiMessages(messages),
     agentName: user.name?.trim() || null,
   });
 }
