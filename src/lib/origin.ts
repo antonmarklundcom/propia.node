@@ -18,9 +18,11 @@
 import { headers } from "next/headers";
 import {
   CANONICAL_HOST,
+  MARKETPLACE_PRIMARY_HOST,
   VERTICALS,
   type VerticalConfig,
 } from "@/config/verticals";
+import { categoryOwnerHost, ownsCategoryPages } from "./category-owner";
 import { rawHostFrom } from "./host";
 
 const PRIMARY_ORIGIN = `https://${CANONICAL_HOST}`;
@@ -217,4 +219,63 @@ export async function directoryCanonicalOrigin(): Promise<string> {
 export async function hostOwnsDirectory(): Promise<boolean> {
   const p = await hostParts();
   return p ? ownsDirectoryPages(p) : true;
+}
+
+/* ------------------------------------------------------------------------ *
+ * Category pages — /{operacion}/{ciudad}[/{barrio}][/{tipo}] (decision S8).
+ *
+ * The same trio again, over `ownsCategories`. Unlike the flags above it is
+ * UNSET = true, so today every host owns its own category pages and these
+ * functions change nothing. The pure half — what "the equivalent page" is,
+ * and which door owns categories in a language — is `category-owner.ts`.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Which served host owns category pages in a given language — pure, so
+ * `npm run verify:seo` can drive it without a request. The marketplace primary
+ * is preferred, then the canonical host, then declaration order among served
+ * marketplace doors that have not opted out.
+ */
+export function categoryOwnerForLocale(
+  locale: VerticalConfig["locale"],
+): string {
+  return categoryOwnerHost(
+    VERTICALS,
+    locale,
+    [MARKETPLACE_PRIMARY_HOST, CANONICAL_HOST],
+    CANONICAL_HOST,
+  );
+}
+
+function ownsCategoryHost(p: HostParts): boolean {
+  if (p.local) return true;
+  const v = VERTICALS[p.bare];
+  // A host that is not an enabled door speaks through `siteOrigin()` (the
+  // primary), so there is nothing to delegate; the primary host owns what no
+  // row says otherwise, like `ownsListingDetail`.
+  if (!v || !v.enabled || p.bare === CANONICAL_HOST) return true;
+  return ownsCategoryPages(v);
+}
+
+/**
+ * Origin for a delegating door's category canonical: the door that owns
+ * category pages in the serving door's own language. Only meaningful when
+ * `hostOwnsCategories()` is false; otherwise it is `siteOrigin()`.
+ */
+export async function categoryCanonicalOrigin(): Promise<string> {
+  const p = await hostParts();
+  if (!p) return PRIMARY_ORIGIN;
+  if (p.local) return `http://${p.raw}`;
+  if (ownsCategoryHost(p)) return siteOrigin();
+  const v = VERTICALS[p.bare];
+  return v ? `https://${categoryOwnerForLocale(v.locale)}` : PRIMARY_ORIGIN;
+}
+
+/**
+ * Same question as a boolean, for the category page's robots directive and for
+ * the sitemap: a host must never submit a URL it canonicalises away.
+ */
+export async function hostOwnsCategories(): Promise<boolean> {
+  const p = await hostParts();
+  return p ? ownsCategoryHost(p) : true;
 }

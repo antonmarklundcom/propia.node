@@ -68,6 +68,21 @@ Consequences that bite:
   module, because `next.config.ts` reads it and the `@/…` alias does not
   resolve in Next's config loader) and re-exported from `@/design/sections`,
   which is where the app imports it from.
+- **`ownsCategories` (decision S8, PR2 2026-09-29) — built, unset on every
+  door, so nothing changed.** `VerticalConfig.ownsCategories` (unset = true)
+  is the `ownsListingDetail` / `ownsDirectory` pattern for category pages
+  (`/{op}/{ciudad}[/{barrio}][/{tipo}]`). A door set to `false` canonicalises
+  each of them to `equivalentCategoryPath()` (`src/lib/category-owner.ts`,
+  pure) on the marketplace door that owns categories in its language
+  (`categoryOwnerForLocale()`, `origin.ts`), goes noindex where no single
+  equivalent exists (an untyped page of a multi-type door, an excluded
+  operation), and drops out of its own sitemap (`includeCategories`) and of
+  hreflang (`scope: "category"`). Nothing redirects. `verify:seo` block (n)
+  asserts one owner per (locale, listing set); `KNOWN_DUPLICATE_DOORS` there
+  lists the three doors that still duplicate the marketplace
+  (`terreno.com.py`, `landforsaleparaguay.com`, `rentparaguay.com`) and fails
+  if an entry stops being a real duplicate — the PR that flips a door deletes
+  its entry. Plan: `docs/plan-seo-doors-2026-09-27.md` §7.
 - **hreflang is derived, not hand-maintained.** `languageAlternates()`
   (`src/lib/alternates.ts`) builds a page's language map from the same
   `verticals.ts` entries — the D6 flip turned the tags on with no separate

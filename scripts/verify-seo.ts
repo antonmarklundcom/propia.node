@@ -20,9 +20,18 @@ import {
   type VerticalConfig,
 } from "../src/config/verticals";
 import {
+  categoryOwnerForLocale,
   detailOwnerForLocale,
   directoryOwnerForLocale,
 } from "../src/lib/origin";
+import {
+  categoryOwnerHost,
+  equivalentCategoryPath,
+  listingSetSignature,
+  ownsCategoryPages,
+} from "../src/lib/category-owner";
+import { PROPERTY_TYPES } from "../src/lib/import/types";
+import type { CategoryShape } from "../src/lib/urls";
 import {
   DIRECTORY_SITEMAP_PATHS,
   MARKETPLACE_PATH_ROOTS,
@@ -1205,6 +1214,270 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
   check("(m) sc-domain properties map to our doors", propertyHost("sc-domain:inmobiliaria.com.py") === "inmobiliaria.com.py");
   check("(m) URL-prefix properties map too", propertyHost("https://terreno.com.py/") === "terreno.com.py");
   check("(m) a property that is not a door maps to none", propertyHost("sc-domain:example.com") === null);
+}
+
+// Category ownership (S8, docs/plan-seo-doors-2026-09-27.md §7): one owner per
+// (locale, listing set), the flag's semantics, and equivalentCategoryPath().
+{
+  console.log("\n(n) category ownership (ownsCategories, S8)");
+  const OPS = ["venta", "alquiler", "alquiler_temporal"] as const;
+  type Op = (typeof OPS)[number];
+  const allShapes = (): { op: Op; shape: CategoryShape }[] => {
+    const out: { op: Op; shape: CategoryShape }[] = [];
+    for (const op of OPS) {
+      out.push({ op, shape: { kind: "city", citySlug: "luque" } });
+      for (const type of PROPERTY_TYPES) {
+        out.push({ op, shape: { kind: "city-type", citySlug: "luque", type } });
+        out.push({
+          op,
+          shape: { kind: "barrio-type", citySlug: "asuncion", barrioSlug: "recoleta", type },
+        });
+      }
+    }
+    return out;
+  };
+
+  /**
+   * The doors that publish a category page whose rows another page in the same
+   * language already publishes. The owner of the language goes first and keeps
+   * the set; whoever collides afterwards — another door, or a second page of
+   * its own door (terreno.com.py's /venta/luque and /venta/luque/terrenos) —
+   * is the offender. Only doors that own categories take part: a door that has
+   * opted out delegates, which `delegationChecks` proves separately.
+   */
+  function duplicateDoors(doors: Door[], primary: string): Set<string> {
+    const table = Object.fromEntries(doors.map((d) => [d.host, d.config]));
+    const offenders = new Set<string>();
+    for (const locale of ["es", "en"] as const) {
+      const ownerHost = categoryOwnerHost(table, locale, [primary], primary);
+      const inLocale = doors
+        .filter(
+          (d) =>
+            d.config.locale === locale &&
+            marketplacePagesEnabled(d.config.key) &&
+            ownsCategoryPages(d.config),
+        )
+        .sort((a, b) => Number(b.host === ownerHost) - Number(a.host === ownerHost));
+      const held = new Map<string, string>(); // signature -> "host path"
+      for (const d of inLocale) {
+        for (const { op, shape } of allShapes()) {
+          const sig = listingSetSignature(d.config, shape, op);
+          if (sig === null) continue; // empty on this door: duplicates nothing
+          const path = categoryUrl({
+            operation: op,
+            citySlug: shape.citySlug,
+            barrioSlug: shape.kind === "barrio-type" ? shape.barrioSlug : undefined,
+            type: shape.kind === "city" ? undefined : shape.type,
+          });
+          const id = `${d.host} ${path}`;
+          const holder = held.get(`${locale}|${sig}`);
+          if (holder === undefined) held.set(`${locale}|${sig}`, id);
+          else if (holder !== id) offenders.add(d.host);
+        }
+      }
+    }
+    return offenders;
+  }
+
+  // Doors that duplicate the marketplace's category pages TODAY. Each is
+  // removed by the PR that flips that door (ownsCategories: false, or its
+  // filters folded away) — the check below fails once an entry is no longer a
+  // real duplicate, so this list can only shrink.
+  const KNOWN_DUPLICATE_DOORS = new Set<string>([
+    "terreno.com.py", // removed by the PR that flips this door
+    "landforsaleparaguay.com", // removed by the PR that flips this door
+    "rentparaguay.com", // removed by the PR that flips this door
+  ]);
+
+  const liveOffenders = duplicateDoors(servedDoors(CANONICAL_HOST), CANONICAL_HOST);
+  for (const host of liveOffenders) {
+    check(
+      `(n) ${host}'s category pages duplicate another door's — allowlisted`,
+      KNOWN_DUPLICATE_DOORS.has(host),
+      "not in KNOWN_DUPLICATE_DOORS: set ownsCategories: false on it (or fix its filters)",
+    );
+  }
+  for (const host of KNOWN_DUPLICATE_DOORS) {
+    check(
+      `(n) KNOWN_DUPLICATE_DOORS entry ${host} is still a real duplicate`,
+      liveOffenders.has(host),
+      "no longer duplicates anything — delete it from the allowlist",
+    );
+  }
+
+  // Live table: the flag is unset on every door, so every door owns its own —
+  // this PR changed no behaviour.
+  check(
+    "(n) the flag is unset on every live door (unset = owns)",
+    Object.values(VERTICALS).every((v) => v.ownsCategories === undefined && ownsCategoryPages(v)),
+  );
+  check(
+    "(n) the category owner per locale is the marketplace primary / its translation",
+    categoryOwnerForLocale("es") === "inmobiliaria.com.py" &&
+      categoryOwnerForLocale("en") === "realestateinparaguay.com",
+    `${categoryOwnerForLocale("es")} / ${categoryOwnerForLocale("en")}`,
+  );
+  {
+    const cats = ["/venta/asuncion", "/venta/luque/terrenos", "/alquiler/asuncion/recoleta/casas"];
+    const same = cats.every((path) => {
+      const a = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+        path, scope: "category", family: "marketplace",
+      });
+      const b = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+        path, scope: "site", family: "marketplace",
+      });
+      return JSON.stringify(a) === JSON.stringify(b) && a !== undefined;
+    });
+    check('(n) scope "category" pairs exactly what scope "site" pairs while the flag is unset', same);
+  }
+
+  // equivalentCategoryPath()
+  const cfg = (over: Partial<VerticalConfig>): VerticalConfig =>
+    ({
+      key: "terreno", brand: "X", locale: "es", family: "marketplace", copy: "land",
+      enabled: true, ownsListingDetail: false, ...over,
+    }) as VerticalConfig;
+  const landDoor = cfg({ filters: { property_type: ["terreno"] } });
+  const multiDoor = cfg({ filters: { property_type: ["casa", "departamento"] } });
+  const rentDoor = cfg({ filters: { operation: ["alquiler", "alquiler_temporal"] } });
+  check(
+    "(n) single-type door: an untyped city page is that type's page",
+    equivalentCategoryPath(landDoor, { kind: "city", citySlug: "luque" }, "venta") === "/venta/luque/terrenos",
+  );
+  check(
+    "(n) single-type door: a typed page maps to itself",
+    equivalentCategoryPath(landDoor, { kind: "city-type", citySlug: "luque", type: "terreno" }, "venta") === "/venta/luque/terrenos",
+  );
+  check(
+    "(n) single-type door: a type outside its filter is empty, no equivalent",
+    equivalentCategoryPath(landDoor, { kind: "city-type", citySlug: "luque", type: "casa" }, "venta") === null,
+  );
+  check(
+    "(n) multi-type door: an untyped city page has no single equivalent",
+    equivalentCategoryPath(multiDoor, { kind: "city", citySlug: "luque" }, "venta") === null,
+  );
+  check(
+    "(n) multi-type door: a typed page still maps",
+    equivalentCategoryPath(multiDoor, { kind: "city-type", citySlug: "luque", type: "casa" }, "venta") === "/venta/luque/casas",
+  );
+  check(
+    "(n) operation filter excluded: no equivalent",
+    equivalentCategoryPath(rentDoor, { kind: "city", citySlug: "luque" }, "venta") === null,
+  );
+  check(
+    "(n) operation filter admitted: same path, untyped stays untyped",
+    equivalentCategoryPath(rentDoor, { kind: "city", citySlug: "luque" }, "alquiler_temporal") === "/alquiler-temporal/luque",
+  );
+  check(
+    "(n) barrio shape keeps city and barrio",
+    equivalentCategoryPath(landDoor, { kind: "barrio-type", citySlug: "asuncion", barrioSlug: "recoleta", type: "terreno" }, "alquiler") === "/alquiler/asuncion/recoleta/terrenos",
+  );
+  check(
+    "(n) an unfiltered door's equivalent is its own path",
+    equivalentCategoryPath(cfg({}), { kind: "city", citySlug: "luque" }, "venta") === "/venta/luque",
+  );
+  check(
+    "(n) signatures: a single-type door's untyped and typed page are one set",
+    listingSetSignature(landDoor, { kind: "city", citySlug: "luque" }, "venta") ===
+      listingSetSignature(landDoor, { kind: "city-type", citySlug: "luque", type: "terreno" }, "venta"),
+  );
+  check(
+    "(n) signatures ignore foreign_exposure",
+    listingSetSignature(cfg({ filters: { foreign_exposure: true } }), { kind: "city", citySlug: "luque" }, "venta") ===
+      listingSetSignature(cfg({}), { kind: "city", citySlug: "luque" }, "venta"),
+  );
+
+  // Flag semantics over synthetic tables.
+  const synth = (feederFlag: boolean | undefined) => {
+    const table: Record<string, VerticalConfig> = {
+      "owner.test": cfg({ key: "inmobiliaria", locale: "es" }),
+      "owner-en.test": cfg({ key: "en", locale: "en", filters: { foreign_exposure: true } }),
+      "land.test": cfg({ key: "terreno", locale: "es", filters: { property_type: ["terreno"] }, ownsCategories: feederFlag }),
+      "land-en.test": cfg({ key: "land", locale: "en", filters: { property_type: ["terreno"] }, ownsCategories: feederFlag }),
+      "multi.test": cfg({ key: "inmobiliaria", locale: "es", filters: { property_type: ["casa", "departamento"] }, ownsCategories: feederFlag }),
+      "rent.test": cfg({ key: "rent", locale: "en", filters: { operation: ["alquiler", "alquiler_temporal"] }, ownsCategories: feederFlag }),
+    };
+    return {
+      table,
+      doors: Object.entries(table).map(([host, config]) => ({ host, config })) as Door[],
+    };
+  };
+  const flagUnset = synth(undefined);
+  check(
+    "(n) synthetic, flag unset: every feeder is a duplicate (the invariant bites)",
+    ["land.test", "land-en.test", "multi.test", "rent.test"].every((h) =>
+      duplicateDoors(flagUnset.doors, "owner.test").has(h),
+    ),
+    [...duplicateDoors(flagUnset.doors, "owner.test")].join(","),
+  );
+  const flagOff = synth(false);
+  check(
+    "(n) synthetic, feeders opted out: no door duplicates anything",
+    duplicateDoors(flagOff.doors, "owner.test").size === 0,
+    [...duplicateDoors(flagOff.doors, "owner.test")].join(","),
+  );
+  check(
+    "(n) synthetic: a feeder with the flag false owns no categories, the owner does",
+    !ownsCategoryPages(flagOff.table["land.test"]) && ownsCategoryPages(flagOff.table["owner.test"]),
+  );
+  // …its pages canonicalise to a page the owner really serves, in its language.
+  {
+    let bad = "";
+    let seen = 0;
+    for (const host of ["land.test", "land-en.test", "multi.test", "rent.test"]) {
+      const feeder = flagOff.table[host];
+      const ownerHost = categoryOwnerHost(flagOff.table, feeder.locale, ["owner.test"], "owner.test");
+      const owner = flagOff.table[ownerHost];
+      if (owner.locale !== feeder.locale || ownerHost === host) bad ||= `${host} → ${ownerHost}`;
+      for (const { op, shape } of allShapes()) {
+        const sig = listingSetSignature(feeder, shape, op);
+        const target = equivalentCategoryPath(feeder, shape, op);
+        if (sig === null) {
+          if (target !== null) bad ||= `${host} empty page has target ${target}`;
+          continue;
+        }
+        if (target === null) continue; // multi-type untyped: noindex, allowed
+        seen += 1;
+        const back = parseCategorySegments(target.split("/").slice(2));
+        if (!back || parseOperation(target.split("/")[1]) !== op) {
+          bad ||= `${host} ${target} does not parse`;
+          continue;
+        }
+        if (listingSetSignature(owner, back, op) !== sig) {
+          bad ||= `${host} ${target} is a different listing set on ${ownerHost}`;
+        }
+      }
+    }
+    check("(n) synthetic: every delegating page's equivalent lists the same rows on the owner", bad === "" && seen > 0, bad);
+  }
+  check(
+    "(n) synthetic: the owner in each language is the owner door, never a feeder",
+    categoryOwnerHost(flagOff.table, "es", ["owner.test"], "x") === "owner.test" &&
+      categoryOwnerHost(flagOff.table, "en", ["owner.test"], "x") === "owner-en.test" &&
+      categoryOwnerHost(flagUnset.table, "en", ["owner.test"], "x") === "owner-en.test",
+  );
+  check(
+    "(n) synthetic: the owner opting out hands the language to the next marketplace door",
+    categoryOwnerHost(
+      { ...flagUnset.table, "owner.test": { ...flagUnset.table["owner.test"], ownsCategories: false } },
+      "es", ["owner.test"], "x",
+    ) === "land.test",
+  );
+  // hreflang: a delegating door is not a language version of anything.
+  {
+    const args = { path: "/venta/luque/terrenos", scope: "category" as const, family: "marketplace" as const };
+    const fromFeeder = alternatesFor(flagOff.doors, "owner.test", { ...args, servingHost: "land-en.test" });
+    const fromOwner = alternatesFor(flagOff.doors, "owner.test", { ...args, servingHost: "owner-en.test" });
+    const all = alternatesFor(flagOff.doors, "owner.test", args);
+    check("(n) synthetic: a delegating door emits no category hreflang", fromFeeder === undefined);
+    check(
+      "(n) synthetic: the owners' category hreflang lists only owners",
+      fromOwner?.["es"] === "https://owner.test/venta/luque/terrenos" &&
+        fromOwner?.["en"] === "https://owner-en.test/venta/luque/terrenos" &&
+        !JSON.stringify(all).includes("land"),
+      JSON.stringify(all),
+    );
+  }
 }
 
 console.log(

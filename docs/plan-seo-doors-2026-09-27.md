@@ -296,6 +296,14 @@ first. Revisit with six months of data (§9) rather than on day one.
 
 ## 7. Design — an `ownsCategories` flag, like `ownsListingDetail`
 
+> **Status: built, unset everywhere (PR2, 2026-09-29).** `ownsCategories`,
+> `src/lib/category-owner.ts`, `hostOwnsCategories()` /
+> `categoryCanonicalOrigin()`, the sitemap's `includeCategories`, hreflang scope
+> `"category"` and the `verify:seo` block (n) exist; no door has the flag set, so
+> behaviour is unchanged. The invariant runs with a `KNOWN_DUPLICATE_DOORS`
+> allowlist (terreno.com.py, landforsaleparaguay.com, rentparaguay.com) that each
+> flipping PR shrinks.
+
 Same shape as the two ownership flags that exist, so it adds no new concept.
 
 ### 7.1 The flag

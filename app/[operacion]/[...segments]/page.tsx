@@ -45,7 +45,12 @@ import {
   medianFor,
 } from "@/lib/precios-queries";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
-import { siteOrigin } from "@/lib/origin";
+import {
+  siteOrigin,
+  hostOwnsCategories,
+  categoryCanonicalOrigin,
+} from "@/lib/origin";
+import { equivalentCategoryPath } from "@/lib/category-owner";
 import { orDegraded } from "@/lib/degrade";
 import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { JsonLd } from "@/components/JsonLd";
@@ -279,15 +284,36 @@ export async function generateMetadata({
   // Deep pages (?page=2+) self-canonicalise and stay out of the index while
   // their links are still followed — page 1 remains the only indexed URL for
   // the category (F33).
+  //
+  // A door that does not own category pages (`ownsCategories: false`, S8)
+  // canonicalises to the EQUIVALENT page on the door that does — the same
+  // listing set — and a page with no single equivalent stays self-canonical
+  // and noindex. Unset everywhere today: every door owns its own.
+  let canonicalOrigin = await siteOrigin();
+  let canonicalPath = r.canonicalPath;
+  let noEquivalent = false;
+  if (!(await hostOwnsCategories())) {
+    const shape = parseCategorySegments(segments);
+    const equivalent = shape
+      ? equivalentCategoryPath(vertical, shape, r.operation)
+      : null;
+    if (equivalent) {
+      canonicalOrigin = await categoryCanonicalOrigin();
+      canonicalPath = equivalent;
+    } else {
+      noEquivalent = true;
+    }
+  }
   const canonical =
     page > 1 && !userFiltered
-      ? `${await siteOrigin()}${r.canonicalPath}?page=${page}`
-      : `${await siteOrigin()}${r.canonicalPath}`;
+      ? `${canonicalOrigin}${canonicalPath}?page=${page}`
+      : `${canonicalOrigin}${canonicalPath}`;
 
   // hreflang belongs on indexed canonical URLs only: a ?page=2 self-canonical
   // and a thin category are both noindex here, and pairing a noindex URL with
   // its translation asks Google to weigh a page we asked it to ignore.
-  const indexed = ix.state === "index" && page === 1 && !userFiltered;
+  const indexed =
+    ix.state === "index" && page === 1 && !userFiltered && !noEquivalent;
   // An evergreen page is indexed below the count rule, where its other-
   // language version (which follows the ordinary rule) may be a 404: pair
   // it only while the count alone would have indexed it too — or when every
@@ -296,7 +322,7 @@ export async function generateMetadata({
   const languages = indexed
     ? await pageLanguageAlternates({
         path: r.canonicalPath,
-        scope: "site",
+        scope: "category",
         family: vertical.family,
       })
     : undefined;

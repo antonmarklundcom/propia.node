@@ -69,6 +69,15 @@ export interface SitemapOptions {
    */
   includeDirectory?: boolean;
   /**
+   * Whether to emit category pages (`/venta/luque`, `/venta/luque/terrenos`,
+   * the barrio ones and the evergreen paths). The same rule again for the page
+   * type `ownsCategories` governs: a door that canonicalises its category
+   * pages to another door's must not submit them. The caller passes
+   * `hostOwnsCategories()` from `src/lib/origin.ts`. Default true — the flag
+   * is unset on every door.
+   */
+  includeCategories?: boolean;
+  /**
    * The door this sitemap is for. Its `filters` narrow the published rows the
    * same way they narrow every page on that host — a sitemap that lists URLs
    * the host would render empty is the same Search Console error as listing
@@ -83,6 +92,7 @@ export async function buildSitemapEntries(
   const {
     includeListingDetail = true,
     includeDirectory = true,
+    includeCategories = true,
     vertical = null,
   } = opts;
   // The directory door serves none of the marketplace's page types — it 301s
@@ -92,6 +102,9 @@ export async function buildSitemapEntries(
   const servesMarketplace = vertical
     ? marketplacePagesEnabled(vertical.key)
     : true;
+  // Category pages need both: a door that serves the marketplace's page types
+  // at all, and owns the category ones.
+  const servesCategories = servesMarketplace && includeCategories;
   const locs = await db
     .select({
       id: locations.id,
@@ -228,7 +241,7 @@ export async function buildSitemapEntries(
     const city = locById.get(Number(cityId));
     if (!city) continue;
     const path = categoryUrl({ operation: op as Operation, citySlug: city.slug });
-    if (servesMarketplace && getIndexability({ listingCount: n, evergreen: evergreen.has(path) }).state === "index") {
+    if (servesCategories && getIndexability({ listingCount: n, evergreen: evergreen.has(path) }).state === "index") {
       categoryPaths.add(path);
     }
   }
@@ -245,7 +258,7 @@ export async function buildSitemapEntries(
     });
     if (getIndexability({ listingCount: n, evergreen: evergreen.has(path) }).state === "index") {
       cityTypeIndexable.add(key);
-      if (servesMarketplace) categoryPaths.add(path);
+      if (servesCategories) categoryPaths.add(path);
     }
   }
   // An evergreen city/type page with no stock is still an indexable parent.
@@ -275,7 +288,7 @@ export async function buildSitemapEntries(
       type: type as PropertyType,
     });
     if (
-      servesMarketplace &&
+      servesCategories &&
       getIndexability({ listingCount: n, parentIndexable, evergreen: evergreen.has(path) })
         .state === "index"
     ) {
@@ -284,7 +297,7 @@ export async function buildSitemapEntries(
   }
 
   // …and the evergreen paths with no published row at all on this door.
-  if (servesMarketplace) for (const path of evergreen) categoryPaths.add(path);
+  if (servesCategories) for (const path of evergreen) categoryPaths.add(path);
   for (const path of categoryPaths) entries.push({ path });
 
   // 3. Price pages — only cities with a defensible sample, which is the same

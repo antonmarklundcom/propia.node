@@ -39,6 +39,7 @@ import {
   type VerticalFamily,
 } from "@/config/verticals";
 import type { Locale } from "@/i18n";
+import { ownsCategoryPages } from "./category-owner";
 
 /**
  * Which page types a host owns.
@@ -54,8 +55,13 @@ import type { Locale } from "@/i18n";
  *   door named by `ownsDirectory` is canonical for them in its language; a door
  *   that canonicalises them away is not a language version of anything. Mirrors
  *   `hostOwnsDirectory()` in `origin.ts`; the two read the same flag.
+ * - `"category"` — `/{operacion}/{ciudad}[/{barrio}][/{tipo}]`. Only a door
+ *   with `ownsCategories !== false` is canonical for them; a door that
+ *   delegates them is not a language version of anything. Mirrors
+ *   `hostOwnsCategories()` in `origin.ts`. Unset everywhere today, so it
+ *   pairs exactly the doors `"site"` does.
  */
-export type AlternateScope = "site" | "listing" | "directory";
+export type AlternateScope = "site" | "listing" | "directory" | "category";
 
 export interface AlternateInput {
   /** Path as served, with its leading slash: "/", "/venta/asuncion", … */
@@ -124,6 +130,8 @@ function ownsScope(door: Door, primaryHost: string, scope: AlternateScope): bool
   if (scope === "site") return true;
   if (scope === "directory")
     return door.host === primaryHost || Boolean(door.config.ownsDirectory);
+  if (scope === "category")
+    return door.host === primaryHost || ownsCategoryPages(door.config);
   return door.host === primaryHost || door.config.ownsListingDetail;
 }
 

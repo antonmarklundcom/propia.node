@@ -261,7 +261,7 @@ served doors would own their `/propiedad` pages in the same language, where two
 doors share a vertical key, or where a host key is spelled in a form
 `resolveVertical()` never looks up. Keep any new host-specific page type on the
 same rule: submitting a URL you canonicalise elsewhere is a Search Console error,
-not a neutral extra.
+not a neutral extra. Category pages follow the same rule through `ownsCategories` (unset = owns; a door set to `false` canonicalises to `equivalentCategoryPath()`, `src/lib/category-owner.ts`), and `verify:seo` fails a door that duplicates another's listing set unless it is in `KNOWN_DUPLICATE_DOORS`.
 
 **A rental URL is spelled in exactly one place: `rentalPath()`**, defined in
 `src/config/rental-services.ts` (import-free, because `next.config.ts` reads it)
