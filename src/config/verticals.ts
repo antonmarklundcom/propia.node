@@ -112,9 +112,10 @@ export interface VerticalConfig {
    * and the door's sitemap and hreflang drop them. Nothing redirects; visitors
    * still get every page.
    *
-   * Set to `false` on `landforsaleparaguay.com` (S2) and `terreno.com.py` (S1a). `verify:seo` carries the
-   * `KNOWN_DUPLICATE_DOORS` allowlist of doors that still duplicate the
-   * marketplace until the PR that flips each one.
+   * Set to `false` on `landforsaleparaguay.com` (S2), `terreno.com.py` (S1a)
+   * and `rentparaguay.com` (S3a). `verify:seo` carries the
+   * `KNOWN_DUPLICATE_DOORS` allowlist of doors that duplicate the marketplace
+   * until the PR that flips each one — empty since S3a; the machinery stays.
    */
   ownsCategories?: boolean;
 }
@@ -198,6 +199,16 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "rental",
     enabled: true,
     ownsListingDetail: false,
+    // S3(a) (docs/plan-seo-doors-2026-09-27.md §9): its English rental grids
+    // (/alquiler/…, /alquiler-temporal/…) canonicalise to the same path on
+    // realestateinparaguay.com and leave its sitemap. `categoryTarget()` does
+    // not care that this door is `family: "rental"` — it only reads the
+    // owner in the door's own language, and a delegating door emits no
+    // hreflang, so nothing crosses families. Its own pages (home, services,
+    // about, contact) and the /alquiler hub are not category pages and stay
+    // self-canonical; a /venta path has no equivalent (operation filter) and
+    // is noindex, as before.
+    ownsCategories: false,
   },
   /**
    * The realtor directory — a seller-first lead-gen door, not a second

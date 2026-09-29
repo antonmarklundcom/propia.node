@@ -377,3 +377,31 @@ let S1(a) win everywhere and move the 9 pages to `inmobiliaria.com.py`
 (re-`door` the content files, land authority builds on the marketplace
 domain). Reversing is a `door` change per file, no code. Watch the 9 pages in
 `/admin/google` for a few weeks before deciding.
+
+
+## 2026-09-29 — rentparaguay.com's rental grids (S3(a)): two edge cases to know
+
+`rentparaguay.com`'s English rental grids now canonicalise to the same path on
+`realestateinparaguay.com` (decision S3(a), the plan's default). Two things
+the flip leaves as they are, for the founder to confirm:
+
+1. **Count mismatch on the target.** `rentparaguay.com` does not apply
+   `foreign_exposure`, the owner does, so the owner's set is a subset of the
+   rental door's. A grid with 3+ rows on `rentparaguay.com` but fewer than 3
+   on the owner (a seller opted out of foreign exposure) canonicalises to an
+   owner page that is thin/noindex — the same edge S2 and S1(a) have. It only
+   bites when opted-out listings are the difference; decision S7 (apply
+   `foreign_exposure` to the rental door too) would close it.
+2. **`alquiler.com.py` stays `ownsCategories`-unset.** It is disabled (S6), so
+   nothing serves it and `verify:seo` does not count it. If a Spanish rental
+   domain is ever enabled, its grids duplicate `inmobiliaria.com.py`'s: set
+   `ownsCategories: false` on it in the same change (the invariant will fail
+   until then).
+
+Not changed by this flip, and worth a later look: the `/alquiler` and
+`/alquiler-temporal` hub pages on `rentparaguay.com` stay self-canonical (the
+hub is not a category page), and the rental door's sitemap builder still
+emits price, project and guide pages (`sitemap.ts` sections 3, 6, 7 gate only
+on `servesMarketplace`, which is true for the rental family) although the
+plan (section 4.5) says it does not. Verify on the live sitemap before S4's
+scope is finalised.

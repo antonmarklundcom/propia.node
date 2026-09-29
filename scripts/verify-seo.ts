@@ -1286,9 +1286,9 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
   // removed by the PR that flips that door (ownsCategories: false, or its
   // filters folded away) — the check below fails once an entry is no longer a
   // real duplicate, so this list can only shrink.
-  const KNOWN_DUPLICATE_DOORS = new Set<string>([
-    "rentparaguay.com", // removed by the PR that flips this door
-  ]);
+  // Empty since S3(a) flipped the last one (rentparaguay.com); the machinery
+  // stays so a future door that duplicates can be allowlisted for one PR.
+  const KNOWN_DUPLICATE_DOORS = new Set<string>([]);
 
   const liveOffenders = duplicateDoors(servedDoors(CANONICAL_HOST), CANONICAL_HOST);
   for (const host of liveOffenders) {
@@ -1308,7 +1308,7 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
 
   // Live table: only the doors flipped so far have the flag; the rest are
   // unset (= owns). Flip one door at a time, adding it here.
-  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com", "terreno.com.py"]);
+  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com", "terreno.com.py", "rentparaguay.com"]);
   check(
     "(n) the flag is false on exactly the flipped doors, unset on the rest",
     Object.entries(VERTICALS).every(([host, v]) =>
@@ -1474,13 +1474,68 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
         return targetFor("realestateinparaguay.com", shape, op).kind === "self";
       }),
     );
-    check(
-      "(n) S1: rentparaguay.com is untouched (a rental door never delegates on evergreen ownership)",
-      EVERGREEN_PAGES.every((p) => {
-        const { op, shape } = asPath(p.path);
-        return targetFor("rentparaguay.com", shape, op).kind === "self";
-      }),
-    );
+    // S3(a): rentparaguay.com (rental family) delegates its English grids.
+    {
+      const rent = "rentparaguay.com";
+      const enOwner = categoryOwnerForLocale("en");
+      const rentCfg = VERTICALS[rent];
+      check("(n) S3: rentparaguay.com is a category feeder in the rental family", rentCfg.ownsCategories === false && rentCfg.family === "rental");
+      check("(n) S3: its category owner is the English marketplace door, not a rental door", enOwner === "realestateinparaguay.com" && VERTICALS[enOwner].family === "marketplace" && VERTICALS[enOwner].locale === rentCfg.locale, enOwner);
+      const rentalShapes: { op: Op; shape: CategoryShape }[] = [
+        { op: "alquiler", shape: { kind: "city", citySlug: "asuncion" } },
+        { op: "alquiler", shape: { kind: "city-type", citySlug: "asuncion", type: "departamento" } },
+        { op: "alquiler", shape: { kind: "barrio-type", citySlug: "asuncion", barrioSlug: "recoleta", type: "casa" } },
+        { op: "alquiler_temporal", shape: { kind: "city", citySlug: "asuncion" } },
+      ];
+      check(
+        "(n) S3: every English rental grid canonicalises to the same path on realestateinparaguay.com",
+        rentalShapes.every(({ op, shape }) => {
+          const t = targetFor(rent, shape, op);
+          return t.kind === "other" && t.host === enOwner && t.path === categoryUrl({
+            operation: op, citySlug: shape.citySlug,
+            barrioSlug: shape.kind === "barrio-type" ? shape.barrioSlug : undefined,
+            type: shape.kind === "city" ? undefined : shape.type,
+          });
+        }),
+      );
+      const enRental = EVERGREEN_PAGES.filter((p) => p.door === "en" && /^\/alquiler/.test(p.path));
+      check("(n) S3: the English rental evergreen pages exist and are owned by the English marketplace door", enRental.length > 0 && enRental.every((p) => VERTICALS[enOwner].key === p.door), String(enRental.length));
+      check(
+        "(n) S3: an English rental evergreen path canonicalises to its owner, which is self-canonical (no chain)",
+        enRental.every((p) => {
+          const seg = p.path.split("/").filter(Boolean);
+          const op = parseOperation(seg[0]) as Op; // "alquiler-temporal" -> alquiler_temporal
+          const shape = parseCategorySegments(seg.slice(1))!;
+          const t = targetFor(rent, shape, op);
+          return t.kind === "other" && t.host === enOwner && t.path === p.path && targetFor(enOwner, shape, op).kind === "self";
+        }),
+      );
+      check(
+        "(n) S3: the door owns no evergreen path itself, so nothing self-canonical remains among its grids",
+        EVERGREEN_PAGES.every((p) => p.door !== rentCfg.key),
+      );
+      check(
+        "(n) S3: a /venta grid has no equivalent on the rental door (noindex, self)",
+        targetFor(rent, { kind: "city", citySlug: "asuncion" }, "venta").kind === "none",
+      );
+      check("(n) S3: includeCategories is false in its sitemap", !ownsCategoryPages(rentCfg));
+      check(
+        "(n) S3: no category hreflang is emitted from rentparaguay.com, in either family",
+        (["rental", "marketplace"] as const).every((family) =>
+          alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+            path: "/alquiler/asuncion", scope: "category", family, servingHost: rent,
+          }) === undefined),
+      );
+      const fromOwnerRent = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+        path: "/alquiler/asuncion", scope: "category", family: "marketplace", servingHost: enOwner,
+      });
+      check("(n) S3: the owner's category hreflang never names the rental door", !JSON.stringify(fromOwnerRent).includes("rentparaguay"), JSON.stringify(fromOwnerRent));
+      const rentSrc = readFileSync(new URL("../src/lib/sitemap.ts", import.meta.url), "utf8");
+      check(
+        "(n) S3: the rental door's own list (hub, services, about, contact) is not gated on category ownership",
+        rentSrc.includes("rentalSitemapPaths(vertical.locale)") && !/rentalSitemapPaths[^\n]*listsCategory/.test(rentSrc),
+      );
+    }
     // No canonical chain, on any served marketplace door, for any path shape
     // or evergreen path: the target page is itself self-canonical.
     {
@@ -1495,7 +1550,7 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
         ...EVERGREEN_PAGES.map((p) => asPath(p.path)),
       ];
       const bad: string[] = [];
-      for (const host of marketplaceHosts) {
+      for (const host of [...marketplaceHosts, "rentparaguay.com"]) {
         for (const { op, shape } of probes) {
           const t = targetFor(host, shape, op);
           if (t.kind !== "other") continue;
