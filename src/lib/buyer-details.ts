@@ -126,3 +126,23 @@ export function buyerDetailsUtm(raw: BuyerDetails | null | undefined): Record<st
   if (d.contact) utm.buyer_contact = d.contact;
   return utm;
 }
+
+/** Longest details text an operator alert carries; the full block stays on the lead. */
+export const BUYER_ALERT_MAX = 220;
+
+/**
+ * The details block as one short line for the operator's "go look" alert
+ * (Telegram, email, `operator_alert`): line breaks become " · " and the text
+ * is cut with an ellipsis. `null` when there is no block. Operator alert only —
+ * the owner and partner emails leave the message out on purpose.
+ */
+export function buyerDetailsAlertText(block: string | null | undefined, max = BUYER_ALERT_MAX): string | null {
+  if (!block) return null;
+  const one = block
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .join(" · ");
+  if (!one) return null;
+  return one.length <= max ? one : `${one.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}

@@ -450,6 +450,7 @@ export async function POST(req: NextRequest) {
       adminUrl,
       ownerUrl,
       brand: door.brand,
+      buyerDetails: detailsBlock,
       alertOperator: true,
       // The seeker's copy, capped per address (CONFIRM_MAX above).
       alsoEmail: () =>

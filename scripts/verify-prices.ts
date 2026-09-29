@@ -26,6 +26,8 @@ import {
 } from "../src/lib/format";
 import {
   budgetLabel,
+  buyerDetailsAlertText,
+  BUYER_ALERT_MAX,
   buyerDetailsBlock,
   buyerDetailsUtm,
   normalizeBuyerDetails,
@@ -34,6 +36,7 @@ import {
 import { foreignBuyerEnquiry, usdFirstPrice } from "../src/design/sections";
 import { VERTICALS } from "../src/config/verticals";
 import { getDictionary } from "../src/i18n";
+import { esPanel } from "../src/i18n/es";
 
 let failures = 0;
 
@@ -146,6 +149,21 @@ eq(
 );
 eq("free text is bounded", normalizeBuyerDetails({ country: "x".repeat(200) })?.country?.length, 60);
 eq("the utm keys", buyerDetailsUtm({ country: "Canada", budget: "gt500k" }), { buyer_country: "Canada", buyer_budget: "gt500k" });
+const fullBlock = buyerDetailsBlock(
+  { country: "Canada", budget: "100k-250k", timeline: "3-6m", visit: "not yet", purpose: "invest", contact: "video" },
+  en,
+  "en-US",
+);
+const alertLine = buyerDetailsAlertText(fullBlock);
+check("alert text has no line break", alertLine != null && !alertLine.includes("\n"));
+check("alert text carries country and budget", !!alertLine && alertLine.includes("Country: Canada") && alertLine.includes("US$ 100,000"));
+eq("no block → no alert text", buyerDetailsAlertText(null), null);
+const longLine = buyerDetailsAlertText(`Buyer details\nCountry: ${"x".repeat(2000)}`);
+check("alert text is truncated with an ellipsis", !!longLine && longLine.length <= BUYER_ALERT_MAX && longLine.endsWith("…"));
+const detailWith = esPanel.alertNewLeadDetail({ leadType: "buyer", name: "Ann", whatsapp: "+1555", listingTitle: "Casa", buyerDetails: alertLine });
+const detailWithout = esPanel.alertNewLeadDetail({ leadType: "buyer", name: "Ann", whatsapp: "+1555", listingTitle: "Casa" });
+check("operator detail includes the buyer details", detailWith.includes("Country: Canada"));
+check("operator detail unchanged without them", !detailWithout.includes("Country") && detailWith.startsWith(detailWithout));
 eq("budget label below the first band", budgetLabel("lt50k", en, "en-US"), "Under US$ 50,000");
 eq("budget label above the last band", budgetLabel("gt500k", en, "en-US"), "Over US$ 500,000");
 eq("Spanish labels and number locale", budgetLabel("50k-100k", es, "es-PY"), "US$ 50.000 – US$ 100.000");
