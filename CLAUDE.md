@@ -344,6 +344,14 @@ default, `--dry` first). It records itself as a revertible import job.
     confirmation (repeats nothing the visitor typed — the address is
     unverified), partner "a lead was shared with you". Copy is `esEmail` /
     `enEmail`. Check with `npm run email:test -- --to <addr> [--dry]`.
+    **Quota guard (2026-09-30, no migration):** `src/lib/email-quota.ts` (pure,
+    in `verify:inbox`) holds Cloudflare's limits — 200 sends/day per ACCOUNT
+    (`EMAIL_DAILY_QUOTA` when raised), 50 recipients and 5 MiB per message.
+    `sendEmail()` refuses an over-limit message with a reason before calling
+    the API, counts accepted sends per process per UTC day and alerts the
+    operator once at 80% and once at 100%; a Cloudflare 429 / quota error
+    alerts at once whatever the counter says. The counter is a smoke alarm
+    (a restart resets it) — the Cloudflare dashboard is the meter.
     Also sends (2026-09-27, auth PR): the password-reset link and a new
     partner's welcome (plus a `new_partner` operator alert) — see
     `src/lib/account-emails.ts`. **Not built:** price alerts, expiry reminders.

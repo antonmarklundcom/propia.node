@@ -30,6 +30,17 @@
  */
 
 import { messageIdsIn, normalizeAddress, rootMailboxLocal } from "./inbox-address";
+import {
+  dailyQuota,
+  emailLimitError,
+  freshQuotaState,
+  isQuotaRefusal,
+  quotaAlertText,
+  recordRefusal,
+  recordSent,
+  type QuotaAlert,
+  type QuotaState,
+} from "./email-quota";
 
 /** Same ceiling as crm.ts's webhook: strictly faster than the DB's 8 s connect timeout. */
 const EMAIL_TIMEOUT_MS = 5_000;
@@ -197,6 +208,39 @@ interface CloudflareEnvelope {
 }
 
 /**
+ * The daily-quota counter lives on `globalThis`: Next bundles route handlers
+ * separately, so a module-level variable could be one counter per route.
+ */
+const quotaHolder = globalThis as typeof globalThis & { __emailQuota?: QuotaState };
+
+/**
+ * Hand a quota alert to the operator (Telegram + `OPERATOR_EMAIL`). Imported
+ * lazily: `crm.ts` imports this file, and `email:test` must keep working
+ * without pulling the CRM in. Never throws, never awaited by a caller — an
+ * alert that cannot be delivered must not fail the send that triggered it.
+ */
+async function raiseQuotaAlert(alert: QuotaAlert): Promise<void> {
+  try {
+    const { alertOperatorSystem } = await import("./crm");
+    await alertOperatorSystem(quotaAlertText(alert));
+  } catch {
+    /* no channel, or not running inside the app: the log line below is the record */
+  }
+}
+
+function noteQuota(kind: "sent" | "refused"): void {
+  const now = new Date();
+  const prev = quotaHolder.__emailQuota ?? freshQuotaState(now);
+  const quota = dailyQuota();
+  const { state, alert } = kind === "sent" ? recordSent(prev, now, quota) : recordRefusal(prev, now, quota);
+  quotaHolder.__emailQuota = state;
+  if (alert) {
+    console.warn(`[email] quota ${alert.level}: ${alert.sent}/${alert.quota} today (UTC)`);
+    void raiseQuotaAlert(alert);
+  }
+}
+
+/**
  * Send one email. Resolves `{ sent: false }` when email is not configured,
  * when the message is malformed, and on any provider failure — it never
  * throws, and on failure it logs the reason only (HTTP status, Cloudflare's
@@ -214,6 +258,14 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
 
   const body = emailRequestBody(msg);
   if (!body) return { sent: false, error: "invalid recipient or EMAIL_FROM" };
+
+  // Cloudflare's per-message limits: refused here with a reason that names the
+  // limit, instead of a round-trip that ends in an opaque 4xx.
+  const tooBig = emailLimitError(body);
+  if (tooBig) {
+    console.warn(`[email] not sent: ${tooBig}`);
+    return { sent: false, error: tooBig };
+  }
 
   try {
     const res = await fetch(
@@ -233,12 +285,16 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
       const code = data.errors?.[0]?.code;
       const error = `cloudflare ${res.status}${code ? ` (code ${code})` : ""}`;
       console.warn(`[email] not sent: ${error}`);
+      if (isQuotaRefusal(res.status, data.errors)) noteQuota("refused");
       return { sent: false, error };
     }
     const r = data.result ?? {};
     // A 200 can still carry a hard bounce or a suppressed recipient: that is
     // not a sent email, and the caller must not be told it was.
     const accepted = (r.delivered?.length ?? 0) + (r.queued?.length ?? 0) > 0;
+    // Accepted and hard-bounced both count toward Cloudflare's quota; a
+    // suppressed or otherwise rejected send does not.
+    if (accepted || r.permanent_bounces?.length) noteQuota("sent");
     if (!accepted) {
       const error = r.permanent_bounces?.length
         ? "permanent bounce"

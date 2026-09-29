@@ -27,7 +27,20 @@ import {
   verifyInbound,
 } from "../src/lib/inbox-address";
 import { emailFrameDocument, emailHtmlForView, hasRemoteImages, sanitizeEmailHtml } from "../src/lib/inbox-html";
-import { emailRequestBody } from "../src/lib/email";
+import { emailRequestBody, sendEmail } from "../src/lib/email";
+import {
+  CLOUDFLARE_MAX_MESSAGE_BYTES,
+  CLOUDFLARE_MAX_RECIPIENTS,
+  DEFAULT_DAILY_QUOTA,
+  dailyQuota,
+  emailLimitError,
+  freshQuotaState,
+  isQuotaRefusal,
+  quotaAlertText,
+  recordRefusal,
+  recordSent,
+  type QuotaState,
+} from "../src/lib/email-quota";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -141,6 +154,77 @@ async function main() {
   check("References keeps only Message-IDs", headers.References === "<r1@x> <r2@x>", JSON.stringify(headers));
   check("cc keeps only plausible addresses", JSON.stringify(threaded.cc) === JSON.stringify(["ok@example.com"]), JSON.stringify(threaded.cc));
   check("no headers object when not threading", emailRequestBody(base)!.headers === undefined);
+
+  // Cloudflare's sending limits: per-message guards and the daily counter.
+  console.log("\nEmail sending limits");
+  check("daily quota defaults to Cloudflare's 200", dailyQuota(undefined) === DEFAULT_DAILY_QUOTA && DEFAULT_DAILY_QUOTA === 200);
+  check("EMAIL_DAILY_QUOTA overrides it", dailyQuota("1000") === 1000);
+  check("a junk EMAIL_DAILY_QUOTA falls back", ["", "0", "-5", "abc", "12abc", "1.5"].every((v) => dailyQuota(v) === 200));
+  check("a normal message passes the limits", emailLimitError(emailRequestBody(base)!) === null);
+  const fifty = { to: "a@example.com", cc: Array.from({ length: 49 }, (_, i) => `c${i}@example.com`) };
+  check(`${CLOUDFLARE_MAX_RECIPIENTS} recipients (To + CC) is allowed`, emailLimitError(fifty) === null);
+  check(
+    `${CLOUDFLARE_MAX_RECIPIENTS + 1} recipients is refused, naming the limit`,
+    /too many recipients \(51, limit 50\)/.test(emailLimitError({ ...fifty, cc: [...fifty.cc, "x@example.com"] }) ?? ""),
+  );
+  check(
+    "a body over 5 MiB is refused",
+    /message too large/.test(emailLimitError({ to: "a@example.com", html: "x".repeat(CLOUDFLARE_MAX_MESSAGE_BYTES + 1) }) ?? ""),
+  );
+  check(
+    "size counts bytes, not characters",
+    emailLimitError({ to: "a@example.com", html: "ñ".repeat(CLOUDFLARE_MAX_MESSAGE_BYTES / 2 + 10) }) !== null,
+  );
+  check("HTTP 429 is a quota refusal", isQuotaRefusal(429, undefined));
+  check("an error naming the daily limit is one", isQuotaRefusal(400, [{ message: "Daily sending limit exceeded" }]));
+  check("an error naming a quota is one", isQuotaRefusal(403, [{ message: "quota reached" }]));
+  check("a bad-address 400 is not", !isQuotaRefusal(400, [{ message: "invalid recipient" }]));
+  check("a size-limit error is not a quota refusal", !isQuotaRefusal(413, [{ message: "message size limit exceeded" }]));
+  check("a 500 is not", !isQuotaRefusal(500, undefined));
+
+  const t0 = new Date("2026-09-29T10:00:00Z");
+  let st: QuotaState = freshQuotaState(t0);
+  const alerts: string[] = [];
+  for (let i = 1; i <= 200; i++) {
+    const r = recordSent(st, t0, 200);
+    st = r.state;
+    if (r.alert) alerts.push(`${r.alert.level}@${i}`);
+  }
+  check("alerts once at 80% and once at 100%, never twice", JSON.stringify(alerts) === JSON.stringify(["warn@160", "full@200"]), alerts.join(","));
+  check("past the quota nothing more is raised", recordSent(st, t0, 200).alert === null && recordSent(st, t0, 200).state.sent === 201);
+  const next = recordSent(st, new Date("2026-09-30T00:00:01Z"), 200);
+  check("a new UTC day starts the count over", next.state.sent === 1 && next.state.day === "2026-09-30" && !next.state.full);
+  check("a small quota warns before it is full", (() => {
+    let q = freshQuotaState(t0);
+    const out: string[] = [];
+    for (let i = 1; i <= 5; i++) { const r = recordSent(q, t0, 5); q = r.state; if (r.alert) out.push(`${r.alert.level}@${i}`); }
+    return JSON.stringify(out) === JSON.stringify(["warn@4", "full@5"]);
+  })());
+  const ref1 = recordRefusal(freshQuotaState(t0), t0, 200);
+  check("a Cloudflare refusal alerts at once, whatever the counter says", ref1.alert?.level === "refused" && ref1.alert.sent === 0);
+  check("and only once per day", recordRefusal(ref1.state, t0, 200).alert === null);
+  check("and again the next day", recordRefusal(ref1.state, new Date("2026-09-30T05:00:00Z"), 200).alert?.level === "refused");
+  check(
+    "alert text is Spanish, names the numbers, and never a recipient",
+    quotaAlertText({ level: "warn", sent: 160, quota: 200 }).detail.includes("160 de 200") &&
+      quotaAlertText({ level: "full", sent: 200, quota: 200 }).title.includes("límite diario") &&
+      !/@/.test(JSON.stringify(quotaAlertText({ level: "refused", sent: 0, quota: 200 }))),
+  );
+  {
+    // sendEmail refuses an oversize message before any network call: with no
+    // credentials it would say "email not configured", so set fake ones and
+    // watch that the limit error, not a fetch, is what comes back.
+    process.env.CLOUDFLARE_ACCOUNT_ID = "test-account";
+    process.env.CLOUDFLARE_EMAIL_TOKEN = "test-token";
+    const realFetch = globalThis.fetch;
+    let fetched = false;
+    globalThis.fetch = (async () => { fetched = true; throw new Error("no network in verify"); }) as typeof fetch;
+    const big = await sendEmail({ to: "a@example.com", subject: "s", html: "x".repeat(CLOUDFLARE_MAX_MESSAGE_BYTES + 1), text: "t" });
+    globalThis.fetch = realFetch;
+    delete process.env.CLOUDFLARE_ACCOUNT_ID;
+    delete process.env.CLOUDFLARE_EMAIL_TOKEN;
+    check("sendEmail refuses an oversize message without calling the API", !big.sent && /message too large/.test(big.error ?? "") && !fetched, JSON.stringify(big));
+  }
 
   if (failures) {
     console.log(`\n${failures} inbox check(s) failed.`);
