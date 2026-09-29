@@ -65,6 +65,8 @@ export const AI_REPLY_TIMEOUT_MS = 30_000;
 /** Per user: generous for a person answering a queue, useless for a script. */
 export const AI_REPLY_RATE_MAX = 30;
 export const AI_REPLY_RATE_WINDOW_MS = 60 * 60 * 1000;
+/** Automatic WhatsApp replies across all contacts, per process per hour. */
+export const AI_AUTO_RATE_MAX = 60;
 
 export function isAiReplyEnabled(): boolean {
   return resolveAiReplyConfig(process.env) !== null;
@@ -178,7 +180,8 @@ export interface SuggestTarget {
  * already applied the visibility rule for whatever `ctx` was built from.
  */
 export async function draftReplyFor(
-  user: SessionUser,
+  /** The person asking — or `{ id: 0 }` for the WhatsApp auto-responder. */
+  user: Pick<SessionUser, "id">,
   target: SuggestTarget,
   ctx: AiReplyContext,
 ): Promise<SuggestOutcome> {
@@ -186,7 +189,10 @@ export async function draftReplyFor(
   if (!config) return { ok: false, error: "disabled" };
   const prompt = buildAiReplyPrompt(ctx);
   if (!prompt) return { ok: false, error: "nothing_to_answer" };
-  if (!allowRequest(`ai-reply:${user.id}`, AI_REPLY_RATE_MAX, AI_REPLY_RATE_WINDOW_MS)) {
+  // The auto-responder (id 0) has its own, larger, process-wide cap: a spend
+  // guard on top of its per-contact cooldown.
+  const max = user.id === 0 ? AI_AUTO_RATE_MAX : AI_REPLY_RATE_MAX;
+  if (!allowRequest(`ai-reply:${user.id}`, max, AI_REPLY_RATE_WINDOW_MS)) {
     return { ok: false, error: "rate_limited" };
   }
 
@@ -214,6 +220,7 @@ export async function draftReplyFor(
     // Micro-dollars: an integer the monthly sum can add without float drift.
     costMicroUsd: Math.round(costUsd * 1_000_000),
     outcome: !text ? "empty" : invented.length ? "unsafe" : "ok",
+    auto: ctx.mode === "auto" ? 1 : 0,
   });
 
   if (!text) return { ok: false, error: "failed" };
@@ -256,6 +263,15 @@ export interface LeadReplyContext {
  */
 export async function loadLeadReplyContext(user: SessionUser, leadId: number): Promise<LeadReplyContext | null> {
   if (!(await userMaySeeLead(user, leadId))) return null;
+  return loadLeadContextUnchecked(leadId);
+}
+
+/**
+ * The same, with no viewer: for the WhatsApp auto-responder, which answers as
+ * the business about a lead the business already holds. Never call it on a
+ * panel user's behalf — that is `loadLeadReplyContext()`.
+ */
+export async function loadLeadContextUnchecked(leadId: number): Promise<LeadReplyContext | null> {
   const barrio = alias(locations, "ai_reply_place");
   const city = alias(locations, "ai_reply_city");
   const [row] = await db

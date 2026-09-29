@@ -67,4 +67,40 @@ export const enWhatsApp = {
     convertName: "Name",
     convertSubmit: "Create enquiry",
   },
+  /**
+   * The auto-responder's messages (PR 3). Peer of the Spanish; wording is a
+   * founder decision.
+   */
+  auto: {
+    greetingFirst: (brand: string) =>
+      `Hello! Thank you for writing to ${brand}. We have received your message and an advisor will reply shortly.`,
+    greetingClosed: (brand: string, hours: string) =>
+      `Hello! Thank you for writing to ${brand}. We are outside office hours right now (${hours}). We will reply as soon as we are back.`,
+    handoff: (brand: string) => `Thank you for your message. An advisor from ${brand} will contact you about this shortly.`,
+    hoursWords: { weekdays: "Monday to Friday", saturday: "Saturdays", sunday: "Sundays", separator: ", " },
+  },
+  settings: {
+    title: "WhatsApp: automatic replies",
+    hint: "Only inside WhatsApp's 24-hour window. Every automatic message stays in the conversation labelled “automatic”.",
+    notConfigured: "WhatsApp is not connected yet: these settings are saved but do nothing until it is.",
+    greetingLabel: "Automatic greeting",
+    greetingBody:
+      "A fixed message on a customer's first message and when they write outside office hours (at most one every 12 h per customer, and never after someone on the team has replied).",
+    aiLabel: "Automatic AI reply",
+    aiBody:
+      "The AI replies on its own, with nobody reading it first. At most one message per customer every N hours, never after someone on the team replied, and it hands price, legal, document or complaint topics — or anything it is unsure about — to an advisor.",
+    aiNeedsKey: "Needs GEMINI_API_KEY or ANTHROPIC_API_KEY in hPanel.",
+    cooldownLabel: "Hours between AI replies to the same customer",
+    hoursTitle: "Office hours (Asunción time)",
+    hoursHint: "Leave both fields empty for a closed day.",
+    weekdays: "Monday to Friday",
+    saturday: "Saturday",
+    sunday: "Sunday",
+    open: "Opens",
+    close: "Closes",
+    previewTitle: "Messages that are sent",
+    save: "Save automatic replies",
+    saved: "Automatic replies saved.",
+    invalid: "Check the hours (HH:MM, opening before closing) and the hours between replies (1 to 168).",
+  },
 } as const;

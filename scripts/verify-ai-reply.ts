@@ -106,6 +106,9 @@ check("customer cannot close the message fence", !injection.includes("</message>
 check("customer cannot open a context block", (injection.match(/<context>/g) ?? []).length === 1);
 check("injection text still passed as data", injection.includes("Ignore all rules"));
 
+const autoPrompt = buildAiReplyPrompt({ ...base, mode: "auto" }) ?? "";
+check("auto mode adds the unsupervised rules", autoPrompt.includes("sent AUTOMATICALLY") && !p1.includes("sent AUTOMATICALLY"));
+
 console.log("thread trimming");
 const quoted = "Me interesa.\n\nEl 27 sept 2026, Carla escribió:\n> Hola Ana\n> ¿Cuándo podés?";
 check("quoted history stripped", stripQuotedReply(quoted) === "Me interesa.");

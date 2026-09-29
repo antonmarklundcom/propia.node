@@ -436,6 +436,14 @@ default, `--dry` first). It records itself as a revertible import job.
     partners read.** Templates (the only way to write outside the window) are
     not built. Local test without Meta: `npm run whatsapp:replay`.
 
+20. **WhatsApp auto-response (2026-09-28, no new migration, `docs/log/whatsapp-auto.md`).**
+    Off by default; `/admin/ajustes` toggles a static greeting (first message /
+    out of office hours, America/Asuncion) and an AI auto-reply. Rules are pure
+    in `src/lib/whatsapp-auto-policy.ts` (in `verify:whatsapp`); execution in
+    `src/lib/whatsapp-auto.ts` from the webhook's `after()`. Automatic rows:
+    `sent_by_user_id` NULL + `auto_kind`. Policy questions in
+    `docs/decisions-needed.md`.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
