@@ -354,3 +354,30 @@ Shipped with both switches OFF (`/admin/ajustes`). Decide before turning on:
 3. **Wording** of the three texts (`esWhatsApp.auto` in `src/i18n/es-whatsapp.ts`):
    first-contact greeting, out-of-hours greeting, hand-off line.
 
+
+## 2026-09-30 — Expiry reminders and price alerts (founder)
+
+What shipped: an email to whoever runs a featured listing, once, when its
+`featured_until` is within 3 days (`cron:featured-reminders`, daily from the
+hourly tick; owner, else agent, else the agency address; needs the Cloudflare
+email variables). What did **not** ship, and why:
+
+1. **A listing has no expiry.** Nothing in the data says a published listing
+   goes stale on a date, so there is no "your listing is about to expire"
+   email. Options: (a) none, listings live until someone pauses them;
+   (b) a "still available?" nudge to private owners after N days without an
+   edit (say N: 45? 60?), which needs the wording and what happens to a
+   listing nobody answers; (c) tie it to `cron:resync`'s 30-day rule for
+   imported listings only. **Recommendation: (b) for private owners only, at
+   60 days, no automatic pause** — but it is a policy about sellers' listings,
+   so it is yours.
+2. **The featured email says "contact the team".** There is no self-serve
+   renewal (no payments), so the email cannot link to one. Say the route you
+   want the recipient to take (WhatsApp number, a form) and it goes in the
+   wording (`esEmail.featuredAdvice` / `enEmail.featuredAdvice`).
+3. **Price alerts** ("Avisame si baja") still only save a WhatsApp lead. A real
+   alert needs a new table (a subscription with the price at sign-up, an email
+   or WhatsApp to notify, an unsubscribe link) and consent wording on the form
+   and in the privacy policy. WhatsApp alerts outside the 24-hour window also
+   need an approved template. Decide the channel (email, WhatsApp, both) and
+   the wording; then it is a `MIGRATION REQUIRED —` PR.

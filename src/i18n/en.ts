@@ -2829,6 +2829,21 @@ export const enEmail = {
   operatorCta: "Open in the panel",
   operatorFooter: "Internal alert for whoever runs the portal.",
 
+  featuredSubject: (brand: string, listingTitle: string) =>
+    `Your featured listing ends soon: ${listingTitle} — ${brand}`,
+  featuredHeading: "Your featured placement is about to end",
+  featuredBody: (listingTitle: string, days: number) =>
+    `The featured placement of “${listingTitle}” ends in ${days === 1 ? "1 day" : `${days} days`}. When it ends, the listing stays published without the placement.`,
+  featuredAdvice: "If you want to stay featured, please get in touch with the team before that date.",
+  featuredCta: "See my listings",
+  /** The /admin/operaciones card for `cron:featured-reminders`. */
+  featuredOps: {
+    label: "Featured-placement reminders",
+    description: (days: number) =>
+      `Emails whoever publishes each featured listing whose placement ends in the next ${days} days. Once per end date.`,
+    writes: "Sends emails and writes one history line per listing reminded.",
+  },
+
   ownerSubject: (listingTitle: string | null) =>
     listingTitle ? `New enquiry about your listing: ${listingTitle}` : "New enquiry about your listing",
   ownerHeading: "You have a new enquiry",

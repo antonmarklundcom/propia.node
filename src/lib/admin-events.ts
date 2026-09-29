@@ -32,6 +32,9 @@ export type AdminEventAction =
   // One "Sugerir respuesta" call that reached a provider; its detail carries
   // the token counts /admin/ajustes sums into a monthly cost (src/lib/ai-reply.ts).
   | "ai.reply"
+  // A featured-placement expiry email that Cloudflare accepted; the ledger that
+  // stops the same end date being reminded twice (src/lib/ops/featured-reminders.ts).
+  | "listing.featured_reminder"
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
   | "deal.delete";
 

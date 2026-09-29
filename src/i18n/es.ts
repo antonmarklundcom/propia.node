@@ -3957,6 +3957,21 @@ export const esEmail = {
   operatorCta: "Abrir en el panel",
   operatorFooter: "Alerta interna para quien opera el portal.",
 
+  featuredSubject: (brand: string, listingTitle: string) =>
+    `Tu aviso destacado termina pronto: ${listingTitle} — ${brand}`,
+  featuredHeading: "Tu destacado está por terminar",
+  featuredBody: (listingTitle: string, days: number) =>
+    `El destacado de «${listingTitle}» termina en ${days === 1 ? "1 día" : `${days} días`}. Cuando termine, el aviso sigue publicado sin el destacado.`,
+  featuredAdvice: "Si querés seguir destacado, ponete en contacto con el equipo antes de esa fecha.",
+  featuredCta: "Ver mis avisos",
+  /** The /admin/operaciones card for `cron:featured-reminders`. */
+  featuredOps: {
+    label: "Recordatorios de destacados",
+    description: (days: number) =>
+      `Avisa por email a quien publica cada aviso destacado que termina en los próximos ${days} días. Una vez por fecha de fin.`,
+    writes: "Envía emails y deja una línea en el historial por cada aviso avisado.",
+  },
+
   ownerSubject: (listingTitle: string | null) =>
     listingTitle ? `Nueva consulta por tu aviso: ${listingTitle}` : "Nueva consulta por tu aviso",
   ownerHeading: "Tenés una nueva consulta",

@@ -32,7 +32,7 @@ import {
 import type { OpsJob, OpsResult } from "@/lib/ops/types";
 import { isR2Configured } from "@/lib/r2";
 import { isTranslationConfigured } from "@/lib/translate";
-import { esPanel } from "@/i18n/es";
+import { esEmail, esPanel } from "@/i18n/es";
 import { runCuotas } from "@/lib/ops/cuotas";
 import { runPriceUsd } from "@/lib/ops/price-usd";
 import { runMedians } from "@/lib/ops/medians";
@@ -43,6 +43,8 @@ import { esAnalytics } from "@/i18n/es-analytics";
 import { runFx } from "@/lib/ops/fx";
 import { runResync } from "@/lib/ops/resync";
 import { runTranslate } from "@/lib/ops/translate";
+import { runFeaturedReminders } from "@/lib/ops/featured-reminders";
+import { FEATURED_REMIND_DAYS } from "@/lib/featured-reminders";
 import { runSessions } from "@/lib/ops/sessions";
 import { runSeedFinancing } from "@/lib/ops/seed-financing";
 import { runSeedLocations } from "@/lib/ops/seed-locations";
@@ -205,6 +207,16 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runPartnerReminders(o),
+      revalidate: null,
+    },
+    {
+      job: "cron:featured-reminders",
+      label: esEmail.featuredOps.label,
+      description: esEmail.featuredOps.description(FEATURED_REMIND_DAYS),
+      writes: esEmail.featuredOps.writes,
+      requiresLimit: false,
+      disabledReason: null,
+      run: (o) => runFeaturedReminders(o),
       revalidate: null,
     },
     {

@@ -346,7 +346,17 @@ default, `--dry` first). It records itself as a revertible import job.
     `enEmail`. Check with `npm run email:test -- --to <addr> [--dry]`.
     Also sends (2026-09-27, auth PR): the password-reset link and a new
     partner's welcome (plus a `new_partner` operator alert) — see
-    `src/lib/account-emails.ts`. **Not built:** price alerts, expiry reminders.
+    `src/lib/account-emails.ts`. **Featured-placement reminders (2026-09-30, no
+    migration):** `cron:featured-reminders` (`src/lib/ops/featured-reminders.ts`,
+    pure half `src/lib/featured-reminders.ts`, `npm run verify:listing-reminders`
+    in `verify:local` and the pre-push hook) emails whoever runs a published
+    listing whose `featured_until` is within 3 days — owner, else agent, else the
+    agency's address — once per end date. The ledger is an `admin_events` row
+    (`listing.featured_reminder`) written only after Cloudflare accepted the
+    email, so a failed send is retried. Daily from the hourly tick, skipped
+    while email is not configured; card on /admin/operaciones. **Not built:**
+    price alerts (they need a table and consent wording) and a listing-expiry
+    reminder (a listing has no expiry) — both in `docs/decisions-needed.md`.
     **Password reset needs no table**: `/recuperar` mails a stateless
     HMAC link (`src/lib/auth/reset-token.ts`, `AUTH_TOKEN_SECRET`, 60 min)
     whose MAC covers the current `password_hash`, so it dies once the
@@ -804,7 +814,7 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`.
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:listing-reminders`.
   Same thing by hand: `npm run verify:local`. The last eleven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone

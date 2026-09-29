@@ -54,6 +54,7 @@ export type OpsJob =
   | "cron:translate"
   | "cron:sessions"
   | "cron:reminders"
+  | "cron:featured-reminders"
   | "seed:financing"
   | "seed:locations"
   | "seed:sample-photos"

@@ -27,6 +27,7 @@
  * - `backfill:images`: waits on the R2 bucket (backlog 1 and 5).
  */
 import "server-only";
+import { runFeaturedReminders } from "@/lib/ops/featured-reminders";
 import { runPartnerReminders } from "@/lib/ops/partner-reminders";
 import { runAnalytics } from "@/lib/ops/analytics";
 import { runGeo } from "@/lib/ops/geo";
@@ -35,6 +36,7 @@ import { runSessions } from "@/lib/ops/sessions";
 import { runTranslate } from "@/lib/ops/translate";
 import { finishOpsRun, lastSuccessfulRunAt, startOpsRun } from "@/lib/ops/runs";
 import type { OpsJob, OpsResult } from "@/lib/ops/types";
+import { isEmailConfigured } from "@/lib/email";
 import { isTranslationConfigured } from "@/lib/translate";
 import { revalidateListings } from "@/lib/cache";
 
@@ -92,6 +94,18 @@ const TASKS: CronTask[] = [
   {
     name: "partner-reminders",
     run: () => recorded("cron:reminders", () => runPartnerReminders({ dry: false })),
+  },
+  {
+    // Emails the owner of a featured listing whose placement ends within 3
+    // days, once per end date. Without email configured the feature is off,
+    // not failing, so no ops row is written for it.
+    name: "featured-reminders",
+    run: async () => {
+      if (!isEmailConfigured()) {
+        return "skipped: email not configured (CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_EMAIL_TOKEN)";
+      }
+      return daily("cron:featured-reminders", () => runFeaturedReminders({ dry: false }));
+    },
   },
   {
     // Rolls yesterday into analytics_daily once, then finds nothing to do for
