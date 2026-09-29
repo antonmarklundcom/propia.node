@@ -22,7 +22,8 @@ import { and, desc, eq, inArray, isNull, max, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { leads, whatsappContacts, whatsappMessages } from "@/db/schema";
 import { isR2Configured, putPrivateObject } from "@/lib/r2";
-import { fetchWhatsAppMedia, sendWhatsAppText, whatsappConfig } from "@/lib/whatsapp";
+import { fetchWhatsAppMedia, sendWhatsAppTemplate, sendWhatsAppText, whatsappConfig } from "@/lib/whatsapp";
+import { renderTemplateBody, validateTemplateInput } from "@/lib/whatsapp-templates";
 import {
   normalizeWaPhone,
   statusAdvances,
@@ -491,6 +492,52 @@ export async function sendAndRecordWhatsApp(p: {
     autoKind: p.userId == null ? (p.autoKind ?? null) : null,
     // Written from the app clock like every inbound row, so the auto-reply
     // limits compare one clock (the pool runs with timezone "Z").
+    createdAt: new Date(),
+  });
+  return { ok: true, sent: res.ok };
+}
+
+export type WaTemplateOutcome =
+  | { ok: true; sent: boolean }
+  | { ok: false; error: "not_configured" | "no_recipient" | "template_off" | "template_invalid" };
+
+/**
+ * Send an approved template and record it — the way to write outside the
+ * 24-hour window. Human only (`userId` is required: no automatic template
+ * exists, and a template costs money per conversation). The row stores the
+ * rendered wording, so the thread shows what the customer received; a send
+ * Meta refused (typically "template does not exist", i.e. not approved yet) is
+ * stored with its error, like a refused text.
+ */
+export async function sendAndRecordWhatsAppTemplate(p: {
+  to: string | null;
+  templateName: unknown;
+  values: readonly unknown[];
+  leadId: number | null;
+  userId: number;
+}): Promise<WaTemplateOutcome> {
+  const config = whatsappConfig();
+  if (!config) return { ok: false, error: "not_configured" };
+  const to = normalizeWaPhone(p.to);
+  if (!to) return { ok: false, error: "no_recipient" };
+  const input = validateTemplateInput(p.templateName, p.values);
+  if (!input.ok) return { ok: false, error: input.error };
+
+  const res = await sendWhatsAppTemplate(to, input.template, input.params);
+  await db.insert(whatsappMessages).values({
+    waMessageId: res.ok ? res.waMessageId : null,
+    direction: "out",
+    fromPhone: config.phoneNumberId.slice(0, 20),
+    toPhone: to,
+    contactPhone: to,
+    phoneNumberId: config.phoneNumberId,
+    leadId: p.leadId,
+    body: renderTemplateBody(input.template, input.params).slice(0, WHATSAPP_TEXT_MAX),
+    type: "template",
+    status: res.ok ? "sent" : "failed",
+    error: res.ok ? null : res.error,
+    sentByUserId: p.userId,
+    autoKind: null,
     createdAt: new Date(),
   });
   return { ok: true, sent: res.ok };

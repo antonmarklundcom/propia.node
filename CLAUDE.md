@@ -449,9 +449,15 @@ default, `--dry` first). It records itself as a revertible import job.
     the email inbox: a message matched to a lead (newest lead with the same last
     nine digits) shows under the lead to whoever `userMaySeeLead()` allows; an
     unmatched chat shows in `/admin/inbox?vista=whatsapp` (staff and above) with
-    "Convertir en consulta". **Sending: /admin only, inside the 24 h window;
-    partners read.** Templates (the only way to write outside the window) are
-    not built. Local test without Meta: `npm run whatsapp:replay`.
+    "Convertir en consulta". **Sending: /admin only; partners read.** Inside the
+    24 h window it is free text; **outside it, approved templates (2026-09-30, no
+    migration, `docs/whatsapp-templates.md`)**: `src/lib/whatsapp-templates.ts`
+    (pure, in `verify:whatsapp`) is the registry — the wording to submit to Meta —
+    and a template is offered only when its name is in `WHATSAPP_TEMPLATES`
+    (after Meta approved it); with none, the panel keeps its `wa.me` link.
+    `sendAndRecordWhatsAppTemplate()` is the one write path (human only), stores
+    the rendered wording as the message, and a send Meta refuses is kept with its
+    error. Local test without Meta: `npm run whatsapp:replay`.
 
 20. **WhatsApp auto-response (2026-09-28, no new migration, `docs/log/whatsapp-auto.md`).**
     Off by default; `/admin/ajustes` toggles a static greeting (first message /

@@ -35,9 +35,15 @@ import {
 } from "@/lib/inbox";
 import { esInbox } from "@/i18n/es-e2";
 import { suggestInboxReply, suggestWhatsAppChatReply, type SuggestOutcome } from "@/lib/ai-reply";
-import { attachWhatsAppChatToLead, getWhatsAppChat, getWhatsAppContact, sendAndRecordWhatsApp } from "@/lib/whatsapp-inbox";
+import {
+  attachWhatsAppChatToLead,
+  getWhatsAppChat,
+  getWhatsAppContact,
+  sendAndRecordWhatsApp,
+  sendAndRecordWhatsAppTemplate,
+} from "@/lib/whatsapp-inbox";
 import { normalizeWaPhone } from "@/lib/whatsapp-webhook";
-import { waOutcomeFlash } from "@/lib/whatsapp-access";
+import { templateFormFields, waOutcomeFlash } from "@/lib/whatsapp-access";
 
 const ROUTE = "/admin/inbox";
 
@@ -208,7 +214,10 @@ export async function replyWhatsAppChatAction(formData: FormData): Promise<void>
   const phone = waPhoneFrom(formData);
   const chat = phone ? await getWhatsAppChat(phone) : null;
   if (!phone || !chat) redirect(`/admin/inbox?vista=whatsapp&msg=wa_not_found`);
-  const out = await sendAndRecordWhatsApp({ to: phone, body: String(formData.get("body") ?? ""), leadId: null, userId: user.id });
+  const out =
+    formData.get("mode") === "template"
+      ? await sendAndRecordWhatsAppTemplate({ to: phone, ...templateFormFields(formData), leadId: null, userId: user.id })
+      : await sendAndRecordWhatsApp({ to: phone, body: String(formData.get("body") ?? ""), leadId: null, userId: user.id });
   revalidatePath(WA_ROUTE);
   redirect(`${WA_ROUTE}/${phone}?msg=${waOutcomeFlash(out)}`);
 }

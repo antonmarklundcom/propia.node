@@ -11,7 +11,9 @@ import type { ReactNode } from "react";
 import { esWhatsApp } from "@/i18n/es-whatsapp";
 import { aiReplyButtonLabels, esAiReply } from "@/i18n/es-ai";
 import { formatEmailWhen } from "@/lib/inbox";
+import { BRAND_NAME } from "@/lib/brand";
 import { waLink } from "@/lib/wa";
+import { enabledTemplates, renderTemplateBody } from "@/lib/whatsapp-templates";
 import { WHATSAPP_TEXT_MAX, WHATSAPP_WINDOW_MS } from "@/lib/whatsapp-webhook";
 import type { WhatsAppMessage } from "@/lib/whatsapp-inbox";
 import type { SuggestOutcome } from "@/lib/ai-reply-prompt";
@@ -64,8 +66,11 @@ export function windowUntil(lastInboundAt: Date | null, now = Date.now()): Date 
 }
 
 /**
- * The reply box, or — outside Meta's 24-hour window — a wa.me link to write
- * from a phone instead (templates are not built).
+ * The reply box, or — outside Meta's 24-hour window — the approved templates
+ * the founder has enabled (`WHATSAPP_TEMPLATES`), one small form each, plus the
+ * wa.me link to write from a phone instead. With none enabled it is the link
+ * alone, as before. Server-rendered on purpose: one form per template needs no
+ * client script.
  */
 export function WhatsAppReplyBox(props: {
   action: (formData: FormData) => Promise<void>;
@@ -77,15 +82,57 @@ export function WhatsAppReplyBox(props: {
   const until = windowUntil(props.lastInboundAt);
   if (!until) {
     const href = waLink(props.phone);
+    const templates = enabledTemplates();
+    const link = href ? (
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        {t.openWaMe}
+      </a>
+    ) : null;
+    if (templates.length === 0) {
+      return (
+        <p className="panel-note">
+          {t.windowClosed} {link}
+        </p>
+      );
+    }
     return (
-      <p className="panel-note">
-        {t.windowClosed}{" "}
-        {href ? (
-          <a href={href} target="_blank" rel="noopener noreferrer">
-            {t.openWaMe}
-          </a>
+      <div>
+        <p className="panel-note">{t.windowClosedTemplates}</p>
+        {templates.map((tpl) => (
+          <form key={tpl.name} action={props.action} className={`panel-form ${styles.reply}`}>
+            {Object.entries(props.hidden).map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
+            ))}
+            <input type="hidden" name="mode" value="template" />
+            <input type="hidden" name="template" value={tpl.name} />
+            {tpl.params.map((p, i) => (
+              <label key={i} className="panel-form__field">
+                <span className="auth-field__label">{p.label}</span>
+                <input
+                  className="auth-field__input"
+                  name={`p${i + 1}`}
+                  required
+                  maxLength={100}
+                  defaultValue={p.prefill === "brand" ? BRAND_NAME : undefined}
+                />
+              </label>
+            ))}
+            <p className="panel-note" style={{ flexBasis: "100%", margin: 0 }}>
+              {t.templatePreview}: «{renderTemplateBody(tpl, tpl.params.map((p, i) => (p.prefill === "brand" ? BRAND_NAME : `[${p.label}]`)))}»
+            </p>
+            <div className="panel-form__field panel-form__field--action">
+              <button className="panel-btn panel-btn--primary" type="submit">
+                {t.templateSubmit}
+              </button>
+            </div>
+          </form>
+        ))}
+        {link ? (
+          <p className="panel-note">
+            {t.templateOr} {link}
+          </p>
         ) : null}
-      </p>
+      </div>
     );
   }
   return (

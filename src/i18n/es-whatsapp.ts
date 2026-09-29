@@ -39,7 +39,12 @@ export const esWhatsApp = {
     replyFrom: "Sale desde el WhatsApp del portal.",
     windowOpen: (until: string) => `Podés responder hasta el ${until} (24 h desde su último mensaje).`,
     windowClosed:
-      "Pasaron más de 24 horas desde el último mensaje del cliente: WhatsApp solo permite plantillas aprobadas, que todavía no están incluidas. Escribile desde tu teléfono:",
+      "Pasaron más de 24 horas desde el último mensaje del cliente: WhatsApp solo permite plantillas aprobadas por Meta, y todavía no hay ninguna activada (WHATSAPP_TEMPLATES). Escribile desde tu teléfono:",
+    windowClosedTemplates:
+      "Pasaron más de 24 horas desde el último mensaje del cliente: WhatsApp solo permite enviar una plantilla aprobada. Elegí una; si responde, se reabre la conversación.",
+    templateSubmit: "Enviar plantilla",
+    templatePreview: "Así lo recibe el cliente",
+    templateOr: "O escribile desde tu teléfono:",
     openWaMe: "Abrir en WhatsApp",
     markRead: "Marcar como leído",
     partnerReadOnly: "Esta conversación llegó al WhatsApp del portal. Respondé al cliente desde tu propio WhatsApp.",
@@ -51,6 +56,8 @@ export const esWhatsApp = {
     outsideWindow: "No se envió: pasaron más de 24 horas desde el último mensaje del cliente.",
     noRecipient: "Esta consulta no tiene un número de WhatsApp válido.",
     notConfigured: "WhatsApp no está configurado.",
+    templateOff: "Esa plantilla no está activada. Se activa listándola en WHATSAPP_TEMPLATES cuando Meta la aprobó.",
+    templateInvalid: "Completá todos los campos de la plantilla.",
     notFound: "Esa conversación no existe o no tenés acceso.",
     marked: "Marcado como leído.",
     converted: "Consulta creada. El chat de WhatsApp ahora está bajo esa consulta.",

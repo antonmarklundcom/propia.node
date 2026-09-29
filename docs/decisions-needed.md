@@ -354,3 +354,18 @@ Shipped with both switches OFF (`/admin/ajustes`). Decide before turning on:
 3. **Wording** of the three texts (`esWhatsApp.auto` in `src/i18n/es-whatsapp.ts`):
    first-contact greeting, out-of-hours greeting, hand-off line.
 
+
+## 2026-09-30 — WhatsApp templates (founder)
+
+Built and off until you list them (`WHATSAPP_TEMPLATES`, see
+`docs/whatsapp-templates.md`). Two utility templates ship:
+`seguimiento_consulta` and `recordatorio_visita`. Before submitting to Meta:
+1. **Wording** — the Spanish text in `src/lib/whatsapp-templates.ts` is a
+   proposal; change any word there and in Manager together.
+2. **Language variant** — `es` by default; say if you want `es_AR` / `es_ES` /
+   `es_MX` (then `WHATSAPP_TEMPLATE_LANG`).
+3. **Which other templates** you want (an English one for realestateinparaguay.com
+   enquiries, a "new property matching your search" one — that is marketing
+   category in Meta's eyes and needs opt-in wording).
+4. **Consent wording** for people who leave a WhatsApp number on a form, since
+   a template is a business-initiated conversation.

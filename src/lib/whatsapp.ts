@@ -7,15 +7,16 @@
  *   `WHATSAPP_APP_SECRET` and `WHATSAPP_VERIFY_TOKEN` set = on. Anything less
  *   = off: the panels hide the WhatsApp inbox and `/api/whatsapp` answers 503.
  *   `WHATSAPP_WABA_ID` is informational (the setup screen shows it).
- * - **Free-form text only, and only inside the 24-hour window** after the
- *   customer's last message (`withinWindow()`); the caller refuses outside it
- *   with a clear message. Template messages — the only thing Meta lets a
- *   business send outside the window — are **not built**.
+ * - **Free-form text only inside the 24-hour window** after the customer's
+ *   last message (`withinWindow()`); the caller refuses outside it with a clear
+ *   message. Outside the window the only thing Meta accepts is an approved
+ *   **template** (`sendWhatsAppTemplate()`, `src/lib/whatsapp-templates.ts`).
  * - Never throws into a request: every call returns a result, bounded by a
  *   timeout. The access token is never logged.
  */
 import "server-only";
 import { WHATSAPP_TEXT_MAX } from "@/lib/whatsapp-webhook";
+import { templateLanguage, templatePayload, type WaTemplate } from "@/lib/whatsapp-templates";
 
 /** A Graph API version Meta still serves; set `WHATSAPP_GRAPH_VERSION` to the current one. */
 const DEFAULT_GRAPH_VERSION = "v23.0";
@@ -87,18 +88,36 @@ export async function sendWhatsAppText(to: string, body: string): Promise<SendRe
   if (!c) return { ok: false, error: "not configured" };
   const text = body.trim().slice(0, WHATSAPP_TEXT_MAX);
   if (!text) return { ok: false, error: "empty" };
+  return postMessage(c, {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to,
+    type: "text",
+    text: { preview_url: false, body: text },
+  });
+}
+
+/**
+ * Send an approved template. Allowed at any time, which is the point: it is
+ * how a conversation is opened, or reopened after the 24-hour window. The
+ * template must already exist in WhatsApp Manager under this name and
+ * language, or Meta refuses it (its error text is stored on the message row).
+ * The caller has validated the variables (`validateTemplateInput()`).
+ */
+export async function sendWhatsAppTemplate(to: string, template: WaTemplate, params: readonly string[]): Promise<SendResult> {
+  const c = whatsappConfig();
+  if (!c) return { ok: false, error: "not configured" };
+  return postMessage(c, templatePayload(to, template, params, templateLanguage()));
+}
+
+/** The one Graph `/messages` POST every outbound message goes through. */
+async function postMessage(c: WhatsAppConfig, payload: Record<string, unknown>): Promise<SendResult> {
   try {
     const res = await fetch(graphUrl(c, `${c.phoneNumberId}/messages`), {
       method: "POST",
       signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
       headers: { Authorization: `Bearer ${c.accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to,
-        type: "text",
-        text: { preview_url: false, body: text },
-      }),
+      body: JSON.stringify(payload),
     });
     const data = (await res.json().catch(() => null)) as (GraphError & { messages?: Array<{ id?: string }> }) | null;
     const id = data?.messages?.[0]?.id;

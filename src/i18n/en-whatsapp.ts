@@ -34,7 +34,12 @@ export const enWhatsApp = {
     replyFrom: "Goes out from the portal's WhatsApp number.",
     windowOpen: (until: string) => `You can reply until ${until} (24 h after their last message).`,
     windowClosed:
-      "More than 24 hours have passed since the customer's last message: WhatsApp only allows approved templates, which are not built yet. Write to them from your phone:",
+      "More than 24 hours have passed since the customer's last message: WhatsApp only allows templates approved by Meta, and none is enabled yet (WHATSAPP_TEMPLATES). Write to them from your phone:",
+    windowClosedTemplates:
+      "More than 24 hours have passed since the customer's last message: WhatsApp only lets you send an approved template. Pick one; if they reply, the conversation reopens.",
+    templateSubmit: "Send template",
+    templatePreview: "This is what the customer receives",
+    templateOr: "Or write to them from your phone:",
     openWaMe: "Open in WhatsApp",
     markRead: "Mark as read",
     partnerReadOnly: "This conversation came in on the portal's WhatsApp. Reply to the customer from your own WhatsApp.",
@@ -46,6 +51,8 @@ export const enWhatsApp = {
     outsideWindow: "Not sent: more than 24 hours have passed since the customer's last message.",
     noRecipient: "This enquiry has no valid WhatsApp number.",
     notConfigured: "WhatsApp is not configured.",
+    templateOff: "That template is not enabled. List it in WHATSAPP_TEMPLATES once Meta has approved it.",
+    templateInvalid: "Fill in every field of the template.",
     notFound: "That conversation does not exist or you do not have access.",
     marked: "Marked as read.",
     converted: "Enquiry created. The WhatsApp chat now sits under it.",

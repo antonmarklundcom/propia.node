@@ -10,6 +10,9 @@
  * - Phones: local and international forms normalise to E.164 digits.
  * - The 24-hour window and status ordering.
  * - Config: all four required variables or the feature is off.
+ * - Templates (outside-the-window sends): the registry is well-formed for
+ *   Meta, only listed names are offered, variables are cleaned and required,
+ *   and the Graph payload has the exact shape.
  * - The auto-responder's rules (PR 3): office hours in Asunción, hand-off
  *   topics, and every limit in `decideAutoAction()`.
  *
@@ -27,6 +30,18 @@ import {
   WHATSAPP_WINDOW_MS,
 } from "../src/lib/whatsapp-webhook";
 import { missingWhatsAppEnv, whatsappConfig } from "../src/lib/whatsapp";
+import {
+  cleanTemplateParam,
+  DEFAULT_TEMPLATE_LANGUAGE,
+  enabledTemplates,
+  renderTemplateBody,
+  templateBodyProblems,
+  templateLanguage,
+  templatePayload,
+  validateTemplateInput,
+  WA_TEMPLATES,
+  WA_TEMPLATE_PARAM_MAX,
+} from "../src/lib/whatsapp-templates";
 import {
   asuncionClock,
   decideAutoAction,
@@ -241,6 +256,52 @@ check("AI never after a hand-off", decideAutoAction({ ...base, aiEnabled: true, 
 check("price topic → hand-off, not the model", JSON.stringify(decideAutoAction({ ...base, aiEnabled: true, text: "¿Aceptan una contraoferta?" })) === '{"action":"handoff","reason":"topic"}');
 check("photo without text → no AI, greeting may go", decideAutoAction({ ...base, aiEnabled: true, greetingEnabled: true, firstContact: true, text: null }).action === "greeting");
 check("AI blocked by cooldown falls back to closed greeting", decideAutoAction({ ...base, aiEnabled: true, greetingEnabled: true, officeOpen: false, lastAiAt: hoursAgo(1) }).action === "greeting");
+
+console.log("templates");
+for (const t of WA_TEMPLATES) {
+  const problems = templateBodyProblems(t);
+  check(`registry: ${t.name} is a well-formed Meta template`, problems.length === 0, problems.join("; "));
+}
+check("registry: names are unique", new Set(WA_TEMPLATES.map((t) => t.name)).size === WA_TEMPLATES.length);
+check("registry: every template is utility (tied to the customer's own enquiry)", WA_TEMPLATES.every((t) => t.category === "UTILITY"));
+check("a broken body is caught: variable at the start", templateBodyProblems({ ...WA_TEMPLATES[0], body: "{{1}} hola {{2}} y {{3}} chau." }).some((m) => /start or end/.test(m)));
+check("a broken body is caught: variable at the end", templateBodyProblems({ ...WA_TEMPLATES[0], body: "Hola {{1}} y {{2}} y {{3}}" }).some((m) => /start or end/.test(m)));
+check("a broken body is caught: numbering gap", templateBodyProblems({ ...WA_TEMPLATES[0], body: "Hola {{1}} y {{3}} y {{2}}. Chau." }).some((m) => /in order/.test(m)));
+check("a broken name is caught", templateBodyProblems({ ...WA_TEMPLATES[0], name: "Seguimiento-Consulta" }).some((m) => /lowercase/.test(m)));
+
+check("no WHATSAPP_TEMPLATES → nothing offered", enabledTemplates({}).length === 0 && enabledTemplates({ WHATSAPP_TEMPLATES: "" }).length === 0);
+check("a listed name is offered", enabledTemplates({ WHATSAPP_TEMPLATES: "seguimiento_consulta" }).map((t) => t.name).join() === "seguimiento_consulta");
+check("names are trimmed and unknown ones ignored", enabledTemplates({ WHATSAPP_TEMPLATES: " recordatorio_visita , inventada ," }).map((t) => t.name).join() === "recordatorio_visita");
+check("language defaults to es", templateLanguage({}) === DEFAULT_TEMPLATE_LANGUAGE && DEFAULT_TEMPLATE_LANGUAGE === "es");
+check("WHATSAPP_TEMPLATE_LANG accepts es_AR, refuses junk", templateLanguage({ WHATSAPP_TEMPLATE_LANG: "es_AR" }) === "es_AR" && templateLanguage({ WHATSAPP_TEMPLATE_LANG: "spanish" }) === "es");
+
+check("a variable loses newlines and tabs", cleanTemplateParam("Ana\nGómez\t!") === "Ana Gómez !");
+check("a variable collapses runs of spaces (Meta refuses more than 4)", cleanTemplateParam("a          b") === "a b");
+check("a blank or non-string variable is null", cleanTemplateParam("  \n ") === null && cleanTemplateParam(undefined) === null && cleanTemplateParam(5) === null);
+check("a variable is capped", (cleanTemplateParam("x".repeat(500)) ?? "").length === WA_TEMPLATE_PARAM_MAX);
+
+const seg = WA_TEMPLATES.find((t) => t.name === "seguimiento_consulta")!;
+const on = [seg];
+const okIn = validateTemplateInput("seguimiento_consulta", ["Ana", "Marca", "una casa en Luque"], on);
+check("valid input → template and cleaned params", okIn.ok && okIn.params.join("|") === "Ana|Marca|una casa en Luque");
+check("a template that is not enabled is refused", JSON.stringify(validateTemplateInput("seguimiento_consulta", ["a", "b", "c"], [])) === '{"ok":false,"error":"template_off"}');
+check("an unknown name is refused, not looked up", JSON.stringify(validateTemplateInput("../etc", ["a", "b", "c"], on)) === '{"ok":false,"error":"template_off"}');
+check("a missing variable is refused", JSON.stringify(validateTemplateInput("seguimiento_consulta", ["Ana", "Marca"], on)) === '{"ok":false,"error":"template_invalid"}');
+check("an empty variable is refused", JSON.stringify(validateTemplateInput("seguimiento_consulta", ["Ana", "  ", "x"], on)) === '{"ok":false,"error":"template_invalid"}');
+check("extra values are ignored", validateTemplateInput("seguimiento_consulta", ["Ana", "M", "x", "sobra"], on).ok === true);
+
+if (okIn.ok) {
+  const text = renderTemplateBody(okIn.template, okIn.params);
+  check("the rendered text fills every variable", text.startsWith("Hola Ana, te escribimos de Marca por tu consulta sobre una casa en Luque.") && !/\{\{/.test(text));
+  const payload = templatePayload("595981123456", okIn.template, okIn.params, "es");
+  check("payload: Graph shape", payload.messaging_product === "whatsapp" && payload.type === "template" && payload.to === "595981123456");
+  check("payload: name and language", payload.template.name === "seguimiento_consulta" && payload.template.language.code === "es");
+  check(
+    "payload: body parameters in order, all text",
+    JSON.stringify(payload.template.components) ===
+      JSON.stringify([{ type: "body", parameters: [{ type: "text", text: "Ana" }, { type: "text", text: "Marca" }, { type: "text", text: "una casa en Luque" }] }]),
+  );
+}
 
 if (failures > 0) {
   console.log(`\nverify:whatsapp — ${failures} failure(s)`);
