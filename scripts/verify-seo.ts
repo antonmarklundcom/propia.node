@@ -1285,7 +1285,6 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
   // filters folded away) — the check below fails once an entry is no longer a
   // real duplicate, so this list can only shrink.
   const KNOWN_DUPLICATE_DOORS = new Set<string>([
-    "terreno.com.py", // removed by the PR that flips this door
     "rentparaguay.com", // removed by the PR that flips this door
   ]);
 
@@ -1307,7 +1306,7 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
 
   // Live table: only the doors flipped so far have the flag; the rest are
   // unset (= owns). Flip one door at a time, adding it here.
-  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com"]);
+  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com", "terreno.com.py"]);
   check(
     "(n) the flag is false on exactly the flipped doors, unset on the rest",
     Object.entries(VERTICALS).every(([host, v]) =>
@@ -1331,9 +1330,14 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
       const b = alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
         path, scope: "site", family: "marketplace",
       });
-      return JSON.stringify(a) === JSON.stringify(b) && a !== undefined;
+      // Key order carries no meaning in hreflang, and it does shift when an
+      // early-declared feeder (terreno.com.py) delegates and drops out of the
+      // category scope — compare the content, not the insertion order.
+      const norm = (x: Record<string, string> | undefined) =>
+        x === undefined ? undefined : JSON.stringify(Object.entries(x).sort(([k1], [k2]) => k1.localeCompare(k2)));
+      return norm(a) === norm(b) && a !== undefined;
     });
-    check('(n) scope "category" pairs exactly what scope "site" pairs while the flag is unset', same);
+    check('(n) scope "category" pairs the same languages and URLs as scope "site" (the owners are the primaries)', same);
   }
 
   // S2: landforsaleparaguay.com on the LIVE table.
@@ -1397,6 +1401,42 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
       (smSrc.match(/includeCategories/g) ?? []).length === 3 &&
         smSrc.includes("const servesCategories = servesMarketplace && includeCategories;") &&
         !/staticPaths[^\n]*servesCategories|\.filter\([^)]*servesCategories/.test(smSrc),
+    );
+  }
+
+  // S1(a): terreno.com.py on the LIVE table — the Spanish twin of S2.
+  {
+    const terreno = VERTICALS["terreno.com.py"];
+    const esOwner = categoryOwnerForLocale("es");
+    const target = (shape: CategoryShape, op: Op) => {
+      const p = equivalentCategoryPath(terreno, shape, op);
+      return p === null ? null : `https://${esOwner}${p}`;
+    };
+    check("(n) S1: the Spanish category owner is inmobiliaria.com.py", esOwner === "inmobiliaria.com.py", esOwner);
+    check(
+      "(n) S1: its city page canonicalises to the owner's typed land page",
+      target({ kind: "city", citySlug: "luque" }, "venta") === "https://inmobiliaria.com.py/venta/luque/terrenos",
+    );
+    check(
+      "(n) S1: its city-type page canonicalises to the same path on the owner",
+      target({ kind: "city-type", citySlug: "luque", type: "terreno" }, "alquiler") === "https://inmobiliaria.com.py/alquiler/luque/terrenos",
+    );
+    check(
+      "(n) S1: its barrio page canonicalises to the same path on the owner",
+      target({ kind: "barrio-type", citySlug: "asuncion", barrioSlug: "recoleta", type: "terreno" }, "venta") ===
+        "https://inmobiliaria.com.py/venta/asuncion/recoleta/terrenos",
+    );
+    check(
+      "(n) S1: a non-land type page has no equivalent (empty there, noindex)",
+      target({ kind: "city-type", citySlug: "luque", type: "casa" }, "venta") === null,
+    );
+    check("(n) S1: it owns no category pages, so includeCategories is false in its sitemap", !ownsCategoryPages(terreno));
+    check(
+      "(n) S1: no category hreflang is emitted from terreno.com.py",
+      alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+        path: "/venta/luque/terrenos", scope: "category", family: "marketplace",
+        servingHost: "terreno.com.py",
+      }) === undefined,
     );
   }
 

@@ -129,6 +129,11 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "land",
     enabled: true,
     ownsListingDetail: false,
+    // S1(a) (docs/plan-seo-doors-2026-09-27.md §9): its city/barrio/type grids
+    // canonicalise to inmobiliaria.com.py (an untyped city page becomes
+    // `/…/<ciudad>/terrenos`) and leave its sitemap. Its home and its national
+    // `/venta` hub are unique and stay self-canonical.
+    ownsCategories: false,
   },
   /**
    * The rental family's Spanish door (fable/plan-rentparaguay.md §1). Not a
