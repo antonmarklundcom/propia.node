@@ -9,7 +9,7 @@
  * line exists by the time the operator's redirect lands.
  */
 import "server-only";
-import { and, desc, eq, gt, gte, type SQL } from "drizzle-orm";
+import { and, desc, eq, gt, gte, notInArray, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { adminEvents, users } from "@/db/schema";
 
@@ -29,10 +29,13 @@ export type AdminEventAction =
   | "agency.invite_revoke"
   | "deal.update"
   | "deal.stage"
+  // One "Sugerir respuesta" call that reached a provider; its detail carries
+  // the token counts /admin/ajustes sums into a monthly cost (src/lib/ai-reply.ts).
+  | "ai.reply"
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
   | "deal.delete";
 
-export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting";
+export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting" | "email" | "whatsapp";
 
 type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -84,9 +87,12 @@ function parseDetail(value: unknown): Record<string, unknown> | null {
 export async function listAdminEvents(params: {
   targetType?: AdminEventTarget;
   targetId?: number;
+  /** Actions left out — /admin/historial drops the high-volume `ai.reply` usage lines. */
+  excludeActions?: AdminEventAction[];
   limit?: number;
 } = {}): Promise<AdminEventRow[]> {
   const filters: SQL[] = [];
+  if (params.excludeActions?.length) filters.push(notInArray(adminEvents.action, params.excludeActions));
   if (params.targetType) filters.push(eq(adminEvents.targetType, params.targetType));
   if (params.targetId) filters.push(eq(adminEvents.targetId, params.targetId));
 

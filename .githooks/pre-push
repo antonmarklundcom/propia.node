@@ -25,4 +25,6 @@ echo "pre-push: verify:telegram…"
 npm run --silent verify:telegram
 echo "pre-push: verify:reset…"
 npm run --silent verify:reset
+echo "pre-push: verify:ai-reply…"
+npm run --silent verify:ai-reply
 echo "pre-push: OK"

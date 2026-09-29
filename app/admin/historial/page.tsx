@@ -8,6 +8,7 @@ import { esPanel } from "@/i18n/es";
 import { esA5 } from "@/i18n/es-a5";
 import { esAgency } from "@/i18n/es-agency";
 import { esDeals } from "@/i18n/es-deals";
+import { esAiReply } from "@/i18n/es-ai";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
@@ -52,7 +53,7 @@ export default async function AdminHistoryPage() {
   const user = await requireSuperAdmin();
   const [reviewCount, events] = await Promise.all([
     countReviewQueue(),
-    listAdminEvents({ limit: 300 }),
+    listAdminEvents({ limit: 300, excludeActions: ["ai.reply"] }),
   ]);
 
   return (
@@ -83,12 +84,12 @@ export default async function AdminHistoryPage() {
               <tbody>
                 {events.map((e) => {
                   const href = targetHref(e);
-                  const label = `${esPanel.historyTargetLabel[e.targetType] ?? esA5.historyTargetLabel[e.targetType] ?? esAgency.historyTargetLabel[e.targetType] ?? e.targetType} #${e.targetId}`;
+                  const label = `${esPanel.historyTargetLabel[e.targetType] ?? esA5.historyTargetLabel[e.targetType] ?? esAgency.historyTargetLabel[e.targetType] ?? esAiReply.historyTargetLabel[e.targetType] ?? e.targetType} #${e.targetId}`;
                   return (
                     <tr key={e.id}>
                       <td>{formatWhen(e.createdAt)}</td>
                       <td>{e.actorName ?? e.actorEmail ?? "—"}</td>
-                      <td>{esPanel.historyAction[e.action] ?? esA5.historyAction[e.action] ?? esAgency.historyAction[e.action] ?? esDeals.historyAction[e.action] ?? e.action}</td>
+                      <td>{esPanel.historyAction[e.action] ?? esA5.historyAction[e.action] ?? esAgency.historyAction[e.action] ?? esDeals.historyAction[e.action] ?? esAiReply.historyAction[e.action] ?? e.action}</td>
                       <td>{href ? <Link href={href}>{label}</Link> : label}</td>
                       <td>{detailText(e)}</td>
                     </tr>

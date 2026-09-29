@@ -7,6 +7,8 @@ import { CONTACT_WHATSAPP } from "@/config/contact";
 import { esAgency } from "@/i18n/es-agency";
 import { adminTabs } from "../tabs";
 import { saveSettingsAction } from "./actions";
+import { aiReplyConfig, aiReplyUsageThisMonth } from "@/lib/ai-reply";
+import { esAiReply } from "@/i18n/es-ai";
 
 export const metadata: Metadata = {
   title: esAgency.title,
@@ -31,11 +33,14 @@ export default async function AdminSettingsPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [{ msg }, user] = await Promise.all([searchParams, requireSuperAdmin()]);
-  const [reviewCount, mode, rawDays] = await Promise.all([
+  const [reviewCount, mode, rawDays, aiUsage] = await Promise.all([
     countReviewQueue(),
     getBusinessMode(),
     getAnalyticsRawDays(),
+    // A usage line is not worth an error page.
+    aiReplyUsageThisMonth().catch(() => null),
   ]);
+  const ai = aiReplyConfig();
   const flash = msg ? FLASH[msg] : undefined;
   const t = esAgency;
 
@@ -120,6 +125,25 @@ export default async function AdminSettingsPage({
             {t.save}
           </button>
         </form>
+
+        <article className="panel-card">
+          <h3 className="panel-section__title">{esAiReply.usage.title}</h3>
+          <p className="panel-note">
+            {ai ? esAiReply.usage.on(ai.provider === "claude" ? "Claude" : "Gemini", ai.model) : esAiReply.usage.off}
+          </p>
+          {aiUsage ? (
+            <>
+              <p className="panel-note">
+                {esAiReply.usage.month(
+                  aiUsage.calls,
+                  (aiUsage.inputTokens + aiUsage.outputTokens).toLocaleString("es-PY"),
+                  `US$ ${aiUsage.costUsd.toLocaleString("es-PY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                )}
+              </p>
+              <p className="panel-note">{esAiReply.usage.estimateNote}</p>
+            </>
+          ) : null}
+        </article>
       </main>
     </>
   );

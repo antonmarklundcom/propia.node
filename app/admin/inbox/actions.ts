@@ -34,6 +34,7 @@ import {
   type SendOutcome,
 } from "@/lib/inbox";
 import { esInbox } from "@/i18n/es-e2";
+import { suggestInboxReply, type SuggestOutcome } from "@/lib/ai-reply";
 
 const ROUTE = "/admin/inbox";
 
@@ -169,4 +170,17 @@ export async function convertToLeadAction(formData: FormData): Promise<void> {
   revalidatePath(ROUTE);
   revalidatePath("/admin/leads");
   redirect(`/admin/leads?q=${encodeURIComponent(parsed.data.whatsapp)}&msg=converted`);
+}
+
+/**
+ * "Sugerir respuesta" on an inbox thread: a draft for the reply box, never a
+ * send. `getInboxThread()` inside `suggestInboxReply()` applies the same
+ * mailbox rule as the page, so a forged thread key reads as not found.
+ */
+export async function suggestInboxReplyAction(thread: string): Promise<SuggestOutcome> {
+  const user = await requireStaffOrAbove();
+  if (typeof thread !== "string" || !isThreadKey(thread) || thread.startsWith("lead-")) {
+    return { ok: false, error: "not_found" };
+  }
+  return suggestInboxReply(user, thread);
 }

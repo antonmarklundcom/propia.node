@@ -16,6 +16,7 @@ import {
   type ShareState,
 } from "@/lib/lead-assignments";
 import { handleLeadEmailForm } from "@/lib/inbox-access";
+import { suggestLeadEmailReply, type SuggestOutcome } from "@/lib/ai-reply";
 import { parsePartnerStageForm } from "@/lib/deal-form";
 import { setPartnerDealStage } from "@/lib/deals";
 import { recordAdminEvent } from "@/lib/admin-events";
@@ -100,4 +101,14 @@ export async function setDealStageAction(formData: FormData): Promise<void> {
   revalidatePath("/admin/negocios");
   const anchor = input ? `#shared-${input.leadId}` : "";
   redirect(`/agencia/leads?msg=${res === "ok" ? "deal_saved" : "deal_invalid"}${anchor}`);
+}
+
+/**
+ * "Sugerir respuesta" on a lead's email thread: a draft for the reply box,
+ * never a send. The lead id is bound on the page but still client-supplied,
+ * so `suggestLeadEmailReply()` asks `userMaySeeLead()` before loading it.
+ */
+export async function suggestLeadReplyAction(leadId: number): Promise<SuggestOutcome> {
+  const ctx = await requireAgencyContext();
+  return suggestLeadEmailReply(ctx.user, Number(leadId));
 }

@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks",
-    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox && npm run verify:prices && npm run verify:telegram && npm run verify:reset",
+    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox && npm run verify:prices && npm run verify:telegram && npm run verify:reset && npm run verify:ai-reply",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -41,6 +41,7 @@
     "verify:inbox": "tsx --tsconfig scripts/tsconfig.json scripts/verify-inbox.ts",
     "verify:reset": "tsx --tsconfig scripts/tsconfig.json scripts/verify-reset-token.ts",
     "verify:telegram": "tsx --tsconfig scripts/tsconfig.json scripts/verify-telegram.ts",
+    "verify:ai-reply": "tsx --tsconfig scripts/tsconfig.json scripts/verify-ai-reply.ts",
     "verify:prices": "tsx --tsconfig scripts/tsconfig.json scripts/verify-prices.ts",
     "verify:live": "tsx --tsconfig scripts/tsconfig.json scripts/verify-live.ts",
     "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",

@@ -403,6 +403,21 @@ default, `--dry` first). It records itself as a revertible import job.
     `GSC_SERVICE_ACCOUNT_JSON` is set; the page shows the setup steps. Both
     super-admin only.
 
+18. **AI reply suggestions (2026-09-28, no migration, `docs/log/ai-reply.md`).**
+    "Sugerir respuesta" on the reply boxes of `/admin/inbox/[thread]`,
+    `/admin/leads` and `/agencia/leads` (not `/mis-avisos`). **`src/lib/ai-reply.ts`
+    is the only module that calls an LLM for replies**; the prompt and its rules
+    are pure in `src/lib/ai-reply-prompt.ts` (`npm run verify:ai-reply`, in
+    `verify:local` and the pre-push hook). It only fills the textarea — a person
+    presses Send through the existing reply path. Visibility is the existing
+    predicates (`userMaySeeLead()`, `getInboxThread(viewer)`), checked inside the
+    loader. Gemini by default (`AI_REPLY_PROVIDER`, `AI_REPLY_MODEL`), the same
+    keys as `cron:translate`; **no key → the button is hidden**. 30 s, no retry,
+    30 per user per hour (per process), a draft naming a phone/email/domain not
+    in the context is dropped. Each call is an `ai.reply` line in
+    `admin_events` with token counts (hidden from `/admin/historial`);
+    `/admin/ajustes` shows the month's estimated cost.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
@@ -746,8 +761,8 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`.
-  Same thing by hand: `npm run verify:local`. The last nine are pure — no database, no network —
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`.
+  Same thing by hand: `npm run verify:local`. The last ten are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
   that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath

@@ -38,6 +38,7 @@ import { BRAND_NAME } from "@/lib/brand";
 import { siteOrigin } from "@/lib/origin";
 import { recordAdminEvent } from "@/lib/admin-events";
 import { handleLeadEmailForm } from "@/lib/inbox-access";
+import { suggestLeadEmailReply, type SuggestOutcome } from "@/lib/ai-reply";
 import {
   findLeadListing,
   leadLaneFor,
@@ -486,4 +487,14 @@ export async function logWhatsappLeadAction(
         : saved,
     nonce: Date.now(),
   };
+}
+
+/**
+ * "Sugerir respuesta" on a lead's email thread: a draft for the reply box,
+ * never a send. The lead id is bound on the page but still client-supplied,
+ * so `suggestLeadEmailReply()` asks `userMaySeeLead()` before loading it.
+ */
+export async function suggestLeadReplyAction(leadId: number): Promise<SuggestOutcome> {
+  const user = await requireStaffOrAbove();
+  return suggestLeadEmailReply(user, Number(leadId));
 }

@@ -17,7 +17,8 @@ import {
   REALTOR_STATES,
   type PanelViewer,
 } from "@/lib/lead-assignments";
-import { leadEmailAction, setDealStageAction, setPartnerNoteAction, setShareStateAction } from "./actions";
+import { leadEmailAction, setDealStageAction, setPartnerNoteAction, setShareStateAction, suggestLeadReplyAction } from "./actions";
+import { isAiReplyEnabled } from "@/lib/ai-reply";
 import { esTelegram } from "@/i18n/es-telegram";
 import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads, type InboxMessage } from "@/lib/inbox";
@@ -123,6 +124,7 @@ function EmailBlock({ leadId, email, threads }: { leadId: number; email: string 
       hidden={{ leadId }}
       replyTo={leadReplyRecipient(messages, email)}
       unavailable={leadEmailReplyAvailable() ? null : esInbox.thread.replyUnavailable}
+      suggest={isAiReplyEnabled() ? suggestLeadReplyAction.bind(null, leadId) : undefined}
     />
   );
 }
