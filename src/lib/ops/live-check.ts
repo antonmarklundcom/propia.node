@@ -24,9 +24,10 @@ import { alertOperatorSystem } from "@/lib/crm";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
 
 /**
- * Enabled doors that no visitor can reach yet: `alquiler.com.py` is not
- * purchased and `landforsaleparaguay.com`'s DNS is unconfirmed (CLAUDE.md,
- * "Domains"). Checking them would alert on every run. Remove a host from
+ * Enabled doors that no visitor can reach yet: `landforsaleparaguay.com`'s
+ * DNS is unconfirmed (CLAUDE.md, "Domains"). `alquiler.com.py` is disabled
+ * (domain taken, S6); it stays listed as a guard if it is ever re-enabled
+ * before a replacement domain is live. Checking them would alert on every run. Remove a host from
  * this list the day its DNS points at the app.
  */
 const NOT_LIVE_YET: ReadonlySet<string> = new Set(["alquiler.com.py", "landforsaleparaguay.com"]);

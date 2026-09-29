@@ -325,10 +325,15 @@ check(
 
 const rentHome = languageAlternates({ path: "/", scope: "site", family: "rental" });
 check(
-  "(b) the rental home map is its own two doors",
-  rentHome?.["es"] === "https://alquiler.com.py/" &&
-    rentHome?.["en"] === "https://rentparaguay.com/" &&
-    rentHome?.["x-default"] === "https://alquiler.com.py/",
+  "(b) alquiler.com.py is disabled (domain taken, S6): the rental home declares no alternates and names no alquiler host",
+  VERTICALS["alquiler.com.py"]?.enabled === false &&
+    (rentHome === undefined ||
+      Object.values(rentHome).every((u) => !u.includes("alquiler.com.py"))),
+  JSON.stringify(rentHome),
+);
+check(
+  "(b) …so rentparaguay.com stands alone: no es / x-default pointing at a domain nobody owns",
+  rentHome?.["es"] === undefined && rentHome?.["x-default"] === undefined,
   JSON.stringify(rentHome),
 );
 
@@ -455,7 +460,10 @@ check(
 console.log("\nrental doors: one page, one URL per language (R2)");
 
 const svcEn = RENTAL_SERVICES.find((s) => s.dictKey === "administracionAirbnb")!;
-const svcAlt = languageAlternates({
+// alquiler.com.py is disabled (S6), so these run against the synthetic table
+// `famDoors` above, where the Spanish rental door IS served: the pairing
+// machinery stays proven for the day a replacement domain is bought.
+const svcAlt = alternatesFor(famDoors, FAM_PRIMARY, {
   path: rentalPath("es", "services", svcEn),
   pathByLocale: rentalPathsByLocale("services", svcEn),
   scope: "site",
@@ -475,7 +483,7 @@ check(
 );
 
 for (const page of ["services", "about", "contact"] as const) {
-  const alt = languageAlternates({
+  const alt = alternatesFor(famDoors, FAM_PRIMARY, {
     path: rentalPath("es", page),
     pathByLocale: rentalPathsByLocale(page),
     scope: "site",
@@ -491,8 +499,9 @@ for (const page of ["services", "about", "contact"] as const) {
 
 check(
   "(r2) omitting pathByLocale still gives every locale the same path",
-  languageAlternates({ path: "/", scope: "site", family: "rental" })?.["en"] ===
-    "https://rentparaguay.com/",
+  alternatesFor(famDoors, FAM_PRIMARY, { path: "/", scope: "site", family: "rental" })?.[
+    "en"
+  ] === "https://rentparaguay.com/",
 );
 
 const esSlugs = RENTAL_SERVICES.map((s) => s.slug);
@@ -605,8 +614,8 @@ check(
 );
 
 check(
-  "(g) seven doors are served — four marketplace, two rental, one directory (D1)",
-  servedDoors(CANONICAL_HOST).length === 7,
+  "(g) six doors are served — four marketplace, one rental (rentparaguay.com), one directory; alquiler.com.py is disabled (S6)",
+  servedDoors(CANONICAL_HOST).length === 6,
   servedDoors(CANONICAL_HOST)
     .map((d) => d.host)
     .join(", "),

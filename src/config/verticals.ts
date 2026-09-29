@@ -127,11 +127,15 @@ export const VERTICALS: Record<string, VerticalConfig> = {
    * in the door's OWN language, so this door points at the Spanish primary and
    * rentparaguay.com at the English one).
    *
-   * `enabled: true` before DNS exists (§1 item 3): `resolveVertical()` ignores
-   * a disabled host, so a disabled door cannot be previewed with a `Host`
-   * header and `verify:seo` would only ever check a synthetic copy of it.
-   * Nothing reaches a visitor until the domain's DNS points at Hostinger —
-   * that is the go-live switch, not this flag.
+   * `enabled: false` since 2026-09-29 (decision S6): the domain turned out to
+   * be taken by another party, so nothing can ever point DNS at this app.
+   * Disabled, `resolveVertical()` ignores the host, and rentparaguay.com
+   * stands alone: a family emits hreflang only when two doors serve different
+   * locales, so it no longer advertises es / x-default alternates on a domain
+   * nobody here owns. When a replacement Spanish rental domain is bought:
+   * rename this host key, set `enabled: true`, update the redirect map in
+   * `next.config.ts` (`byHost`, the `localeMap("es")` entry), NOT_LIVE_YET in
+   * `src/lib/ops/live-check.ts` if DNS is not yet live, and CLAUDE.md.
    */
   "alquiler.com.py": {
     key: "alquiler",
@@ -140,7 +144,7 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     family: "rental",
     filters: { operation: ["alquiler", "alquiler_temporal"] },
     copy: "rental", // "tu próximo lugar" — never ownership language
-    enabled: true,
+    enabled: false,
     ownsListingDetail: false,
   },
   /**
