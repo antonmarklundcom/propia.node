@@ -1284,9 +1284,7 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
   // removed by the PR that flips that door (ownsCategories: false, or its
   // filters folded away) — the check below fails once an entry is no longer a
   // real duplicate, so this list can only shrink.
-  const KNOWN_DUPLICATE_DOORS = new Set<string>([
-    "rentparaguay.com", // removed by the PR that flips this door
-  ]);
+  const KNOWN_DUPLICATE_DOORS = new Set<string>([]);
 
   const liveOffenders = duplicateDoors(servedDoors(CANONICAL_HOST), CANONICAL_HOST);
   for (const host of liveOffenders) {
@@ -1306,7 +1304,11 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
 
   // Live table: only the doors flipped so far have the flag; the rest are
   // unset (= owns). Flip one door at a time, adding it here.
-  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com", "terreno.com.py"]);
+  const FLIPPED_CATEGORY_FEEDERS = new Set<string>([
+    "landforsaleparaguay.com",
+    "terreno.com.py",
+    "rentparaguay.com",
+  ]);
   check(
     "(n) the flag is false on exactly the flipped doors, unset on the rest",
     Object.entries(VERTICALS).every(([host, v]) =>
@@ -1436,6 +1438,37 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
       alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
         path: "/venta/luque/terrenos", scope: "category", family: "marketplace",
         servingHost: "terreno.com.py",
+      }) === undefined,
+    );
+  }
+
+  // S3(a): rentparaguay.com on the LIVE table.
+  {
+    const rent = VERTICALS["rentparaguay.com"];
+    const enOwner = categoryOwnerForLocale("en");
+    const target = (shape: CategoryShape, op: Op) => {
+      const p = equivalentCategoryPath(rent, shape, op);
+      return p === null ? null : `https://${enOwner}${p}`;
+    };
+    check(
+      "(n) S3: its rental city page canonicalises to the same path on the English owner",
+      target({ kind: "city", citySlug: "luque" }, "alquiler") === "https://realestateinparaguay.com/alquiler/luque",
+    );
+    check(
+      "(n) S3: its short-term city-type page keeps its own operation path",
+      target({ kind: "city-type", citySlug: "luque", type: "casa" }, "alquiler_temporal") ===
+        "https://realestateinparaguay.com/alquiler-temporal/luque/casas",
+    );
+    check(
+      "(n) S3: a sale page is empty on the rental door, so no equivalent (noindex)",
+      target({ kind: "city", citySlug: "luque" }, "venta") === null,
+    );
+    check("(n) S3: it owns no category pages, so includeCategories is false in its sitemap", !ownsCategoryPages(rent));
+    check(
+      "(n) S3: no category hreflang is emitted from rentparaguay.com",
+      alternatesFor(servedDoors(CANONICAL_HOST), CANONICAL_HOST, {
+        path: "/alquiler/luque", scope: "category", family: "rental",
+        servingHost: "rentparaguay.com",
       }) === undefined,
     );
   }

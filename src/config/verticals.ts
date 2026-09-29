@@ -195,6 +195,13 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "rental",
     enabled: true,
     ownsListingDetail: false,
+    // S3(a) (docs/plan-seo-doors-2026-09-27.md §6): its English rental grids
+    // canonicalise to the same path on realestateinparaguay.com and leave its
+    // sitemap; the services, /about and /contact pages stay its own. The
+    // plan's exception (old WordPress rental search traffic on this domain)
+    // reverses the direction for rentals only — check the old hosting stats
+    // before relying on the default.
+    ownsCategories: false,
   },
   /**
    * The realtor directory — a seller-first lead-gen door, not a second

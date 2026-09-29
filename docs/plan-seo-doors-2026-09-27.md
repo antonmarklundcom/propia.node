@@ -296,13 +296,13 @@ first. Revisit with six months of data (§9) rather than on day one.
 
 ## 7. Design — an `ownsCategories` flag, like `ownsListingDetail`
 
-> **Status: built, unset everywhere (PR2, 2026-09-29).** `ownsCategories`,
+> **Status: built and applied to all three feeders (PR2 2026-09-29; S1a, S3a 2026-09-30).** `ownsCategories`,
 > `src/lib/category-owner.ts`, `hostOwnsCategories()` /
 > `categoryCanonicalOrigin()`, the sitemap's `includeCategories`, hreflang scope
 > `"category"` and the `verify:seo` block (n) exist; only `landforsaleparaguay.com` has the flag set (S2), so
 > behaviour is unchanged elsewhere. The invariant runs with a `KNOWN_DUPLICATE_DOORS`
-> allowlist (terreno.com.py, rentparaguay.com; landforsaleparaguay.com was
-> flipped by S2 on 2026-09-29) that each flipping PR shrinks.
+> allowlist that each flipping PR shrinks: `landforsaleparaguay.com` (S2, 2026-09-29),
+> `terreno.com.py` (S1a) and `rentparaguay.com` (S3a) are now flipped, so it is empty.
 
 Same shape as the two ownership flags that exist, so it adds no new concept.
 
@@ -436,7 +436,8 @@ Finding the searches without Google tools:
 3. Flip one door at a time, smallest first: `landforsaleparaguay.com`
    (newest, least to lose) — **DONE 2026-09-29 (S2): `ownsCategories: false`
    on `landforsaleparaguay.com`, removed from `KNOWN_DUPLICATE_DOORS`, checks
-   in `verify:seo` block (n)** — then `terreno.com.py`, then the rental decision.
+   in `verify:seo` block (n)** — then `terreno.com.py` (**DONE, S1a**), then the rental
+   door (**DONE, S3a — default direction; the old-WordPress-traffic exception is still unchecked**).
    Each flip is one line in `verticals.ts` plus the matching `verify:seo`
    expectation, in its own PR.
 4. §4.5's site pages on the land doors, same mechanism.
