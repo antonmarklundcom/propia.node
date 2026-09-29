@@ -25,6 +25,28 @@ export interface CuotaResult {
   downPaymentGs: number;
 }
 
+/** The state programme that is approved per development, not per portal. */
+export const CHE_ROGA_CODE = "che_roga_pora";
+
+/**
+ * The programs a listing may be quoted against. Che Róga Porã is `active =
+ * false` sitewide (founder decision 2026-08-16: it is approved per
+ * development, so quoting it everywhere implied an eligibility nobody had
+ * established). A listing inside a project the operator marked approved
+ * (`projects.che_roga_approved`) gets it switched on **for that listing only**;
+ * every other listing sees the list exactly as stored. If the programme row
+ * does not exist there is nothing to switch on. This is the one place the rule
+ * lives: the nightly job, the admin toggle's recompute and the listing page's
+ * label all read it.
+ */
+export function programsForListing(
+  programs: FinancingProgram[],
+  opts: { cheRogaApproved: boolean },
+): FinancingProgram[] {
+  if (!opts.cheRogaApproved) return programs;
+  return programs.map((p) => (p.code === CHE_ROGA_CODE ? { ...p, active: true } : p));
+}
+
 /** French amortization: P·r / (1 − (1+r)^−n), r = monthly rate. */
 export function frenchAmortization(
   principal: number,

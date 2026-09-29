@@ -8,7 +8,7 @@ import {
   getListingByPublicId,
   getSimilarListings,
   getAgencyListings,
-  getBestFinancingProgram,
+  getFinancingProgramForListing,
   citySubtreeIds,
 } from "@/lib/queries";
 import {
@@ -365,7 +365,11 @@ export default async function ListingPage({ params }: Params) {
       ? getAgencyListings({ agencyId: listing.agencyId, excludeId: listing.id, limit: 4, vertical })
       : Promise.resolve([]),
     listing.operation === "venta" && cuota
-      ? getBestFinancingProgram()
+      ? getFinancingProgramForListing({
+          priceUsd: listing.priceUsd,
+          cuotaGs: listing.cuotaGs,
+          projectId: listing.projectId,
+        })
       : Promise.resolve(null),
     // Market context for the internal link module below — independent of the
     // three above, so it belongs inside this block, not before it.

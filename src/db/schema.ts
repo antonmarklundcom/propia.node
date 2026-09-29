@@ -465,6 +465,14 @@ export const projects = mysqlTable(
     deliveryDate: date("delivery_date"),
     descriptionEs: text("description_es"),
     heroImageUrl: varchar("hero_image_url", { length: 500 }),
+    /**
+     * Che Róga Porã is approved per development, not per portal (founder
+     * decision 2026-08-16), so the programme stays `active = false` sitewide and
+     * a project the operator marks approved here has it offered on its own
+     * listings only — `programsForListing()` in `src/lib/cuota.ts`. Default
+     * false: no existing project changes.
+     */
+    cheRogaApproved: boolean("che_roga_approved").notNull().default(false),
   },
   (t) => [index("idx_loc").on(t.locationId)],
 );

@@ -252,9 +252,18 @@ default, `--dry` first). It records itself as a revertible import job.
    line at all (AFD's 700M Gs cap). Applying it to a live database is two
    commands in order — `npm run seed:financing && npm run cron:cuotas` — the
    second clears cuotas still cached from the programme. **Per-project opt-in
-   is not built**: it needs a column on `projects` plus an `/admin/proyectos`
-   screen that does not exist yet. Flipping `active` back to `true` site-wide
-   is NOT the intended path.
+   (built, migration 0022, `MIGRATION REQUIRED`):** `projects.che_roga_approved`
+   (default false) and `/admin/proyectos` (super-admin only) mark a development
+   approved. `programsForListing()` in `src/lib/cuota.ts` is the one rule: a
+   listing inside an approved project is quoted with Che Róga switched on for
+   that listing only; everyone else sees the stored list. `cron:cuotas` applies
+   it, flipping the switch runs the same runner scoped to that project
+   (`runCuotas({ projectId })`) so the change shows at once, and the listing
+   page's financing box names the program it can reproduce from the cached cuota
+   (`getFinancingProgramForListing()`), falling back to the plain chip if it
+   cannot. Flipping `active` back to `true` site-wide is still NOT the intended
+   path. The programme row must exist (`npm run seed:financing`); the page
+   warns if not.
 
 8. **FSBO loop — the owner inbox and optional owner notification (PLAN.md D8)
    are done.** A listing published through `/publicar` has a working contact: the
@@ -850,6 +859,7 @@ that section no longer lists everything:
 | `drizzle/0019_fuzzy_ego.sql` | `deals`, `analytics_events`, `analytics_daily`, `lead_assignments.partner_note` / `reminded_at`, `users.telegram_chat_id` (`docs/plan-agency-2026-09-26.md` batch 2) | **yes, 2026-09-27** (founder: `db:status` → 0 pending, 20 applied, No drift) |
 | `drizzle/0020_dry_caretaker.sql` | the `web_vitals` table (page speed from real visitors, PR #244) | **no** — the founder applies it before merging #244; until then the beacon's inserts are dropped and `/admin/analitica` says "migración 0020 pendiente" |
 | `drizzle/0021_tiresome_newton_destine.sql` | `whatsapp_messages`, `whatsapp_contacts` (WhatsApp Cloud API inbox, `docs/log/whatsapp-inbox.md`) | **no** — founder applies before merging the WhatsApp PR; `db:migrate` also runs 0020 if still pending |
+| `drizzle/0022_watery_tomorrow_man.sql` | `projects.che_roga_approved` boolean NOT NULL DEFAULT false (Che Róga Porã per-project opt-in) | **no** — the founder applies it before merging that PR; until then the deployed code would 500 on every page that reads `projects` |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

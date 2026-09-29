@@ -14,6 +14,12 @@
  * the dry run counts exactly what the real run would change and names the first
  * few, rather than reporting a bare "ok".
  *
+ * **Che Róga Porã per project.** The programme is inactive sitewide; a listing
+ * whose project is marked approved (`projects.che_roga_approved`) is quoted with
+ * it switched on (`programsForListing()`). `projectId` narrows a run to one
+ * project's listings — the same pass over the same rows, used when the operator
+ * flips the switch so the change shows now rather than at the next full run.
+ *
  * Cache: this runner never calls `revalidateListings()`. Under `tsx` there is no
  * cache handler to call it on, and inside a server action the *action* owns that
  * call — see `src/lib/cache.ts`.
@@ -21,15 +27,15 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { listings, financingPrograms } from "@/db/schema";
-import { bestCuota, type FinancingProgram } from "@/lib/cuota";
+import { listings, financingPrograms, projects } from "@/db/schema";
+import { bestCuota, programsForListing, type FinancingProgram } from "@/lib/cuota";
 import { ENV_FALLBACK_USD_TO_PYG, getLatestFxRateRaw } from "@/lib/fx";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
 
 /** How many changed listings the notes name before collapsing to a count. */
 const SAMPLE = 10;
 
-export async function runCuotas(opts: OpsOptions): Promise<OpsResult> {
+export async function runCuotas(opts: OpsOptions & { projectId?: number }): Promise<OpsResult> {
   return opsRun("cron:cuotas", opts.dry, async (out) => {
     /**
      * `cron:fx`'s latest rate (raw, uncached — this runs outside the Next.js
@@ -73,8 +79,12 @@ export async function runCuotas(opts: OpsOptions): Promise<OpsResult> {
         operation: listings.operation,
         priceUsd: listings.priceUsd,
         cuotaGs: listings.cuotaGs,
+        cheRogaApproved: projects.cheRogaApproved,
       })
-      .from(listings);
+      .from(listings)
+      .leftJoin(projects, eq(projects.id, listings.projectId))
+      .where(opts.projectId != null ? eq(listings.projectId, opts.projectId) : undefined);
+    if (opts.projectId != null) out.note(`only project #${opts.projectId}`);
 
     out.count("avisos", rows.length);
     out.track("cambian", "sin_cambio", "cuota_borrada");
@@ -84,7 +94,7 @@ export async function runCuotas(opts: OpsOptions): Promise<OpsResult> {
       let cuotaGs: string | null = null;
       if (row.operation === "venta") {
         const priceGs = Number(row.priceUsd) * usdToPyg;
-        const result = bestCuota(priceGs, programs);
+        const result = bestCuota(priceGs, programsForListing(programs, { cheRogaApproved: row.cheRogaApproved === true }));
         cuotaGs = result ? result.monthlyGs.toString() : null;
       }
 

@@ -33,6 +33,8 @@ import {
 import type { Operation, PropertyType } from "./import/types";
 import { CACHE_TAGS, CACHE_TTL, singleFlight } from "./cache";
 import { logDegraded } from "./degrade";
+import { bestCuota, programsForListing, type FinancingProgram } from "./cuota";
+import { getUsdToPygRate } from "./fx";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import type { InventoryRow } from "./category-context";
 import { facetConds, verticalConds, publishedFacetWhere } from "./facet-sql";
@@ -1120,15 +1122,49 @@ export async function getProjectBySlug(slug: string) {
   return { ...row, units, otherProjects };
 }
 
-/** Best active financing program (lowest rate) — listing cuota module. */
-export async function getBestFinancingProgram() {
-  const [row] = await db
-    .select()
-    .from(financingPrograms)
-    .where(eq(financingPrograms.active, true))
-    .orderBy(asc(financingPrograms.annualRate))
-    .limit(1);
-  return row ?? null;
+/**
+ * The financing program behind a listing's cached cuota — the box on the
+ * listing page names it and prints its terms. It is the program the nightly job
+ * quoted, found by running the same pure rule (`programsForListing()` +
+ * `bestCuota()`) on the same inputs, so a project marked Che Róga Porã-approved
+ * shows Che Róga and every other listing shows what it always did.
+ *
+ * Null when the cuota cannot be reproduced right now (the exchange rate or a
+ * program changed since the cache was written): the page then shows the plain
+ * cuota chip rather than name a program it cannot confirm.
+ */
+export async function getFinancingProgramForListing(l: {
+  priceUsd: string | number;
+  cuotaGs: string | number | null;
+  projectId: number | null;
+}) {
+  if (l.cuotaGs == null) return null;
+  const [rows, project, usdToPyg] = await Promise.all([
+    db.select().from(financingPrograms),
+    l.projectId != null
+      ? db
+          .select({ cheRogaApproved: projects.cheRogaApproved })
+          .from(projects)
+          .where(eq(projects.id, l.projectId))
+          .limit(1)
+      : Promise.resolve([]),
+    getUsdToPygRate(),
+  ]);
+  const programs: FinancingProgram[] = rows.map((p) => ({
+    code: p.code,
+    name: p.name,
+    annualRate: Number(p.annualRate),
+    maxTermMonths: p.maxTermMonths,
+    maxAmountGs: p.maxAmountGs != null ? Number(p.maxAmountGs) : null,
+    minDownPct: Number(p.minDownPct),
+    active: p.active,
+  }));
+  const best = bestCuota(
+    Number(l.priceUsd) * usdToPyg,
+    programsForListing(programs, { cheRogaApproved: project[0]?.cheRogaApproved === true }),
+  );
+  if (!best || String(best.monthlyGs) !== String(Number(l.cuotaGs))) return null;
+  return rows.find((r) => r.code === best.programCode) ?? null;
 }
 
 /** Barrio choices reuse request-scoped location data. */

@@ -33,9 +33,11 @@ export type AdminEventAction =
   // the token counts /admin/ajustes sums into a monthly cost (src/lib/ai-reply.ts).
   | "ai.reply"
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
-  | "deal.delete";
+  | "deal.delete"
+  // Che Róga Porã approved / revoked for a project (app/admin/proyectos).
+  | "project.che_roga";
 
-export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting" | "email" | "whatsapp";
+export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting" | "email" | "whatsapp" | "project";
 
 type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 

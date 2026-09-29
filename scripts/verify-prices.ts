@@ -14,6 +14,10 @@
  *   5. The buyer-details block (`src/lib/buyer-details.ts`): empty answers
  *      write nothing, free text cannot forge a line, labels come from the
  *      door's dictionary.
+ *   6. Which financing programs a listing is quoted against
+ *      (`programsForListing()` / `bestCuota()`, `src/lib/cuota.ts`): Che Róga
+ *      Porã stays off sitewide and is switched on only for a project the
+ *      operator marked approved.
  *
  * Run: npm run verify:prices   (also part of npm run verify:local)
  */
@@ -33,6 +37,7 @@ import {
 } from "../src/lib/buyer-details";
 import { foreignBuyerEnquiry, usdFirstPrice } from "../src/design/sections";
 import { VERTICALS } from "../src/config/verticals";
+import { bestCuota, CHE_ROGA_CODE, frenchAmortization, programsForListing, type FinancingProgram } from "../src/lib/cuota";
 import { getDictionary } from "../src/i18n";
 
 let failures = 0;
@@ -150,6 +155,22 @@ eq("budget label below the first band", budgetLabel("lt50k", en, "en-US"), "Unde
 eq("budget label above the last band", budgetLabel("gt500k", en, "en-US"), "Over US$ 500,000");
 eq("Spanish labels and number locale", budgetLabel("50k-100k", es, "es-PY"), "US$ 50.000 – US$ 100.000");
 check("every budget band has a label", BUYER_BUDGETS.every((b) => budgetLabel(b, en, "en-US").length > 0));
+
+// Che Róga Porã per project. The seeded terms, with Che Róga inactive sitewide.
+const AFD: FinancingProgram = { code: "afd_primera_vivienda", name: "AFD", annualRate: 9, maxTermMonths: 300, maxAmountGs: 700_000_000, minDownPct: 10, active: true };
+const CHE: FinancingProgram = { code: CHE_ROGA_CODE, name: "Che Róga Porã", annualRate: 6.5, maxTermMonths: 360, maxAmountGs: 900_000_000, minDownPct: 0, active: false };
+const PROGRAMS = [AFD, CHE];
+const price = 500_000_000;
+eq("a normal listing is quoted against AFD only", bestCuota(price, programsForListing(PROGRAMS, { cheRogaApproved: false }))?.programCode, AFD.code);
+eq("an approved project's listing is quoted against Che Róga", bestCuota(price, programsForListing(PROGRAMS, { cheRogaApproved: true }))?.programCode, CHE_ROGA_CODE);
+check("Che Róga's payment is the lower one for the same price", (bestCuota(price, programsForListing(PROGRAMS, { cheRogaApproved: true }))?.monthlyGs ?? Infinity) < (bestCuota(price, PROGRAMS)?.monthlyGs ?? 0));
+eq("the stored list is never mutated (still inactive)", CHE.active, false);
+eq("the not-approved list is the stored list itself", programsForListing(PROGRAMS, { cheRogaApproved: false }), PROGRAMS);
+eq("approval without a Che Róga row changes nothing", programsForListing([AFD], { cheRogaApproved: true }), [AFD]);
+eq("above AFD's cap only an approved project gets a cuota", [bestCuota(800_000_000, programsForListing(PROGRAMS, { cheRogaApproved: false })), bestCuota(800_000_000, programsForListing(PROGRAMS, { cheRogaApproved: true }))?.programCode], [null, CHE_ROGA_CODE]);
+eq("above every cap nobody gets one", bestCuota(2_000_000_000, programsForListing(PROGRAMS, { cheRogaApproved: true })), null);
+eq("the quote is the French amortization of the financed amount", bestCuota(price, programsForListing(PROGRAMS, { cheRogaApproved: true }))?.monthlyGs, Math.round(frenchAmortization(price, 6.5, 360)));
+eq("a programme deactivated in the table stays off for an unapproved project even if named", bestCuota(price, programsForListing([{ ...AFD, active: false }, CHE], { cheRogaApproved: false })), null);
 
 console.log(failures === 0 ? "\nprices: all checks passed\n" : `\nprices: ${failures} check(s) FAILED\n`);
 process.exit(failures === 0 ? 0 : 1);

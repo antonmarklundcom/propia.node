@@ -4,6 +4,7 @@ import { esInbox } from "@/i18n/es-e2";
 import { esAgency } from "@/i18n/es-agency";
 import { esAnalytics } from "@/i18n/es-analytics";
 import { esDeals } from "@/i18n/es-deals";
+import { esProjects } from "@/i18n/es-projects";
 
 /**
  * The /admin tabs, with the active one flagged and the review count badged.
@@ -21,6 +22,7 @@ export function adminTabs(
     | "users"
     | "listings"
     | "quality"
+    | "projects"
     | "google"
     | "leads"
     | "deals"
@@ -97,6 +99,14 @@ export function adminTabs(
       label: "Guías y notas",
       count: draftPostCount,
       active: active === "posts",
+    },
+    {
+      // Super-admin only, like Calidad: PanelBar's staff allowlist leaves it out
+      // and the page guards itself.
+      href: "/admin/proyectos",
+      group: "manage",
+      label: esProjects.tab,
+      active: active === "projects",
     },
     {
       href: "/admin/importar",

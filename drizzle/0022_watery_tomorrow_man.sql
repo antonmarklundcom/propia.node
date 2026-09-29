@@ -1,0 +1,1 @@
+ALTER TABLE `projects` ADD `che_roga_approved` boolean DEFAULT false NOT NULL;
