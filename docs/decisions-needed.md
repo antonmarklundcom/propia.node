@@ -354,3 +354,31 @@ Shipped with both switches OFF (`/admin/ajustes`). Decide before turning on:
 3. **Wording** of the three texts (`esWhatsApp.auto` in `src/i18n/es-whatsapp.ts`):
    first-contact greeting, out-of-hours greeting, hand-off line.
 
+
+## 2026-09-30 — Listing expiry reminders: there is no "expiry" yet (founder)
+
+The request was "email the owner/agent N days before a listing expires". Nothing
+in the product defines an expiry: `listings` has no `expires_at`, no renewal
+action, and `featured_until` is paid placement, not listing life. Building the
+reminder means first inventing the rule, which is a policy a visitor and a
+realtor are told, so it was **not built**. Decide:
+
+1. **Does a listing expire at all?** If yes, after how long — N days from
+   `published_at`, or from the last owner/agent edit (`updated_at`)? Partner
+   agencies with a 300-listing catalogue may not want the same clock as an FSBO
+   owner; a per-plan value is possible.
+2. **What happens at expiry?** Paused (recommended: reversible, like
+   `cron:resync`), or removed? And who can renew — one click in `/mis-avisos` /
+   `/agencia`? (The renew action does not exist yet either.)
+3. **Reminder lead time** (N days, e.g. 7 and 1) and whether imported listings
+   (`listing_sources`, refreshed by `cron:resync`) are exempt.
+4. **Wording** of the email and of the public policy line ("los avisos vencen a
+   los … días").
+
+Build notes for whoever picks it up once decided: it needs a marker to be
+idempotent — a `listings.expires_at` (and `expiry_reminded_at`) column, i.e. a
+`MIGRATION REQUIRED —` PR that an agent must not merge. Runner as
+`src/lib/ops/expiry-reminders.ts` (`cron:expiry`, `--dry`), called from
+`src/lib/cron-tick.ts` via `daily()`, mail through `src/lib/email.ts` (silent
+no-op without Cloudflare vars), copy in `esEmail`/`enEmail`, recipient chain
+agent → agency → owner like the lead routing.
