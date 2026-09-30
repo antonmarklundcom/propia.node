@@ -11,7 +11,8 @@ import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
 import { countUnreadInbox } from "@/lib/inbox";
-import { approveAction, rejectAction } from "./actions";
+import { approveAction, approveManyAction, rejectAction, rejectManyAction } from "./actions";
+import { ReviewSelectAll } from "@/components/panel/ReviewSelectAll";
 
 export const metadata: Metadata = {
   title: `Cola de revisión`,
@@ -26,7 +27,25 @@ const OPERATION_LABEL: Record<string, string> = {
   alquiler_temporal: "Alquiler temporal",
 };
 
-export default async function AdminReviewPage() {
+const BULK_FORM = "bulk-review";
+
+export default async function AdminReviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ bulk?: string; n?: string }>;
+}) {
+  const { bulk, n: nParam } = await searchParams;
+  const n = Math.max(0, Math.min(100, Number(nParam) || 0));
+  const bulkFlash =
+    bulk === "approved" && n > 0
+      ? { text: esPanel.bulkFlash.approved(n), error: false }
+      : bulk === "rejected" && n > 0
+        ? { text: esPanel.bulkFlash.rejected(n), error: false }
+        : bulk === "none"
+          ? { text: esPanel.bulkFlash.none, error: true }
+          : bulk === "reason"
+            ? { text: esPanel.bulkFlash.reason, error: true }
+            : null;
   const user = await requireStaffOrAbove();
   const [queue, recentLeads, unreadEmail, health] = await Promise.all([
     getReviewQueue(),
@@ -55,6 +74,30 @@ export default async function AdminReviewPage() {
 
         <h2 className="panel-section__title">{esPanel.adminReviewTitle}</h2>
 
+        {bulkFlash ? (
+          <p className={bulkFlash.error ? "auth-error" : "panel-flash"}>{bulkFlash.text}</p>
+        ) : null}
+
+        {/* One bulk form for the whole queue. The cards hold their own approve /
+            reject forms, so their checkboxes join this one by `form=`. */}
+        {queue.length > 0 && isSuperAdmin(user.role) ? (
+          <form id={BULK_FORM} className="panel-form panel-card">
+            <ReviewSelectAll label={esPanel.bulkSelectAll} />
+            <label className="panel-form__field" style={{ flexBasis: "320px", flexGrow: 1 }}>
+              <span className="auth-field__label">{esPanel.bulkReasonLabel}</span>
+              <textarea className="auth-field__input" name="reason" rows={2} maxLength={280} />
+            </label>
+            <div className="panel-form__field panel-form__field--action">
+              <button className="panel-btn panel-btn--primary" type="submit" formAction={approveManyAction}>
+                {esPanel.bulkApprove}
+              </button>{" "}
+              <button className="panel-btn panel-btn--danger" type="submit" formAction={rejectManyAction}>
+                {esPanel.bulkReject}
+              </button>
+            </div>
+          </form>
+        ) : null}
+
         {queue.length === 0 ? (
           <p className="panel-empty">{esPanel.adminReviewEmpty}</p>
         ) : (
@@ -62,7 +105,19 @@ export default async function AdminReviewPage() {
             <article className="panel-card" key={row.id}>
               <div className="panel-card__head">
                 <div>
-                  <h3 className="panel-card__title">{row.title}</h3>
+                  <h3 className="panel-card__title">
+                    {isSuperAdmin(user.role) ? (
+                      <input
+                        type="checkbox"
+                        name="listingIds"
+                        value={row.id}
+                        form={BULK_FORM}
+                        aria-label={`${esPanel.bulkSelectListing}: ${row.title}`}
+                        style={{ marginRight: 8 }}
+                      />
+                    ) : null}
+                    {row.title}
+                  </h3>
                   <div className="panel-card__meta">
                     <span>{OPERATION_LABEL[row.operation] ?? row.operation}</span>
                     <span>{PROPERTY_TYPE_LABELS[row.propertyType]}</span>
