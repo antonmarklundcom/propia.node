@@ -766,10 +766,13 @@ export const esPanel = {
     name: string | null;
     whatsapp: string;
     listingTitle: string | null;
+    /** Foreign-buyer answers as one short line (already in the visitor's language). */
+    buyerDetails?: string | null;
   }) =>
     [
       `${ALERT_LEAD_TYPE[params.leadType] ?? params.leadType} · ${params.name ?? "Sin nombre"} (${params.whatsapp})`,
       params.listingTitle ? `Aviso: ${params.listingTitle}` : null,
+      params.buyerDetails ? `Datos del comprador: ${params.buyerDetails}` : null,
     ]
       .filter(Boolean)
       .join(" — "),

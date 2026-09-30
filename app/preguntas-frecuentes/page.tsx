@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { faqAll, faqSections } from "@/config/faq";
@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${TITLE}`,
     description: DESCRIPTION(brand),
-    alternates: { canonical: `${await siteOrigin()}/preguntas-frecuentes` },
+    alternates: { canonical: `${await sitePageOrigin("/preguntas-frecuentes")}/preguntas-frecuentes` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand), images: doorOgImages(brand) },
   };
 }
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function FaqPage() {
   const brand = await brandName();
   const sections = faqSections(brand);
-  const origin = await siteOrigin();
+  const origin = await sitePageOrigin("/preguntas-frecuentes");
 
   return (
     <main>

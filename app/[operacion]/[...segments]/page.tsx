@@ -47,10 +47,8 @@ import {
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import {
   siteOrigin,
-  hostOwnsCategories,
-  categoryCanonicalOrigin,
+  categoryCanonicalFor,
 } from "@/lib/origin";
-import { equivalentCategoryPath } from "@/lib/category-owner";
 import { orDegraded } from "@/lib/degrade";
 import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { JsonLd } from "@/components/JsonLd";
@@ -289,21 +287,16 @@ export async function generateMetadata({
   // canonicalises to the EQUIVALENT page on the door that does — the same
   // listing set — and a page with no single equivalent stays self-canonical
   // and noindex. Unset everywhere today: every door owns its own.
-  let canonicalOrigin = await siteOrigin();
-  let canonicalPath = r.canonicalPath;
-  let noEquivalent = false;
-  if (!(await hostOwnsCategories())) {
-    const shape = parseCategorySegments(segments);
-    const equivalent = shape
-      ? equivalentCategoryPath(vertical, shape, r.operation)
-      : null;
-    if (equivalent) {
-      canonicalOrigin = await categoryCanonicalOrigin();
-      canonicalPath = equivalent;
-    } else {
-      noEquivalent = true;
-    }
-  }
+  // An evergreen page's OWNER door outranks the flag in both directions
+  // (`categoryTarget()`, category-owner.ts): the owner stays self-canonical
+  // even with `ownsCategories: false`, and the other doors serving the same
+  // set point at it.
+  const shape = parseCategorySegments(segments);
+  const target = await categoryCanonicalFor(shape, r.operation, r.canonicalPath);
+  const noEquivalent = target === null;
+  const canonicalOrigin = target?.origin ?? (await siteOrigin());
+  const canonicalPath = target?.path ?? r.canonicalPath;
+  const delegated = !!target?.delegated;
   const canonical =
     page > 1 && !userFiltered
       ? `${canonicalOrigin}${canonicalPath}?page=${page}`
@@ -314,12 +307,13 @@ export async function generateMetadata({
   // its translation asks Google to weigh a page we asked it to ignore.
   const indexed =
     ix.state === "index" && page === 1 && !userFiltered && !noEquivalent;
+  // A page whose canonical is elsewhere is not itself a language version.
   // An evergreen page is indexed below the count rule, where its other-
   // language version (which follows the ordinary rule) may be a 404: pair
   // it only while the count alone would have indexed it too — or when every
   // version in the set is itself evergreen on its door, so each one is a
   // 200, indexable page whatever its stock.
-  const languages = indexed
+  const languages = indexed && !delegated
     ? await pageLanguageAlternates({
         path: r.canonicalPath,
         scope: "category",

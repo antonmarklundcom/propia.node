@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { formatGs } from "@/lib/format";
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${TITLE}`,
     description: DESCRIPTION,
-    alternates: { canonical: `${await siteOrigin()}/financiamiento` },
+    alternates: { canonical: `${await sitePageOrigin("/financiamiento")}/financiamiento` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION, images: doorOgImages(brand) },
   };
 }
@@ -100,7 +100,7 @@ const FAQ = [
 
 export default async function FinanciamientoPage() {
   const [origin, programs] = await Promise.all([
-    siteOrigin(),
+    sitePageOrigin("/financiamiento"),
     listFinancingPrograms(),
   ]);
 

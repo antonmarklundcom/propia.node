@@ -1,5 +1,7 @@
 import "server-only";
-import { VERTICALS } from "@/config/verticals";
+import { CANONICAL_HOST, MARKETPLACE_PRIMARY_HOST, VERTICALS } from "@/config/verticals";
+import { EVERGREEN_PAGES } from "@/content/evergreen";
+import { evergreenOwnersByLocale } from "./category-owner";
 import { currentVertical } from "./vertical-context";
 import { languageAlternates, type AlternateInput } from "./alternates";
 
@@ -11,11 +13,21 @@ import { languageAlternates, type AlternateInput } from "./alternates";
  * verify:seo — the same split as brand.ts / brand-server.ts.
  */
 export async function pageLanguageAlternates(
-  input: Omit<AlternateInput, "servingHost">,
+  input: Omit<AlternateInput, "servingHost" | "ownerHostByLocale">,
 ): Promise<Record<string, string> | undefined> {
   const vertical = await currentVertical();
   const servingHost = Object.entries(VERTICALS).find(
     ([, config]) => config.key === vertical.key,
   )?.[0];
-  return languageAlternates({ ...input, servingHost });
+  // A category page's evergreen owner speaks for its locale (see
+  // AlternateInput.ownerHostByLocale), so hreflang names the URL that the
+  // other doors canonicalise to.
+  const ownerHostByLocale =
+    input.scope === "category"
+      ? evergreenOwnersByLocale(VERTICALS, input.path, EVERGREEN_PAGES, [
+          MARKETPLACE_PRIMARY_HOST,
+          CANONICAL_HOST,
+        ])
+      : undefined;
+  return languageAlternates({ ...input, servingHost, ownerHostByLocale });
 }

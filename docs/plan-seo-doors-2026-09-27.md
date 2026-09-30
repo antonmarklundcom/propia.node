@@ -296,13 +296,11 @@ first. Revisit with six months of data (§9) rather than on day one.
 
 ## 7. Design — an `ownsCategories` flag, like `ownsListingDetail`
 
-> **Status: built, unset everywhere (PR2, 2026-09-29).** `ownsCategories`,
+> **Status: built; set to `false` on the three feeders (S2, S1(a), S3(a), 2026-09-29), unset elsewhere.** `ownsCategories`,
 > `src/lib/category-owner.ts`, `hostOwnsCategories()` /
 > `categoryCanonicalOrigin()`, the sitemap's `includeCategories`, hreflang scope
-> `"category"` and the `verify:seo` block (n) exist; only `landforsaleparaguay.com` has the flag set (S2), so
-> behaviour is unchanged elsewhere. The invariant runs with a `KNOWN_DUPLICATE_DOORS`
-> allowlist (terreno.com.py, rentparaguay.com; landforsaleparaguay.com was
-> flipped by S2 on 2026-09-29) that each flipping PR shrinks.
+> `"category"` and the `verify:seo` block (n) exist; behaviour is unchanged on every door not flipped. The invariant runs with a `KNOWN_DUPLICATE_DOORS`
+> allowlist that each flipping PR shrank; empty since S3(a) (2026-09-29).
 
 Same shape as the two ownership flags that exist, so it adds no new concept.
 
@@ -436,10 +434,10 @@ Finding the searches without Google tools:
 3. Flip one door at a time, smallest first: `landforsaleparaguay.com`
    (newest, least to lose) — **DONE 2026-09-29 (S2): `ownsCategories: false`
    on `landforsaleparaguay.com`, removed from `KNOWN_DUPLICATE_DOORS`, checks
-   in `verify:seo` block (n)** — then `terreno.com.py`, then the rental decision.
+   in `verify:seo` block (n)** — then `terreno.com.py` — **DONE 2026-09-29 (S1(a)): `ownsCategories: false`, removed from `KNOWN_DUPLICATE_DOORS`, `verify:seo` block (n) S1 checks; its 9 evergreen land pages stay owned by it and the marketplace's copies canonicalise to it (`categoryTarget()`, `docs/decisions-needed.md` 2026-09-29)** — then the rental decision — **DONE 2026-09-29 (S3(a)): `ownsCategories: false` on `rentparaguay.com`; its English rental grids canonicalise to the same path on `realestateinparaguay.com` (which also owns the English rental evergreen pages), out of its sitemap, no hreflang; `KNOWN_DUPLICATE_DOORS` is now empty; `verify:seo` block (n) S3 checks**.
    Each flip is one line in `verticals.ts` plus the matching `verify:seo`
    expectation, in its own PR.
-4. §4.5's site pages on the land doors, same mechanism.
+4. §4.5's site pages on the land doors, same mechanism — **DONE 2026-09-29 (S4(a)): the sibling flag `ownsSitePages: false` on `terreno.com.py`, `landforsaleparaguay.com` and (found to submit the same pages in its sitemap, contrary to §4.5) `rentparaguay.com`; `src/lib/site-page-owner.ts`, `sitePageOrigin()`, sitemap `includeSitePages`, `verify:seo` block (o)**.
 5. The feeders' unique pages (§8), one PR per page type, each with its
    threshold and its own sitemap entry on its own door only.
 6. Measure with what the site already sees, not with Google: search-engine

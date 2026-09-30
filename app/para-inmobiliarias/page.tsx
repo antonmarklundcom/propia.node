@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { getPortalStats } from "@/lib/directory-queries";
@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${c.title}`,
     description: c.description(brand),
-    alternates: { canonical: `${await siteOrigin()}/para-inmobiliarias` },
+    alternates: { canonical: `${await sitePageOrigin("/para-inmobiliarias")}/para-inmobiliarias` },
     openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand), images: doorOgImages(brand) },
   };
 }
@@ -121,7 +121,7 @@ export default async function ParaInmobiliariasPage() {
   ];
 
   const brand = await brandName();
-  const [origin, stats] = await Promise.all([siteOrigin(), getPortalStats()]);
+  const [origin, stats] = await Promise.all([sitePageOrigin("/para-inmobiliarias"), getPortalStats()]);
 
   return (
     <main>

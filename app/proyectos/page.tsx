@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ProjectCard } from "@/components/ProjectCard";
@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: c.metaTitle,
     description: c.description,
-    alternates: { canonical: `${await siteOrigin()}/proyectos` },
+    alternates: { canonical: `${await sitePageOrigin("/proyectos")}/proyectos` },
     openGraph: { title: `${c.title} — ${brand}`, description: c.description, images: doorOgImages(brand) },
   };
 }
@@ -61,7 +61,7 @@ export default async function ProyectosPage() {
   const numberLocale = numberLocaleFor(await currentLocale());
   const c = (await dict()).projectsPage;
   const [origin, projects, developers] = await Promise.all([
-    siteOrigin(),
+    sitePageOrigin("/proyectos"),
     listAllProjects(),
     getFeaturedDevelopers(12),
   ]);

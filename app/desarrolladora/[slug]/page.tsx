@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ProjectCard } from "@/components/ProjectCard";
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${developer.name} — proyectos en Paraguay`,
     description,
     alternates: {
-      canonical: `${await siteOrigin()}/desarrolladora/${developer.slug}`,
+      canonical: `${await sitePageOrigin(`/desarrolladora/${developer.slug}`)}/desarrolladora/${developer.slug}`,
     },
     // A developer with no published project is a thin page — render it for
     // whoever has the link, but keep it out of the index (same rule as the
@@ -49,7 +49,7 @@ export default async function DesarrolladoraPage({ params }: Params) {
   const r = await resolve(slug);
   if (!r) notFound();
   const { developer, projects } = r;
-  const origin = await siteOrigin();
+  const origin = await sitePageOrigin(`/desarrolladora/${developer.slug}`);
 
   const totalUnits = projects.reduce((n, p) => n + p.availableUnits, 0);
   const waHref = waLink(

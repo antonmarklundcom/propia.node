@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { imageThumbUrl } from "@/lib/format";
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: c.metaTitle,
     description: c.description(brand),
-    alternates: { canonical: `${await siteOrigin()}/guias` },
+    alternates: { canonical: `${await sitePageOrigin("/guias")}/guias` },
     openGraph: { title: `${c.title} — ${brand}`, description: c.description(brand), images: doorOgImages(brand) },
   };
 }
@@ -85,7 +85,7 @@ async function PostTile({ post, featured }: { post: PostCard; featured?: boolean
 export default async function GuiasPage() {
   const c = (await dict()).guidesPage;
   const [origin, posts] = await Promise.all([
-    siteOrigin(),
+    sitePageOrigin("/guias"),
     currentLocale().then((locale) => listPublishedPosts(locale)),
   ]);
 

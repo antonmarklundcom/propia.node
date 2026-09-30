@@ -355,6 +355,91 @@ Shipped with both switches OFF (`/admin/ajustes`). Decide before turning on:
    first-contact greeting, out-of-hours greeting, hand-off line.
 
 
+## 2026-09-29 — terreno.com.py's evergreen land pages vs the S1(a) flip
+
+Decision S1(a) made `terreno.com.py` a category feeder (its grids canonicalise
+to `inmobiliaria.com.py`). But founder decision S9 made it the SEO owner of 9
+evergreen land pages (`/venta/<ciudad>/terrenos`: Aregua, Capiata, Ciudad del
+Este, Encarnacion, Itagua, Limpio, Luque, San Bernardino, Ypacarai), which are
+also the very paths `inmobiliaria.com.py` serves for the same rows. The two
+decisions collide on those paths.
+
+**Chosen (conservative, implemented):** S9 wins on those 9 paths. Evergreen
+ownership outranks `ownsCategories`: `terreno.com.py` keeps them
+(self-canonical, indexable at any stock, in its sitemap, hreflang paired with
+`realestateinparaguay.com`), and `inmobiliaria.com.py`'s copies canonicalise to
+`terreno.com.py`, leave its sitemap and emit no hreflang. Terreno's untyped
+city page canonicalises straight to the owned typed page. Every other land
+grid canonicalises to `inmobiliaria.com.py` as S1(a) says.
+
+**Open for the founder:** is that the intended split? The alternative is to
+let S1(a) win everywhere and move the 9 pages to `inmobiliaria.com.py`
+(re-`door` the content files, land authority builds on the marketplace
+domain). Reversing is a `door` change per file, no code. Watch the 9 pages in
+`/admin/google` for a few weeks before deciding.
+
+
+## 2026-09-29 — rentparaguay.com's rental grids (S3(a)): two edge cases to know
+
+`rentparaguay.com`'s English rental grids now canonicalise to the same path on
+`realestateinparaguay.com` (decision S3(a), the plan's default). Two things
+the flip leaves as they are, for the founder to confirm:
+
+1. **Count mismatch on the target.** `rentparaguay.com` does not apply
+   `foreign_exposure`, the owner does, so the owner's set is a subset of the
+   rental door's. A grid with 3+ rows on `rentparaguay.com` but fewer than 3
+   on the owner (a seller opted out of foreign exposure) canonicalises to an
+   owner page that is thin/noindex — the same edge S2 and S1(a) have. It only
+   bites when opted-out listings are the difference; decision S7 (apply
+   `foreign_exposure` to the rental door too) would close it.
+2. **`alquiler.com.py` stays `ownsCategories`-unset.** It is disabled (S6), so
+   nothing serves it and `verify:seo` does not count it. If a Spanish rental
+   domain is ever enabled, its grids duplicate `inmobiliaria.com.py`'s: set
+   `ownsCategories: false` on it in the same change (the invariant will fail
+   until then).
+
+Not changed by this flip, and worth a later look: the `/alquiler` and
+`/alquiler-temporal` hub pages on `rentparaguay.com` stay self-canonical (the
+hub is not a category page), and the rental door's sitemap builder still
+emits price, project and guide pages (`sitemap.ts` sections 3, 6, 7 gate only
+on `servesMarketplace`, which is true for the rental family) although the
+plan (section 4.5) says it does not. Verify on the live sitemap before S4's
+scope is finalised.
+
+
+## 2026-09-29 — Land doors' copies of guides, prices and projects (S4(a))
+
+Done as the plan recommends (S4(a)): on `terreno.com.py`,
+`landforsaleparaguay.com` and `rentparaguay.com` the marketplace's guides,
+price pages, project/developer pages and explainers (financing, FAQ, how it
+works, data, appraisal, plans, for-agencies) canonicalise to the same path on
+`inmobiliaria.com.py` / `realestateinparaguay.com` and leave those doors'
+sitemaps. Their home, operation hubs, category pages, `/nosotros`,
+`/contacto`, `/terminos` and `/privacidad` stay their own.
+
+Judgement calls to confirm:
+
+1. **`rentparaguay.com` was included.** The plan (4.5) says the rental doors
+   do not copy the marketplace's site pages, but `sitemap.ts` submitted price,
+   project, developer and guide pages for every door with marketplace pages
+   (the rental family included), and the routes render on it. Delegating them
+   is one line in `verticals.ts` (`ownsSitePages`) to undo.
+2. **Land-specific guides.** Guides are database rows (`posts`) with no door
+   column, so nothing in the code can tell a land-only guide ("como comprar un
+   terreno") from a general one. Under S4(a) every guide is credited to the
+   marketplace, including any that only make sense to a land buyer. If the
+   founder wants `terreno.com.py` / `landforsaleparaguay.com` to own some
+   guides, that needs a per-post owner (a `posts` column, so a migration and a
+   founder-run `db:migrate`) — not started. Until then a land guide is
+   canonical on the marketplace, where its `pagesForGuide()` links to the
+   marketplace's evergreen pages.
+3. **`/nosotros`, `/terminos`, `/privacidad` stay self-canonical** on every
+   door: they name the door as the operator, so they are that door's own page
+   even though the wording overlaps. Say if you would rather delegate them.
+4. **`/financiamiento` and `/preguntas-frecuentes` on the English door** carry
+   the wording awaiting the founder's signature (CLAUDE.md, #180); nothing
+   changes there, they are just now the owner's page only.
+
 ## 2026-09-30 — Listing expiry reminders: there is no "expiry" yet (founder)
 
 The request was "email the owner/agent N days before a listing expires". Nothing

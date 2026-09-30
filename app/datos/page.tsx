@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { citiesWithPrices } from "@/lib/precios-queries";
@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${TITLE} de Paraguay`,
     description: DESCRIPTION,
-    alternates: { canonical: `${await siteOrigin()}/datos` },
+    alternates: { canonical: `${await sitePageOrigin("/datos")}/datos` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION, images: doorOgImages(brand) },
   };
 }
@@ -61,7 +61,7 @@ const TOOLS = [
  */
 export default async function DatosPage() {
   const [origin, priceCities, programs, stats] = await Promise.all([
-    siteOrigin(),
+    sitePageOrigin("/datos"),
     citiesWithPrices(),
     listFinancingPrograms(),
     getPortalStats(),

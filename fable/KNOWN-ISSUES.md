@@ -6,15 +6,14 @@ it; none of them blocks a phase.
 
 ## Open
 
-- **Foreign-buyer details are not in the operator's go-look alerts (2026-09-27).**
-  The English doors' enquiry answers are folded into `leads.message`
-  (`app/api/leads/route.ts`, `src/lib/buyer-details.ts`), so they reach
-  `/admin/leads`, `/agencia/leads`, `/mis-avisos/consultas`, VenderCRM and the
-  generic webhook's `lead` event. `alertOperator()`'s Telegram / email /
-  `operator_alert` text is built from `esPanel.alertNewLeadDetail` (type, name,
-  WhatsApp, listing) and never included the message, so it does not carry them
-  either; the owner email and the partner share email leave the message out on
-  purpose. Fix, if wanted: pass the details block into `alertNewLeadDetail`.
+
+- **Resolved 2026-09-29: foreign-buyer details in the operator's go-look
+  alerts.** `sendLeadCopies()` now takes the details block and
+  `esPanel.alertNewLeadDetail` appends it as one line ("Datos del comprador:
+  …", newlines folded to " · ", cut at 220 characters by
+  `buyerDetailsAlertText()`), so Telegram, `OPERATOR_EMAIL` and the
+  `operator_alert` text carry it. The owner email and partner share email still
+  leave the message out on purpose. Checked in `verify:prices`.
   (`/comparar`'s price row and the category map's pins went US$-first on the
   English doors on 2026-09-27, `claude/usd-first-compare-map`.)
 

@@ -3,6 +3,7 @@ import {
   hostOwnsListingDetail,
   hostOwnsDirectory,
   hostOwnsCategories,
+  hostOwnsSitePages,
 } from "@/lib/origin";
 import { currentVertical } from "@/lib/vertical-context";
 import {
@@ -34,18 +35,20 @@ export async function GET(
   if (!match) return new Response("Not found", { status: 404 });
   const chunk = Number(match[1]);
 
-  const [origin, ownsListingDetail, ownsDirectory, ownsCategories, vertical] =
+  const [origin, ownsListingDetail, ownsDirectory, ownsCategories, ownsSitePages, vertical] =
     await Promise.all([
       siteOrigin(),
       hostOwnsListingDetail(),
       hostOwnsDirectory(),
       hostOwnsCategories(),
+      hostOwnsSitePages(),
       currentVertical(),
     ]);
   const entries = await sitemapEntries(
     ownsListingDetail,
     ownsDirectory,
     ownsCategories,
+    ownsSitePages,
     vertical.key,
   );
 
