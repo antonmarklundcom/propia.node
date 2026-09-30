@@ -32,6 +32,7 @@
     "cron:fx": "tsx --tsconfig scripts/tsconfig.json scripts/fetch-fx.ts",
     "crm:backfill": "tsx --tsconfig scripts/tsconfig.json scripts/crm-backfill.ts",
     "cron:price-usd": "tsx --tsconfig scripts/tsconfig.json scripts/recompute-price-usd.ts",
+    "cron:saved-searches": "tsx --tsconfig scripts/tsconfig.json scripts/saved-searches.ts",
     "cron:lead-digest": "tsx --tsconfig scripts/tsconfig.json scripts/lead-digest.ts",
     "cron:reminders": "tsx --tsconfig scripts/tsconfig.json scripts/partner-reminders.ts",
     "verify:import": "tsx --tsconfig scripts/tsconfig.json scripts/verify-import.ts",

@@ -468,6 +468,16 @@ default, `--dry` first). It records itself as a revertible import job.
     only, silent with no channel configured. Partner-lane leads are excluded on
     purpose (nobody marks them, they would repeat every day).
 
+22. **Saved searches + email alerts (2026-09-30, migration 0022 `saved_searches`).**
+    Form under category results (`SaveSearch`, only while `isEmailConfigured()`)
+    → `POST /api/alertas` → confirmation mail → `/alertas?token=` (confirm and
+    unsubscribe are buttons, never link clicks). `src/lib/saved-searches.ts` is
+    the only module on the table; criteria are slugs + numbers in
+    `saved-search-criteria.ts` (pure, in `verify:facets`). `cron:saved-searches`
+    (daily from the tick, `--dry`) mails listings published after
+    `coalesce(last_sent_at, confirmed_at)` and moves the cursor only when the
+    mail was accepted. The door's own `filters` narrow every alert.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

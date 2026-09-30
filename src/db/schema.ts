@@ -1347,3 +1347,48 @@ export const whatsappContacts = mysqlTable("whatsapp_contacts", {
   createdAt: createdAt(),
   updatedAt: datetime("updated_at"),
 });
+
+/* ------------------------------------------------------------------ */
+/* 2.12 Saved searches (email alerts for new matching listings)        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A visitor's saved search: the facets of `src/lib/facets.ts` (as slugs and
+ * numbers, never resolved ids — a location can be re-seeded) plus an email.
+ * No account: the address is unverified until the visitor opens the link we
+ * send (`confirmed_at`), and every message carries a `token` link to leave.
+ *
+ * `last_sent_at` is the alert cursor: the job emails listings published after
+ * `coalesce(last_sent_at, confirmed_at)` and advances it only when the message
+ * was accepted, which is what makes a run idempotent. `criteria_hash` +
+ * (email, vertical) is unique so subscribing twice to the same search is one
+ * row.
+ */
+export const savedSearches = mysqlTable(
+  "saved_searches",
+  {
+    id: id(),
+    email: varchar("email", { length: 190 }).notNull(),
+    /** The door it was saved on: its language, brand and filters apply to the alert. */
+    vertical: varchar("vertical", { length: 40 }).notNull(),
+    locale: varchar("locale", { length: 2 }).notNull().default("es"),
+    operation: varchar("operation", { length: 20 }).notNull(),
+    propertyType: varchar("property_type", { length: 20 }),
+    citySlug: varchar("city_slug", { length: 140 }),
+    barrioSlug: varchar("barrio_slug", { length: 140 }),
+    priceMin: int("price_min"),
+    priceMax: int("price_max"),
+    minBedrooms: int("min_bedrooms"),
+    criteriaHash: varchar("criteria_hash", { length: 64 }).notNull(),
+    /** Random, unguessable: the confirm and unsubscribe credential. */
+    token: varchar("token", { length: 48 }).notNull(),
+    confirmedAt: datetime("confirmed_at"),
+    lastSentAt: datetime("last_sent_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("uq_token").on(t.token),
+    uniqueIndex("uq_email_search").on(t.email, t.vertical, t.criteriaHash),
+    index("idx_confirmed").on(t.confirmedAt),
+  ],
+);

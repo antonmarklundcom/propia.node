@@ -29,6 +29,7 @@
 import "server-only";
 import { runPartnerReminders } from "@/lib/ops/partner-reminders";
 import { runAnalytics } from "@/lib/ops/analytics";
+import { runSavedSearches } from "@/lib/ops/saved-searches";
 import { runLeadDigest } from "@/lib/ops/lead-digest";
 import { runGeo } from "@/lib/ops/geo";
 import { runLiveCheck } from "@/lib/ops/live-check";
@@ -36,6 +37,7 @@ import { runSessions } from "@/lib/ops/sessions";
 import { runTranslate } from "@/lib/ops/translate";
 import { finishOpsRun, lastSuccessfulRunAt, startOpsRun } from "@/lib/ops/runs";
 import type { OpsJob, OpsResult } from "@/lib/ops/types";
+import { isEmailConfigured } from "@/lib/email";
 import { isTranslationConfigured } from "@/lib/translate";
 import { revalidateListings } from "@/lib/cache";
 
@@ -117,6 +119,15 @@ const TASKS: CronTask[] = [
     // silent when there are none or no channel is configured.
     name: "lead-digest",
     run: () => daily("cron:lead-digest", () => runLeadDigest({ dry: false })),
+  },
+  {
+    // New listings for confirmed saved searches: one email per search per day,
+    // cursor moved only when the mail was accepted. Does nothing without email.
+    name: "saved-searches",
+    run: async () => {
+      if (!isEmailConfigured()) return "skipped: email not configured";
+      return daily("cron:saved-searches", () => runSavedSearches({ dry: false }));
+    },
   },
   {
     // Loads each live door's key pages once a day; alerts the operator when
