@@ -30,6 +30,33 @@ export function waPhone(phone: string | null | undefined): string | null {
   return DEFAULT_COUNTRY_CODE + d;
 }
 
+export type PhoneCheck =
+  | { ok: true; digits: string }
+  | { ok: false; reason: "short" | "doubled" | "long" };
+
+/** Fewest digits a phone may have (as typed, country code excluded for "+"). */
+export const PHONE_MIN_DIGITS = 8;
+/** E.164 ceiling for a full international number. */
+export const PHONE_MAX_DIGITS = 15;
+
+/**
+ * Is this a phone worth storing as a lead's contact? Uses `waPhone()` for the
+ * normalisation so "valid" and "dialable" cannot drift apart. Rejects fewer
+ * than 8 digits, a doubled Paraguayan code ("595 595 …", "+595 0595 …"), and
+ * anything past E.164's 15 digits. Numbers in international form ("+56 9 …",
+ * "0049 …") pass on the same length rules — their country code is theirs.
+ */
+export function checkPhone(phone: string | null | undefined): PhoneCheck {
+  const digits = waPhone(phone);
+  if (!digits) return { ok: false, reason: "short" };
+  const typed = (phone ?? "").replace(/\D/g, "").replace(/^00/, "");
+  if (typed.length < PHONE_MIN_DIGITS) return { ok: false, reason: "short" };
+  if (digits.startsWith(DEFAULT_COUNTRY_CODE + DEFAULT_COUNTRY_CODE))
+    return { ok: false, reason: "doubled" };
+  if (digits.length > PHONE_MAX_DIGITS) return { ok: false, reason: "long" };
+  return { ok: true, digits };
+}
+
 /** wa.me deep link, optionally with a prefilled message. Null when the
  * phone is empty/unusable — callers gate rendering on the result. */
 export function waLink(

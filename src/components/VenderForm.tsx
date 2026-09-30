@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getDictionary, type Locale } from "@/i18n";
+import { checkPhone } from "@/lib/wa";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { PropertyType } from "@/lib/import/types";
 
@@ -56,9 +57,9 @@ export function VenderForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 6) {
-      setErrorText(t.formPhoneError);
+    const pc = checkPhone(phone);
+    if (!pc.ok) {
+      setErrorText(getDictionary(locale).phoneCheck[pc.reason]);
       setState("error");
       return;
     }

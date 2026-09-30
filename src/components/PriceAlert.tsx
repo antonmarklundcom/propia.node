@@ -3,6 +3,7 @@
 import { Glyph } from "@/components/Glyph";
 import { useState } from "react";
 import { getDictionary, type Locale } from "@/i18n";
+import { checkPhone } from "@/lib/wa";
 
 /**
  * "Avisame si baja" price alert. There's no alerting engine yet, so this is
@@ -27,10 +28,17 @@ export function PriceAlert({
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!phone.trim()) return;
+    const pc = checkPhone(phone);
+    if (!pc.ok) {
+      setPhoneError(d.phoneCheck[pc.reason]);
+      return;
+    }
+    setPhoneError(null);
     setState("sending");
     try {
       const res = await fetch("/api/leads", {
@@ -88,7 +96,12 @@ export function PriceAlert({
       >
         {state === "sending" ? t.sending : t.submit}
       </button>
-      {state === "error" && (
+      {phoneError && (
+        <p className="price-alert__error" role="alert">
+          {phoneError}
+        </p>
+      )}
+      {!phoneError && state === "error" && (
         <p className="price-alert__error" role="alert">
           {t.error}
         </p>
