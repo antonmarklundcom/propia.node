@@ -14,12 +14,16 @@ const DEFAULT_COUNTRY_CODE = "595";
  * Normalise a phone as typed/stored into wa.me digits, e.g.
  * "0981 234-567" → "595981234567". Returns null when there are no digits
  * to work with. Numbers already carrying 595 (with or without +/00) pass
- * through unchanged.
+ * through unchanged, and so does any number written in international form
+ * ("+56 9 8164 1750", "0049…"): a foreign lead's number already carries its
+ * own country code, and prefixing 595 to it dials nobody.
  */
 export function waPhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
+  const international = /^\s*(\+|00)/.test(phone);
   let d = phone.replace(/\D/g, "");
   if (d.startsWith("00")) d = d.slice(2);
+  if (international) return d || null;
   if (d.startsWith(DEFAULT_COUNTRY_CODE)) return d;
   d = d.replace(/^0+/, "");
   if (!d) return null;
