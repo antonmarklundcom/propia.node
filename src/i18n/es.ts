@@ -3836,6 +3836,13 @@ export const esPublicAuth = {
   phonePlaceholder: "0981 123 456",
 } as const;
 
+/** Why a lead form refused the phone (`checkPhone()` in src/lib/wa.ts). */
+export const esPhoneCheck = {
+  short: "El número es muy corto. Escribilo completo, con código de área (ej. 0981 123 456).",
+  doubled: "El código de país (595) está repetido. Escribí el número una sola vez, ej. +595 981 123 456.",
+  long: "El número es muy largo. Revisá que no tenga dígitos de más.",
+} as const;
+
 export const esPriceAlert = {
   message: (title: string) => `[Alerta de precio] Avisame si baja: ${title}`,
   done: "✓ Listo, te avisamos si baja",

@@ -2711,6 +2711,12 @@ export function agentInquiryPrefillFor(brand: string, agentName: string, url: st
   return `Hello, I saw your profile on ${brand} and would like to contact you: ${agentName}\n${url}`;
 }
 
+export const enPhoneCheck = {
+  short: "That number is too short. Enter it in full, with the area code (e.g. +595 981 123 456).",
+  doubled: "The country code (595) is repeated. Enter the number once, e.g. +595 981 123 456.",
+  long: "That number is too long. Check for extra digits.",
+} satisfies Record<"short" | "doubled" | "long", string>;
+
 export const enPriceAlert = {
   message: (title: string) => `[Price alert] Let me know if the price drops: ${title}`,
   done: "✓ Done, we will let you know if the price drops",
