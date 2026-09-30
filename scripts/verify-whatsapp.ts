@@ -15,6 +15,7 @@
  *
  * Run: npm run verify:whatsapp   (also part of npm run verify:local)
  */
+import { waPhone } from "../src/lib/wa";
 import {
   normalizeWaPhone,
   parseWebhook,
@@ -87,6 +88,20 @@ const phoneCases: Array<[string, string | null]> = [
 ];
 for (const [input, want] of phoneCases) {
   check(`normalize ${JSON.stringify(input)}`, normalizeWaPhone(input) === want, String(normalizeWaPhone(input)));
+}
+for (const [input, want] of [
+  ["0981 234-567", "595981234567"],
+  ["981234567", "595981234567"],
+  ["595981283921", "595981283921"],
+  ["+595 981 119893", "595981119893"],
+  ["+56981641750", "56981641750"],
+  ["+39 3474973574", "393474973574"],
+  ["+5541995388552", "5541995388552"],
+  ["0049 1515 9250777", "4915159250777"],
+  ["", null],
+  ["+", null],
+] as const) {
+  check(`waPhone(${JSON.stringify(input)})`, waPhone(input) === want, String(waPhone(input)));
 }
 check("phone key = last nine", waPhoneKey("595981123456") === "981123456");
 
