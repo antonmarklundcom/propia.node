@@ -29,4 +29,6 @@ echo "pre-push: verify:ai-reply…"
 npm run --silent verify:ai-reply
 echo "pre-push: verify:whatsapp…"
 npm run --silent verify:whatsapp
+echo "pre-push: verify:publish…"
+npm run --silent verify:publish
 echo "pre-push: OK"

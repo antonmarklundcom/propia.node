@@ -4,6 +4,7 @@
  * the crm.ts boundary. A failed push never loses the lead — it's already
  * stored, which is also why the push does not run inside the request.
  */
+import { checkPhone } from "@/lib/wa";
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
@@ -213,6 +214,18 @@ export async function POST(req: NextRequest) {
       { ok: false, error: "invalid payload" },
       { status: 400 },
     );
+  }
+
+  // The contact form sends "unknown" when the visitor left the phone blank and
+  // the listing has none; every other value has to be a dialable number.
+  if (parsed.whatsapp !== "unknown") {
+    const pc = checkPhone(parsed.whatsapp);
+    if (!pc.ok) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_phone", reason: pc.reason },
+        { status: 400 },
+      );
+    }
   }
 
   const vertical = req.headers.get("x-vertical") ?? DEFAULT_VERTICAL_KEY;

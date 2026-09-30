@@ -47,6 +47,7 @@ import { runSessions } from "@/lib/ops/sessions";
 import { runSeedFinancing } from "@/lib/ops/seed-financing";
 import { runSeedLocations } from "@/lib/ops/seed-locations";
 import { runBackfillImages } from "@/lib/ops/backfill-images";
+import { STALE_AFTER_HOURS, runLeadDigest } from "@/lib/ops/lead-digest";
 import { REMIND_AFTER_HOURS, runPartnerReminders } from "@/lib/ops/partner-reminders";
 import { esTelegram } from "@/i18n/es-telegram";
 
@@ -195,6 +196,16 @@ export function opsJobs(): Entry[] {
       requiresLimit: false,
       disabledReason: null,
       run: (o) => runLiveCheck({ ...o, reason: "desde /admin" }),
+      revalidate: null,
+    },
+    {
+      job: "cron:lead-digest",
+      label: esPanel.opsLeadDigestLabel,
+      description: esPanel.opsLeadDigestDescription(STALE_AFTER_HOURS),
+      writes: esPanel.opsLeadDigestWrites,
+      requiresLimit: false,
+      disabledReason: null,
+      run: (o) => runLeadDigest(o),
       revalidate: null,
     },
     {

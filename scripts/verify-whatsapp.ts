@@ -15,6 +15,7 @@
  *
  * Run: npm run verify:whatsapp   (also part of npm run verify:local)
  */
+import { checkPhone, waPhone } from "../src/lib/wa";
 import {
   normalizeWaPhone,
   parseWebhook,
@@ -87,6 +88,48 @@ const phoneCases: Array<[string, string | null]> = [
 ];
 for (const [input, want] of phoneCases) {
   check(`normalize ${JSON.stringify(input)}`, normalizeWaPhone(input) === want, String(normalizeWaPhone(input)));
+}
+for (const [input, want] of [
+  ["0981 234-567", "595981234567"],
+  ["981234567", "595981234567"],
+  ["595981283921", "595981283921"],
+  ["+595 981 119893", "595981119893"],
+  ["+56981641750", "56981641750"],
+  ["+39 3474973574", "393474973574"],
+  ["+5541995388552", "5541995388552"],
+  ["0049 1515 9250777", "4915159250777"],
+  ["+44 20 7946 0958", "442079460958"],
+  ["0034 612 345 678", "34612345678"],
+  ["  +1 (555) 123-4567", "15551234567"],
+  ["+595 (21) 123-456", "59521123456"],
+  ["", null],
+  ["+", null],
+] as const) {
+  check(`waPhone(${JSON.stringify(input)})`, waPhone(input) === want, String(waPhone(input)));
+}
+// Lead-form phone validation (item: reject junk, keep foreign numbers).
+for (const [input, want] of [
+  ["0981 234 567", "ok"],
+  ["981234567", "ok"],
+  ["+595 981 234 567", "ok"],
+  ["595981234567", "ok"],
+  ["+56 9 8164 1750", "ok"],
+  ["+39 347 4973574", "ok"],
+  ["0049 1515 9250777", "ok"],
+  ["+1 555 123 4567", "ok"],
+  ["12345", "short"],
+  ["0981 12", "short"],
+  ["1234567", "short"],
+  ["+595 12", "short"],
+  ["", "short"],
+  ["595595981234567", "doubled"],
+  ["+595 595 981 234 567", "doubled"],
+  ["5959595", "short"],
+  ["+1234567890123456", "long"],
+] as const) {
+  const r = checkPhone(input);
+  const got = r.ok ? "ok" : r.reason;
+  check(`checkPhone(${JSON.stringify(input)}) = ${want}`, got === want, got);
 }
 check("phone key = last nine", waPhoneKey("595981123456") === "981123456");
 

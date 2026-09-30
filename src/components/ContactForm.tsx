@@ -3,7 +3,7 @@
 import { Glyph } from "@/components/Glyph";
 import { useId, useState } from "react";
 import { getDictionary, numberLocaleFor, type Locale } from "@/i18n";
-import { waLink, waPhone } from "@/lib/wa";
+import { checkPhone, waLink, waPhone } from "@/lib/wa";
 import {
   BUYER_BUDGETS,
   BUYER_CONTACTS,
@@ -88,6 +88,7 @@ export function ContactForm({
     "idle",
   );
   const [routedTo, setRoutedTo] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   function toggleQuestion(q: string) {
     setQuestions((prev) => {
@@ -108,6 +109,16 @@ export function ContactForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Only what the visitor typed is checked; the seller-number fallback is
+    // the listing's own and was validated when it was saved.
+    if (phone.trim()) {
+      const pc = checkPhone(phone);
+      if (!pc.ok) {
+        setPhoneError(d.phoneCheck[pc.reason]);
+        return;
+      }
+    }
+    setPhoneError(null);
     const whatsappTarget = phone.trim() || contactWhatsapp;
     setState("sending");
     let captured = false;
@@ -346,7 +357,12 @@ export function ContactForm({
           <Glyph name="whatsapp" /> {t.waContinue}
         </a>
       )}
-      {state === "error" && (
+      {phoneError && (
+        <p className="contact-form__error" role="alert">
+          {phoneError}
+        </p>
+      )}
+      {!phoneError && state === "error" && (
         <p className="contact-form__error" role="alert">
           {t.errorText}
         </p>

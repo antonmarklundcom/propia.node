@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Glyph } from "@/components/Glyph";
 import { getDictionary, type Locale } from "@/i18n";
+import { checkPhone } from "@/lib/wa";
 
 export type LeadFormType =
   | "buyer"
@@ -78,9 +79,9 @@ export function LeadForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 6) {
-      setError(t.invalidPhone);
+    const pc = checkPhone(phone);
+    if (!pc.ok) {
+      setError(getDictionary(locale).phoneCheck[pc.reason]);
       return;
     }
     setError(null);

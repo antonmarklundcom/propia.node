@@ -396,6 +396,17 @@ export const esPanel = {
   adminReviewTitle: "Cola de revisión",
   adminReviewEmpty: "No hay avisos esperando revisión.",
   approve: "Aprobar",
+  bulkSelectAll: "Seleccionar todos",
+  bulkSelectListing: "Seleccionar",
+  bulkApprove: "Aprobar seleccionados",
+  bulkReject: "Rechazar seleccionados",
+  bulkReasonLabel: "Motivo (obligatorio solo para rechazar; se guarda igual en todos)",
+  bulkFlash: {
+    approved: (n: number) => (n === 1 ? "1 aviso aprobado." : `${n} avisos aprobados.`),
+    rejected: (n: number) => (n === 1 ? "1 aviso rechazado." : `${n} avisos rechazados.`),
+    none: "No se cambió ningún aviso: elegí al menos uno que siga pendiente.",
+    reason: "Escribí el motivo para rechazar los avisos seleccionados.",
+  },
   reject: "Rechazar",
   rejectReasonLabel: "Motivo del rechazo",
   rejectReasonPlaceholder: "Contale al publicador por qué (ej: fotos con marca de agua)",
@@ -929,6 +940,14 @@ export const esPanel = {
     "Borra las sesiones que ya vencieron y quedaron en la tabla. No desloguea a nadie que esté trabajando.",
   opsSessionsWrites: "Borra filas de sessions con fecha de vencimiento pasada.",
 
+  leadDigestTitle: (n: number) =>
+    n === 1 ? "1 consulta sigue sin atender" : `${n} consultas siguen sin atender`,
+  leadDigestDetail: (hours: number, oldestDays: number, over3d: number) =>
+    `Llevan más de ${hours} horas como «Nueva». La más vieja tiene ${oldestDays} ${oldestDays === 1 ? "día" : "días"}${over3d > 0 ? `; ${over3d} pasan de 3 días` : ""}.`,
+  opsLeadDigestLabel: "Resumen diario de consultas sin atender",
+  opsLeadDigestDescription: (hours: number) =>
+    `Cuenta las consultas internas que siguen como «Nueva» pasadas ${hours} horas y te avisa una vez al día.`,
+  opsLeadDigestWrites: "No escribe nada. En modo real avisa por los canales configurados (webhook, Telegram, correo); sin ninguno, no hace nada.",
   opsLiveCheckLabel: "Revisar que el sitio cargue",
   opsLiveCheckDescription:
     "Abre la portada, las páginas evergreen y una muestra del sitemap de cada dominio en vivo, y lista toda URL que no responda bien (404, error, redirección o sin respuesta). Corre sola después de cada deploy y una vez por día.",
@@ -3837,6 +3856,13 @@ export const esPublicAuth = {
   registerMetaTitle: "Creá tu cuenta",
   registerDescription: (brand: string) => `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
   phonePlaceholder: "0981 123 456",
+} as const;
+
+/** Why a lead form refused the phone (`checkPhone()` in src/lib/wa.ts). */
+export const esPhoneCheck = {
+  short: "El número es muy corto. Escribilo completo, con código de área (ej. 0981 123 456).",
+  doubled: "El código de país (595) está repetido. Escribí el número una sola vez, ej. +595 981 123 456.",
+  long: "El número es muy largo. Revisá que no tenga dígitos de más.",
 } as const;
 
 export const esPriceAlert = {

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { bestCuota, type FinancingProgram } from "@/lib/cuota";
 import { formatCuota } from "@/lib/format";
 import { getDictionary, numberLocaleFor, type Locale } from "@/i18n";
+import { validatePublishStep } from "@/lib/publish-steps";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type {
   NearbyProject, PublishLocation, PublishContact,
@@ -341,16 +342,10 @@ export function PublishWizard({
 
   const validateStep = useCallback(
     (i: number): string | null => {
-      if (i === 0) {
-        if (!state.operation) return t.errors.operation;
-        if (!state.propertyType) return t.errors.propertyType;
-        if (state.title.trim().length < 8) return t.errors.title;
-      }
-      if (i === 1 && !state.locationId) return t.errors.location;
-      if (i === 2 && !(Number(state.priceAmount) > 0)) return t.errors.price;
-      return null;
+      const key = validatePublishStep(i, state);
+      return key ? t.errors[key] : null;
     },
-    [state],
+    [state, t.errors],
   );
 
   const goNext = useCallback(async () => {

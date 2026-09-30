@@ -9,6 +9,7 @@
  */
 import { useState } from "react";
 import { getDictionary, type Locale } from "@/i18n";
+import { checkPhone } from "@/lib/wa";
 import { REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
 
 export function ReportListing({
@@ -22,11 +23,18 @@ export function ReportListing({
   const t = d.a3.report;
   const [reason, setReason] = useState<ReportReason>("sold");
   const [detail, setDetail] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const pc = checkPhone(phone);
+    if (!pc.ok) {
+      setPhoneError(d.phoneCheck[pc.reason]);
+      return;
+    }
+    setPhoneError(null);
     setState("sending");
     try {
       const res = await fetch("/api/leads", {
@@ -96,7 +104,10 @@ export function ReportListing({
           <button className="panel-btn" type="submit" disabled={state === "sending"}>
             {state === "sending" ? t.sending : t.submit}
           </button>
-          {state === "error" && (
+          {phoneError && (
+            <p className="contact-form__error" role="alert">{phoneError}</p>
+          )}
+          {!phoneError && state === "error" && (
             <p className="contact-form__error" role="alert">{t.error}</p>
           )}
         </form>

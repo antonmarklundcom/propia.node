@@ -29,6 +29,7 @@
 import "server-only";
 import { runPartnerReminders } from "@/lib/ops/partner-reminders";
 import { runAnalytics } from "@/lib/ops/analytics";
+import { runLeadDigest } from "@/lib/ops/lead-digest";
 import { runGeo } from "@/lib/ops/geo";
 import { runLiveCheck } from "@/lib/ops/live-check";
 import { runSessions } from "@/lib/ops/sessions";
@@ -110,6 +111,12 @@ const TASKS: CronTask[] = [
       }
       return r;
     },
+  },
+  {
+    // Internal-lane leads still "Nueva" after 24 h: one operator alert a day,
+    // silent when there are none or no channel is configured.
+    name: "lead-digest",
+    run: () => daily("cron:lead-digest", () => runLeadDigest({ dry: false })),
   },
   {
     // Loads each live door's key pages once a day; alerts the operator when

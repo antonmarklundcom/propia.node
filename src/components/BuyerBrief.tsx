@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Glyph } from "@/components/Glyph";
 import { getDictionary, type Locale } from "@/i18n";
+import { checkPhone } from "@/lib/wa";
 import type { Operation, PropertyType } from "@/lib/import/types";
 import {
   BRIEF_BEDROOMS,
@@ -96,8 +97,9 @@ export function BuyerBrief({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (phone.replace(/\D/g, "").length < 6) {
-      setError(lf.invalidPhone);
+    const pc = checkPhone(phone);
+    if (!pc.ok) {
+      setError(dict.phoneCheck[pc.reason]);
       return;
     }
     // Visitors type "150.000" or "150,000"; only the digits are the number.
