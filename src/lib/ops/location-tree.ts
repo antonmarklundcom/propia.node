@@ -135,6 +135,29 @@ export const TREE: Node[] = [
       // Decision S10 (2026-09-27): the biggest land search in the keyword
       // export (210/month). Centroid to verify.
       { name: "San Bernardino", level: "ciudad", lat: -25.3094, lng: -57.2964 },
+      // District seats added 2026-09-30 WITHOUT coordinates on purpose: no
+      // cited source was reachable when they were added, and a guessed
+      // centroid mis-plots every listing that inherits it. Until lat/lng are
+      // filled in here (then `seed:locations` + `cron:geo`), a listing in one
+      // of these has no map pin; `cron:geo` names them. Names: the district
+      // list of the department (verify against DGEEC before relying on it).
+      { name: "Altos", level: "ciudad" },
+      { name: "Arroyos y Esteros", level: "ciudad" },
+      { name: "Atyrá", level: "ciudad" },
+      { name: "Caraguatay", level: "ciudad" },
+      { name: "Emboscada", level: "ciudad" },
+      { name: "Eusebio Ayala", level: "ciudad" },
+      { name: "Isla Pucú", level: "ciudad" },
+      { name: "Itacurubí de la Cordillera", level: "ciudad" },
+      { name: "Juan de Mena", level: "ciudad" },
+      { name: "Loma Grande", level: "ciudad" },
+      { name: "Mbocayaty del Yhaguy", level: "ciudad" },
+      { name: "Nueva Colombia", level: "ciudad" },
+      { name: "Piribebuy", level: "ciudad" },
+      { name: "Primero de Marzo", level: "ciudad" },
+      { name: "San José Obrero", level: "ciudad" },
+      { name: "Santa Elena", level: "ciudad" },
+      { name: "Valenzuela", level: "ciudad" },
     ],
   },
   {
@@ -147,6 +170,27 @@ export const TREE: Node[] = [
       { name: "Ypacaraí", level: "ciudad", lat: -25.4058, lng: -57.2839 },
       // Requested by an agency with a listing there (lead 2026-09-04).
       { name: "Yaguarón", level: "ciudad", lat: -25.5617, lng: -57.2833 },
+      // District seats added 2026-09-30 WITHOUT coordinates on purpose: no
+      // cited source was reachable when they were added, and a guessed
+      // centroid mis-plots every listing that inherits it. Until lat/lng are
+      // filled in here (then `seed:locations` + `cron:geo`), a listing in one
+      // of these has no map pin; `cron:geo` names them. Names: the district
+      // list of the department (verify against DGEEC before relying on it).
+      { name: "Acahay", level: "ciudad" },
+      { name: "Caapucú", level: "ciudad" },
+      { name: "Carapeguá", level: "ciudad" },
+      { name: "Escobar", level: "ciudad" },
+      { name: "General Bernardino Caballero", level: "ciudad" },
+      { name: "La Colmena", level: "ciudad" },
+      { name: "Mbuyapey", level: "ciudad" },
+      { name: "Pirayú", level: "ciudad" },
+      { name: "Quiindy", level: "ciudad" },
+      { name: "Quyquyhó", level: "ciudad" },
+      { name: "San Roque González de Santa Cruz", level: "ciudad" },
+      { name: "Sapucai", level: "ciudad" },
+      { name: "Tebicuary-mí", level: "ciudad" },
+      { name: "Ybycuí", level: "ciudad" },
+      { name: "Ybytymí", level: "ciudad" },
     ],
   },
 ];
