@@ -41,6 +41,7 @@ const WATCHED_JOBS: { job: OpsJob; label: string }[] = [
   { job: "cron:resync", label: esPanel.opsResyncLabel },
   { job: "cron:sessions", label: esPanel.opsSessionsLabel },
   { job: "cron:reminders", label: esTelegram.ops.label },
+  { job: "cron:lead-digest", label: esPanel.opsLeadDigestLabel },
 ];
 
 const HEALTH_TTL_MINUTES = 5;

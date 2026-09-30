@@ -926,6 +926,14 @@ export const esPanel = {
     "Borra las sesiones que ya vencieron y quedaron en la tabla. No desloguea a nadie que esté trabajando.",
   opsSessionsWrites: "Borra filas de sessions con fecha de vencimiento pasada.",
 
+  leadDigestTitle: (n: number) =>
+    n === 1 ? "1 consulta sigue sin atender" : `${n} consultas siguen sin atender`,
+  leadDigestDetail: (hours: number, oldestDays: number, over3d: number) =>
+    `Llevan más de ${hours} horas como «Nueva». La más vieja tiene ${oldestDays} ${oldestDays === 1 ? "día" : "días"}${over3d > 0 ? `; ${over3d} pasan de 3 días` : ""}.`,
+  opsLeadDigestLabel: "Resumen diario de consultas sin atender",
+  opsLeadDigestDescription: (hours: number) =>
+    `Cuenta las consultas internas que siguen como «Nueva» pasadas ${hours} horas y te avisa una vez al día.`,
+  opsLeadDigestWrites: "No escribe nada. En modo real avisa por los canales configurados (webhook, Telegram, correo); sin ninguno, no hace nada.",
   opsLiveCheckLabel: "Revisar que el sitio cargue",
   opsLiveCheckDescription:
     "Abre la portada, las páginas evergreen y una muestra del sitemap de cada dominio en vivo, y lista toda URL que no responda bien (404, error, redirección o sin respuesta). Corre sola después de cada deploy y una vez por día.",
