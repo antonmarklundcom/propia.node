@@ -7,6 +7,7 @@
  * before any write. Mutations revalidate the affected panel routes.
  */
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { revalidateListings } from "@/lib/cache";
 import { requireSuperAdmin, requireStaffOrAbove } from "@/lib/auth/guards";
 import { recordAdminEvent } from "@/lib/admin-events";
@@ -43,6 +44,46 @@ export async function rejectAction(formData: FormData): Promise<void> {
   if (id && reason) await rejectListing(id, reason);
   revalidatePath("/admin");
   revalidateListings();
+}
+
+/** Most listings one bulk action touches — a runaway form cannot sweep the queue. */
+const BULK_MAX = 100;
+
+function bulkIds(formData: FormData): number[] {
+  return [...new Set(formData.getAll("listingIds").map(toId).filter(Boolean))].slice(0, BULK_MAX);
+}
+
+/**
+ * Approve the ticked listings. Each goes through the same `approveListing()` as
+ * the single button, which only moves a `pending_review` row, so a listing
+ * someone else already handled is skipped, not overwritten.
+ */
+export async function approveManyAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  let done = 0;
+  for (const id of bulkIds(formData)) {
+    if ((await approveListing(id)) > 0) {
+      done += 1;
+      await recordAdminEvent(user.id, "listing.publish", "listing", id, { via: "bulk" });
+    }
+  }
+  revalidatePath("/admin");
+  if (done > 0) revalidateListings();
+  redirect(done > 0 ? `/admin?bulk=approved&n=${done}` : "/admin?bulk=none");
+}
+
+/** Reject the ticked listings with one shared reason (required). */
+export async function rejectManyAction(formData: FormData): Promise<void> {
+  await requireSuperAdmin();
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) redirect("/admin?bulk=reason");
+  let done = 0;
+  for (const id of bulkIds(formData)) {
+    if ((await rejectListing(id, reason)) > 0) done += 1;
+  }
+  revalidatePath("/admin");
+  if (done > 0) revalidateListings();
+  redirect(done > 0 ? `/admin?bulk=rejected&n=${done}` : "/admin?bulk=none");
 }
 
 export async function toggleAgencyVerifiedAction(formData: FormData): Promise<void> {
