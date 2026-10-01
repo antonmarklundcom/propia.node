@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { after } from "next/server";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
+import { readCappedText } from "@/lib/request-body";
 import { rawHostFrom } from "@/lib/host";
 import { currentVertical } from "@/lib/vertical-context";
 import { emailLinkOrigin } from "@/lib/origin";
@@ -26,6 +27,8 @@ const IP_MAX = 8;
 const IP_WINDOW_MS = 10 * 60_000;
 const EMAIL_MAX = 3;
 const EMAIL_WINDOW_MS = 60 * 60_000;
+/** An address and a handful of search criteria; refused past this, unbuffered. */
+const BODY_MAX_BYTES = 8 * 1024;
 
 function sameOrigin(req: NextRequest): boolean {
   const origin = req.headers.get("origin");
@@ -50,9 +53,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "too many requests" }, { status: 429, headers: { "retry-after": "600" } });
   }
 
+  const raw = await readCappedText(req, BODY_MAX_BYTES);
+  if (raw === null) return NextResponse.json({ ok: false, error: "too large" }, { status: 413 });
+
   let body: Record<string, unknown>;
   try {
-    body = (await req.json()) as Record<string, unknown>;
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("not an object");
+    body = value as Record<string, unknown>;
   } catch {
     return NextResponse.json({ ok: false, error: "invalid payload" }, { status: 400 });
   }

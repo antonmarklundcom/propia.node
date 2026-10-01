@@ -13,10 +13,26 @@
 import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { clientIpFrom } from "@/lib/client-ip";
+import { allowRequest } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+/**
+ * Unauthenticated and each call takes a pool connection, so a loop on it
+ * would queue real pages behind it. A monitor or `verify:live` asks a few
+ * times a minute at most.
+ */
+const PROBE_MAX = 30;
+const PROBE_WINDOW_MS = 60_000;
+
+export async function GET(req: Request) {
+  if (!allowRequest(`health-db|${clientIpFrom(req.headers)}`, PROBE_MAX, PROBE_WINDOW_MS)) {
+    return NextResponse.json(
+      { ok: false, error: "too many requests" },
+      { status: 429, headers: { "retry-after": "60", "cache-control": "no-store" } },
+    );
+  }
   const started = Date.now();
   try {
     await db.execute(sql`select 1`);

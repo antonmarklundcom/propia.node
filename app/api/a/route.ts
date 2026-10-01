@@ -13,6 +13,7 @@ import { z } from "zod";
 import { recordAnalyticsEvent } from "@/lib/analytics";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
+import { readCappedText } from "@/lib/request-body";
 import { currentVertical } from "@/lib/vertical-context";
 import { recordWebVital } from "@/lib/web-vitals";
 
@@ -54,8 +55,9 @@ export async function POST(req: NextRequest) {
 
   let parsed: z.infer<typeof beaconSchema>;
   try {
-    const text = await req.text();
-    if (text.length > 64_000) return noContent();
+    // Capped while reading, not after: req.text() would buffer any size first.
+    const text = await readCappedText(req, 64_000);
+    if (text === null) return noContent();
     parsed = beaconSchema.parse(JSON.parse(text));
   } catch {
     return noContent();
