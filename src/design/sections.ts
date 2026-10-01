@@ -347,7 +347,7 @@ export function contactPrimaryFirst(_key: VerticalKey): boolean {
   return false;
 }
 
-export type ChromeVariant = "default" | "guide-en" | "rental" | "directory";
+export type ChromeVariant = "default" | "guide-en" | "rental" | "directory" | "residency";
 
 /**
  * Which header/footer nav content and visibility rules apply. `SiteHeader`
@@ -367,6 +367,8 @@ export function chromeVariant(key: VerticalKey): ChromeVariant {
   // inmobiliario" → the home form), and no login, publish CTA or newsletter
   // (Stage 1 D item 1 / §1 item 4).
   if (familyOf(key) === "directory") return "directory";
+  // The residency door draws its own header and footer (ResidencyChrome).
+  if (familyOf(key) === "residency") return "residency";
   return "default";
 }
 
@@ -377,7 +379,7 @@ export function chromeVariant(key: VerticalKey): ChromeVariant {
  * login in its chrome"). The only account this app has is a marketplace
  * publisher's, which is not what either audience arrived for.
  */
-const NO_ACCOUNT_CHROME: VerticalFamily[] = ["rental", "directory"];
+const NO_ACCOUNT_CHROME: VerticalFamily[] = ["rental", "directory", "residency"];
 
 /**
  * Whether the header/mobile-drawer shows a login link. realestateinparaguay.com
@@ -488,5 +490,6 @@ export function directoryPagesEnabled(key: VerticalKey): boolean {
  * canonicals.
  */
 export function marketplacePagesEnabled(key: VerticalKey): boolean {
-  return familyOf(key) !== "directory";
+  // The residency door joins the directory door: it renders none of them.
+  return familyOf(key) !== "directory" && familyOf(key) !== "residency";
 }

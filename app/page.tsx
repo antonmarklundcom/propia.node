@@ -1,6 +1,11 @@
 import { Glyph, isGlyphName } from "@/components/Glyph";
 import Link from "next/link";
 import type { Metadata } from "next";
+import {
+  ResidencyHomeBody,
+  residencyEnabled,
+  residencyHomeMetadata,
+} from "@/lib/residency-routes";
 import { doorOgImages } from "@/lib/og-urls";
 import { unstable_cache } from "next/cache";
 import { dict } from "@/i18n/server";
@@ -201,6 +206,7 @@ function getHomePayload(verticalKey: VerticalKey) {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  if (await residencyEnabled()) return residencyHomeMetadata();
   const [brand, vertical, d] = await Promise.all([
     brandName(),
     currentVertical(),
@@ -303,6 +309,8 @@ async function Row({
 }
 
 export default async function Home() {
+  // The residency door has its own home and none of the marketplace queries.
+  if (await residencyEnabled()) return <ResidencyHomeBody />;
   const brand = await brandName();
   const d = await dict();
   const t = d.home;
