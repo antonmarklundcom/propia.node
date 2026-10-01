@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { listDevelopersForDirectory } from "@/lib/directory-queries";
@@ -26,14 +26,14 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${TITLE} inmobiliarias en Paraguay`,
     description: DESCRIPTION,
-    alternates: { canonical: `${await siteOrigin()}/desarrolladoras` },
+    alternates: { canonical: `${await sitePageOrigin("/desarrolladoras")}/desarrolladoras` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION, images: doorOgImages(brand) },
   };
 }
 
 export default async function DesarrolladorasPage() {
   const [origin, developers] = await Promise.all([
-    siteOrigin(),
+    sitePageOrigin("/desarrolladoras"),
     listDevelopersForDirectory(),
   ]);
 

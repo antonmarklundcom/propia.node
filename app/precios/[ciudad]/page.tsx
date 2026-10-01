@@ -8,7 +8,7 @@ import { brandName } from "@/lib/brand-server";
 import { formatUsd } from "@/lib/format";
 import { getCityPrices, MIN_RELIABLE_SAMPLE } from "@/lib/precios-queries";
 import { categoryUrl } from "@/lib/urls";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { PageHero, Section } from "@/components/MarketingUI";
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${t.cityTitle(prices.city.name)}`,
     description: t.citySubtitle(brand, prices.city.name, prices.period),
-    alternates: { canonical: `${await siteOrigin()}/precios/${prices.city.slug}` },
+    alternates: { canonical: `${await sitePageOrigin(`/precios/${prices.city.slug}`)}/precios/${prices.city.slug}` },
     robots: indexable
       ? { index: true, follow: true }
       : { index: false, follow: true },
@@ -56,8 +56,9 @@ export default async function CityPricesPage({ params }: Params) {
   const locale = await currentLocale();
   const numberLocale = numberLocaleFor(locale);
   const { ciudad } = await params;
-  const [prices, origin] = await Promise.all([load(ciudad), siteOrigin()]);
+  const prices = await load(ciudad);
   if (!prices) notFound();
+  const origin = await sitePageOrigin(`/precios/${prices.city.slug}`);
 
   const { city, cells, period } = prices;
 

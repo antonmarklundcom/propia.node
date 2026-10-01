@@ -108,6 +108,14 @@ export interface AlternateInput {
    * Omitted, no such check (verify:seo's table-level cases).
    */
   servingHost?: string;
+  /**
+   * `scope: "category"` only: the host that owns THIS page in a locale when
+   * that is not the locale's usual category door — an evergreen page's owner
+   * (`evergreenOwnersByLocale()`, category-owner.ts). The locale's slot goes
+   * to it, so hreflang names the URL the other doors canonicalise to, and
+   * x-default follows the primary's locale slot.
+   */
+  ownerHostByLocale?: Partial<Record<Locale, string>>;
 }
 
 export interface Door {
@@ -190,6 +198,14 @@ export function alternatesFor(
     .filter((d) => d.config.family === input.family)
     .filter((d) => ownsScope(d, primaryHost, input.scope));
   const byLocale = doorPerLocale(owning, primaryHost);
+  if (input.scope === "category" && input.ownerHostByLocale) {
+    for (const [locale, host] of Object.entries(input.ownerHostByLocale)) {
+      const door = doors.find(
+        (d) => d.host === host && d.config.family === input.family && d.config.locale === locale,
+      );
+      if (door) byLocale.set(locale as Locale, door);
+    }
+  }
   if (byLocale.size < 2) return undefined;
 
   const urlFor = (door: Door) =>
@@ -209,8 +225,9 @@ export function alternatesFor(
   // them. Inside the primary's own family that is the primary; in another
   // family it is that family's Spanish door (its home market), and failing
   // both, declaration order — deterministic in every case.
+  const primaryDoor = owning.find((d) => d.host === primaryHost);
   const primary =
-    owning.find((d) => d.host === primaryHost) ??
+    (primaryDoor && byLocale.get(primaryDoor.config.locale)) ??
     byLocale.get("es") ??
     byLocale.values().next().value;
   if (primary) languages["x-default"] = urlFor(primary);

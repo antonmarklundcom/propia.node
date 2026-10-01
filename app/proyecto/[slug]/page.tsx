@@ -11,7 +11,7 @@ import { ContactForm } from "@/components/ContactForm";
 import { Glyph } from "@/components/Glyph";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ListingMapLazy } from "@/components/ListingMapLazy";
-import { siteOrigin } from "@/lib/origin";
+import { siteOrigin, sitePageOrigin } from "@/lib/origin";
 import { safeImageUrl } from "@/lib/external-image";
 
 // Canonical URLs come from the Host header (src/lib/origin.ts), a dynamic
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       ((await currentLocale()) === "es" ? project.descriptionEs?.slice(0, 160) : null) ??
       c.description(project.name),
     alternates: {
-      canonical: `${await siteOrigin()}/proyecto/${project.slug}`,
+      canonical: `${await sitePageOrigin(`/proyecto/${project.slug}`)}/proyecto/${project.slug}`,
     },
   };
 }

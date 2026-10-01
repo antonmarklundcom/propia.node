@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${TITLE}`,
     description: DESCRIPTION(brand),
-    alternates: { canonical: `${await siteOrigin()}/planes` },
+    alternates: { canonical: `${await sitePageOrigin("/planes")}/planes` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand), images: doorOgImages(brand) },
   };
 }
@@ -117,7 +117,7 @@ export default async function PlanesPage() {
   // Agency mode: realtors join as partners by invitation, not by signing up
   // from a pitch page (docs/plan-agency-2026-09-26.md batch 3).
   if (await isAgencyMode()) redirect("/contacto");
-  const origin = await siteOrigin();
+  const origin = await sitePageOrigin("/planes");
 
   return (
     <main>

@@ -4,7 +4,7 @@ import { dict, currentLocale } from "@/i18n/server";
 import { numberLocaleFor } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
 import { citiesWithPrices } from "@/lib/precios-queries";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { PageHero, Section } from "@/components/MarketingUI";
@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${t.indexTitle}`,
     description: t.indexSubtitle(brand),
-    alternates: { canonical: `${await siteOrigin()}/precios` },
+    alternates: { canonical: `${await sitePageOrigin("/precios")}/precios` },
   };
 }
 
@@ -31,7 +31,7 @@ export default async function PreciosIndexPage() {
   const t = d.precios;
   const locale = await currentLocale();
   const numberLocale = numberLocaleFor(locale);
-  const [cities, origin] = await Promise.all([citiesWithPrices(), siteOrigin()]);
+  const [cities, origin] = await Promise.all([citiesWithPrices(), sitePageOrigin("/precios")]);
 
   return (
     <main className="precios-index">

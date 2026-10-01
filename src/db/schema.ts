@@ -682,7 +682,9 @@ export const leads = mysqlTable(
      * The operator's follow-up state in /admin/leads. Every existing row reads
      * as `new` after the migration, which is true: none was ever marked.
      */
-    status: mysqlEnum("status", ["new", "contacted", "closed"])
+    // `spam` (appended: enum members are stored as ordinals) hides the lead
+    // from every inbox and count; /admin/leads can list and restore it.
+    status: mysqlEnum("status", ["new", "contacted", "closed", "spam"])
       .notNull()
       .default("new"),
     /** Free-text operator note, never shown outside /admin. */

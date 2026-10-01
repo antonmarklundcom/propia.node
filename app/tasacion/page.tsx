@@ -3,7 +3,7 @@ import { dict, currentLocale } from "@/i18n/server";
 import { numberLocaleFor } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
 import { listCities } from "@/lib/queries";
-import { siteOrigin } from "@/lib/origin";
+import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { ValuationTool } from "@/components/ValuationTool";
@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${t.title}`,
     description: t.subtitle(brand),
-    alternates: { canonical: `${await siteOrigin()}/tasacion` },
+    alternates: { canonical: `${await sitePageOrigin("/tasacion")}/tasacion` },
   };
 }
 
@@ -32,7 +32,7 @@ export default async function TasacionPage() {
   const t = d.tasacion;
   const locale = await currentLocale();
   const numberLocale = numberLocaleFor(locale);
-  const [cities, origin] = await Promise.all([listCities(), siteOrigin()]);
+  const [cities, origin] = await Promise.all([listCities(), sitePageOrigin("/tasacion")]);
 
   return (
     <main className="mk-valuation">

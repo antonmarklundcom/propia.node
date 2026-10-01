@@ -27,6 +27,7 @@ export type VerticalKey =
   | "rent"
   | "agents"
   | "devs"
+  | "residencia"
   | "en"
   | "inmobiliaria";
 
@@ -45,7 +46,7 @@ export type VerticalKey =
  * overrides (theme, card variant) stay per key; only what is genuinely shared
  * by a business keys off the family.
  */
-export type VerticalFamily = "marketplace" | "rental" | "directory";
+export type VerticalFamily = "marketplace" | "rental" | "directory" | "residency";
 
 export interface VerticalConfig {
   key: VerticalKey;
@@ -68,7 +69,7 @@ export interface VerticalConfig {
   };
   /** Directory/projects domains render a different shell entirely. */
   mode?: "portal" | "directory" | "projects";
-  copy: "ownership" | "land" | "rental" | "foreign" | "directory";
+  copy: "ownership" | "land" | "rental" | "foreign" | "directory" | "residency";
   /** Only enabled verticals are routed; others 302 to CANONICAL_HOST until launch. */
   enabled: boolean;
   /**
@@ -112,11 +113,26 @@ export interface VerticalConfig {
    * and the door's sitemap and hreflang drop them. Nothing redirects; visitors
    * still get every page.
    *
-   * Set to `false` on `landforsaleparaguay.com` only (S2). `verify:seo` carries the
-   * `KNOWN_DUPLICATE_DOORS` allowlist of doors that still duplicate the
-   * marketplace until the PR that flips each one.
+   * Set to `false` on `landforsaleparaguay.com` (S2), `terreno.com.py` (S1a)
+   * and `rentparaguay.com` (S3a). `verify:seo` carries the
+   * `KNOWN_DUPLICATE_DOORS` allowlist of doors that duplicate the marketplace
+   * until the PR that flips each one — empty since S3a; the machinery stays.
    */
   ownsCategories?: boolean;
+  /**
+   * Whether this door's copies of the marketplace's own content pages —
+   * guides, price pages, project and developer pages, and the hand-authored
+   * explainers (`SITE_PAGE_PATHS` in `src/lib/site-page-owner.ts`) — are
+   * canonical HERE (decision S4(a), docs/plan-seo-doors-2026-09-27.md §4.5).
+   * The sibling of `ownsCategories`: **unset means true**; a door set to
+   * `false` canonicalises each of those pages to the SAME PATH on the
+   * marketplace door that owns them in the door's own language, and leaves
+   * them out of its sitemap. Its home, hubs, categories, `/nosotros`,
+   * `/contacto` and legal pages are not site pages and stay its own.
+   * Set to `false` on `terreno.com.py`, `landforsaleparaguay.com` and
+   * `rentparaguay.com`.
+   */
+  ownsSitePages?: boolean;
 }
 
 export const VERTICALS: Record<string, VerticalConfig> = {
@@ -129,6 +145,17 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "land",
     enabled: true,
     ownsListingDetail: false,
+    // S1(a) (docs/plan-seo-doors-2026-09-27.md §9): its city/barrio/type grids
+    // canonicalise to inmobiliaria.com.py's equivalent page and leave its
+    // sitemap; its home and national `/venta` hub are unique and stay
+    // self-canonical. EXCEPT its own evergreen land pages (S9): evergreen
+    // ownership outranks this flag (`categoryTarget()`, category-owner.ts) —
+    // they stay self-canonical, indexable and in its sitemap, and
+    // inmobiliaria.com.py's copies of those paths canonicalise here.
+    ownsCategories: false,
+    // S4(a): its copies of the marketplace's guides, price, project and other
+    // site pages canonicalise to the same path on the marketplace owner.
+    ownsSitePages: false,
   },
   /**
    * The rental family's Spanish door (fable/plan-rentparaguay.md §1). Not a
@@ -190,6 +217,19 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     copy: "rental",
     enabled: true,
     ownsListingDetail: false,
+    // S3(a) (docs/plan-seo-doors-2026-09-27.md §9): its English rental grids
+    // (/alquiler/…, /alquiler-temporal/…) canonicalise to the same path on
+    // realestateinparaguay.com and leave its sitemap. `categoryTarget()` does
+    // not care that this door is `family: "rental"` — it only reads the
+    // owner in the door's own language, and a delegating door emits no
+    // hreflang, so nothing crosses families. Its own pages (home, services,
+    // about, contact) and the /alquiler hub are not category pages and stay
+    // self-canonical; a /venta path has no equivalent (operation filter) and
+    // is noindex, as before.
+    ownsCategories: false,
+    // S4(a): its copies of the marketplace's guides, price, project and other
+    // site pages canonicalise to the same path on the marketplace owner.
+    ownsSitePages: false,
   },
   /**
    * The realtor directory — a seller-first lead-gen door, not a second
@@ -222,6 +262,32 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     // of the directory page type. Marketplace doors keep rendering those pages
     // and canonicalise here.
     ownsDirectory: true,
+  },
+  /**
+   * The Spanish residency-information door (2026-10-01): a content-and-lead
+   * site about getting legal residence in Paraguay, written to rank for the
+   * Spanish phrases people search from Spain, Argentina and the rest of
+   * Spanish-speaking Latin America ("residencia en Paraguay", "requisitos",
+   * "cuánto cuesta", …). Its own family: it serves none of the marketplace's
+   * page types (the middleware 308s them to inmobiliaria.com.py, like the
+   * directory door), renders its own home and flat landing pages
+   * (`src/content/residency/`), and submits only those in its sitemap.
+   *
+   * It owns nothing of the marketplace — no listing detail, categories, site
+   * pages or directory — so none of the per-locale ownership checks in
+   * `verify:seo` change. Its pages are unique Spanish content with no
+   * equivalent on another door, so no hreflang is emitted either.
+   */
+  "residenciaenparaguay.es": {
+    key: "residencia",
+    brand: "Residencia en Paraguay",
+    locale: "es",
+    family: "residency",
+    copy: "residency",
+    enabled: true,
+    ownsListingDetail: false,
+    ownsCategories: false,
+    ownsSitePages: false,
   },
   "desarrolladores.com.py": {
     key: "devs",
@@ -301,6 +367,9 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     // canonicalise to realestateinparaguay.com and leave its sitemap. Its
     // home and its national `/venta` hub are unique and stay self-canonical.
     ownsCategories: false,
+    // S4(a): its copies of the marketplace's guides, price, project and other
+    // site pages canonicalise to the same path on the marketplace owner.
+    ownsSitePages: false,
   },
   /**
    * FLIPPED 2026-09-04 (PLAN.md D6): the Spanish marketplace primary. Same

@@ -20,6 +20,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { leads, listings, users } from "@/db/schema";
+import { buyerDetailsAlertText } from "@/lib/buyer-details";
 import { alertOperator, alertOwner, deliverLead, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
 import { listingCanonicalOrigin } from "@/lib/origin";
@@ -173,6 +174,8 @@ export async function sendLeadCopies(p: {
   /** Absolute /mis-avisos/consultas URL (read inside the request). */
   ownerUrl: string;
   brand: string;
+  /** The foreign-buyer details block, for the operator alert only. */
+  buyerDetails?: string | null;
   /** False when the operator typed the lead in themselves. */
   alertOperator: boolean;
   /** Other emails to send alongside the owner's (the seeker confirmation). */
@@ -190,6 +193,7 @@ export async function sendLeadCopies(p: {
           name: payload.name ?? null,
           whatsapp: payload.whatsapp,
           listingTitle,
+          buyerDetails: buyerDetailsAlertText(p.buyerDetails),
         }),
         url: p.adminUrl,
         site: new URL(p.adminUrl).host,

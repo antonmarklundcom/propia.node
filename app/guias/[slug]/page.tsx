@@ -5,7 +5,7 @@ import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { brandName } from "@/lib/brand-server";
-import { siteOrigin } from "@/lib/origin";
+import { siteOrigin, sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { Markdown } from "@/components/Markdown";
@@ -52,7 +52,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: `${post.title}`,
     description,
-    alternates: { canonical: `${await siteOrigin()}/guias/${post.slug}` },
+    // Another language's guide is noindex and self-canonical (it is not the
+    // owner's page in this door's language, so delegating it would point a
+    // noindex page at a noindex page); an own-language guide follows the
+    // site-page owner (S4(a)).
+    alternates: {
+      canonical: `${
+        ownLanguage ? await sitePageOrigin(`/guias/${post.slug}`) : await siteOrigin()
+      }/guias/${post.slug}`,
+    },
     ...(ownLanguage ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       type: "article",
@@ -86,7 +94,11 @@ export default async function GuiaPage({ params }: Params) {
     `${post.title} ${post.excerpt ?? ""} ${post.body}`,
     EVERGREEN_PAGES.filter((p) => p.door === vertical.key),
   );
-  const origin = await siteOrigin();
+  // Own-language guide: JSON-LD names the owner's URL, like the canonical.
+  const origin =
+    post.locale === locale
+      ? await sitePageOrigin(`/guias/${post.slug}`)
+      : await siteOrigin();
   const cover = imageUrl(post.coverR2Key);
   const published = formatDate(post.publishedAt, numberLocale);
   const updated = formatDate(post.updatedAt, numberLocale);

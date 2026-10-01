@@ -16,6 +16,9 @@ import { adminEvents, users } from "@/db/schema";
 export type AdminEventAction =
   | "lead.share"
   | "lead.revoke"
+  | "lead.spam"
+  | "lead.unspam"
+  | "lead.delete"
   | "listing.publish"
   | "listing.delete"
   | "user.role"

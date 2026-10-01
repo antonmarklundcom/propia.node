@@ -615,6 +615,17 @@ export const esPanel = {
     "No se compartió nada: el socio no está verificado o la consulta no está en tu bandeja.",
   shareFlashInvalid: "Elegí un socio y al menos una consulta.",
   shareFlashRevoked: "Acceso quitado. El socio deja de verla en su panel.",
+  spamButton: "Marcar como spam",
+  unspamButton: "No es spam",
+  spamChip: "Spam",
+  spamFlashMarked: "Consulta marcada como spam. Ya no aparece en la lista; la encontrás en el filtro «Spam».",
+  spamFlashRestored: "Consulta restaurada como «Nueva».",
+  spamFlashInvalid: "No se pudo cambiar la consulta (¿ya estaba en ese estado?).",
+  deleteSummary: "Borrar…",
+  deleteWarning: "Se borra para siempre, junto con sus coincidencias, accesos compartidos y trato. Los emails y mensajes de WhatsApp se conservan sin vínculo. No se puede deshacer.",
+  deleteButton: "Borrar definitivamente",
+  deleteFlashDone: "Consulta borrada.",
+  deleteFlashInvalid: "No se pudo borrar la consulta.",
   shareBoardTitle: "Respuesta de los socios",
   shareBoardHead: ["Socio", "Activas", "Sin respuesta", "Más de 24 h", "Respondidas", "Horas promedio"],
   sharedLeadsTitle: "Compartidas por el portal",
@@ -642,6 +653,9 @@ export const esPanel = {
   historyAction: {
     "lead.share": "Compartió una consulta",
     "lead.revoke": "Quitó el acceso a una consulta",
+    "lead.spam": "Marcó una consulta como spam",
+    "lead.unspam": "Sacó una consulta de spam",
+    "lead.delete": "Borró una consulta",
     "listing.publish": "Publicó un aviso",
     "listing.delete": "Borró un aviso",
     "user.role": "Cambió un rol",
@@ -766,10 +780,13 @@ export const esPanel = {
     name: string | null;
     whatsapp: string;
     listingTitle: string | null;
+    /** Foreign-buyer answers as one short line (already in the visitor's language). */
+    buyerDetails?: string | null;
   }) =>
     [
       `${ALERT_LEAD_TYPE[params.leadType] ?? params.leadType} · ${params.name ?? "Sin nombre"} (${params.whatsapp})`,
       params.listingTitle ? `Aviso: ${params.listingTitle}` : null,
+      params.buyerDetails ? `Datos del comprador: ${params.buyerDetails}` : null,
     ]
       .filter(Boolean)
       .join(" — "),
