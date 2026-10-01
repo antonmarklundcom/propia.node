@@ -11,6 +11,7 @@
  * with `getIndexability()` and `hostOwnsListingDetail()`. Caching, chunking
  * and the XML itself live in `sitemap-xml.ts` (audit F43).
  */
+import { residencySitemapPaths } from "@/content/residency";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import {
@@ -120,6 +121,11 @@ export async function buildSitemapEntries(
   const servesMarketplace = vertical
     ? marketplacePagesEnabled(vertical.key)
     : true;
+  // The residency door submits its own landing pages and nothing else: no
+  // listings, categories or profiles, and so no database read at all.
+  if (vertical?.family === "residency") {
+    return residencySitemapPaths().map((path) => ({ path }));
+  }
   // Category pages need a door that serves the marketplace's page types at
   // all; which of them it lists is `listsCategory()` below (ownership flag +
   // evergreen precedence, one pure rule shared with the page's canonical).

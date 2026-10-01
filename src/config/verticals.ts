@@ -27,6 +27,7 @@ export type VerticalKey =
   | "rent"
   | "agents"
   | "devs"
+  | "residencia"
   | "en"
   | "inmobiliaria";
 
@@ -45,7 +46,7 @@ export type VerticalKey =
  * overrides (theme, card variant) stay per key; only what is genuinely shared
  * by a business keys off the family.
  */
-export type VerticalFamily = "marketplace" | "rental" | "directory";
+export type VerticalFamily = "marketplace" | "rental" | "directory" | "residency";
 
 export interface VerticalConfig {
   key: VerticalKey;
@@ -68,7 +69,7 @@ export interface VerticalConfig {
   };
   /** Directory/projects domains render a different shell entirely. */
   mode?: "portal" | "directory" | "projects";
-  copy: "ownership" | "land" | "rental" | "foreign" | "directory";
+  copy: "ownership" | "land" | "rental" | "foreign" | "directory" | "residency";
   /** Only enabled verticals are routed; others 302 to CANONICAL_HOST until launch. */
   enabled: boolean;
   /**
@@ -261,6 +262,32 @@ export const VERTICALS: Record<string, VerticalConfig> = {
     // of the directory page type. Marketplace doors keep rendering those pages
     // and canonicalise here.
     ownsDirectory: true,
+  },
+  /**
+   * The Spanish residency-information door (2026-10-01): a content-and-lead
+   * site about getting legal residence in Paraguay, written to rank for the
+   * Spanish phrases people search from Spain, Argentina and the rest of
+   * Spanish-speaking Latin America ("residencia en Paraguay", "requisitos",
+   * "cuánto cuesta", …). Its own family: it serves none of the marketplace's
+   * page types (the middleware 308s them to inmobiliaria.com.py, like the
+   * directory door), renders its own home and flat landing pages
+   * (`src/content/residency/`), and submits only those in its sitemap.
+   *
+   * It owns nothing of the marketplace — no listing detail, categories, site
+   * pages or directory — so none of the per-locale ownership checks in
+   * `verify:seo` change. Its pages are unique Spanish content with no
+   * equivalent on another door, so no hreflang is emitted either.
+   */
+  "residenciaenparaguay.es": {
+    key: "residencia",
+    brand: "Residencia en Paraguay",
+    locale: "es",
+    family: "residency",
+    copy: "residency",
+    enabled: true,
+    ownsListingDetail: false,
+    ownsCategories: false,
+    ownsSitePages: false,
   },
   "desarrolladores.com.py": {
     key: "devs",
