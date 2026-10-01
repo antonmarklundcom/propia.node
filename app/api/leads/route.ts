@@ -22,6 +22,7 @@ import {
 } from "@/lib/lead-intake";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
+import { readCappedText } from "@/lib/request-body";
 import { rawHostFrom } from "@/lib/host";
 import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { currentVertical } from "@/lib/vertical-context";
@@ -94,7 +95,12 @@ const bodySchema = z.object({
   whatsapp: z.string().min(6).max(30),
   email: z.string().email().max(190).optional(),
   message: z.string().max(2000).optional(),
-  utm: z.record(z.string()).optional(),
+  /**
+   * Trimmed, not rejected: the browser fills this from the landing URL's
+   * utm_* parameters, so an over-long campaign tag must never cost the lead.
+   * Bounded because it is stored as-is and copied to the CRM.
+   */
+  utm: z.record(z.string()).optional().transform(boundUtm),
   /**
    * "Reportar este aviso" (plan-build-2026-09-26 A3, Seeker 7). Not a new
    * table and not a new lane: a `question` lead on the listing, routed to
@@ -144,6 +150,27 @@ const bodySchema = z.object({
     })
     .optional(),
 });
+
+/** At most this many utm keys, each key and value cut to these lengths. */
+const UTM_MAX_KEYS = 20;
+const UTM_KEY_MAX = 40;
+const UTM_VALUE_MAX = 300;
+
+function boundUtm(utm: Record<string, string> | undefined): Record<string, string> | undefined {
+  if (!utm) return utm;
+  return Object.fromEntries(
+    Object.entries(utm)
+      .slice(0, UTM_MAX_KEYS)
+      .map(([k, v]) => [k.slice(0, UTM_KEY_MAX), v.slice(0, UTM_VALUE_MAX)]),
+  );
+}
+
+/**
+ * The largest honest body is a message (2 000 chars), a brief and a handful
+ * of utm tags — a few KB. Past this the body is refused before it is
+ * buffered whole (src/lib/request-body.ts).
+ */
+const LEAD_BODY_MAX_BYTES = 32 * 1024;
 
 /** 10 leads per IP per 10 minutes — far above a real buyer, far below a bot. */
 const LEAD_MAX = 10;
@@ -204,9 +231,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const raw = await readCappedText(req, LEAD_BODY_MAX_BYTES);
+  if (raw === null) {
+    return NextResponse.json({ ok: false, error: "too large" }, { status: 413 });
+  }
+
   let parsed;
   try {
-    parsed = bodySchema.parse(await req.json());
+    parsed = bodySchema.parse(JSON.parse(raw));
   } catch {
     // No `detail`: the zod error echoes the submitted payload and the schema
     // back to an unauthenticated caller (audit F28).

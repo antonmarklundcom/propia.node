@@ -51,6 +51,10 @@
   --color-ink-secondary: #56605A;
   /* Error text and danger outlines; the literal .lead-form__error uses. */
   --color-error: #A3302B;
+  /* Success text ("Publicado" pill). Darker than tokens.ts's success
+     (#1E8E4E, 3.5:1 on --color-accent-soft) so 12px text stays above 4.5:1 on
+     every theme's accent-soft; same green as .panel-vital--good. */
+  --color-success: #1D6B35;
   --color-ink-muted: #7D857F;
   --color-surface: #ffffff;
   --color-background: #F6F3EC;
@@ -3990,8 +3994,7 @@ body {
 }
 
 /* Page-speed cells on /admin/analitica: Google's good / needs improvement /
-   poor. Explicit colours (not --color-success, which no theme defines);
-   each text/background pair is above 4.5:1. */
+   poor. Explicit colours; each text/background pair is above 4.5:1. */
 .panel-vital--good {
   background: #e6f4ea;
   color: #1d6b35;

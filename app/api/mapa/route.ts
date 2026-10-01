@@ -27,6 +27,8 @@ import {
 import { parseFacetParams, parseLocationSlugs } from "@/lib/facets";
 import { citySubtreeIds, resolveBarrio, resolveCity } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
+import { clientIpFrom } from "@/lib/client-ip";
+import { allowRequest } from "@/lib/rate-limit";
 
 // Depends on live listing data; never statically cached.
 export const dynamic = "force-dynamic";
@@ -52,7 +54,21 @@ async function locationIdsFor(
   return barrio ? [barrio.id] : [];
 }
 
+/**
+ * Each answer is a database query (nothing is cached server-side), so an
+ * unthrottled loop of random boxes is pool pressure for every page. A person
+ * panning sends a request per pan end; 120 a minute per IP is far above that.
+ */
+const MAP_MAX = 120;
+const MAP_WINDOW_MS = 60_000;
+
 export async function GET(req: NextRequest) {
+  if (!allowRequest(`map|${clientIpFrom(req.headers)}`, MAP_MAX, MAP_WINDOW_MS)) {
+    return NextResponse.json(
+      { ok: false, error: "too many requests" },
+      { status: 429, headers: { "retry-after": "60", "cache-control": "no-store" } },
+    );
+  }
   const sp = Object.fromEntries(req.nextUrl.searchParams);
 
   const bboxRaw = typeof sp.bbox === "string" ? sp.bbox : "";

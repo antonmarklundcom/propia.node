@@ -175,7 +175,8 @@ it; none of them blocks a phase.
   look at what `seed:locations` does with a moved node before it is edited —
   not done in this PR.
 
-- **Open: `--color-success` is not defined anywhere (found 2026-09-28, page-speed PR #244).**
+- **Resolved 2026-10-01: `--color-success` is not defined anywhere (found 2026-09-28, page-speed PR #244).** Now declared in `:root` as `#1D6B35` (5.5:1 on every theme's accent-soft).
+  Original note:
   `.panel-status--published` in `app/globals.css` uses `var(--color-success)`,
   which no stylesheet or theme declares, so the "Publicado" pill renders in
   the inherited ink colour instead of green. The page-speed cells on
