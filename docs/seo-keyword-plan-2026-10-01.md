@@ -145,8 +145,16 @@ spread across these groups.
 
 ## 5. Decisions needed from the founder
 
-1. **OK to start batches 1–3.**
+**Approved 2026-10-01:** batches 1, 2, 3 and 5. Build spec:
+`docs/seo-build-spec-2026-10-01.md`. Still open:
+
 2. **F-f**: clean national type URLs (`/alquiler/quintas`, `/alquiler/comerciales`, `/alquiler/depositos`, `/venta/casas`). Proposal already in `docs/decisions-needed.md`.
 3. **Rooms**: add a `habitacion` property type (migration)?
 4. **Model rental contract**: offer a downloadable model, reviewed by an escribano, or only a checklist?
 5. **New places**: Villarrica, Concepción (Paraguay only), Pilar — seed them?
+6. **Retargeting**: there is no ad pixel on the site today. Meta/Google
+   retargeting needs a pixel, a CSP change and a privacy-policy + cookie
+   notice — a policy decision on user data.
+7. **Prefab houses** go to `obra.com.py`, not this portal (≈1 100/mo with
+   construction costs per m²; run a dedicated Keyword Planner export first).
+8. **Scraped InfoCasas prices**: not published. Internal sanity check only.
