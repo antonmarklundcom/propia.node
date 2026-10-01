@@ -7,7 +7,7 @@ unless a single phrase is quoted. This plan **adds to**
 `docs/seo-evergreen-keywords.md` (the 2026-09-27 map behind the 42 evergreen
 pages) — it does not replace it.
 
-Status: **Step 1, plan only. Nothing here is built until the founder says OK.**
+Status: **approved 2026-10-01** (see §5). Build spec: `docs/seo-build-spec-2026-10-01.md`.
 
 ## 0. What the data says, in four lines
 
@@ -104,8 +104,8 @@ to check, like `docs/log/residencia-claims.md`.
 | C2c | alquiler depósito · alquiler casa con galpón | ~1 010 | NEW national `/alquiler/depositos` | alquiler de depósito | depósito en alquiler · alquiler de galpones | **F-f** |
 | C2d | venta de casas baratas en paraguay · casa venta paraguay | ~620 | NEW national `/venta/casas` | casas en venta en Paraguay | venta de casas baratas en Paraguay · casas económicas en Paraguay | **F-f** (also unblocks table C2 of the old map) |
 | C3 | inmobiliaria ciudad del este · inmobiliaria encarnación · inmobiliaria san lorenzo | ~400 generic (agency brand names excluded) | NEW directory city pages on `inmobiliarios.com.py` | inmobiliarias en Ciudad del Este | inmobiliarias en Encarnación · inmobiliaria en San Lorenzo | New route + `ownsDirectory` rules + `verify:seo` — **Opus** |
-| C4 | casas villarrica · casas/departamentos en concepción | 460 · ≤650 | NEW evergreen pages once the places exist | casas en Villarrica | villarrica terrenos · casas en venta Villarrica | **Seed the places** (S10 pattern, founder checks coordinates). Concepción: check how much is Chile first |
-| C5 | alquiler de pieza · alquiler de habitaciones (+ barrio jara) | ~4 250 | NEW `/alquiler/asuncion/habitaciones` + national | alquiler de pieza | alquiler de habitaciones · pieza con baño privado · cuartos en alquiler baratos | **New property type `habitacion` = `MIGRATION REQUIRED`** (MySQL enum) + forms, filters, i18n. Biggest unserved listing demand. **Founder decision** |
+| C4 | casas villarrica · casas/departamentos en concepción | 460 · ≤650 | NEW evergreen pages once the places exist | casas en Villarrica | villarrica terrenos · casas en venta Villarrica | **Places seeded (data only); no pages yet** — decision 5 |
+| C5 | alquiler de pieza · alquiler de habitaciones (+ barrio jara) | ~4 250 | NEW `/alquiler/asuncion/habitaciones` + national | alquiler de pieza | alquiler de habitaciones · pieza con baño privado · cuartos en alquiler baratos | **New property type `habitacion` = `MIGRATION REQUIRED`** (MySQL enum) + forms, filters, i18n. Biggest unserved listing demand. **Dropped 2026-10-01 (decision 3)** |
 
 ### D. Skipped, with the reason
 
@@ -126,35 +126,29 @@ to check, like `docs/log/residencia-claims.md`.
   title/H1, while the searches are the bare "departamentos en {lugar}". Add
   the bare form to meta and intro; do not rename the pages.
 
-## 4. Build order (Step 2, after OK)
+## 4. Build order
 
-| Batch | What | Model | Code risk |
-| --- | --- | --- | --- |
-| 1 | A1–A10 quick wins (copy, meta, FAQ, links) | Sonnet, parallel, one file each | Low — copy only, `es.ts` + `en.ts` peers |
-| 2 | C1–C1d: 4 evergreen content files (500–900 words, `check-evergreen-file.ts`, claims listed) | Sonnet, one agent per page | Low |
-| 3 | B1–B7 guides as a `seed:guias-es` script (`--dry`, founder runs it) + claims file | Opus writes the script, Sonnet writes the bodies | Low; legal claims wait for the founder |
-| 4 | C2–C2d national type pages | Opus (routing, canonicals, hreflang, `verify:seo`) | Medium — **needs F-f approved** |
-| 5 | C3 directory city pages | Opus | Medium |
-| 6 | C5 rooms type, C4 new places | Opus, PR with `MIGRATION REQUIRED` | High — founder applies the migration |
+Two sessions run in parallel, each with its own branch and PR. Who does what,
+file by file, is in `docs/seo-build-spec-2026-10-01.md`.
 
-Batches 1–3 cover about **23 000 searches/mo** (A 7 300 + C1 1 800 + B
-14 300) with no founder decision needed (the legal copy itself still waits
-for a check). Batches 4–6 add about **13 700**, and each one waits on a
-decision. Skipped: about 5 900. Of the 43 510 total, the rest is long tail
-spread across these groups.
+| Session | Model | Batches |
+| --- | --- | --- |
+| **Content** | Sonnet 5.5, medium effort | 0 (claims report), 1 (quick wins except A5), 2 (four evergreen pages), 3 (seven guides + seed script) |
+| **Structure** | Opus 5.5, high effort | A5 (land-door hub), 4 (national type pages), 5 (agencies by city), places seed |
 
-## 5. Decisions needed from the founder
+Content covers about 23 000 searches/mo, structure about 9 000. Rooms (C5)
+are dropped (decision 3).
 
-**Approved 2026-10-01:** batches 1, 2, 3 and 5. Build spec:
-`docs/seo-build-spec-2026-10-01.md`. Still open:
+## 5. Founder decisions (2026-10-01)
 
-2. **F-f**: clean national type URLs (`/alquiler/quintas`, `/alquiler/comerciales`, `/alquiler/depositos`, `/venta/casas`). Proposal already in `docs/decisions-needed.md`.
-3. **Rooms**: add a `habitacion` property type (migration)?
-4. **Model rental contract**: offer a downloadable model, reviewed by an escribano, or only a checklist?
-5. **New places**: Villarrica, Concepción (Paraguay only), Pilar — seed them?
-6. **Retargeting**: there is no ad pixel on the site today. Meta/Google
-   retargeting needs a pixel, a CSP change and a privacy-policy + cookie
-   notice — a policy decision on user data.
-7. **Prefab houses** go to `obra.com.py`, not this portal (≈1 100/mo with
-   construction costs per m²; run a dedicated Keyword Planner export first).
-8. **Scraped InfoCasas prices**: not published. Internal sanity check only.
+| # | Question | Answer |
+| --- | --- | --- |
+| 1 | Batches 1, 2, 3, 5 | **Approved** |
+| 2 | F-f national type pages (batch 4) | **Approved** — `/alquiler/quintas`, `/alquiler-temporal/quintas`, `/alquiler/comerciales`, `/alquiler/depositos`, `/venta/casas` |
+| 3 | Rooms (`habitacion` type) | **No.** Too much spam, little money. C5 is dropped; no migration |
+| 4 | Rental contract | A **model contract that is not reviewed by a notary**, clearly marked as such, plus a checklist and tips. Legal points are researched first (`docs/research/legal-questions-2026-10-01.md`) |
+| 5 | New places Villarrica, Concepción, Pilar | **Add them to the location tree** (data only). **No evergreen pages yet**: most of their volume in this export is Chile (Concepción, Villarrica) or Argentina (Pilar del Este, Estancias del Pilar). Build pages once Search Console shows Paraguayan impressions |
+| 6 | Retargeting pixels | **Later.** Wanted: a super-admin setting where IDs are pasted (Meta Pixel ID, GA4 ID, Google Ads ID), not raw script — a pasted script would bypass the CSP and is an injection risk. Needs the privacy-policy + cookie notice wording at the same time |
+| 7 | Prefab houses | **obra.com.py**, not this portal |
+| 8 | Scraped InfoCasas prices | Not published; internal sanity check only |
+| 9 | Unverified claims | One generated report for the founder: batch 0 in the build spec |
