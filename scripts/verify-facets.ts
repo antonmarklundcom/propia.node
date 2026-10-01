@@ -28,6 +28,7 @@ import {
 import { publishedFacetWhere, verticalConds } from "../src/lib/facet-sql";
 import { VERTICALS, type VerticalConfig } from "../src/config/verticals";
 import { OPERATIONS, PROPERTY_TYPES } from "../src/lib/import/types";
+import { criteriaKey, criteriaPath, normalizeCriteria } from "../src/lib/saved-search-criteria";
 import { imageUrl, imageThumbUrl } from "../src/lib/format";
 
 let failures = 0;
@@ -261,6 +262,29 @@ try {
 } finally {
   if (originalImageBase === undefined) delete process.env.R2_PUBLIC_BASE_URL;
   else process.env.R2_PUBLIC_BASE_URL = originalImageBase;
+}
+
+
+// Saved searches: the stored criteria round-trip through the same URL the grid uses.
+{
+  check("criteria: no operation is rejected", normalizeCriteria({ citySlug: "luque" }) === null);
+  check("criteria: bad operation is rejected", normalizeCriteria({ operation: "regalo" }) === null);
+  const c = normalizeCriteria({
+    operation: "venta", propertyType: "casa", citySlug: "luque", barrioSlug: "centro",
+    priceMin: "50000", priceMax: 120000, minBedrooms: 3, junk: "x",
+  });
+  check("criteria: valid search kept", c?.propertyType === "casa" && c?.priceMax === 120000 && c?.minBedrooms === 3);
+  check("criteria: barrio without city dropped", normalizeCriteria({ operation: "venta", barrioSlug: "centro" })?.barrioSlug === undefined);
+  check("criteria: unsafe slug dropped", normalizeCriteria({ operation: "venta", citySlug: "../x" })?.citySlug === undefined);
+  check("criteria: max below min dropped", normalizeCriteria({ operation: "venta", priceMin: 9, priceMax: 3 })?.priceMax === undefined);
+  check("criteria: same search, same key", criteriaKey(c!) === criteriaKey(normalizeCriteria({ minBedrooms: 3, operation: "venta", priceMax: 120000, priceMin: 50000, barrioSlug: "centro", citySlug: "luque", propertyType: "casa" })!));
+  const path = criteriaPath(c!);
+  const [base, qs] = path.split("?");
+  check("criteria: category path", base === "/comprar/luque/centro/casas" || base.endsWith("/luque/centro/casas"), base);
+  const back = parseFacetParams(Object.fromEntries(new URLSearchParams(qs)));
+  check("criteria: query parses back through parseFacetParams", back.priceMin === 50000 && back.priceMax === 120000 && back.minBedrooms === 3);
+  const hub = criteriaPath({ operation: "venta", propertyType: "casa" });
+  check("criteria: hub uses ?tipo=", /^\/[a-z]+\?tipo=casas$/.test(hub), hub);
 }
 
 console.log(

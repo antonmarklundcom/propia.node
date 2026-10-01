@@ -55,6 +55,7 @@ export type OpsJob =
   | "cron:sessions"
   | "cron:reminders"
   | "cron:lead-digest"
+  | "cron:saved-searches"
   | "seed:financing"
   | "seed:locations"
   | "seed:sample-photos"

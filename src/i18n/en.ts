@@ -2711,6 +2711,40 @@ export function agentInquiryPrefillFor(brand: string, agentName: string, url: st
   return `Hello, I saw your profile on ${brand} and would like to contact you: ${agentName}\n${url}`;
 }
 
+export const enSavedSearch = {
+  title: "Get alerts for new listings",
+  intro: "We email you when something matching this search is published. No account needed, and you can unsubscribe any time.",
+  emailLabel: "Your email",
+  emailPlaceholder: "name@email.com",
+  submit: "Alert me",
+  sending: "Sending…",
+  done: "Done. We sent you an email: open the link to confirm and start receiving alerts.",
+  invalidEmail: "Enter a valid email address.",
+  error: "We couldn't save the search. Please try again in a while.",
+  pageTitle: "Listing alerts",
+  notFoundTitle: "Invalid link",
+  notFoundBody: "This link doesn't exist or the search was already removed.",
+  confirmTitle: "Confirm your alert",
+  confirmBody: (summary: string) => `You'll get an email when something new is published for: ${summary}.`,
+  confirmButton: "Confirm",
+  confirmedTitle: "Confirmed!",
+  confirmedBody: "We'll email you when there are new listings for this search.",
+  unsubscribeButton: "Unsubscribe",
+  removedTitle: "You're unsubscribed",
+  removedBody: "You won't get any more alerts for this search.",
+  seeSearch: "View the search",
+  confirmSubject: (brand: string) => `Confirm your listing alert · ${brand}`,
+  confirmHeading: "Confirm your listing alert",
+  confirmIntro: (summary: string) => `Someone (hopefully you) asked for alerts about new listings for: ${summary}. If that was you, please confirm. If not, just ignore this email and nothing happens.`,
+  confirmCta: "Confirm alert",
+  alertSubject: (n: number, brand: string) => (n === 1 ? `1 new listing for your search · ${brand}` : `${n} new listings for your search · ${brand}`),
+  alertHeading: (n: number) => (n === 1 ? "There is 1 new listing for your search" : `There are ${n} new listings for your search`),
+  alertIntro: (summary: string) => `Search: ${summary}.`,
+  alertMore: (extra: number) => (extra === 1 ? "…and 1 more." : `…and ${extra} more.`),
+  alertCta: "See all",
+  unsubscribeLine: (url: string) => `To stop receiving these alerts: ${url}`,
+} satisfies Record<string, string | ((...a: never[]) => string)>;
+
 export const enPhoneCheck = {
   short: "That number is too short. Enter it in full, with the area code (e.g. +595 981 123 456).",
   doubled: "The country code (595) is repeated. Enter the number once, e.g. +595 981 123 456.",

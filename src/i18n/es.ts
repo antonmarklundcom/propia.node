@@ -962,6 +962,10 @@ export const esPanel = {
   opsLeadDigestDescription: (hours: number) =>
     `Cuenta las consultas internas que siguen como «Nueva» pasadas ${hours} horas y te avisa una vez al día.`,
   opsLeadDigestWrites: "No escribe nada. En modo real avisa por los canales configurados (webhook, Telegram, correo); sin ninguno, no hace nada.",
+  opsSavedSearchesLabel: "Avisos de búsquedas guardadas",
+  opsSavedSearchesDescription:
+    "Envía por correo las propiedades nuevas a quienes confirmaron una búsqueda guardada. Una vez al día, un correo por búsqueda.",
+  opsSavedSearchesWrites: "Envía correos y avanza la fecha de último aviso de cada búsqueda (solo si el correo fue aceptado). Sin correo configurado, no hace nada.",
   opsLiveCheckLabel: "Revisar que el sitio cargue",
   opsLiveCheckDescription:
     "Abre la portada, las páginas evergreen y una muestra del sitemap de cada dominio en vivo, y lista toda URL que no responda bien (404, error, redirección o sin respuesta). Corre sola después de cada deploy y una vez por día.",
@@ -3870,6 +3874,43 @@ export const esPublicAuth = {
   registerMetaTitle: "Creá tu cuenta",
   registerDescription: (brand: string) => `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
   phonePlaceholder: "0981 123 456",
+} as const;
+
+export const esSavedSearch = {
+  // The form under a category's results.
+  title: "Recibí avisos de propiedades nuevas",
+  intro: "Te escribimos por correo cuando se publique algo que coincida con esta búsqueda. Sin cuenta; te podés dar de baja cuando quieras.",
+  emailLabel: "Tu correo",
+  emailPlaceholder: "nombre@correo.com",
+  submit: "Avisarme",
+  sending: "Enviando…",
+  done: "Listo. Te enviamos un correo: abrí el enlace para confirmar y empezar a recibir avisos.",
+  invalidEmail: "Escribí un correo válido.",
+  error: "No pudimos guardar la búsqueda. Probá de nuevo en un rato.",
+  // /alertas
+  pageTitle: "Avisos de propiedades",
+  notFoundTitle: "Enlace no válido",
+  notFoundBody: "Este enlace no existe o la búsqueda ya se eliminó.",
+  confirmTitle: "Confirmá tu aviso",
+  confirmBody: (summary: string) => `Vas a recibir un correo cuando se publique algo nuevo para: ${summary}.`,
+  confirmButton: "Confirmar",
+  confirmedTitle: "¡Confirmado!",
+  confirmedBody: "Te avisamos por correo cuando haya propiedades nuevas para esta búsqueda.",
+  unsubscribeButton: "Darme de baja",
+  removedTitle: "Listo, te diste de baja",
+  removedBody: "No vas a recibir más avisos de esta búsqueda.",
+  seeSearch: "Ver la búsqueda",
+  // Emails.
+  confirmSubject: (brand: string) => `Confirmá tu aviso de propiedades · ${brand}`,
+  confirmHeading: "Confirmá tu aviso de propiedades",
+  confirmIntro: (summary: string) => `Alguien (esperamos que vos) pidió recibir avisos de propiedades nuevas para: ${summary}. Si fuiste vos, confirmalo. Si no, ignorá este correo y no pasa nada.`,
+  confirmCta: "Confirmar aviso",
+  alertSubject: (n: number, brand: string) => (n === 1 ? `1 propiedad nueva para tu búsqueda · ${brand}` : `${n} propiedades nuevas para tu búsqueda · ${brand}`),
+  alertHeading: (n: number) => (n === 1 ? "Hay 1 propiedad nueva para tu búsqueda" : `Hay ${n} propiedades nuevas para tu búsqueda`),
+  alertIntro: (summary: string) => `Búsqueda: ${summary}.`,
+  alertMore: (extra: number) => (extra === 1 ? "…y 1 más." : `…y ${extra} más.`),
+  alertCta: "Ver todas",
+  unsubscribeLine: (url: string) => `Para dejar de recibir estos avisos: ${url}`,
 } as const;
 
 /** Why a lead form refused the phone (`checkPhone()` in src/lib/wa.ts). */

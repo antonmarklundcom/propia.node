@@ -14,6 +14,8 @@ import { getFilteredCategoryListings, listCities, listCityBarrios, resolveBarrio
 import { currentVertical } from "@/lib/vertical-context";
 import { usdFirstPrice } from "@/design/sections";
 import { BuyerBrief } from "./BuyerBrief";
+import { SaveSearch } from "./SaveSearch";
+import { isEmailConfigured } from "@/lib/email";
 import { BRIEF_FEW_RESULTS, briefChoices, type BriefPrefill } from "@/lib/buyer-brief";
 
 export function listingPage(value: string | string[] | undefined) {
@@ -70,13 +72,26 @@ export async function ListingBrowser({ basePath, query, searchParams, city, barr
     budgetMaxUsd: filters.priceMax,
     bedrooms: filters.minBedrooms,
   };
+  // Alerts for new matches, only when email can actually be sent. A barrio
+  // picked with ?barrio= counts as the barrio; a type in the path or the query
+  // is the type. The door's own filters narrow the alert again in the job.
+  const alertCriteria = {
+    operation: query.operation,
+    propertyType: query.type ?? filters.propertyType,
+    citySlug: city?.slug,
+    barrioSlug: barrio?.slug ?? selectedBarrio?.slug,
+    priceMin: filters.priceMin,
+    priceMax: filters.priceMax,
+    minBedrooms: filters.minBedrooms,
+  };
+  const saveSearch = !mapView && isEmailConfigured() ? <SaveSearch locale={locale} criteria={alertCriteria} /> : null;
   const empty = filteredCount === 0 || listings.length === 0;
   const brief = (surface: "empty" | "few") => hideBrief ? null : <BuyerBrief locale={locale} surface={surface} prefill={briefPrefill} choices={briefChoices(door.filters)} idPrefix={`brief-${surface}`} collapsible={surface === "few"} />;
   const typeChoices = withoutEmptyCategoryLinks(query.type && city ? [{ label: d.category.typeLabelAny, href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug })) }, ...PROPERTY_TYPES.map(type => ({ label: d.category.typeLabel[type], href: href({ page: undefined, tipo: undefined }, categoryUrl({ operation: query.operation, citySlug: city.slug, barrioSlug: barrio?.slug, type })) }))] : [], stocked);
   return <CategoryFilterBar basePath={basePath} params={params} locale={locale} count={filteredCount} operation={query.operation} fixedType={query.type} typeChoices={typeChoices} locations={locations} locationLabel={city ? d.filters.barrio : d.filters.city}
     viewSwitch={<nav className="view-switch" aria-label={d.category.viewSwitchLabel}>{(["lista","mapa"] as const).map(view => <a className={`view-switch__option${(view === "mapa") === mapView ? " view-switch__option--active" : ""}`} key={view} href={href({ vista: view === "mapa" ? view : undefined, page: undefined })}>{view === "mapa" ? d.category.viewMap : d.category.viewList}</a>)}</nav>}>
     <JsonLd data={itemListJsonLd(await listingCanonicalOrigin(), listings.map(l => ({ title: locale === "en" ? l.titleEn ?? l.title : l.title, url: listingUrl(l) })))} />
-    {mapView ? <CategoryMapLazy centerLat={Number(center?.lat ?? -25.3)} centerLng={Number(center?.lng ?? -57.6)} zoom={barrio ? 14 : city ? 12 : 8} query={mapQuery} locale={locale} usdFirst={usdFirstPrice(door.key)} /> : empty ? <><div className="filter-empty">{d.category.filterEmpty}<br /><a href={basePath}>{d.category.filterEmptyClear}</a></div>{brief("empty")}</> : <><div className="category-results listing-results-grid">{listings.map(card => <ListingCard key={card.id} card={card} />)}</div>{page === 1 && filteredCount < BRIEF_FEW_RESULTS && brief("few")}</>}
+    {mapView ? <CategoryMapLazy centerLat={Number(center?.lat ?? -25.3)} centerLng={Number(center?.lng ?? -57.6)} zoom={barrio ? 14 : city ? 12 : 8} query={mapQuery} locale={locale} usdFirst={usdFirstPrice(door.key)} /> : empty ? <><div className="filter-empty">{d.category.filterEmpty}<br /><a href={basePath}>{d.category.filterEmptyClear}</a></div>{brief("empty")}{saveSearch}</> : <><div className="category-results listing-results-grid">{listings.map(card => <ListingCard key={card.id} card={card} />)}</div>{page === 1 && filteredCount < BRIEF_FEW_RESULTS && brief("few")}{saveSearch}</>}
     {!mapView && filteredCount > 48 && <nav className="pagination" aria-label={d.category.paginationLabel}>
       {page > 1 && <a className="pagination__link" href={href({ page: page === 2 ? undefined : String(page - 1) })}>{d.category.paginationPrev}</a>}
       <span className="pagination__status">{d.category.paginationStatus(page,totalPages)}</span>
