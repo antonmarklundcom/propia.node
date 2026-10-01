@@ -25,7 +25,7 @@ import {
   proposeMatches,
   MAX_MATCHES_PER_LEAD,
 } from "@/lib/matching";
-import { updateLeadFollowUp, type LeadFollowUp } from "@/lib/panel-queries";
+import { deleteLead, setLeadSpam, updateLeadFollowUp, type LeadFollowUp } from "@/lib/panel-queries";
 import {
   revokeShare,
   shareLeads,
@@ -141,6 +141,44 @@ export async function updateLeadAction(formData: FormData): Promise<void> {
   });
   revalidatePath(ROUTE);
   redirect(target);
+}
+
+/**
+ * "Marcar como spam" / "No es spam". Reversible, so staff may do it too — on
+ * the internal lane they can see, like every other write on this page.
+ */
+export async function setLeadSpamAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const target = backTarget(formData);
+  const leadId = toId(formData.get("leadId"));
+  const spam = formData.get("spam") === "1";
+  const changed = leadId
+    ? await setLeadSpam({ id: leadId, spam, internalOnly: isStaff(user.role) })
+    : 0;
+  if (changed > 0) {
+    await recordAdminEvent(user.id, spam ? "lead.spam" : "lead.unspam", "lead", leadId);
+  }
+  revalidatePath(ROUTE);
+  redirect(
+    withMsg(target, changed > 0 ? (spam ? "spam_marked" : "spam_restored") : "spam_invalid"),
+  );
+}
+
+/** Permanent delete: the super-admin only (staff never reach this). */
+export async function deleteLeadAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  const target = backTarget(formData);
+  const leadId = toId(formData.get("leadId"));
+  const gone = leadId ? await deleteLead(leadId) : null;
+  if (gone) {
+    await recordAdminEvent(user.id, "lead.delete", "lead", leadId, {
+      type: gone.leadType,
+      vertical: gone.vertical,
+      status: gone.status,
+    });
+  }
+  revalidatePath(ROUTE);
+  redirect(withMsg(target, gone ? "lead_deleted" : "lead_delete_invalid"));
 }
 
 /** Where a share form sends the operator back to: an /admin/leads URL only. */

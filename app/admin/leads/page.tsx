@@ -48,7 +48,7 @@ import {
 } from "@/lib/lead-assignments";
 import { siteOrigin } from "@/lib/origin";
 import { isSuperAdmin } from "@/lib/auth/roles";
-import { updateLeadAction } from "./actions";
+import { deleteLeadAction, setLeadSpamAction, updateLeadAction } from "./actions";
 import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
 import { esA3, type ReportReason } from "@/i18n/es-a3";
 import { esBrief } from "@/i18n/es-brief";
@@ -108,12 +108,14 @@ const FOLLOW_UP_LABEL: Record<LeadFollowUp, string> = {
   new: "Nueva",
   contacted: "Contactada",
   closed: "Cerrada",
+  spam: "Spam",
 };
 
 const FOLLOW_UP_CHIP: Record<LeadFollowUp, string> = {
   new: "Nuevas",
   contacted: "Contactadas",
   closed: "Cerradas",
+  spam: "Spam",
 };
 
 /** Who the lead was routed to — 'internal' means it is yours to work. */
@@ -212,6 +214,11 @@ const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
   share_none: { text: esPanel.shareFlashNone, error: true },
   share_invalid: { text: esPanel.shareFlashInvalid, error: true },
   share_revoked: { text: esPanel.shareFlashRevoked },
+  spam_marked: { text: esPanel.spamFlashMarked },
+  spam_restored: { text: esPanel.spamFlashRestored },
+  spam_invalid: { text: esPanel.spamFlashInvalid, error: true },
+  lead_deleted: { text: esPanel.deleteFlashDone },
+  lead_delete_invalid: { text: esPanel.deleteFlashInvalid, error: true },
   ...LEAD_EMAIL_FLASH,
   ...LEAD_WHATSAPP_FLASH,
   converted: { text: esInbox.flash.converted },
@@ -605,6 +612,32 @@ export default async function AdminLeadsPage({
         </div>
       </form>
 
+      {/* Spam is reversible and hides the lead; delete is permanent and only
+          the super-admin gets the button. No JS: the confirm is a <details>. */}
+      <div className="panel-form">
+        <form action={setLeadSpamAction}>
+          <input type="hidden" name="leadId" value={lead.id} />
+          <input type="hidden" name="back" value={backHref} />
+          <input type="hidden" name="spam" value={lead.status === "spam" ? "0" : "1"} />
+          <button className="panel-btn" type="submit">
+            {lead.status === "spam" ? esPanel.unspamButton : esPanel.spamButton}
+          </button>
+        </form>
+        {superAdmin ? (
+          <details>
+            <summary>{esPanel.deleteSummary}</summary>
+            <form action={deleteLeadAction}>
+              <p className="auth-field__label">{esPanel.deleteWarning}</p>
+              <input type="hidden" name="leadId" value={lead.id} />
+              <input type="hidden" name="back" value={backHref} />
+              <button className="panel-btn panel-btn--danger" type="submit">
+                {esPanel.deleteButton}
+              </button>
+            </form>
+          </details>
+        ) : null}
+      </div>
+
       {/* A report is never shared: shareLeads() refuses it too. */}
       {!isReport(lead) && (
         <SharePanel
@@ -782,6 +815,13 @@ export default async function AdminLeadsPage({
               <span className="panel-tab__count">{statusCounts[st] ?? 0}</span>
             </Link>
           ))}
+          <Link
+            href={leadsHref({ tipo: activeType, sitio: activeSite, estado: "spam", q, agrupar: grouped })}
+            className={`panel-chip${activeStatus === "spam" ? " panel-chip--active" : ""}`}
+          >
+            {esPanel.spamChip}
+            <span className="panel-tab__count">{statusCounts.spam ?? 0}</span>
+          </Link>
         </nav>
 
         {/* Same shape as the listings search on /admin/propiedades. */}

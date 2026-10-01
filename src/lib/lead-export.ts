@@ -137,6 +137,9 @@ export type AdminLeadType = (typeof ADMIN_LEAD_TYPES)[number];
 /** The operator's follow-up state, in the order a lead moves through it. */
 export const FOLLOW_UP: readonly LeadFollowUp[] = ["new", "contacted", "closed"];
 
+/** What the `?estado=` filter accepts: the follow-up states plus the spam bin. */
+export const LEAD_STATUS_FILTERS: readonly LeadFollowUp[] = [...FOLLOW_UP, "spam"];
+
 export interface AdminLeadFilter {
   type: AdminLeadType;
   vertical?: string;
@@ -159,7 +162,7 @@ export function parseAdminLeadFilter(
   return {
     type: ADMIN_LEAD_TYPES.includes(sp.tipo as AdminLeadType) ? (sp.tipo as AdminLeadType) : "all",
     vertical: sp.sitio && sites.includes(sp.sitio) ? sp.sitio : undefined,
-    status: FOLLOW_UP.includes(sp.estado as LeadFollowUp) ? (sp.estado as LeadFollowUp) : undefined,
+    status: LEAD_STATUS_FILTERS.includes(sp.estado as LeadFollowUp) ? (sp.estado as LeadFollowUp) : undefined,
     // "Same number" filter: only a well-formed key, never free text.
     phoneKey: sp.tel && /^\d{6,9}$/.test(sp.tel) ? sp.tel : undefined,
     q: sp.q || undefined,

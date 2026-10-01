@@ -10,11 +10,16 @@ import { db } from "@/db";
 import {
   agencies,
   agents,
+  deals,
+  emailMessages,
+  leadAssignments,
+  leadMatches,
   leads,
   listings,
   locations,
   sessions,
   users,
+  whatsappMessages,
 } from "@/db/schema";
 import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
@@ -94,6 +99,7 @@ export async function countRecentLeads(hours = 24, internalOnly = false): Promis
     .from(leads)
     .where(and(
       sql`${leads.createdAt} >= now() - interval ${sql.raw(String(Math.max(1, Math.floor(hours))))} hour`,
+      ne(leads.status, "spam"),
       internalOnly ? eq(leads.routedTo, "internal") : undefined,
     ));
   return Number(row?.n ?? 0);
@@ -632,7 +638,10 @@ export async function listAllLeads(params: {
   }
   if (params.vertical) filters.push(eq(leads.vertical, params.vertical));
   if (params.where) filters.push(params.where);
-  if (params.status) filters.push(eq(leads.status, params.status));
+  // Spam is out of every list unless the operator asked for it by name.
+  filters.push(
+    params.status ? eq(leads.status, params.status) : ne(leads.status, "spam"),
+  );
   if (params.phoneKey && /^\d{6,9}$/.test(params.phoneKey)) {
     filters.push(sql`${PHONE_KEY_SQL} = ${params.phoneKey}`);
   }
@@ -868,6 +877,60 @@ export async function countLeadsByStatus(
 }
 
 /**
+ * Mark a lead as spam, or bring it back. Reversible: nothing is deleted, the
+ * lead only leaves the lists and counts. Restoring sets it to `new` (the
+ * previous state is on the `lead.spam` history line). `internalOnly` is the
+ * staff predicate, applied to the write. Returns rows affected.
+ */
+export async function setLeadSpam(params: {
+  id: number;
+  spam: boolean;
+  internalOnly: boolean;
+}): Promise<number> {
+  const [res] = await db
+    .update(leads)
+    .set({ status: params.spam ? "spam" : "new" })
+    .where(
+      and(
+        eq(leads.id, params.id),
+        // Marking only moves a live lead; restoring only a spam one.
+        params.spam ? ne(leads.status, "spam") : eq(leads.status, "spam"),
+        params.internalOnly ? eq(leads.routedTo, "internal") : undefined,
+      ),
+    );
+  return res.affectedRows;
+}
+
+/**
+ * Permanently delete a lead (super-admin only, the caller checks). Its
+ * matches, shares and deal go with it; email and WhatsApp messages keep
+ * their rows but lose the link, so they fall back to the unthreaded inbox
+ * instead of vanishing. One transaction, so a half-deleted lead cannot exist.
+ * Returns the deleted lead's identifying fields for the history line, or null.
+ */
+export async function deleteLead(id: number): Promise<{
+  leadType: string;
+  vertical: string;
+  status: string;
+} | null> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ leadType: leads.leadType, vertical: leads.vertical, status: leads.status })
+      .from(leads)
+      .where(eq(leads.id, id))
+      .limit(1);
+    if (!row) return null;
+    await tx.delete(leadMatches).where(eq(leadMatches.leadId, id));
+    await tx.delete(leadAssignments).where(eq(leadAssignments.leadId, id));
+    await tx.delete(deals).where(eq(deals.leadId, id));
+    await tx.update(emailMessages).set({ leadId: null }).where(eq(emailMessages.leadId, id));
+    await tx.update(whatsappMessages).set({ leadId: null }).where(eq(whatsappMessages.leadId, id));
+    await tx.delete(leads).where(eq(leads.id, id));
+    return row;
+  });
+}
+
+/**
  * Set a lead's follow-up state and note from /admin/leads. A `staff` user only
  * ever sees the internal lane, so they may only write to it — the same
  * predicate their list uses, applied to the write. Returns rows affected.
@@ -901,7 +964,7 @@ export async function countLeadsByVertical(
   const rows = await db
     .select({ vertical: leads.vertical, n: sql<number>`count(*)` })
     .from(leads)
-    .where(internalOnly ? eq(leads.routedTo, "internal") : undefined)
+    .where(and(ne(leads.status, "spam"), internalOnly ? eq(leads.routedTo, "internal") : undefined))
     .groupBy(leads.vertical);
   return rows
     .map((r) => ({ vertical: r.vertical, n: Number(r.n) }))
@@ -968,6 +1031,7 @@ export async function getPanelLeads(
       and(
         routed,
         guard,
+        ne(leads.status, "spam"),
         onlyLeadId !== undefined ? eq(leads.id, onlyLeadId) : undefined,
       ),
     )
