@@ -548,6 +548,25 @@ default, `--dry` first). It records itself as a revertible import job.
     Telegram) for hand and automatic shares go through one function,
     `sendShareNotices()` (`src/lib/share-notices.ts`).
 
+26. **Audit 2026-10 (O10, `docs/log/audit-2026-10.md`).** No IDOR and no SQL
+    injection found. Fixed:
+    - **Public `/tasacion` actions are rate-limited.** The contact request
+      writes a lead and alerts; it gets `/api/leads`' bound.
+    - **Listing price and text are bounded to their columns**
+      (`priceWithinBounds()`, `LISTING_*_MAX` in
+      `src/lib/listing-form-input.ts`).
+    - **Raw SQL fragments carry their own guard** next to the raw call.
+    - **Panel pages read less:**
+      - an edit page's stats are for that one listing
+        (`getPanelListingStats(…, onlyListingId)`);
+      - `getPanelLeads()` takes a limit (`PANEL_LEADS_LIMIT`, pages only).
+
+    Auth findings are in a separate PR, never merged by an agent. Roles and
+    registration questions are in `docs/decisions-needed.md` (2026-10-02).
+    Proposed indexes ride on the O2/O8 migration. Still open: one grouped pass
+    for the /admin/leads chip counts (P7), and /admin/analitica reading the
+    rollup (P8).
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

@@ -91,10 +91,15 @@ export interface ListingStats {
  * Two grouped queries rather than per-listing lookups, so a panel with 200
  * listings still costs two round-trips. Listings with no activity are simply
  * absent from the map — the caller renders 0.
+ *
+ * `onlyListingId` is the edit pages' case: one listing's numbers, still
+ * through the scope's WHERE, without aggregating every listing the scope
+ * reaches (for /admin that was the whole table — audit 2026-10 P1).
  */
 export async function getPanelListingStats(
   scope: EditScope,
   internalLeadsOnly = false,
+  onlyListingId?: number,
 ): Promise<Map<number, ListingStats>> {
   const guard = listingScopeWhere(scope);
   const since = windowStart();
@@ -102,7 +107,7 @@ export async function getPanelListingStats(
   const owned = await db
     .select({ id: listings.id })
     .from(listings)
-    .where(guard);
+    .where(and(guard, onlyListingId != null ? eq(listings.id, onlyListingId) : undefined));
   const ids = owned.map((r) => r.id);
   if (ids.length === 0) return new Map();
 

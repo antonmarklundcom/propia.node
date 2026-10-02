@@ -45,6 +45,11 @@ export function isContactKind(v: unknown): v is ContactKind {
 
 // Constants spelled raw, not bound: the same expression is SELECTed and
 // GROUPed BY, and MySQL's ONLY_FULL_GROUP_BY cannot see two placeholders as one.
+// The key is quoted into the JSON path below, so it must stay a plain
+// identifier — checked here, next to the raw use (audit 2026-10 Q1).
+if (!/^[a-z_]{1,40}$/.test(CONTACT_ROLE_UTM_KEY)) {
+  throw new Error(`contact-kind: utm key ${JSON.stringify(CONTACT_ROLE_UTM_KEY)} is not a plain identifier`);
+}
 const ROLE_SQL = sql`JSON_UNQUOTE(JSON_EXTRACT(${leads.utm}, ${sql.raw(`'$.${CONTACT_ROLE_UTM_KEY}'`)}))`;
 
 export const CONTACT_KIND_SQL: SQL<ContactKind> = sql<ContactKind>`CASE

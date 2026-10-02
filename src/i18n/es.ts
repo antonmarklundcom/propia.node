@@ -640,6 +640,7 @@ export const esPanel = {
     contacted: "Ya lo contacté",
     closed: "Cerrada",
   } as Record<string, string>,
+  panelLeadsTruncated: (n: number) => `Se muestran las ${n} consultas más recientes.`,
   historyTitle: "Historial",
   historyHint:
     "Quién compartió o quitó una consulta, publicó o borró un aviso, o cambió un rol o una contraseña.",

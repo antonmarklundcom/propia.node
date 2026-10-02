@@ -971,8 +971,12 @@ async function main() {
     const staffRows = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared` }, []), isStaff("staff"));
     check("staff export: internal lane only", staffRows.length > 0 && staffRows.every((l) => l.routedTo === "internal"));
     check("staff export lacks the agency-lane lead", staffRows.every((l) => l.id !== agencyLaneLeadId));
-    const adminRows = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared` }, []), false);
-    check("admin export includes the agency-lane lead", adminRows.some((l) => l.id === agencyLaneLeadId));
+    // Since admin triage 2 the admin view defaults to "Mis consultas" (the
+    // internal lane); "Todas" is the one that includes every lane.
+    const adminRows = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared`, vista: "todas" }, []), false);
+    check("admin export (Todas) includes the agency-lane lead", adminRows.some((l) => l.id === agencyLaneLeadId));
+    const adminMine = await adminLeadRows(parseAdminLeadFilter({ q: `Verify shared` }, []), false);
+    check("admin export (default Mis consultas) is the internal lane only", adminMine.length > 0 && adminMine.every((l) => l.routedTo === "internal"));
 
     /* ---------------------------------------------------------------- */
     /* Email threads (waves E2 + E3): "may this user see lead N?"       */
@@ -1031,7 +1035,7 @@ async function main() {
     check("thread access: staff does not see an agency-lane lead", !(await userMaySeeLead(asUser(0, "staff"), agencyLaneLeadId)));
     check("thread access: super-admin sees every lane", await userMaySeeLead(asUser(0, "admin"), agencyLaneLeadId));
     check("thread access: a bad id is nobody's", !(await userMaySeeLead(asUser(0, "admin"), 0)));
-    const telRows = await adminLeadRows(parseAdminLeadFilter({ tel: "986000002" }, []), false);
+    const telRows = await adminLeadRows(parseAdminLeadFilter({ tel: "986000002", vista: "todas" }, []), false);
     check("admin export honours the same-number filter", telRows.length > 0 && telRows.every((l) => l.whatsapp.endsWith("986000002")));
     check(
       "admin export ignores a site that no lead carries",
