@@ -19,12 +19,14 @@ export async function JoinedListingsNotice({ agencyId }: { agencyId: number }) {
   const events = await listAgencyJoinEvents({ agencyId, afterId: seen });
   if (events.length === 0) return null;
 
-  const withTitles = await Promise.all(
-    events.map(async (e) => ({
-      ...e,
-      titles: await listAgencyListingTitles(agencyId, e.listingIds),
-    })),
-  );
+  // One query for every event (it was one per event, up to ten at once —
+  // more than the whole pool; audit 2026-10 P3), split back per event here.
+  const all = await listAgencyListingTitles(agencyId, [...new Set(events.flatMap((e) => e.listingIds))]);
+  const byId = new Map(all.map((l) => [l.id, l]));
+  const withTitles = events.map((e) => ({
+    ...e,
+    titles: e.listingIds.flatMap((id) => byId.get(id) ?? []).sort((a, b) => a.id - b.id),
+  }));
   const visible = withTitles.filter((e) => e.titles.length > 0);
   if (visible.length === 0) return null;
 

@@ -21,6 +21,7 @@
  */
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { singleFlight } from "@/lib/cache";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { leads, listingImages, listings } from "@/db/schema";
@@ -209,7 +210,9 @@ function readDeployInfo(): DeployInfo {
   };
 }
 
-const cachedHealth = unstable_cache(
+// Single-flighted: two cold /admin renders at once ran the whole health read
+// twice, ~5 pool connections each (audit 2026-10 P6).
+const cachedHealth = singleFlight("admin-health", unstable_cache(
   async (): Promise<Health> => {
     const [counts, migrations, runs] = await Promise.all([
       readCounts(),
@@ -228,7 +231,7 @@ const cachedHealth = unstable_cache(
   },
   ["admin:health"],
   { revalidate: TTL_SECONDS },
-);
+));
 
 export async function getHealth(): Promise<Health> {
   return cachedHealth();

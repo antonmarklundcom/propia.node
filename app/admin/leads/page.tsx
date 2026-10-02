@@ -444,16 +444,29 @@ export default async function AdminLeadsPage({
   // stage alone — their query never selects a money column.
   const superAdmin = isSuperAdmin(user.role);
   const leadIds = rows.map((r) => r.id);
-  const [dealsByLead, dealStagesByLead] = await Promise.all([
-    superAdmin ? getDealsForLeads(leadIds) : Promise.resolve(new Map<number, DealRow>()),
-    superAdmin ? Promise.resolve(new Map<number, DealStageRow>()) : getDealStagesForLeads(leadIds),
-  ]);
+  // D3 matching, loaded once for the page rather than per card: one candidate
+  // query and one matches query, then the ranking is pure TS per lead. Skipped
+  // entirely when the filter shows no directory lead — a buyer inbox must not
+  // pay for a feature it never renders.
+  const directoryLeads = rows.filter(isDirectoryLead);
+  // Deals, WhatsApp and matching depend only on `rows`: one round of at most
+  // six reads instead of three sequential rounds (audit 2026-10 P7), still
+  // within the pool's six connections.
+  //
   // WhatsApp threads of exactly these rows (they carry the staff rule), and
   // each number's 24-hour window. A read failure (migration 0021 not applied
   // yet) leaves the cards without a WhatsApp block rather than failing the page.
-  const [waThreads, waContacts] = await Promise.all([
+  const [dealsByLead, dealStagesByLead, waThreads, waContacts, candidates, matchesByLead] = await Promise.all([
+    superAdmin ? getDealsForLeads(leadIds) : Promise.resolve(new Map<number, DealRow>()),
+    superAdmin ? Promise.resolve(new Map<number, DealStageRow>()) : getDealStagesForLeads(leadIds),
     listLeadWhatsApp(leadIds).catch(() => new Map<number, WhatsAppMessage[]>()),
     getWhatsAppContacts(rows.map((r) => normalizeWaPhone(r.whatsapp) ?? "")).catch(() => new Map<string, WhatsAppContact>()),
+    directoryLeads.length > 0
+      ? listAgentMatchCandidates()
+      : Promise.resolve([]),
+    directoryLeads.length > 0
+      ? listMatchesForLeads(directoryLeads.map((l) => l.id))
+      : Promise.resolve(new Map<number, LeadMatchRow[]>()),
   ]);
   const waSendable = isWhatsAppConfigured();
   const openDealLead = Number(negocio) || 0;
@@ -474,19 +487,6 @@ export default async function AdminLeadsPage({
     fuente: reportsOnly ? "reportes" : undefined,
   });
 
-  // D3 matching, loaded once for the page rather than per card: one candidate
-  // query and one matches query, then the ranking is pure TS per lead. Skipped
-  // entirely when the filter shows no directory lead — a buyer inbox must not
-  // pay for a feature it never renders.
-  const directoryLeads = rows.filter(isDirectoryLead);
-  const [candidates, matchesByLead] = await Promise.all([
-    directoryLeads.length > 0
-      ? listAgentMatchCandidates()
-      : Promise.resolve([]),
-    directoryLeads.length > 0
-      ? listMatchesForLeads(directoryLeads.map((l) => l.id))
-      : Promise.resolve(new Map<number, LeadMatchRow[]>()),
-  ]);
 
   const leadCard = (lead: AdminLeadRow) => (
     <article className="panel-card" key={lead.id} id={`lead-${lead.id}`}>

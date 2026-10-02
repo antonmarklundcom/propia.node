@@ -467,3 +467,54 @@ idempotent — a `listings.expires_at` (and `expiry_reminded_at`) column, i.e. a
 `src/lib/cron-tick.ts` via `daily()`, mail through `src/lib/email.ts` (silent
 no-op without Cloudflare vars), copy in `esEmail`/`enEmail`, recipient chain
 agent → agency → owner like the lead routing.
+
+## 2026-10-02 — Audit O10: roles and registration (founder)
+
+From `docs/log/audit-2026-10.md`. Nothing here was changed in code. Each one
+is a policy on who may do what.
+
+1. **D1 — staff can move agents between agencies, roles included.**
+   `moveAgentAction` in /admin/agentes is open to `staff`, and can set
+   `agency_admin`. A staff user can therefore:
+   - register a second account of their own;
+   - move it into any agency as `agency_admin`;
+   - read that agency's leads in /agencia, which /admin/leads hides from staff
+     on purpose.
+
+   Staff can also create agencies on the partner plan (`createAgencyAction`).
+
+   **Options:**
+   - (a) super-admin only for both (recommended);
+   - (b) staff may move an agent only as `agent`, never `agency_admin`, and may
+     not set a plan;
+   - (c) keep it as is.
+2. **D2 — `/registro` accepts `plan=partner` / `destacado`.** A self-registered
+   agency gets the plan for free. That puts it first in the public directory
+   and labels it "Socio" in /admin. **Options:**
+   - (a) always store `free` and put the requested plan in the operator alert
+     (recommended);
+   - (b) keep it as is.
+3. **D3 — editing a published listing keeps it published.** An agency or owner
+   can change title, price, photos and location after approval, with no second
+   review. **Options:**
+   - (a) a content edit sends it back to `pending_review`;
+   - (b) it stays published but shows in the review queue as "editado";
+   - (c) keep it as is (trust after the first review).
+4. **D4 — smaller items:**
+   - Staff may publish and delete guides (listings need the super-admin).
+   - `/registro` stays open in agency mode.
+   - Registration says when an email or WhatsApp already has an account
+     (enumeration).
+   - Each sign-up sends a welcome email to whatever address was typed.
+   - Invite tokens and OTP codes are stored readable. With the read-only
+     database user that becomes an agency login; this depends on that user's
+     grants, which is worth checking.
+   - An unverified WhatsApp is written to the unique `users.whatsapp`, so a
+     stranger can block someone's number.
+5. **Indexes (P9).** These are proposed inside the O2/O8 migration, so they
+   ride on one migration. Drop that commit if you would rather run them
+   separately:
+   - `listings(owner_user_id, agency_id)`
+   - `leads(routed_to, status, created_at)`
+   - `listings(updated_at)`
+   - `ops_runs(job, id)`

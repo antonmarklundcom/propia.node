@@ -530,5 +530,7 @@ export async function listAgencyListingTitles(
     .from(listings)
     .where(and(eq(listings.agencyId, agencyId), inArray(listings.id, ids)))
     .orderBy(asc(listings.id))
-    .limit(50);
+    // At least the old 50, and room for several joins read at once
+    // (JoinedListingsNotice batches every event into one call).
+    .limit(Math.min(500, Math.max(50, ids.length)));
 }

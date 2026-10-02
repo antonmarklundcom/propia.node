@@ -1158,6 +1158,12 @@ export async function getPanelLeads(
    * the answer can never differ from what the page shows.
    */
   onlyLeadId?: number,
+  /**
+   * The newest N only — the panel pages, which then load every listed lead's
+   * mail and WhatsApp (audit 2026-10 P2). The CSV exports and the visibility
+   * checks pass nothing and read everything.
+   */
+  limit?: number,
 ): Promise<LeadRow[]> {
   // One join with the ownership predicate applied to the joined listing —
   // the previous shape read every owned listing id into Node first and then
@@ -1197,5 +1203,9 @@ export async function getPanelLeads(
         onlyLeadId !== undefined ? eq(leads.id, onlyLeadId) : undefined,
       ),
     )
-    .orderBy(desc(leads.createdAt));
+    .orderBy(desc(leads.createdAt))
+    .limit(limit ?? Number.MAX_SAFE_INTEGER);
 }
+
+/** How many leads /agencia/leads and /mis-avisos/consultas list (newest first). */
+export const PANEL_LEADS_LIMIT = 300;
