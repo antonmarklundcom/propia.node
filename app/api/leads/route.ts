@@ -29,6 +29,7 @@ import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { currentVertical } from "@/lib/vertical-context";
 import { emailSeekerConfirmation } from "@/lib/lead-emails";
 import { isAgencyMode } from "@/lib/site-settings";
+import { autoRouteLead } from "@/lib/lead-routing";
 import { recordAnalyticsEvent } from "@/lib/analytics";
 import { VISIT_REFERRER_UTM_KEY } from "@/lib/visit-source";
 
@@ -504,6 +505,7 @@ export async function POST(req: NextRequest) {
    */
   const adminUrl = `${await siteOrigin()}/admin/leads`;
   const ownerUrl = `${await siteOrigin()}/mis-avisos/consultas`;
+  const partnerInboxUrl = `${await siteOrigin()}/agencia/leads`;
   // The lead's own door (read above, inside the request — after() runs once
   // the headers are gone) names the emails: brand and the seeker's language.
   const listingTitle = listing
@@ -527,6 +529,9 @@ export async function POST(req: NextRequest) {
       });
       return;
     }
+    // Routing rules (src/lib/lead-routing.ts): a lead in the operator's lane
+    // may be shared with a Socio. Off by default; never throws.
+    if (routedTo === "internal") await autoRouteLead(leadId, { inboxUrl: partnerInboxUrl });
     await sendLeadCopies({
       payload,
       owner,

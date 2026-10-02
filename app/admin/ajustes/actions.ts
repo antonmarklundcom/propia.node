@@ -12,9 +12,19 @@ import { templatesFromText } from "@/lib/reply-templates";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies } from "@/db/schema";
+import { listSocios } from "@/lib/lead-routing";
+import {
+  parsePrice,
+  parseRoutingConfig,
+  ruleFromForm,
+  serializeRoutingConfig,
+  type PartnerRule,
+} from "@/lib/lead-routing-rules";
+import { listPublishLocations } from "@/lib/publish-queries";
 import {
   getAnalyticsRawDays,
   getBusinessMode,
+  getLeadRoutingSettings,
   getHouseAgencyId,
   parseHouseAgencyId,
   getWhatsAppAutoSettings,
@@ -121,6 +131,65 @@ export async function saveHouseAgencyAction(formData: FormData): Promise<void> {
     });
   }
   redirect("/admin/ajustes?msg=house_saved#mi-inmobiliaria");
+}
+
+/**
+ * Lead routing rules (src/lib/lead-routing-rules.ts, plan-admin-next O3): the
+ * switch and one coverage per Socio. Only current Socios are read from the
+ * form; a rule for someone no longer a Socio is kept as it was, so marking
+ * them again brings their coverage back. Zones are kept only when they are a
+ * real city or barrio. The saver becomes the actor of every automatic share.
+ */
+export async function saveLeadRoutingAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  const [socios, locationOptions, current] = await Promise.all([
+    listSocios(),
+    listPublishLocations(),
+    getLeadRoutingSettings(),
+  ]);
+  const validZones = new Set(locationOptions.map((l) => l.id));
+  const before = parseRoutingConfig(current.rulesRaw);
+
+  const get = (n: string) => {
+    const v = formData.get(n);
+    return typeof v === "string" ? v : null;
+  };
+  const getAll = (n: string) => formData.getAll(n).filter((v): v is string => typeof v === "string");
+
+  const shown = new Set(socios.map((s) => s.key));
+  const edited: PartnerRule[] = socios.map((s) => {
+    const rule = ruleFromForm(s.key, get, getAll);
+    return { ...rule, zoneIds: rule.zoneIds.filter((id) => validZones.has(id)) };
+  });
+  // A bound typed but not understood is refused rather than silently dropped.
+  for (const s of socios) {
+    for (const f of ["min", "max"]) {
+      const raw = (get(`${s.key}:${f}`) ?? "").trim();
+      if (raw && parsePrice(raw) === null) redirect("/admin/ajustes?msg=routing_invalid#reparto");
+    }
+  }
+  const kept = before.rules.filter((r) => !shown.has(r.partner));
+  const next = { rules: [...edited, ...kept], savedBy: user.id };
+  const enabled = formData.get("routingEnabled") === "on";
+
+  if (enabled !== current.enabled) {
+    await setSiteSetting(SETTING_KEYS.leadRoutingEnabled, enabled ? "true" : "false", user.id);
+    await recordAdminEvent(user.id, "setting.change", "setting", 0, {
+      key: SETTING_KEYS.leadRoutingEnabled,
+      from: current.enabled ? "true" : "false",
+      to: enabled ? "true" : "false",
+    });
+  }
+  const serialized = serializeRoutingConfig(next);
+  if (serialized !== (current.rulesRaw ?? "")) {
+    await setSiteSetting(SETTING_KEYS.leadRoutingRules, serialized, user.id);
+    await recordAdminEvent(user.id, "setting.change", "setting", 0, {
+      key: SETTING_KEYS.leadRoutingRules,
+      from: before.rules.filter((r) => r.active).length,
+      to: next.rules.filter((r) => r.active).length,
+    });
+  }
+  redirect("/admin/ajustes?msg=routing_saved#reparto");
 }
 
 /**

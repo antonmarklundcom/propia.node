@@ -664,6 +664,7 @@ export const esPanel = {
     "user.delete": "Borró un usuario",
     "lead.from_email": "Convirtió un email en consulta",
     "lead.from_whatsapp": "Registró una consulta de WhatsApp",
+    "lead.auto_share": "Compartió una consulta (regla automática)",
   } as Record<string, string>,
   staffCannotPublish:
     "Publicar y borrar definitivamente quedan para el superadmin. Podés dejarlo en revisión.",

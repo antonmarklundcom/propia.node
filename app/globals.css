@@ -4167,6 +4167,43 @@ summary.panel-btn::-webkit-details-marker {
   align-items: flex-end;
 }
 
+/* A form whose children stack as blocks (lead routing rules in /admin/ajustes). */
+.panel-form--stack {
+  display: block;
+}
+
+.routing-socios {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.routing-socios .panel-card {
+  margin-bottom: 0;
+}
+
+.routing-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  border: 0;
+  padding: 0;
+  margin: 8px 0;
+}
+
+.routing-checks legend {
+  flex: 1 1 100%;
+  margin-bottom: 4px;
+}
+
+.routing-price {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
 .panel-form__field {
   display: flex;
   flex-direction: column;
