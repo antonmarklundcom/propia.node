@@ -19,7 +19,8 @@ Branch `claude/audit-2026-10-auth`. These are the auth findings of
 - A3 against a local MariaDB 11.8 (throwaway tsx script, not committed):
   - 20 concurrent wrong guesses: exactly 4 "mismatch" and 16 "too_many".
     The database shows 5 attempts and the code burned.
-  - Before the fix the same race let every guess through.
+  - The race was not run against the old code. Its read-then-write is what
+    the audit reasoned would let each concurrent guess through.
   - Sequential behaviour is unchanged:
     - 4 wrong guesses, then the right one: ok, and a reuse is refused;
     - 5 wrong guesses: the 5th reports too_many and burns the code.
