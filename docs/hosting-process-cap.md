@@ -227,3 +227,43 @@ hour whether the Worker plan can work at all.
 > orphaned (PPID 1) instead of stopped when idle? (c) Is there a setting for
 > one instance per app, or an idle timeout? Until this is fixed I run a cron
 > job that kills the extra copies every 5 minutes.
+
+## 9. Results 2026-10-02 (founder over SSH, account u210059163, br-asc-web1724)
+
+Raw numbers, as pasted. Server commands from `docs/plan-doors-hosting-2026-10-02.md`
+§8.3 (that file is on `claude/elegant-lamport-hp3k7c`, not yet on `main`).
+
+**Baseline, ~4 h after #266 deployed (09:47 UTC):**
+- Propia app: 4–5 `next-server` copies at 14:10 UTC, 113 threads total on the
+  account. `pmon2.log` 03:19–03:49: 5–7 copies, 82–187 threads.
+- `reap.log`: fires every 10 min (15:20, 15:30, 15:40 UTC) at 141–145 threads,
+  killing 5–7 copies each time. Not near zero. (The "kills per day" awk in §8.3
+  counted timestamps, not days; ignore its output.)
+- `[lifecycle]` lines in the live console.log
+  (`hbuilds/versions/<uuid>/nodejs/console.log`, not `domains/<d>/nodejs/`, which
+  is stale since Jul 31): 54. Startup lines read `ppid 4025624 orphan-exit 120s
+  idle-exit off`; only 2 `exiting: orphaned` lines, each after ~600 s idle.
+  Orphans aged 14–29 min were alive at 14:10.
+- Every copy listed at 15:5x has PPID 4025624 (a live launcher), so the orphan
+  exit does not apply to them; `idle-exit` is off.
+- hPanel Max Processes, 24 h average: 117 / 200.
+
+**Test A:** `X-Forwarded-Host: terreno.com.py` to realestateinparaguay.com returns
+the Terreno title; without the header, "Real Estate in Paraguay". The header
+reaches the app (`ORIGIN_PROXY_SECRET` is not set yet).
+
+**Test B** (reap.sh paused by rename for the start, restored mid-run; 9 requests to
+realestateinparaguay.com, only `X-Forwarded-Host` varying, 20 s apart):
+`copies` 0 → 2, 2, 3, 3, 3, 4, 4, 5, 5. The reaper ran every 10 min and could
+only have lowered the counts.
+
+**Test C:** not run. `~/dtest.sh` does not exist on this account.
+
+**Row chosen (§8.4):** copies grow per request even with one origin hostname.
+The hostname is not the (only) cause. **Move no DNS.** Caveat: the varied header
+is itself a possible launcher key; a control with an identical header repeated
+was not run.
+
+**Next:** set `IDLE_EXIT_MINUTES=15`, `NODE_OPTIONS=--v8-pool-size=1` and
+`UV_THREADPOOL_SIZE=2` in hPanel; keep the reaper; measure 24 h. If thread peaks
+stay above ~120, plan the VPS (§7).
