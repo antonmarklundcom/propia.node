@@ -529,6 +529,7 @@ default, `--dry` first). It records itself as a revertible import job.
     being verified; lead cards show who published the listing (`?publico=`);
     lead forms fall back to the beacon's visit source (`src/lib/visit-source.ts`)
     and /admin/analitica's single "Fuente" table counts each visitor once.
+    Round 3 (`docs/log/admin-triage-3.md`): CSV export of the filtered /admin/propiedades and /admin/calidad views, super-admin reply templates (`reply_templates` setting, `TemplatePicker`), bulk "Marcar contactadas" on /admin/leads (staff internal-only), period deltas on /admin/analitica, cover thumbs, review-queue keyboard shortcuts and `.panel-table--stack` mobile cards.
 
 ## Launch track — state as of 2026-09-22
 

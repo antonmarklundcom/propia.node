@@ -655,6 +655,7 @@ export const esPanel = {
     "lead.revoke": "Quitó el acceso a una consulta",
     "lead.spam": "Marcó una consulta como spam",
     "lead.unspam": "Sacó una consulta de spam",
+    "lead.contacted": "Marcó una consulta como contactada",
     "lead.delete": "Borró una consulta",
     "listing.publish": "Publicó un aviso",
     "listing.delete": "Borró un aviso",

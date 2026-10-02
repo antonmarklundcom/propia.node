@@ -6,8 +6,9 @@ import { getAnalyticsRawDays, getBusinessMode } from "@/lib/site-settings";
 import { CONTACT_WHATSAPP } from "@/config/contact";
 import { esAgency } from "@/i18n/es-agency";
 import { adminTabs } from "../tabs";
-import { saveHouseAgencyAction, saveSettingsAction, saveWhatsAppAutoAction } from "./actions";
-import { getHouseAgencyId } from "@/lib/site-settings";
+import { saveHouseAgencyAction, saveReplyTemplatesAction, saveSettingsAction, saveWhatsAppAutoAction } from "./actions";
+import { getHouseAgencyId, getReplyTemplates } from "@/lib/site-settings";
+import { REPLY_TEMPLATES_MAX, REPLY_TEMPLATE_CHARS, templatesToText } from "@/lib/reply-templates";
 import { listAgencies } from "@/lib/panel-queries";
 import { esTriage } from "@/i18n/es-triage";
 import { getWhatsAppAutoSettings } from "@/lib/site-settings";
@@ -33,6 +34,9 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   wa_invalid: { text: esWhatsApp.settings.invalid, error: true },
   house_saved: { text: esTriage.settings.houseSaved },
   house_invalid: { text: esTriage.settings.houseInvalid, error: true },
+  tpl_saved: { text: esTriage.templates.saved },
+  tpl_many: { text: esTriage.templates.tooMany, error: true },
+  tpl_long: { text: esTriage.templates.tooLong, error: true },
 };
 
 /**
@@ -54,7 +58,12 @@ export default async function AdminSettingsPage({
     aiReplyUsageThisMonth().catch(() => null),
     getWhatsAppAutoSettings(),
   ]);
-  const [houseAgencyId, agencyOptions] = await Promise.all([getHouseAgencyId(), listAgencies()]);
+  const [houseAgencyId, agencyOptions, replyTemplates] = await Promise.all([
+    getHouseAgencyId(),
+    listAgencies(),
+    getReplyTemplates({ uncached: true }),
+  ]);
+  const tp = esTriage.templates;
   const hs = esTriage.settings;
   const ai = aiReplyConfig();
   const waHours = parseOfficeHours(waAuto.officeHoursRaw);
@@ -229,6 +238,28 @@ export default async function AdminSettingsPage({
           </article>
           <button className="panel-btn panel-btn--primary" type="submit">
             {hs.houseSave}
+          </button>
+        </form>
+
+        <form action={saveReplyTemplatesAction} className="panel-form" id="plantillas">
+          <article className="panel-card" style={{ flexBasis: "100%" }}>
+            <h3 className="panel-section__title">{tp.title}</h3>
+            <p className="panel-note">{tp.hint}</p>
+            <label className="panel-form__field">
+              <span className="auth-field__label">
+                {tp.label} ({replyTemplates.length}/{REPLY_TEMPLATES_MAX})
+              </span>
+              <textarea
+                className="auth-field__input"
+                name="templates"
+                rows={10}
+                defaultValue={templatesToText(replyTemplates)}
+                maxLength={REPLY_TEMPLATES_MAX * (REPLY_TEMPLATE_CHARS + 8)}
+              />
+            </label>
+          </article>
+          <button className="panel-btn panel-btn--primary" type="submit">
+            {tp.save}
           </button>
         </form>
 

@@ -7,6 +7,7 @@
  * Text is shown as text. Media links to the one authenticated download route.
  * An automatic message (sent_by_user_id NULL) carries the "automático" label.
  */
+import { TemplatePicker, type TemplatePickerProps } from "./TemplatePicker";
 import type { ReactNode } from "react";
 import { esWhatsApp } from "@/i18n/es-whatsapp";
 import { aiReplyButtonLabels, esAiReply } from "@/i18n/es-ai";
@@ -73,6 +74,7 @@ export function WhatsAppReplyBox(props: {
   phone: string;
   lastInboundAt: Date | null;
   suggest?: () => Promise<SuggestOutcome>;
+  templates?: TemplatePickerProps;
 }): ReactNode {
   const until = windowUntil(props.lastInboundAt);
   if (!until) {
@@ -94,6 +96,7 @@ export function WhatsAppReplyBox(props: {
         <input key={k} type="hidden" name={k} value={v} />
       ))}
       <input type="hidden" name="mode" value="reply" />
+      {props.templates ? <TemplatePicker {...props.templates} /> : null}
       <label className="panel-form__field" style={{ flexBasis: "100%" }}>
         <span className="auth-field__label">{t.replyLabel}</span>
         {props.suggest ? (
@@ -136,6 +139,7 @@ export function LeadWhatsAppThread(props: {
   phone: string | null;
   lastInboundAt: Date | null;
   suggest?: () => Promise<SuggestOutcome>;
+  templates?: TemplatePickerProps;
 }): ReactNode {
   const { messages } = props;
   if (messages.length === 0) return null;
@@ -169,6 +173,7 @@ export function LeadWhatsAppThread(props: {
           phone={props.phone}
           lastInboundAt={props.lastInboundAt}
           suggest={props.suggest}
+          templates={props.templates}
         />
       ) : !props.canReply ? (
         <p className="panel-note">{t.partnerReadOnly}</p>

@@ -11,6 +11,9 @@ import { esPanel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
+import { getCoverThumbs } from "@/lib/admin-covers";
+import { CoverThumb } from "@/components/panel/CoverThumb";
+import { ReviewShortcuts } from "@/components/panel/ReviewShortcuts";
 import { approveAction, approveManyAction, rejectAction, rejectManyAction } from "./actions";
 import { ReviewSelectAll, ReviewSelectedCount } from "@/components/panel/ReviewSelectAll";
 import { isPublisherKind, PUBLISHER_KINDS, type PublisherKind } from "@/lib/publisher-kind";
@@ -110,6 +113,8 @@ export default async function AdminReviewPage({
   for (const r of beforePublisher) publisherCounts.set(r.publisherKind, (publisherCounts.get(r.publisherKind) ?? 0) + 1);
   const filtered = Boolean(filter.q || filter.op || filter.tipo || filter.quien);
   const back = queueHref(filter).replace(/^\/admin\??/, "");
+  // One read for the covers of the rows on screen.
+  const covers = await getCoverThumbs(rows.map((r) => r.id));
 
   return (
     <>
@@ -224,8 +229,10 @@ export default async function AdminReviewPage({
             {rows.length === 0 ? (
               <p className="panel-empty">{t.emptyFiltered}</p>
             ) : (
+              <>
+              <ReviewShortcuts {...esTriage.shortcuts} />
               <div className="panel-table__wrap">
-                <table className="panel-table">
+                <table className="panel-table panel-table--stack" data-review-table>
                   <thead>
                     <tr>
                       {superAdmin ? (
@@ -233,6 +240,7 @@ export default async function AdminReviewPage({
                           <ReviewSelectAll label={esPanel.bulkSelectAll} hideLabel />
                         </th>
                       ) : null}
+                      <th aria-label={esTriage.noCover}></th>
                       <th>{t.colListing}</th>
                       <th>{t.colOperation}</th>
                       <th>{t.colType}</th>
@@ -256,6 +264,9 @@ export default async function AdminReviewPage({
                             />
                           </td>
                         ) : null}
+                        <td className="panel-table__thumb">
+                          <CoverThumb src={covers.get(row.id)} />
+                        </td>
                         <td className="panel-table__name">
                           {/* The full record: photos, description, every field. */}
                           <Link href={`/admin/propiedades/${row.id}`}>{row.title}</Link>
@@ -264,9 +275,9 @@ export default async function AdminReviewPage({
                             {row.locationName ? <span>{row.locationName}</span> : null}
                           </div>
                         </td>
-                        <td>{OPERATION_LABEL[row.operation] ?? row.operation}</td>
-                        <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
-                        <td>
+                        <td data-label={t.colOperation}>{OPERATION_LABEL[row.operation] ?? row.operation}</td>
+                        <td data-label={t.colType}>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
+                        <td data-label={esTriage.publisherColumn}>
                           <span className={`panel-kind panel-kind--${row.publisherKind}`}>
                             {esTriage.publisher[row.publisherKind]}
                           </span>
@@ -274,17 +285,17 @@ export default async function AdminReviewPage({
                             <span>{row.agencyName ?? row.publisherName ?? "—"}</span>
                           </div>
                         </td>
-                        <td>
+                        <td data-label={t.colPrice}>
                           {formatPrice({
                             priceAmount: row.priceAmount,
                             priceCurrency: row.priceCurrency,
                           })}
                         </td>
-                        <td>{formatReceived(row.createdAt)}</td>
-                        <td>
+                        <td data-label={t.colReceived}>{formatReceived(row.createdAt)}</td>
+                        <td data-label={t.colActions}>
                           {superAdmin ? (
                             <div className="panel-actions">
-                              <form action={approveAction}>
+                              <form action={approveAction} data-review-approve>
                                 <input type="hidden" name="listingId" value={row.id} />
                                 <button className="panel-btn panel-btn--primary" type="submit">
                                   {esPanel.approve}
@@ -324,6 +335,7 @@ export default async function AdminReviewPage({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </>
         )}
