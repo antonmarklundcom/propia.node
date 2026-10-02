@@ -70,6 +70,7 @@ export function RentalContact({ d, locale }: { d: Dictionary; locale: Locale }) 
               { value: "seller", label: c.reasonManage },
               { value: "buyer", label: c.reasonInvest },
             ]}
+            contactRoles={["owner", "particular", "agent", "agency"]}
           />
         </div>
       </section>

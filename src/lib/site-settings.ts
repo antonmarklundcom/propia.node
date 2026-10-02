@@ -32,6 +32,9 @@ export const SETTING_KEYS = {
   waAi: "wa_ai_enabled",
   waHours: "wa_office_hours",
   waAiCooldown: "wa_ai_cooldown_hours",
+  // The operator's own agency (/admin/ajustes): its listings read as "Propias"
+  // in /admin (src/lib/publisher-kind.ts). Unset = none chosen.
+  houseAgencyId: "house_agency_id",
 } as const;
 
 /** Uncached — for scripts and jobs, which have no Next.js cache around them. */
@@ -87,6 +90,16 @@ export function parseRawDays(value: string | undefined): number {
 
 export async function getAnalyticsRawDays(): Promise<number> {
   return parseRawDays((await readSiteSettings())[SETTING_KEYS.analyticsRawDays]);
+}
+
+export function parseHouseAgencyId(value: string | undefined): number | null {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/** The agency whose listings /admin labels "Propias"; null when none is chosen. */
+export async function getHouseAgencyId(): Promise<number | null> {
+  return parseHouseAgencyId((await readSiteSettings())[SETTING_KEYS.houseAgencyId]);
 }
 
 /** The auto-responder's switches, parsed; every default is "off" / the built-in hours. */

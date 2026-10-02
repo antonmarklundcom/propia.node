@@ -66,6 +66,7 @@ export const esA1 = {
   csvAdminHead: [
     "Fecha",
     "Tipo",
+    "Quién escribe",
     "Estado",
     "Nombre",
     "WhatsApp",

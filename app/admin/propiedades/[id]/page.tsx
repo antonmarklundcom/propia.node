@@ -1,3 +1,4 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import { isStaff } from "@/lib/auth/roles";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -7,7 +8,6 @@ import { ListingForm } from "@/components/panel/ListingForm";
 import { PhotoManager } from "@/components/panel/PhotoManager";
 import { ListingStats } from "@/components/panel/ListingStats";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import {
   ADMIN_STATUSES,
   STAFF_STATUSES,
@@ -68,8 +68,8 @@ export default async function AdminListingEditPage({
   const listingId = Number(id);
   if (!Number.isInteger(listingId) || listingId <= 0) notFound();
 
-  const [reviewCount, listing, locations, images, daily] = await Promise.all([
-    countReviewQueue(),
+  const [badges, listing, locations, images, daily] = await Promise.all([
+    getAdminBadges(user),
     getEditableListing(listingId, { kind: "admin" }),
     listPublishLocations(),
     listListingImages(listingId, { kind: "admin" }),
@@ -91,7 +91,7 @@ export default async function AdminListingEditPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("listings", reviewCount)}
+        tabs={adminTabs("listings", badges)}
       />
       <main className="panel site-main">
         <p>

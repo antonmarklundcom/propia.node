@@ -509,6 +509,20 @@ default, `--dry` first). It records itself as a revertible import job.
     `next.config.ts` host redirects match `x-forwarded-host` too. The Worker
     migration is unproven and the founder's to run, one door at a time.
 
+24. **Admin triage (2026-10-02, no migration, `docs/log/admin-triage.md`).**
+    Every /admin tab badges what is waiting through one loader,
+    `getAdminBadges()` (`src/lib/admin-badges.ts`) — a new admin page passes
+    its result to `adminTabs(active, badges)`, never its own counts. Who
+    published a listing is one SQL CASE, `publisherKindSql()`
+    (`src/lib/publisher-kind.ts`: Propia / Socio / Inmobiliaria / Agente /
+    Particular / Sin asignar; "Propia" reads the `house_agency_id` site setting
+    from /admin/ajustes). Who wrote a lead is one SQL CASE, `CONTACT_KIND_SQL`
+    (`src/lib/contact-kind.ts`), from the lead type and the optional
+    "¿Quién sos?" answer, stored as `leads.utm.contact_role`
+    (`src/lib/contact-role.ts`, stamped by `/api/leads` from the enum only).
+    **Do not add a column for either** — both are derived on purpose, so old
+    rows are classified too.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

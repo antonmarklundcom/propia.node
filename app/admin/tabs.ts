@@ -4,51 +4,48 @@ import { esInbox } from "@/i18n/es-e2";
 import { esAgency } from "@/i18n/es-agency";
 import { esAnalytics } from "@/i18n/es-analytics";
 import { esDeals } from "@/i18n/es-deals";
+import { esTriage } from "@/i18n/es-triage";
+import { NO_BADGES, type AdminBadges } from "@/lib/admin-badges";
+
+/** Which /admin screen is open. */
+export type AdminTabKey =
+  | "review"
+  | "agencies"
+  | "agents"
+  | "users"
+  | "listings"
+  | "quality"
+  | "google"
+  | "leads"
+  | "deals"
+  | "inbox"
+  | "posts"
+  | "import"
+  | "operations"
+  | "history"
+  | "settings"
+  | "analytics"
+  | "account";
 
 /**
- * The /admin tabs, with the active one flagged and the review count badged.
+ * The /admin tabs, with the active one flagged and every tab that has
+ * something waiting badged (`getAdminBadges()`, src/lib/admin-badges.ts —
+ * every admin page loads the same counts, so no badge vanishes as the operator
+ * moves between screens).
  *
  * Two groups, not one list of eight (PanelBar's `group`): the first row is
  * what an operator opens because something arrived — a listing to review, a
  * lead to answer — and the second is the records behind it, edited when
  * something changes rather than every day.
  */
-export function adminTabs(
-  active:
-    | "review"
-    | "agencies"
-    | "agents"
-    | "users"
-    | "listings"
-    | "quality"
-    | "google"
-    | "leads"
-    | "deals"
-    | "inbox"
-    | "posts"
-    | "import"
-    | "operations"
-    | "history"
-    | "settings"
-    | "analytics"
-    | "account",
-  reviewCount: number,
-  /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
-  draftPostCount?: number,
-  /**
-   * Leads from the last 24 h, badged on the Consultas tab. Omitted where it
-   * isn't loaded — the badge is a nudge, not a number every screen must pay
-   * a query for.
-   */
-  recentLeadCount?: number,
-  /** Unread inbox emails (wave E3), badged on the Correo tab; omitted where not loaded. */
-  unreadEmailCount?: number,
-): PanelTab[] {
+export function adminTabs(active: AdminTabKey, badges: AdminBadges = NO_BADGES): PanelTab[] {
+  const b = esTriage.badgeTitle;
   return [
     {
       href: "/admin",
       label: esPanel.adminReviewTitle,
-      count: reviewCount,
+      count: badges.review,
+      countTitle: b.review(badges.review),
       active: active === "review",
     },
     {
@@ -64,7 +61,8 @@ export function adminTabs(
     {
       href: "/admin/leads",
       label: esPanel.adminLeadsTitle,
-      count: recentLeadCount,
+      count: badges.leads,
+      countTitle: b.leads(badges.leads),
       active: active === "leads",
     },
     {
@@ -73,12 +71,15 @@ export function adminTabs(
       // staff allowlist leaves it out, and the page guards itself.
       href: "/admin/negocios",
       label: esDeals.tab,
+      count: badges.deals,
+      countTitle: b.deals(badges.deals),
       active: active === "deals",
     },
     {
       href: "/admin/inbox",
       label: esInbox.admin.tab,
-      count: unreadEmailCount,
+      count: badges.inbox,
+      countTitle: b.inbox(badges.inbox),
       active: active === "inbox",
     },
     {
@@ -95,7 +96,8 @@ export function adminTabs(
       href: "/admin/guias",
       group: "manage",
       label: "Guías y notas",
-      count: draftPostCount,
+      count: badges.posts,
+      countTitle: b.posts(badges.posts),
       active: active === "posts",
     },
     {
@@ -108,18 +110,24 @@ export function adminTabs(
       href: "/admin/operaciones",
       group: "manage",
       label: esPanel.opsTitle,
+      count: badges.operations,
+      countTitle: b.operations(badges.operations),
       active: active === "operations",
     },
     {
       href: "/admin/inmobiliarias",
       group: "manage",
       label: esPanel.adminAgenciesTitle,
+      count: badges.agencies,
+      countTitle: b.agencies(badges.agencies),
       active: active === "agencies",
     },
     {
       href: "/admin/agentes",
       group: "manage",
       label: esPanel.adminAgentsTitle,
+      count: badges.agents,
+      countTitle: b.agents(badges.agents),
       active: active === "agents",
     },
     {

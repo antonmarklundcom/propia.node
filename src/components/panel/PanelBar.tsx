@@ -7,6 +7,8 @@ export interface PanelTab {
   href: string;
   label: string;
   count?: number;
+  /** What the badge counts, as a tooltip ("3 consultas sin atender"). */
+  countTitle?: string;
   active?: boolean;
   /**
    * Which row the tab belongs to. `"main"` (the default) is the daily work —
@@ -90,7 +92,11 @@ function PanelTabLink({ tab }: { tab: PanelTab }) {
       aria-current={tab.active ? "page" : undefined}
     >
       {tab.label}
-      {tab.count ? <span className="panel-tab__count">{tab.count}</span> : null}
+      {tab.count ? (
+        <span className="panel-tab__count" title={tab.countTitle}>
+          {tab.count}
+        </span>
+      ) : null}
     </Link>
   );
 }

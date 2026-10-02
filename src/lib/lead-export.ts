@@ -13,6 +13,7 @@ import "server-only";
 import { VERTICALS } from "@/config/verticals";
 import { esA1 } from "@/i18n/es-a1";
 import { esPanel } from "@/i18n/es";
+import { esTriage } from "@/i18n/es-triage";
 import type { EditScope } from "@/lib/listing-edit";
 import {
   getPanelLeads,
@@ -30,6 +31,7 @@ import {
 import { csvDate, toCsv } from "@/lib/csv";
 import { isReportLead } from "@/lib/report-queries";
 import { listingUrl } from "@/lib/urls";
+import { isContactKind, isLeadSort, type ContactKind, type LeadSort } from "@/lib/contact-kind";
 
 /* ------------------------------ /agencia/leads ----------------------------- */
 
@@ -148,6 +150,10 @@ export interface AdminLeadFilter {
   q?: string;
   /** Only listing reports (A3: `?fuente=reportes`). */
   reports?: boolean;
+  /** Who the lead is from (`?quien=`, src/lib/contact-kind.ts). */
+  contactKind?: ContactKind;
+  /** `?orden=`: newest first unless asked otherwise. */
+  sort: LeadSort;
 }
 
 /**
@@ -156,7 +162,16 @@ export interface AdminLeadFilter {
  * filter is never free text.
  */
 export function parseAdminLeadFilter(
-  sp: { tipo?: string; sitio?: string; estado?: string; tel?: string; q?: string; fuente?: string },
+  sp: {
+    tipo?: string;
+    sitio?: string;
+    estado?: string;
+    tel?: string;
+    q?: string;
+    fuente?: string;
+    quien?: string;
+    orden?: string;
+  },
   sites: readonly string[],
 ): AdminLeadFilter {
   return {
@@ -167,6 +182,8 @@ export function parseAdminLeadFilter(
     phoneKey: sp.tel && /^\d{6,9}$/.test(sp.tel) ? sp.tel : undefined,
     q: sp.q || undefined,
     reports: sp.fuente === "reportes" || undefined,
+    contactKind: isContactKind(sp.quien) ? sp.quien : undefined,
+    sort: isLeadSort(sp.orden) ? sp.orden : "recent",
   };
 }
 
@@ -179,6 +196,8 @@ export function adminLeadFilterQuery(f: AdminLeadFilter): string {
   if (f.phoneKey) sp.set("tel", f.phoneKey);
   if (f.q) sp.set("q", f.q);
   if (f.reports) sp.set("fuente", "reportes");
+  if (f.contactKind) sp.set("quien", f.contactKind);
+  if (f.sort !== "recent") sp.set("orden", f.sort);
   return sp.toString();
 }
 
@@ -194,6 +213,8 @@ export function adminLeadRows(filter: AdminLeadFilter, internalOnly: boolean): P
     phoneKey: filter.phoneKey,
     q: filter.q,
     where: filter.reports ? isReportLead() : undefined,
+    contactKind: filter.contactKind,
+    sort: filter.sort,
     internalOnly,
   });
 }
@@ -210,6 +231,7 @@ export function adminLeadsCsv(rows: readonly AdminLeadRow[], origin: string): st
     rows.map((l) => [
       csvDate(l.createdAt),
       t.csvLeadType[l.leadType] ?? l.leadType,
+      esTriage.contact[l.contactKind],
       t.csvFollowUp[l.status] ?? l.status,
       l.name,
       l.whatsapp,

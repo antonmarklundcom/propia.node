@@ -1,8 +1,8 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import { listAdminEvents, type AdminEventRow } from "@/lib/admin-events";
 import { esPanel } from "@/i18n/es";
 import { esA5 } from "@/i18n/es-a5";
@@ -51,8 +51,8 @@ function detailText(e: AdminEventRow): string {
  */
 export default async function AdminHistoryPage() {
   const user = await requireSuperAdmin();
-  const [reviewCount, events] = await Promise.all([
-    countReviewQueue(),
+  const [badges, events] = await Promise.all([
+    getAdminBadges(user),
     listAdminEvents({ limit: 300, excludeActions: ["ai.reply"] }),
   ]);
 
@@ -62,7 +62,7 @@ export default async function AdminHistoryPage() {
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("history", reviewCount)}
+        tabs={adminTabs("history", badges)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.historyTitle}</h2>

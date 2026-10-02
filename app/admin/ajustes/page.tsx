@@ -1,12 +1,15 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import { getAnalyticsRawDays, getBusinessMode } from "@/lib/site-settings";
 import { CONTACT_WHATSAPP } from "@/config/contact";
 import { esAgency } from "@/i18n/es-agency";
 import { adminTabs } from "../tabs";
-import { saveSettingsAction, saveWhatsAppAutoAction } from "./actions";
+import { saveHouseAgencyAction, saveSettingsAction, saveWhatsAppAutoAction } from "./actions";
+import { getHouseAgencyId } from "@/lib/site-settings";
+import { listAgencies } from "@/lib/panel-queries";
+import { esTriage } from "@/i18n/es-triage";
 import { getWhatsAppAutoSettings } from "@/lib/site-settings";
 import { describeOfficeHours, parseCooldownHours, parseOfficeHours } from "@/lib/whatsapp-auto-policy";
 import { isWhatsAppConfigured } from "@/lib/whatsapp";
@@ -28,6 +31,8 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   invalid: { text: esAgency.invalid, error: true },
   wa_saved: { text: esWhatsApp.settings.saved },
   wa_invalid: { text: esWhatsApp.settings.invalid, error: true },
+  house_saved: { text: esTriage.settings.houseSaved },
+  house_invalid: { text: esTriage.settings.houseInvalid, error: true },
 };
 
 /**
@@ -41,14 +46,16 @@ export default async function AdminSettingsPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [{ msg }, user] = await Promise.all([searchParams, requireSuperAdmin()]);
-  const [reviewCount, mode, rawDays, aiUsage, waAuto] = await Promise.all([
-    countReviewQueue(),
+  const [badges, mode, rawDays, aiUsage, waAuto] = await Promise.all([
+    getAdminBadges(user),
     getBusinessMode(),
     getAnalyticsRawDays(),
     // A usage line is not worth an error page.
     aiReplyUsageThisMonth().catch(() => null),
     getWhatsAppAutoSettings(),
   ]);
+  const [houseAgencyId, agencyOptions] = await Promise.all([getHouseAgencyId(), listAgencies()]);
+  const hs = esTriage.settings;
   const ai = aiReplyConfig();
   const waHours = parseOfficeHours(waAuto.officeHoursRaw);
   const ws = esWhatsApp.settings;
@@ -62,7 +69,7 @@ export default async function AdminSettingsPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("settings", reviewCount)}
+        tabs={adminTabs("settings", badges)}
       />
       <main className="panel site-main">
         {flash ? (
@@ -201,6 +208,27 @@ export default async function AdminSettingsPage({
           </article>
           <button className="panel-btn panel-btn--primary" type="submit">
             {ws.save}
+          </button>
+        </form>
+
+        <form action={saveHouseAgencyAction} className="panel-form" id="mi-inmobiliaria">
+          <article className="panel-card">
+            <h3 className="panel-section__title">{hs.houseTitle}</h3>
+            <p className="panel-note">{hs.houseHint}</p>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{hs.houseLabel}</span>
+              <select className="panel-select" name="houseAgencyId" defaultValue={String(houseAgencyId ?? 0)}>
+                <option value="0">{hs.houseNone}</option>
+                {agencyOptions.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </article>
+          <button className="panel-btn panel-btn--primary" type="submit">
+            {hs.houseSave}
           </button>
         </form>
 

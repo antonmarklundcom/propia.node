@@ -19,6 +19,15 @@ import { toPriceUsd } from "@/lib/import/normalize";
 import { getUsdToPygRate } from "@/lib/fx";
 import type { Operation, PropertyType } from "@/lib/import/types";
 import { containsPattern } from "@/lib/sql-like";
+import { getHouseAgencyId } from "@/lib/site-settings";
+import {
+  PUBLISHER_KINDS,
+  publisherAgent,
+  publisherKindSql,
+  publisherOwner,
+  toPublisherKind,
+  type PublisherKind,
+} from "@/lib/publisher-kind";
 
 export type ListingStatusValue = (typeof listings.$inferSelect)["status"];
 
@@ -182,6 +191,10 @@ export interface AdminListingRow {
   updatedAt: Date;
   agencyName: string | null;
   locationName: string | null;
+  /** Who published it (src/lib/publisher-kind.ts). */
+  publisherKind: PublisherKind;
+  /** The agent or the private owner's name, when the row has one. */
+  publisherName: string | null;
 }
 
 /**
@@ -192,9 +205,15 @@ export interface AdminListingRow {
 export async function listAllListings(params: {
   status?: ListingStatusValue | "all";
   q?: string;
+  /** Only listings of this publisher kind. */
+  publisher?: PublisherKind;
   limit?: number;
 }): Promise<AdminListingRow[]> {
   const filters: SQL[] = [];
+  const kind = publisherKindSql(await getHouseAgencyId());
+  if (params.publisher && PUBLISHER_KINDS.includes(params.publisher)) {
+    filters.push(sql`${kind} = ${sql.raw(`'${params.publisher}'`)}`);
+  }
 
   if (params.status && params.status !== "all") {
     filters.push(eq(listings.status, params.status));
@@ -221,13 +240,39 @@ export async function listAllListings(params: {
       updatedAt: listings.updatedAt,
       agencyName: agencies.name,
       locationName: locations.name,
+      publisherKind: kind,
+      publisherName: sql<string | null>`coalesce(${publisherAgent.name}, ${publisherOwner.name})`,
     })
     .from(listings)
     .leftJoin(agencies, eq(listings.agencyId, agencies.id))
     .leftJoin(locations, eq(listings.locationId, locations.id))
+    .leftJoin(publisherAgent, eq(listings.agentId, publisherAgent.id))
+    .leftJoin(publisherOwner, eq(listings.ownerUserId, publisherOwner.id))
     .where(filters.length ? and(...filters) : undefined)
     .orderBy(desc(listings.updatedAt))
-    .limit(params.limit ?? 200);
+    .limit(params.limit ?? 200)
+    .then((rows) => rows.map((r) => ({ ...r, publisherKind: toPublisherKind(r.publisherKind) })));
+}
+
+/**
+ * Listing counts per publisher kind, for the /admin/propiedades chips —
+ * optionally within one status, so the chips agree with the status filter.
+ */
+export async function countListingsByPublisher(
+  status?: ListingStatusValue | "all",
+): Promise<Record<PublisherKind, number>> {
+  const kind = publisherKindSql(await getHouseAgencyId());
+  const rows = await db
+    .select({ kind, n: sql<number>`count(*)` })
+    .from(listings)
+    .leftJoin(agencies, eq(listings.agencyId, agencies.id))
+    .leftJoin(publisherAgent, eq(listings.agentId, publisherAgent.id))
+    .leftJoin(publisherOwner, eq(listings.ownerUserId, publisherOwner.id))
+    .where(status && status !== "all" ? eq(listings.status, status) : undefined)
+    .groupBy(kind);
+  const out = Object.fromEntries(PUBLISHER_KINDS.map((k) => [k, 0])) as Record<PublisherKind, number>;
+  for (const r of rows) out[toPublisherKind(r.kind)] += Number(r.n);
+  return out;
 }
 
 /** Status counts for the filter chips — one GROUP BY, not a full table read. */

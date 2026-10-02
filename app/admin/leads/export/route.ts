@@ -25,6 +25,9 @@ export async function GET(req: NextRequest): Promise<Response> {
       estado: sp.get("estado") ?? undefined,
       tel: sp.get("tel") ?? undefined,
       q: sp.get("q") ?? undefined,
+      fuente: sp.get("fuente") ?? undefined,
+      quien: sp.get("quien") ?? undefined,
+      orden: sp.get("orden") ?? undefined,
     },
     sites.map((s) => s.vertical),
   );

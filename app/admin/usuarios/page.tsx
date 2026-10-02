@@ -1,8 +1,8 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
-  countReviewQueue,
   listAgencies,
   listUsers,
   type PanelUserRow,
@@ -54,8 +54,8 @@ export default async function AdminUsersPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [{ msg }, user] = await Promise.all([searchParams, requireSuperAdmin()]);
-  const [reviewCount, agencies, rows] = await Promise.all([
-    countReviewQueue(),
+  const [badges, agencies, rows] = await Promise.all([
+    getAdminBadges(user),
     listAgencies(),
     listUsers(),
   ]);
@@ -69,7 +69,7 @@ export default async function AdminUsersPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("users", reviewCount)}
+        tabs={adminTabs("users", badges)}
       />
       <main className="panel site-main">
         {flash ? (

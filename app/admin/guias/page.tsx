@@ -1,10 +1,9 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import {
-  countDraftPosts,
   isPostsTableReady,
   listAllPosts,
   POST_CATEGORY_LABEL,
@@ -39,9 +38,8 @@ export default async function AdminPostsPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [params, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
-  const [reviewCount, drafts, ready] = await Promise.all([
-    countReviewQueue(),
-    countDraftPosts(),
+  const [badges, ready] = await Promise.all([
+    getAdminBadges(user),
     isPostsTableReady(),
   ]);
   const posts = ready ? await listAllPosts() : [];
@@ -54,7 +52,7 @@ export default async function AdminPostsPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("posts", reviewCount, drafts)}
+        tabs={adminTabs("posts", badges)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">Guías y notas</h2>

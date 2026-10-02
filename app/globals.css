@@ -3993,6 +3993,56 @@ body {
   color: var(--color-error);
 }
 
+/* Who published a listing / who wrote a lead (src/lib/publisher-kind.ts,
+   src/lib/contact-kind.ts). Same pill shape as .panel-status; each
+   text/background pair is above 4.5:1 at 12px. */
+.panel-kind {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--color-accent-soft);
+  color: var(--color-ink-secondary);
+}
+.panel-kind--own { background: #0e1f17; color: #fff; }
+.panel-kind--partner { background: #f6ecd6; color: #6b4e12; }
+.panel-kind--agency { background: #e6eefb; color: #2a5aa8; }
+.panel-kind--agent { background: #efe7f7; color: #5b3a8a; }
+.panel-kind--private { background: #fbeee4; color: #8a4513; }
+.panel-kind--none { background: #eeeeee; color: #4a4a4a; }
+/* Lead side: sellers and owners are the inventory, so they read warm. */
+.panel-kind--owner_sell,
+.panel-kind--owner_rent,
+.panel-kind--maybe_seller,
+.panel-kind--owner { background: #fbeee4; color: #8a4513; }
+.panel-kind--buyer,
+.panel-kind--renter { background: #e6f4ea; color: #1d6b35; }
+.panel-kind--developer { background: #f6ecd6; color: #6b4e12; }
+.panel-kind--other { background: #eeeeee; color: #4a4a4a; }
+
+/* A listing title that opens its record (/admin/propiedades, review queue). */
+.panel-table__name a,
+.panel-card__title a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.panel-table__name a:hover,
+.panel-card__title a:hover {
+  color: #8a6a2c;
+}
+
+.panel-chips__label {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
 /* Page-speed cells on /admin/analitica: Google's good / needs improvement /
    poor. Explicit colours; each text/background pair is above 4.5:1. */
 .panel-vital--good {

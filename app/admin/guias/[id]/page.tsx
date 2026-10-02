@@ -1,3 +1,4 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -5,8 +6,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { PostForm } from "@/components/panel/PostForm";
 import { Markdown } from "@/components/Markdown";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
-import { countDraftPosts, getPostById } from "@/lib/post-queries";
+import { getPostById } from "@/lib/post-queries";
 import { imageUrl } from "@/lib/format";
 import { isR2Configured } from "@/lib/r2";
 import { adminTabs } from "../../tabs";
@@ -54,9 +54,8 @@ export default async function EditPostPage({
   const postId = Number(id);
   if (!Number.isInteger(postId) || postId <= 0) notFound();
 
-  const [reviewCount, drafts, post] = await Promise.all([
-    countReviewQueue(),
-    countDraftPosts(),
+  const [badges, post] = await Promise.all([
+    getAdminBadges(user),
     getPostById(postId),
   ]);
   if (!post) notFound();
@@ -70,7 +69,7 @@ export default async function EditPostPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("posts", reviewCount, drafts)}
+        tabs={adminTabs("posts", badges)}
       />
       <main className="panel site-main">
         <Link className="panel-post__back" href="/admin/guias">

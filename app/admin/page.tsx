@@ -1,18 +1,20 @@
 import Link from "next/link";
-import { isStaff, isSuperAdmin } from "@/lib/auth/roles";
+import { isSuperAdmin } from "@/lib/auth/roles";
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { HealthSection } from "@/components/panel/HealthSection";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { getHealth } from "@/lib/health";
-import { countRecentLeads, getReviewQueue } from "@/lib/panel-queries";
+import { getReviewQueue } from "@/lib/panel-queries";
+import { getAdminBadges } from "@/lib/admin-badges";
 import { esPanel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
-import { countUnreadInbox } from "@/lib/inbox";
 import { approveAction, approveManyAction, rejectAction, rejectManyAction } from "./actions";
-import { ReviewSelectAll } from "@/components/panel/ReviewSelectAll";
+import { ReviewSelectAll, ReviewSelectedCount } from "@/components/panel/ReviewSelectAll";
+import { isPublisherKind, PUBLISHER_KINDS, type PublisherKind } from "@/lib/publisher-kind";
+import { esTriage } from "@/i18n/es-triage";
 
 export const metadata: Metadata = {
   title: `Cola de revisión`,
@@ -29,12 +31,35 @@ const OPERATION_LABEL: Record<string, string> = {
 
 const BULK_FORM = "bulk-review";
 
+/** The queue's own filters, carried through a bulk action (see actions.ts). */
+interface QueueFilter {
+  q: string;
+  op: string;
+  tipo: string;
+  quien: PublisherKind | "";
+}
+
+function queueHref(f: QueueFilter, patch: Partial<QueueFilter> = {}): string {
+  const next = { ...f, ...patch };
+  const sp = new URLSearchParams();
+  if (next.q) sp.set("q", next.q);
+  if (next.op) sp.set("op", next.op);
+  if (next.tipo) sp.set("tipo", next.tipo);
+  if (next.quien) sp.set("quien", next.quien);
+  const qs = sp.toString();
+  return qs ? `/admin?${qs}` : "/admin";
+}
+
+function formatReceived(d: Date): string {
+  return new Intl.DateTimeFormat("es-PY", { day: "2-digit", month: "short" }).format(new Date(d));
+}
+
 export default async function AdminReviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ bulk?: string; n?: string }>;
+  searchParams: Promise<{ bulk?: string; n?: string; q?: string; op?: string; tipo?: string; quien?: string }>;
 }) {
-  const { bulk, n: nParam } = await searchParams;
+  const { bulk, n: nParam, ...raw } = await searchParams;
   const n = Math.max(0, Math.min(100, Number(nParam) || 0));
   const bulkFlash =
     bulk === "approved" && n > 0
@@ -47,10 +72,9 @@ export default async function AdminReviewPage({
             ? { text: esPanel.bulkFlash.reason, error: true }
             : null;
   const user = await requireStaffOrAbove();
-  const [queue, recentLeads, unreadEmail, health] = await Promise.all([
+  const [queue, badges, health] = await Promise.all([
     getReviewQueue(),
-    countRecentLeads(24, isStaff(user.role)),
-    countUnreadInbox({ userId: user.id, superAdmin: isSuperAdmin(user.role) }),
+    getAdminBadges(user),
     /**
      * Cached for five minutes and never tagged (`src/lib/health.ts`), so this
      * adds a handful of counts to the first render of each window and nothing to
@@ -60,6 +84,32 @@ export default async function AdminReviewPage({
      */
     isSuperAdmin(user.role) ? getHealth() : Promise.resolve(null),
   ]);
+  const superAdmin = isSuperAdmin(user.role);
+  const t = esTriage.review;
+
+  // The whole queue is one read (it is a queue, not a catalogue), so the
+  // filters and their counts run here rather than as a query per chip. Only
+  // values the queue actually holds are offered.
+  const operations = [...new Set(queue.map((r) => r.operation))];
+  const types = [...new Set(queue.map((r) => r.propertyType))];
+  const filter: QueueFilter = {
+    q: (raw.q ?? "").trim().slice(0, 100),
+    op: operations.includes(raw.op as never) ? (raw.op as string) : "",
+    tipo: types.includes(raw.tipo as never) ? (raw.tipo as string) : "",
+    quien: isPublisherKind(raw.quien) ? raw.quien : "",
+  };
+  const needle = filter.q.toLowerCase();
+  const beforePublisher = queue.filter(
+    (r) =>
+      (!needle || r.title.toLowerCase().includes(needle) || r.publicId.toLowerCase().includes(needle)) &&
+      (!filter.op || r.operation === filter.op) &&
+      (!filter.tipo || r.propertyType === filter.tipo),
+  );
+  const rows = filter.quien ? beforePublisher.filter((r) => r.publisherKind === filter.quien) : beforePublisher;
+  const publisherCounts = new Map<PublisherKind, number>();
+  for (const r of beforePublisher) publisherCounts.set(r.publisherKind, (publisherCounts.get(r.publisherKind) ?? 0) + 1);
+  const filtered = Boolean(filter.q || filter.op || filter.tipo || filter.quien);
+  const back = queueHref(filter).replace(/^\/admin\??/, "");
 
   return (
     <>
@@ -67,7 +117,7 @@ export default async function AdminReviewPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("review", queue.length, undefined, recentLeads, unreadEmail)}
+        tabs={adminTabs("review", badges)}
       />
       <main className="panel site-main">
         {health ? <HealthSection health={health} /> : null}
@@ -78,110 +128,204 @@ export default async function AdminReviewPage({
           <p className={bulkFlash.error ? "auth-error" : "panel-flash"}>{bulkFlash.text}</p>
         ) : null}
 
-        {/* One bulk form for the whole queue. The cards hold their own approve /
-            reject forms, so their checkboxes join this one by `form=`. */}
-        {queue.length > 0 && isSuperAdmin(user.role) ? (
-          <form id={BULK_FORM} className="panel-form panel-card">
-            <ReviewSelectAll label={esPanel.bulkSelectAll} />
-            <label className="panel-form__field" style={{ flexBasis: "320px", flexGrow: 1 }}>
-              <span className="auth-field__label">{esPanel.bulkReasonLabel}</span>
-              <textarea className="auth-field__input" name="reason" rows={2} maxLength={280} />
-            </label>
-            <div className="panel-form__field panel-form__field--action">
-              <button className="panel-btn panel-btn--primary" type="submit" formAction={approveManyAction}>
-                {esPanel.bulkApprove}
-              </button>{" "}
-              <button className="panel-btn panel-btn--danger" type="submit" formAction={rejectManyAction}>
-                {esPanel.bulkReject}
-              </button>
-            </div>
-          </form>
-        ) : null}
-
         {queue.length === 0 ? (
           <p className="panel-empty">{esPanel.adminReviewEmpty}</p>
         ) : (
-          queue.map((row) => (
-            <article className="panel-card" key={row.id}>
-              <div className="panel-card__head">
-                <div>
-                  <h3 className="panel-card__title">
-                    {isSuperAdmin(user.role) ? (
-                      <input
-                        type="checkbox"
-                        name="listingIds"
-                        value={row.id}
-                        form={BULK_FORM}
-                        aria-label={`${esPanel.bulkSelectListing}: ${row.title}`}
-                        style={{ marginRight: 8 }}
-                      />
-                    ) : null}
-                    {row.title}
-                  </h3>
-                  <div className="panel-card__meta">
-                    <span>{OPERATION_LABEL[row.operation] ?? row.operation}</span>
-                    <span>{PROPERTY_TYPE_LABELS[row.propertyType]}</span>
-                    {row.locationName ? <span>{row.locationName}</span> : null}
-                    <span>{row.agencyName ?? "Particular"}</span>
-                    <span>#{row.publicId}</span>
-                  </div>
-                </div>
-                <span className="panel-card__price">
-                  {formatPrice({
-                    priceAmount: row.priceAmount,
-                    priceCurrency: row.priceCurrency,
-                  })}
-                </span>
+          <>
+            <form action="/admin" className="panel-form">
+              {filter.quien ? <input type="hidden" name="quien" value={filter.quien} /> : null}
+              <label className="panel-form__field" style={{ flexBasis: "240px" }}>
+                <span className="auth-field__label">{t.searchLabel}</span>
+                <input className="auth-field__input" name="q" type="search" defaultValue={filter.q} />
+              </label>
+              <label className="panel-form__field" style={{ flexBasis: "160px" }}>
+                <span className="auth-field__label">{t.operationLabel}</span>
+                <select className="panel-select" name="op" defaultValue={filter.op}>
+                  <option value="">{t.anyOption}</option>
+                  {operations.map((o) => (
+                    <option key={o} value={o}>
+                      {OPERATION_LABEL[o] ?? o}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="panel-form__field" style={{ flexBasis: "160px" }}>
+                <span className="auth-field__label">{t.typeLabel}</span>
+                <select className="panel-select" name="tipo" defaultValue={filter.tipo}>
+                  <option value="">{t.anyType}</option>
+                  {types.map((ty) => (
+                    <option key={ty} value={ty}>
+                      {PROPERTY_TYPE_LABELS[ty]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="panel-form__field panel-form__field--action">
+                <button className="panel-btn" type="submit">
+                  {t.filterSubmit}
+                </button>
               </div>
-
-              <div className="panel-card__body">
-                {isSuperAdmin(user.role) ? (
-                  <div className="panel-actions">
-                    <form action={approveAction}>
-                      <input type="hidden" name="listingId" value={row.id} />
-                      <button className="panel-btn panel-btn--primary" type="submit">
-                        {esPanel.approve}
-                      </button>
-                    </form>
-
-                    <details>
-                      <summary className="panel-btn panel-btn--danger">
-                        {esPanel.reject}
-                      </summary>
-                      <form action={rejectAction} className="panel-reject">
-                        <input type="hidden" name="listingId" value={row.id} />
-                        <label
-                          className="auth-field__label"
-                          htmlFor={`reason-${row.id}`}
-                        >
-                          {esPanel.rejectReasonLabel}
-                        </label>
-                        <textarea
-                          id={`reason-${row.id}`}
-                          name="reason"
-                          className="panel-reject__textarea"
-                          placeholder={esPanel.rejectReasonPlaceholder}
-                          required
-                        />
-                        <div>
-                          <button
-                            className="panel-btn panel-btn--danger"
-                            type="submit"
-                          >
-                            {esPanel.reject}
-                          </button>
-                        </div>
-                      </form>
-                    </details>
-                  </div>
-                ) : (
-                  <Link className="panel-btn" href={`/admin/propiedades/${row.id}`}>
-                    {esPanel.staffEditListing}
+              {filtered ? (
+                <div className="panel-form__field panel-form__field--action">
+                  <Link className="panel-btn" href="/admin">
+                    {t.clearFilters}
                   </Link>
-                )}
+                </div>
+              ) : null}
+            </form>
+
+            <nav className="panel-chips" aria-label={esTriage.publisherFilterLabel}>
+              <span className="panel-chips__label">{esTriage.publisherColumn}</span>
+              <Link
+                href={queueHref(filter, { quien: "" })}
+                className={`panel-chip${filter.quien ? "" : " panel-chip--active"}`}
+              >
+                {esTriage.publisherAll}
+                <span className="panel-tab__count">{beforePublisher.length}</span>
+              </Link>
+              {PUBLISHER_KINDS.filter((k) => publisherCounts.has(k) || k === filter.quien).map((k) => (
+                <Link
+                  key={k}
+                  href={queueHref(filter, { quien: k })}
+                  className={`panel-chip${k === filter.quien ? " panel-chip--active" : ""}`}
+                >
+                  {esTriage.publisherChip[k]}
+                  <span className="panel-tab__count">{publisherCounts.get(k) ?? 0}</span>
+                </Link>
+              ))}
+            </nav>
+
+            {/* One bulk form for the whole queue. Each row holds its own
+                approve / reject forms, so its checkbox joins this one by `form=`. */}
+            {superAdmin ? (
+              <form id={BULK_FORM} className="panel-form panel-card">
+                <input type="hidden" name="back" value={back} />
+                <div className="panel-form__field" style={{ flex: "1 1 100%" }}>
+                  <ReviewSelectedCount />
+                  <span className="panel-bulk__hint">{t.bulkHint}</span>
+                </div>
+                <label className="panel-form__field" style={{ flexBasis: "320px", flexGrow: 1 }}>
+                  <span className="auth-field__label">{esPanel.bulkReasonLabel}</span>
+                  <textarea className="auth-field__input" name="reason" rows={2} maxLength={280} />
+                </label>
+                <div className="panel-form__field panel-form__field--action">
+                  <button className="panel-btn panel-btn--primary" type="submit" formAction={approveManyAction}>
+                    {esPanel.bulkApprove}
+                  </button>{" "}
+                  <button className="panel-btn panel-btn--danger" type="submit" formAction={rejectManyAction}>
+                    {esPanel.bulkReject}
+                  </button>
+                </div>
+              </form>
+            ) : null}
+
+            <p className="panel-card__meta">{t.showing(rows.length, queue.length)}</p>
+
+            {rows.length === 0 ? (
+              <p className="panel-empty">{t.emptyFiltered}</p>
+            ) : (
+              <div className="panel-table__wrap">
+                <table className="panel-table">
+                  <thead>
+                    <tr>
+                      {superAdmin ? (
+                        <th className="panel-table__check">
+                          <ReviewSelectAll label={esPanel.bulkSelectAll} hideLabel />
+                        </th>
+                      ) : null}
+                      <th>{t.colListing}</th>
+                      <th>{t.colOperation}</th>
+                      <th>{t.colType}</th>
+                      <th>{esTriage.publisherColumn}</th>
+                      <th>{t.colPrice}</th>
+                      <th>{t.colReceived}</th>
+                      <th>{t.colActions}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr key={row.id}>
+                        {superAdmin ? (
+                          <td className="panel-table__check">
+                            <input
+                              type="checkbox"
+                              name="listingIds"
+                              value={row.id}
+                              form={BULK_FORM}
+                              aria-label={`${esPanel.bulkSelectListing}: ${row.title}`}
+                            />
+                          </td>
+                        ) : null}
+                        <td className="panel-table__name">
+                          {/* The full record: photos, description, every field. */}
+                          <Link href={`/admin/propiedades/${row.id}`}>{row.title}</Link>
+                          <div className="panel-card__meta">
+                            <span>#{row.publicId}</span>
+                            {row.locationName ? <span>{row.locationName}</span> : null}
+                          </div>
+                        </td>
+                        <td>{OPERATION_LABEL[row.operation] ?? row.operation}</td>
+                        <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
+                        <td>
+                          <span className={`panel-kind panel-kind--${row.publisherKind}`}>
+                            {esTriage.publisher[row.publisherKind]}
+                          </span>
+                          <div className="panel-card__meta">
+                            <span>{row.agencyName ?? row.publisherName ?? "—"}</span>
+                          </div>
+                        </td>
+                        <td>
+                          {formatPrice({
+                            priceAmount: row.priceAmount,
+                            priceCurrency: row.priceCurrency,
+                          })}
+                        </td>
+                        <td>{formatReceived(row.createdAt)}</td>
+                        <td>
+                          {superAdmin ? (
+                            <div className="panel-actions">
+                              <form action={approveAction}>
+                                <input type="hidden" name="listingId" value={row.id} />
+                                <button className="panel-btn panel-btn--primary" type="submit">
+                                  {esPanel.approve}
+                                </button>
+                              </form>
+
+                              <details>
+                                <summary className="panel-btn panel-btn--danger">{esPanel.reject}</summary>
+                                <form action={rejectAction} className="panel-reject">
+                                  <input type="hidden" name="listingId" value={row.id} />
+                                  <label className="auth-field__label" htmlFor={`reason-${row.id}`}>
+                                    {esPanel.rejectReasonLabel}
+                                  </label>
+                                  <textarea
+                                    id={`reason-${row.id}`}
+                                    name="reason"
+                                    className="panel-reject__textarea"
+                                    placeholder={esPanel.rejectReasonPlaceholder}
+                                    required
+                                  />
+                                  <div>
+                                    <button className="panel-btn panel-btn--danger" type="submit">
+                                      {esPanel.reject}
+                                    </button>
+                                  </div>
+                                </form>
+                              </details>
+                            </div>
+                          ) : (
+                            <Link className="panel-btn" href={`/admin/propiedades/${row.id}`}>
+                              {esPanel.staffEditListing}
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </article>
-          ))
+            )}
+          </>
         )}
       </main>
     </>

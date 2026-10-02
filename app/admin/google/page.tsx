@@ -1,7 +1,7 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import {
   isSearchConsoleConfigured,
   reportWindow,
@@ -60,7 +60,7 @@ function RowsTable({ first, rows }: { first: string; rows: (GscRow & { label?: s
  */
 export default async function AdminGooglePage() {
   const user = await requireSuperAdmin();
-  const reviewCount = await countReviewQueue();
+  const badges = await getAdminBadges(user);
   const configured = isSearchConsoleConfigured();
   const reports = configured ? await searchConsoleReports() : [];
   const window = reportWindow();
@@ -72,7 +72,7 @@ export default async function AdminGooglePage() {
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("google", reviewCount)}
+        tabs={adminTabs("google", badges)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.gscTitle}</h2>

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Glyph } from "@/components/Glyph";
+import { ContactRoleField } from "@/components/ContactRoleField";
 import { getDictionary, type Locale } from "@/i18n";
+import type { ContactRole } from "@/lib/contact-role";
 import { checkPhone } from "@/lib/wa";
 
 export type LeadFormType =
@@ -45,6 +47,7 @@ export function LeadForm({
   successTitle,
   successText,
   source,
+  contactRoles,
 }: {
   /** Used when `reasons` is not given, or as the initial selection. */
   leadType: LeadFormType;
@@ -65,6 +68,12 @@ export function LeadForm({
    * `rental:<slug>`.
    */
   source?: string;
+  /**
+   * Shows the optional "I am…" select with these roles, in this order
+   * (`ContactRoleField`). Omit it — or pass an empty list — and the form has
+   * no such field.
+   */
+  contactRoles?: readonly ContactRole[];
 }) {
   const t = getDictionary(locale).leadForm;
   const [type, setType] = useState<LeadFormType>(leadType);
@@ -73,6 +82,7 @@ export function LeadForm({
   const [phone, setPhone] = useState("");
   const [company, setCompany] = useState("");
   const [message, setMessage] = useState("");
+  const [contactRole, setContactRole] = useState<ContactRole | "">("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +115,7 @@ export function LeadForm({
           whatsapp: phone.trim(),
           message: body || undefined,
           utm: source ? { ...readUtm(), source } : readUtm(),
+          ...(contactRole ? { contactRole } : {}),
         }),
       });
       if (!res.ok) throw new Error(String(res.status));
@@ -145,6 +156,18 @@ export function LeadForm({
             ))}
           </select>
         </label>
+      )}
+
+      {contactRoles && contactRoles.length > 0 && (
+        <ContactRoleField
+          locale={locale}
+          roles={contactRoles}
+          value={contactRole}
+          onChange={setContactRole}
+          className="lead-form__field"
+          labelClassName="lead-form__label"
+          inputClassName="lead-form__input"
+        />
       )}
 
       <div className="lead-form__row">
