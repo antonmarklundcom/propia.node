@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { bestCuota, type FinancingProgram } from "@/lib/cuota";
 import { formatCuota } from "@/lib/format";
 import { getDictionary, numberLocaleFor, type Locale } from "@/i18n";
-import { validatePublishStep } from "@/lib/publish-steps";
+import { parsePriceInput, validatePublishStep } from "@/lib/publish-steps";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type {
   NearbyProject, PublishLocation, PublishContact,
@@ -235,7 +235,7 @@ export function PublishWizard({
   // nightly cron uses. Converts the entered price to Gs first.
   const cuotaPreview = useMemo(() => {
     if (state.operation !== "venta") return null;
-    const amount = Number(state.priceAmount);
+    const amount = parsePriceInput(state.priceAmount);
     if (!Number.isFinite(amount) || amount <= 0) return null;
     const priceGs = state.priceCurrency === "PYG" ? amount : amount * usdToPyg;
     const best = bestCuota(priceGs, programs);
@@ -250,7 +250,7 @@ export function PublishWizard({
       propertyType: state.propertyType || undefined,
       title: state.title,
       descriptionEs: state.descriptionEs,
-      priceAmount: Number(state.priceAmount) || 0,
+      priceAmount: parsePriceInput(state.priceAmount),
       priceCurrency: state.priceCurrency,
       bedrooms: hasRooms(state.propertyType) ? numOrNull(state.bedrooms) : null,
       bathrooms: hasRooms(state.propertyType) ? numOrNull(state.bathrooms) : null,
@@ -647,7 +647,7 @@ export function PublishWizard({
                 inputMode="numeric"
                 value={state.priceAmount}
                 placeholder="0"
-                onChange={(e) => set("priceAmount", e.target.value.replace(/[^\d.]/g, ""))}
+                onChange={(e) => set("priceAmount", e.target.value.replace(/[^\d., ]/g, ""))}
               />
             </div>
             {cuotaPreview && (
@@ -795,7 +795,7 @@ export function PublishWizard({
                   type="button"
                   className="panel-btn panel-btn--primary"
                   onClick={publishDirect}
-                  disabled={otpBusy || publicContactMissing || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || publicContactMissing || parsePriceInput(state.priceAmount) <= 0}
                 >
                   {otpBusy ? t.publishing : t.publish}
                 </button>
@@ -804,7 +804,7 @@ export function PublishWizard({
                   type="button"
                   className="panel-btn panel-btn--whatsapp"
                   onClick={sendCode}
-                  disabled={otpBusy || publicContactMissing || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || publicContactMissing || parsePriceInput(state.priceAmount) <= 0}
                 >
                   {otpBusy ? t.sending : t.sendCode}
                 </button>
