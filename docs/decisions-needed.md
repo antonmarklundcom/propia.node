@@ -467,3 +467,34 @@ idempotent — a `listings.expires_at` (and `expiry_reminded_at`) column, i.e. a
 `src/lib/cron-tick.ts` via `daily()`, mail through `src/lib/email.ts` (silent
 no-op without Cloudflare vars), copy in `esEmail`/`enEmail`, recipient chain
 agent → agency → owner like the lead routing.
+
+## 2026-10-02 — Doors hosting: Worker, static HTML spokes, or VPS (founder)
+
+Plan: `docs/plan-doors-hosting-2026-10-02.md` (recommendation in §1, the
+commands to run and paste back in §8.3, the Test B decision table in §8.4).
+**No code is written until these are answered.** Standing constraint from
+the founder: every current door stays on Node.js until its HTML replacement
+is finished.
+
+1. **Worker before HTML?** May the Cloudflare Worker (`workers/host-router/`)
+   front the current doors while they still run on Node.js? Only the hostname
+   Hostinger sees changes. Recommended: yes, if Test B passes.
+2. **Which doors become static HTML spokes, in what order?** Recommended:
+   landforsaleparaguay.com → residenciaenparaguay.es → rentparaguay.com →
+   terreno.com.py. The two primaries never move.
+3. **Listing detail on spokes:** link to the hub's `/propiedad` (recommended)
+   or render a detail page on the spoke with a canonical to the hub?
+4. **terreno.com.py's 9 evergreen land pages:** spoke renders them from the
+   API (recommended; content stays in `src/content/evergreen/`) or move their
+   ownership to inmobiliaria.com.py before cutover?
+5. **inmobiliarios.com.py stays on Node** (recommended; no directory API in
+   the plan)?
+6. **Public API hostname:** realestateinparaguay.com (recommended) or
+   inmobiliaria.com.py?
+7. **Lead spam control on spokes:** honeypot + rate limit (default), or also
+   Cloudflare Turnstile (`TURNSTILE_SECRET_KEY` in hPanel)?
+8. **Spoke hosting:** Hostinger PHP websites (recommended to start) or
+   Cloudflare Pages / Workers static assets?
+9. **If Test B fails** (copies grow even on one hostname): budget a VPS
+   (~US$7–15/month + 1–2 days setup) for the Node app?
+10. **Seller phone numbers in the public API:** none in v1 (recommended)?
