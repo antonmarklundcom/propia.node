@@ -27,6 +27,9 @@ export type AdminEventAction =
   | "agent.join_agency"
   | "lead.from_email"
   | "lead.from_whatsapp"
+  // A share made by the routing rules (src/lib/lead-routing.ts); the actor is
+  // the super-admin who saved the rules.
+  | "lead.auto_share"
   | "setting.change"
   | "agency.invite"
   | "agency.invite_revoke"

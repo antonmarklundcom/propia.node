@@ -26,15 +26,9 @@ import {
   MAX_MATCHES_PER_LEAD,
 } from "@/lib/matching";
 import { deleteLead, setLeadSpam, updateLeadFollowUp, type LeadFollowUp } from "@/lib/panel-queries";
-import {
-  revokeShare,
-  shareLeads,
-  shareRecipients,
-  type ShareTarget,
-} from "@/lib/lead-assignments";
-import { emailShareNotice } from "@/lib/lead-emails";
-import { telegramShareNotice } from "@/lib/partner-alerts";
-import { BRAND_NAME } from "@/lib/brand";
+import { revokeShare, shareLeads, type ShareTarget } from "@/lib/lead-assignments";
+import { sendShareNotices } from "@/lib/share-notices";
+import { autoRouteLead } from "@/lib/lead-routing";
 import { siteOrigin } from "@/lib/origin";
 import { recordAdminEvent } from "@/lib/admin-events";
 import { handleLeadEmailForm } from "@/lib/inbox-access";
@@ -230,34 +224,10 @@ export async function shareLeadsAction(formData: FormData): Promise<void> {
   }
 
   if (shared.length > 0) {
-    // A go-look email to the partner, after the redirect is on its way. The
-    // share is already saved; a failed or unconfigured email changes nothing.
-    // BRAND_NAME, not brandName(): /admin is a staff surface on one host.
+    // A go-look email and Telegram message to the partner, after the redirect
+    // is on its way. The share is already saved; an unsent notice changes nothing.
     const inboxUrl = `${await siteOrigin()}/agencia/leads`;
-    const count = shared.length;
-    after(async () => {
-      try {
-        const recipients = await shareRecipients(who);
-        await Promise.allSettled([
-          ...recipients.map((r) =>
-            r.email
-              ? emailShareNotice({
-                  to: r.email,
-                  locale: r.locale,
-                  brand: BRAND_NAME,
-                  count,
-                  url: inboxUrl,
-                })
-              : null,
-          ),
-          // Batch 4: the same "go look" on Telegram, to whoever linked a chat.
-          // No buyer data — see src/lib/partner-alerts.ts.
-          telegramShareNotice({ target: who, leadIds: shared, inboxUrl }),
-        ]);
-      } catch {
-        /* the share row is the record; an unsent notice is not an incident */
-      }
-    });
+    after(() => sendShareNotices({ target: who, leadIds: shared, inboxUrl }));
   }
 
   revalidatePath(ROUTE);
@@ -512,16 +482,18 @@ export async function logWhatsappLeadAction(
   const owner = await leadOwnerContact(routedTo, listing);
   const origin = await siteOrigin();
   const staffLogged = isStaff(user.role);
-  after(() =>
-    sendLeadCopies({
+  after(async () => {
+    // Same routing rules as the public form (src/lib/lead-routing.ts).
+    if (routedTo === "internal") await autoRouteLead(leadId, { inboxUrl: `${origin}/agencia/leads` });
+    await sendLeadCopies({
       payload,
       owner,
       adminUrl: `${origin}/admin/leads`,
       ownerUrl: `${origin}/mis-avisos/consultas`,
       brand: door.brand,
       alertOperator: staffLogged,
-    }),
-  );
+    });
+  });
 
   revalidatePath(ROUTE);
   const lane = WA_LANE_LABEL[routedTo];

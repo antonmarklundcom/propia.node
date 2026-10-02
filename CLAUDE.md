@@ -530,6 +530,23 @@ default, `--dry` first). It records itself as a revertible import job.
     lead forms fall back to the beacon's visit source (`src/lib/visit-source.ts`)
     and /admin/analitica's single "Fuente" table counts each visitor once.
 
+25. **Lead routing rules (2026-10-02, no migration, `docs/log/lead-routing.md`,
+    plan-admin-next O3).** Off by default; /admin/ajustes → "Reparto automático
+    de consultas" (super-admin) holds the switch and one coverage per Socio
+    (zones = city/barrio ids, operations, types, US$ band) in two site
+    settings, `lead_routing_enabled` / `lead_routing_rules`. **The rules are
+    pure in `src/lib/lead-routing-rules.ts`** (`decideRouting()`,
+    `npm run verify:routing`, in `verify:local` and the pre-push hook); the
+    database half is `src/lib/lead-routing.ts` (`autoRouteLead()`, called in
+    `after()` by `/api/leads` and the WhatsApp lead logged on /admin/leads,
+    `previewRouting()` for the screen's dry run). Only new internal-lane leads
+    about a listing (buyer/renter/question, never a report). A lead on a
+    Socio's own listing goes to that Socio. The result is a `shareLeads()`
+    share — **never a new `routed_to`** — logged as `lead.auto_share`, with the
+    super-admin who last saved the rules as the actor. Share notices (email +
+    Telegram) for hand and automatic shares go through one function,
+    `sendShareNotices()` (`src/lib/share-notices.ts`).
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
@@ -886,7 +903,7 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`.
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`.
   Same thing by hand: `npm run verify:local`. The last eleven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
