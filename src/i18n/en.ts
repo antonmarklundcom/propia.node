@@ -1444,6 +1444,19 @@ export const enLeadForm = {
   finePrintTail: ". We use your details only to reply to you.",
 } as const;
 
+/** `ContactRoleField`'s literals in English — see `esContactRole`. */
+export const enContactRole = {
+  label: "I am",
+  placeholder: "Choose one (optional)",
+  options: {
+    particular: "A private individual",
+    owner: "A property owner",
+    agent: "An independent real estate agent",
+    agency: "A real estate agency",
+    developer: "A developer / builder",
+  },
+} as const;
+
 /**
  * The seven rental service pages in English — the source language for this
  * namespace. See `esRentalServices` for the shape (plan Appendix C) and for
@@ -2511,6 +2524,9 @@ export const enContactPage = {
   subtitle: "We answer questions about listing properties, agency accounts, projects and anything related to the portal.",
   formHeading: "Send us your enquiry",
   reasonSeller: "I want to list a property",
+  reasonLandlord: "I want to rent out my property",
+  reasonBuyer: "I want to buy",
+  reasonRenter: "I want to rent",
   reasonAgent: "I am an agency or agent",
   reasonDeveloper: "I am a developer / have a project",
   reasonOther: "Another enquiry",

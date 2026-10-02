@@ -1,10 +1,17 @@
 "use client";
 
+import { readVisitUtm } from "@/lib/visit-source";
+
 import { useState } from "react";
+import { ContactRoleField } from "@/components/ContactRoleField";
 import { getDictionary, type Locale } from "@/i18n";
+import type { ContactRole } from "@/lib/contact-role";
 import { checkPhone } from "@/lib/wa";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { PropertyType } from "@/lib/import/types";
+
+/** Who is selling, for the optional "I am…" select. */
+const SELLER_ROLES: readonly ContactRole[] = ["owner", "agent", "agency"];
 
 export interface VenderFormCity {
   slug: string;
@@ -50,6 +57,7 @@ export function VenderForm({
   const [citySlug, setCitySlug] = useState("");
   const [propertyType, setPropertyType] = useState<PropertyType | "">("");
   const [message, setMessage] = useState("");
+  const [contactRole, setContactRole] = useState<ContactRole | "">("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">(
     "idle",
   );
@@ -87,6 +95,7 @@ export function VenderForm({
           whatsapp: phone.trim(),
           message: composedMessage || undefined,
           utm: { ...readUtm(), source: "vender" },
+          ...(contactRole ? { contactRole } : {}),
         }),
       });
       if (!res.ok) throw new Error(String(res.status));
@@ -136,6 +145,17 @@ export function VenderForm({
           autoComplete="tel"
         />
       </label>
+
+      <ContactRoleField
+        id={id("role")}
+        locale={locale}
+        roles={SELLER_ROLES}
+        value={contactRole}
+        onChange={setContactRole}
+        className="vd-form__field"
+        labelClassName="vd-form__label"
+        inputClassName="vd-form__input vd-form__select"
+      />
 
       <label className="vd-form__field" htmlFor={id("city")}>
         <span className="vd-form__label">{t.formCityLabel}</span>
@@ -208,12 +228,6 @@ export function VenderForm({
 }
 
 function readUtm(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const p = new URLSearchParams(window.location.search);
-  const utm: Record<string, string> = {};
-  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_content"]) {
-    const v = p.get(k);
-    if (v) utm[k] = v;
-  }
-  return utm;
+  // URL utm first, else the visit's stored source (src/lib/visit-source.ts).
+  return readVisitUtm();
 }

@@ -1,8 +1,9 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue, leadPhoneKey } from "@/lib/panel-queries";
+import { leadPhoneKey } from "@/lib/panel-queries";
 import { dealSummary, listDeals, type DealListRow } from "@/lib/deals";
 import { formatPaidDate, formatPct, formatUsd } from "@/lib/deal-form";
 import { esDeals } from "@/i18n/es-deals";
@@ -29,8 +30,8 @@ function leadHref(d: DealListRow): string {
  */
 export default async function AdminDealsPage() {
   const user = await requireSuperAdmin();
-  const [reviewCount, summary, deals] = await Promise.all([
-    countReviewQueue(),
+  const [badges, summary, deals] = await Promise.all([
+    getAdminBadges(user),
     dealSummary(),
     listDeals(),
   ]);
@@ -45,7 +46,7 @@ export default async function AdminDealsPage() {
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("deals", reviewCount)}
+        tabs={adminTabs("deals", badges)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esDeals.title}</h2>

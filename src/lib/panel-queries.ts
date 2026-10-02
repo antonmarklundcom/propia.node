@@ -5,7 +5,7 @@
  * can never mutate a row it doesn't own — the agencyId comes from the session
  * (guards.ts), never from the request.
  */
-import { and, desc, eq, inArray, isNull, like, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, like, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   agencies,
@@ -26,6 +26,24 @@ import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
 import { listingScopeWhere, maySetStatus, type EditScope } from "@/lib/listing-edit";
 import { containsPattern } from "@/lib/sql-like";
+import { getPublisherSettings } from "@/lib/site-settings";
+import {
+  CONTACT_KIND_ORDER_SQL,
+  CONTACT_KIND_SQL,
+  CONTACT_KINDS,
+  isContactKind,
+  toContactKind,
+  type ContactKind,
+  type LeadSort,
+} from "@/lib/contact-kind";
+import {
+  publisherAgent,
+  publisherKindSql,
+  publisherOwner,
+  PUBLISHER_KINDS,
+  toPublisherKind,
+  type PublisherKind,
+} from "@/lib/publisher-kind";
 
 export type ListingStatus = (typeof listings.$inferSelect)["status"];
 
@@ -46,11 +64,20 @@ export interface ReviewRow {
   createdAt: Date;
   agencyName: string | null;
   locationName: string | null;
+  /** Who published it (src/lib/publisher-kind.ts). */
+  publisherKind: PublisherKind;
+  /** The agent or the private owner's name, when the row has one. */
+  publisherName: string | null;
 }
 
-/** Listings awaiting review, oldest first. Hits idx_search on the status prefix. */
+/**
+ * Listings awaiting review, oldest first. Hits idx_search on the status
+ * prefix. The whole queue in one read — it is a queue, not a catalogue — so
+ * the page filters and counts it without a query per chip.
+ */
 export async function getReviewQueue(): Promise<ReviewRow[]> {
-  return db
+  const kind = publisherKindSql(await getPublisherSettings());
+  const rows = await db
     .select({
       id: listings.id,
       publicId: listings.publicId,
@@ -64,12 +91,17 @@ export async function getReviewQueue(): Promise<ReviewRow[]> {
       createdAt: listings.createdAt,
       agencyName: agencies.name,
       locationName: locations.name,
+      publisherKind: kind,
+      publisherName: sql<string | null>`coalesce(${publisherAgent.name}, ${publisherOwner.name})`,
     })
     .from(listings)
     .leftJoin(agencies, eq(listings.agencyId, agencies.id))
     .leftJoin(locations, eq(listings.locationId, locations.id))
+    .leftJoin(publisherAgent, eq(listings.agentId, publisherAgent.id))
+    .leftJoin(publisherOwner, eq(listings.ownerUserId, publisherOwner.id))
     .where(eq(listings.status, "pending_review"))
     .orderBy(listings.createdAt);
+  return rows.map((r) => ({ ...r, publisherKind: toPublisherKind(r.publisherKind) }));
 }
 
 /** How many listings are waiting — the /admin nav badge, on every panel page. */
@@ -606,6 +638,33 @@ export interface AdminLeadRow extends LeadRow {
    */
   ownerName: string | null;
   ownerWhatsapp: string | null;
+  /** Who the lead is from (src/lib/contact-kind.ts). */
+  contactKind: ContactKind;
+  /** Who published the lead's listing (src/lib/publisher-kind.ts); `no_listing` without one. */
+  publisherKind: LeadPublisherKind;
+  /** The agency, agent or account behind that listing, for the card's pill. */
+  publisherName: string | null;
+}
+
+/** A lead's listing publisher kind, plus leads that carry no listing at all. */
+export const LEAD_PUBLISHER_KINDS = [...PUBLISHER_KINDS, "no_listing"] as const;
+export type LeadPublisherKind = (typeof LEAD_PUBLISHER_KINDS)[number];
+
+export function isLeadPublisherKind(v: unknown): v is LeadPublisherKind {
+  return typeof v === "string" && (LEAD_PUBLISHER_KINDS as readonly string[]).includes(v);
+}
+
+/**
+ * `publisherKindSql()` read through a lead's listing. Needs the same joins as
+ * `listAllLeads()`: listings, agencies on listings.agency_id, and the two
+ * publisher aliases.
+ */
+function leadPublisherKindSql(settings: Parameters<typeof publisherKindSql>[0]): SQL<LeadPublisherKind> {
+  return sql<LeadPublisherKind>`CASE WHEN ${listings.id} IS NULL THEN 'no_listing' ELSE ${publisherKindSql(settings)} END`;
+}
+
+function toLeadPublisherKind(v: unknown): LeadPublisherKind {
+  return isLeadPublisherKind(v) ? v : "none";
 }
 
 /**
@@ -628,11 +687,24 @@ export async function listAllLeads(params: {
   phoneKey?: string;
   /** Listing reports only (A3) — a `utm.source` marker, see report-queries.ts. */
   where?: SQL;
+  /** Who the lead is from ("Quién escribe"). */
+  contactKind?: ContactKind;
+  /** Who published the lead's listing ("Publicó"). */
+  publisher?: LeadPublisherKind;
+  /** Newest first (default), oldest first, or grouped by who writes. */
+  sort?: LeadSort;
   q?: string;
   limit?: number;
 }): Promise<AdminLeadRow[]> {
   const filters: SQL[] = [];
+  const pubKind = leadPublisherKindSql(await getPublisherSettings());
   if (params.internalOnly) filters.push(eq(leads.routedTo, "internal"));
+  if (params.publisher && isLeadPublisherKind(params.publisher)) {
+    filters.push(sql`${pubKind} = ${sql.raw(`'${params.publisher}'`)}`);
+  }
+  if (params.contactKind && isContactKind(params.contactKind)) {
+    filters.push(sql`${CONTACT_KIND_SQL} = ${sql.raw(`'${params.contactKind}'`)}`);
+  }
   if (params.type && params.type !== "all") {
     filters.push(eq(leads.leadType, params.type));
   }
@@ -684,10 +756,15 @@ export async function listAllLeads(params: {
       agencyName: agencies.name,
       ownerName: users.name,
       ownerWhatsapp: users.whatsapp,
+      contactKind: CONTACT_KIND_SQL,
+      publisherKind: pubKind,
+      publisherName: sql<string | null>`coalesce(${agencies.name}, ${publisherAgent.name}, ${publisherOwner.name})`,
     })
     .from(leads)
     .leftJoin(listings, eq(leads.listingId, listings.id))
     .leftJoin(agencies, eq(listings.agencyId, agencies.id))
+    .leftJoin(publisherAgent, eq(listings.agentId, publisherAgent.id))
+    .leftJoin(publisherOwner, eq(listings.ownerUserId, publisherOwner.id))
     // Owner only when nobody professional owns the row — the same precedence
     // the detail page's contact chain uses.
     .leftJoin(
@@ -699,10 +776,91 @@ export async function listAllLeads(params: {
       ),
     )
     .where(filters.length ? and(...filters) : undefined)
-    .orderBy(desc(leads.createdAt))
+    .orderBy(
+      ...(params.sort === "oldest"
+        ? [asc(leads.createdAt)]
+        : params.sort === "kind"
+          ? [CONTACT_KIND_ORDER_SQL, desc(leads.createdAt)]
+          : [desc(leads.createdAt)]),
+    )
     .limit(params.limit ?? 300);
 
-  return rows.map((r) => ({ ...r, utm: parseUtm(r.utm) }));
+  return rows.map((r) => ({
+    ...r,
+    utm: parseUtm(r.utm),
+    contactKind: toContactKind(r.contactKind),
+    publisherKind: toLeadPublisherKind(r.publisherKind),
+  }));
+}
+
+/**
+ * Lead counts per "Publicó" kind (who published the lead's listing), for the
+ * /admin/leads chips. Spam left out like every other count on the page.
+ */
+export async function countLeadsByPublisher(
+  internalOnly = false,
+): Promise<Record<LeadPublisherKind, number>> {
+  const kind = leadPublisherKindSql(await getPublisherSettings());
+  const rows = await db
+    .select({ kind, n: sql<number>`count(*)` })
+    .from(leads)
+    .leftJoin(listings, eq(leads.listingId, listings.id))
+    .leftJoin(agencies, eq(listings.agencyId, agencies.id))
+    .leftJoin(publisherAgent, eq(listings.agentId, publisherAgent.id))
+    .leftJoin(publisherOwner, eq(listings.ownerUserId, publisherOwner.id))
+    .where(and(ne(leads.status, "spam"), internalOnly ? eq(leads.routedTo, "internal") : undefined))
+    .groupBy(kind);
+  const out = Object.fromEntries(LEAD_PUBLISHER_KINDS.map((k) => [k, 0])) as Record<LeadPublisherKind, number>;
+  for (const r of rows) out[toLeadPublisherKind(r.kind)] += Number(r.n);
+  return out;
+}
+
+/**
+ * Lead counts per "Quién escribe" kind, for the /admin/leads chips. Spam is
+ * left out, like every other count on the page; `internalOnly` is the staff
+ * predicate.
+ */
+export async function countLeadsByContactKind(
+  internalOnly = false,
+): Promise<Record<ContactKind, number>> {
+  const rows = await db
+    .select({ kind: CONTACT_KIND_SQL, n: sql<number>`count(*)` })
+    .from(leads)
+    .where(and(ne(leads.status, "spam"), internalOnly ? eq(leads.routedTo, "internal") : undefined))
+    .groupBy(CONTACT_KIND_SQL);
+  const out = Object.fromEntries(CONTACT_KINDS.map((k) => [k, 0])) as Record<ContactKind, number>;
+  for (const r of rows) out[toContactKind(r.kind)] += Number(r.n);
+  return out;
+}
+
+/**
+ * Professionals in the directory whose WhatsApp matches these phone keys
+ * (`leadPhoneKey()`), so a lead card can say "Agente registrado: …" even when
+ * the person never answered "¿Quién sos?". Display only. Two small reads, one
+ * per table, for the whole page.
+ */
+export async function findProfessionalsByPhoneKey(
+  phoneKeys: string[],
+): Promise<Map<string, { kind: "agent" | "agency"; name: string }>> {
+  const keys = [...new Set(phoneKeys.filter((k) => /^\d{6,9}$/.test(k)))];
+  const out = new Map<string, { kind: "agent" | "agency"; name: string }>();
+  if (keys.length === 0) return out;
+  const keyOf = (col: typeof agents.whatsapp | typeof agencies.whatsapp) =>
+    sql<string>`right(regexp_replace(${col}, '[^0-9]', ''), 9)`;
+  const [agentRows, agencyRows] = await Promise.all([
+    db
+      .select({ key: keyOf(agents.whatsapp), name: agents.name })
+      .from(agents)
+      .where(and(isNotNull(agents.whatsapp), inArray(keyOf(agents.whatsapp), keys))),
+    db
+      .select({ key: keyOf(agencies.whatsapp), name: agencies.name })
+      .from(agencies)
+      .where(and(isNotNull(agencies.whatsapp), inArray(keyOf(agencies.whatsapp), keys))),
+  ]);
+  // An agent is the more specific answer: a person, not their office.
+  for (const r of agencyRows) out.set(String(r.key), { kind: "agency", name: r.name });
+  for (const r of agentRows) out.set(String(r.key), { kind: "agent", name: r.name });
+  return out;
 }
 
 /**

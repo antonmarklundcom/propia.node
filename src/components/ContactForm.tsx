@@ -1,8 +1,12 @@
 "use client";
 
+import { readVisitUtm } from "@/lib/visit-source";
+
+import { ContactRoleField } from "@/components/ContactRoleField";
 import { Glyph } from "@/components/Glyph";
 import { useId, useState } from "react";
 import { getDictionary, numberLocaleFor, type Locale } from "@/i18n";
+import type { ContactRole } from "@/lib/contact-role";
 import { checkPhone, waLink, waPhone } from "@/lib/wa";
 import {
   BUYER_BUDGETS,
@@ -16,6 +20,11 @@ import {
   normalizeBuyerDetails,
   type BuyerDetails,
 } from "@/lib/buyer-details";
+
+/** Who is writing, for the optional "I am…" select — a seeker, or a
+ * professional asking about the listing. Never an owner or a developer here:
+ * they have their own forms. */
+const CONTACT_ROLES_ENQUIRY: readonly ContactRole[] = ["particular", "agent", "agency"];
 
 /**
  * Shared inquiry form; the listing seller card leads with WhatsApp when available.
@@ -83,6 +92,7 @@ export function ContactForm({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState(prefillMessage);
+  const [contactRole, setContactRole] = useState<ContactRole | "">("");
   const [questions, setQuestions] = useState<string[]>([]);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "fallback" | "error">(
     "idle",
@@ -135,6 +145,7 @@ export function ContactForm({
           message: fullMessage,
           utm: readUtm(),
           buyerDetails: askDetails ? (normalizeBuyerDetails(details) ?? undefined) : undefined,
+          ...(contactRole ? { contactRole } : {}),
         }),
       });
       captured = res.ok;
@@ -207,6 +218,16 @@ export function ContactForm({
           </span>
         )}
       </label>
+
+      <ContactRoleField
+        locale={locale}
+        roles={CONTACT_ROLES_ENQUIRY}
+        value={contactRole}
+        onChange={setContactRole}
+        className="contact-form__field"
+        labelClassName="contact-form__label"
+        inputClassName="contact-form__input contact-form__select"
+      />
 
       <div className="contact-form__chips">
         {d.common.quickQuestions.map((q) => (
@@ -420,12 +441,6 @@ function recipientLine(
 }
 
 function readUtm(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const p = new URLSearchParams(window.location.search);
-  const utm: Record<string, string> = {};
-  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_content"]) {
-    const v = p.get(k);
-    if (v) utm[k] = v;
-  }
-  return utm;
+  // URL utm first, else the visit's stored source (src/lib/visit-source.ts).
+  return readVisitUtm();
 }

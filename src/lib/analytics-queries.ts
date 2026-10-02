@@ -10,7 +10,7 @@ import "server-only";
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { analyticsDay } from "./analytics";
-import { dayMinus } from "./ops/analytics";
+import { dayMinus, VISITOR_SOURCE_SQL } from "./ops/analytics";
 import { getAnalyticsRawDays } from "./site-settings";
 
 type Rows = Array<Record<string, unknown>>;
@@ -247,7 +247,68 @@ async function topDimension(
 
 export const topPages = (w: AnalyticsWindow) => topDimension(w, "path", "path", 20);
 export const topListings = (w: AnalyticsWindow) => topDimension(w, "listing_id", "listing", 20, true);
-export const topReferrers = (w: AnalyticsWindow) => topDimension(w, "referrer", "referrer", 15);
-export const topUtmSources = (w: AnalyticsWindow) => topDimension(w, "utm_source", "utm_source", 15, true);
 export const topUtmCampaigns = (w: AnalyticsWindow) => topDimension(w, "utm_campaign", "utm_campaign", 15, true);
 export const byDevice = (w: AnalyticsWindow) => topDimension(w, "device", "device", 3);
+
+export interface SourceRow {
+  /** utm_source, else referrer host; '' = direct. */
+  value: string;
+  visitors: number;
+  waClicks: number;
+  leads: number;
+}
+
+/**
+ * "Fuente": every visitor once, under one source — their utm_source if any
+ * event of the day carried one, else their referrer host, else direct ('').
+ * WhatsApp clicks and form leads are credited to the same source. Raw days
+ * group per (day, door, visitor); rolled-up days read the rollup's `source`
+ * dimension, written by the same rule (src/lib/ops/analytics.ts). Days rolled
+ * up before that dimension existed (2026-10-02) have no `source` rows.
+ */
+export async function sourceTable(w: AnalyticsWindow, limit = 20): Promise<SourceRow[]> {
+  const out = new Map<string, SourceRow>();
+  const get = (v: string) => {
+    let r = out.get(v);
+    if (!r) {
+      r = { value: v, visitors: 0, waClicks: 0, leads: 0 };
+      out.set(v, r);
+    }
+    return r;
+  };
+  for (const r of await rows(sql`
+    SELECT src AS v, SUM(saw) AS visitors, SUM(wa) AS wa, SUM(leads) AS leads
+    FROM (
+      SELECT ${sql.raw(VISITOR_SOURCE_SQL)} AS src,
+        MAX(event = 'page_view') AS saw,
+        SUM(event = 'wa_click') AS wa,
+        SUM(event = 'lead_submit') AS leads
+      FROM analytics_events WHERE ${rawWhere(w)}
+      GROUP BY day, vertical, visitor_hash
+    ) per_visitor
+    GROUP BY src
+  `)) {
+    const x = get(String(r.v ?? ""));
+    x.visitors += n(r.visitors);
+    x.waClicks += n(r.wa);
+    x.leads += n(r.leads);
+  }
+  const dw = dailyWhere(w);
+  if (dw) {
+    for (const r of await rows(sql`
+      SELECT value AS v,
+        SUM(CASE WHEN event = 'page_view' THEN uniques END) AS visitors,
+        SUM(CASE WHEN event = 'wa_click' THEN count END) AS wa,
+        SUM(CASE WHEN event = 'lead_submit' THEN count END) AS leads
+      FROM analytics_daily WHERE ${dw} AND dim = 'source' GROUP BY value
+    `)) {
+      const x = get(String(r.v ?? ""));
+      x.visitors += n(r.visitors);
+      x.waClicks += n(r.wa);
+      x.leads += n(r.leads);
+    }
+  }
+  return [...out.values()]
+    .sort((a, b) => b.visitors - a.visitors || b.leads - a.leads || b.waClicks - a.waClicks)
+    .slice(0, limit);
+}

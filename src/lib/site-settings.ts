@@ -32,6 +32,12 @@ export const SETTING_KEYS = {
   waAi: "wa_ai_enabled",
   waHours: "wa_office_hours",
   waAiCooldown: "wa_ai_cooldown_hours",
+  // The operator's own agency (/admin/ajustes): its listings read as "Propias"
+  // in /admin (src/lib/publisher-kind.ts). Unset = none chosen.
+  houseAgencyId: "house_agency_id",
+  // Independent agents the operator works with as partners ("Socio" in
+  // /admin/agentes): comma-separated agents.id. Unset = none.
+  partnerAgentIds: "partner_agent_ids",
 } as const;
 
 /** Uncached — for scripts and jobs, which have no Next.js cache around them. */
@@ -87,6 +93,62 @@ export function parseRawDays(value: string | undefined): number {
 
 export async function getAnalyticsRawDays(): Promise<number> {
   return parseRawDays((await readSiteSettings())[SETTING_KEYS.analyticsRawDays]);
+}
+
+export function parseHouseAgencyId(value: string | undefined): number | null {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/** The agency whose listings /admin labels "Propias"; null when none is chosen. */
+export async function getHouseAgencyId(): Promise<number | null> {
+  return parseHouseAgencyId((await readSiteSettings())[SETTING_KEYS.houseAgencyId]);
+}
+
+/**
+ * `partner_agent_ids`: the independent agents marked "Socio". Only positive
+ * integers survive, de-duplicated and sorted, so the list can be spelled raw
+ * into SQL (src/lib/publisher-kind.ts).
+ */
+export function parsePartnerAgentIds(value: string | undefined): number[] {
+  if (!value) return [];
+  const out = new Set<number>();
+  for (const part of value.split(",")) {
+    const t = part.trim();
+    if (!/^\d{1,10}$/.test(t)) continue;
+    const n = Number(t);
+    if (Number.isSafeInteger(n) && n > 0) out.add(n);
+  }
+  return [...out].sort((a, b) => a - b);
+}
+
+export function formatPartnerAgentIds(ids: readonly number[]): string {
+  return parsePartnerAgentIds(ids.join(",")).join(",");
+}
+
+export async function getPartnerAgentIds(opts: { uncached?: boolean } = {}): Promise<number[]> {
+  if (opts.uncached) {
+    try {
+      return parsePartnerAgentIds((await readSiteSettingsRaw())[SETTING_KEYS.partnerAgentIds]);
+    } catch {
+      return [];
+    }
+  }
+  return parsePartnerAgentIds((await readSiteSettings())[SETTING_KEYS.partnerAgentIds]);
+}
+
+/** What `publisherKindSql()` needs: the house agency and the partner agents. */
+export interface PublisherSettings {
+  houseAgencyId: number | null;
+  partnerAgentIds: number[];
+}
+
+export async function getPublisherSettings(): Promise<PublisherSettings> {
+  const s = await readSiteSettings();
+  return {
+    houseAgencyId: parseHouseAgencyId(s[SETTING_KEYS.houseAgencyId]),
+    partnerAgentIds: parsePartnerAgentIds(s[SETTING_KEYS.partnerAgentIds]),
+  };
 }
 
 /** The auto-responder's switches, parsed; every default is "off" / the built-in hours. */

@@ -5,6 +5,7 @@
  * stored, which is also why the push does not run inside the request.
  */
 import { checkPhone } from "@/lib/wa";
+import { CONTACT_ROLE_UTM_KEY, CONTACT_ROLES, type ContactRole } from "@/lib/contact-role";
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
@@ -29,6 +30,12 @@ import { currentVertical } from "@/lib/vertical-context";
 import { emailSeekerConfirmation } from "@/lib/lead-emails";
 import { isAgencyMode } from "@/lib/site-settings";
 import { recordAnalyticsEvent } from "@/lib/analytics";
+import { VISIT_REFERRER_UTM_KEY } from "@/lib/visit-source";
+
+/** The form's `utm_referrer` is a bare host; analytics wants a URL to parse. */
+function visitReferrerUrl(host: string | undefined): string | null {
+  return host && /^[a-z0-9.-]{1,120}$/i.test(host) ? `https://${host}/` : null;
+}
 import { listingUrl } from "@/lib/urls";
 import { esA3, REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
 import { getDictionary, numberLocaleFor } from "@/i18n";
@@ -91,6 +98,12 @@ const bodySchema = z.object({
     .max(190)
     .regex(/^[a-z0-9-]+$/)
     .optional(),
+  /**
+   * "¿Quién sos?" (src/lib/contact-role.ts): who is writing, self-declared.
+   * Optional — a form that does not ask sends nothing. Stamped into `utm` by
+   * the server from this enum, never copied from the client's own utm keys.
+   */
+  contactRole: z.enum(CONTACT_ROLES).optional(),
   name: z.string().max(140).optional(),
   whatsapp: z.string().min(6).max(30),
   email: z.string().email().max(190).optional(),
@@ -150,6 +163,17 @@ const bodySchema = z.object({
     })
     .optional(),
 });
+
+function withContactRole(
+  utm: Record<string, string> | undefined,
+  role: ContactRole | undefined,
+): Record<string, string> | undefined {
+  const rest = Object.fromEntries(
+    Object.entries(utm ?? {}).filter(([k]) => k !== CONTACT_ROLE_UTM_KEY),
+  );
+  if (role) rest[CONTACT_ROLE_UTM_KEY] = role;
+  return Object.keys(rest).length > 0 ? rest : undefined;
+}
 
 /** At most this many utm keys, each key and value cut to these lengths. */
 const UTM_MAX_KEYS = 20;
@@ -401,7 +425,11 @@ export async function POST(req: NextRequest) {
     numberLocaleFor(door.locale),
   );
   const detailsUtm = buyerDetailsUtm(buyerDetails);
-  const leadUtm = detailsUtm ? { ...(utm ?? {}), ...detailsUtm } : utm;
+  const withDetails = detailsUtm ? { ...(utm ?? {}), ...detailsUtm } : utm;
+  // The "¿Quién sos?" answer, from the validated enum only: a client-sent
+  // `contact_role` utm key is dropped, so the panel's "Quién escribe" filter
+  // reads what the form asked and nothing else. Not on a report.
+  const leadUtm = withContactRole(withDetails, report ? undefined : parsed.contactRole);
 
   // The brief's answers become the lead's message, in Spanish whatever the
   // door — the operator reads /admin/leads in Spanish (same rule as esPanel).
@@ -444,6 +472,16 @@ export async function POST(req: NextRequest) {
       vertical,
       ip,
       userAgent: req.headers.get("user-agent"),
+      // The form's own utm keys (the URL's, else the visit's stored source —
+      // src/lib/visit-source.ts), so the "Formulario" column of the campaign
+      // and source tables credits the campaign that brought the visitor.
+      utm: {
+        source: parsed.utm?.utm_source ?? null,
+        medium: parsed.utm?.utm_medium ?? null,
+        campaign: parsed.utm?.utm_campaign ?? null,
+      },
+      referrer: visitReferrerUrl(parsed.utm?.[VISIT_REFERRER_UTM_KEY]),
+      ownHost: req.headers.get("host"),
     });
   }
 

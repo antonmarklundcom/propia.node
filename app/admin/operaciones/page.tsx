@@ -1,8 +1,8 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { OpsJobCard, type LastRunView } from "@/components/panel/OpsJobCard";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import { lastRunByJob } from "@/lib/ops/runs";
 import { esPanel } from "@/i18n/es";
 import { dict } from "@/i18n/server";
@@ -52,8 +52,8 @@ function formatOpsWhen(d: Date): string {
  */
 export default async function AdminOperacionesPage() {
   const user = await requireSuperAdmin();
-  const [reviewCount, lastRuns] = await Promise.all([
-    countReviewQueue(),
+  const [badges, lastRuns] = await Promise.all([
+    getAdminBadges(user),
     lastRunByJob(),
   ]);
 
@@ -69,7 +69,7 @@ export default async function AdminOperacionesPage() {
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("operations", reviewCount)}
+        tabs={adminTabs("operations", badges)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.opsTitle}</h2>

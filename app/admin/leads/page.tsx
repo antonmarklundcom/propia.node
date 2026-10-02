@@ -1,15 +1,19 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import { isStaff } from "@/lib/auth/roles";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
+  countLeadsByContactKind,
+  countLeadsByPublisher,
+  LEAD_PUBLISHER_KINDS,
+  findProfessionalsByPhoneKey,
   countLeadsByStatus,
   countLeadsByPhoneKey,
   countLeadsByType,
   countLeadsByVertical,
   countRecentLeads,
-  countReviewQueue,
   leadHistoryFor,
   leadPhoneKey,
   listLeadHistory,
@@ -17,8 +21,14 @@ import {
   type AdminLeadRow,
   type LeadFollowUp,
 } from "@/lib/panel-queries";
+import { cookies } from "next/headers";
+import { RememberView } from "./RememberView";
 import {
   ADMIN_LEAD_TYPES,
+  ADMIN_LEAD_VIEW_COOKIE,
+  ADMIN_LEAD_VIEWS,
+  adminLeadsInternalOnly,
+  parseAdminLeadView,
   adminLeadFilterQuery,
   adminLeadRows,
   FOLLOW_UP,
@@ -77,6 +87,8 @@ import { WhatsappLeadForm } from "./WhatsappLeadForm";
 import { esWa } from "@/i18n/es-wa";
 import { WHATSAPP_MANUAL_SOURCE } from "@/lib/whatsapp-lead";
 import { currentVertical } from "@/lib/vertical-context";
+import { CONTACT_KINDS, LEAD_SORTS } from "@/lib/contact-kind";
+import { esTriage } from "@/i18n/es-triage";
 
 /** A listing report (A3): a `question` lead marked `utm.source`. */
 function isReport(lead: AdminLeadRow): boolean {
@@ -145,9 +157,17 @@ function leadsHref(p: {
   q?: string;
   agrupar?: boolean;
   fuente?: string;
+  quien?: string;
+  orden?: string;
+  publico?: string;
+  vista?: string;
 }): string {
   const sp = new URLSearchParams();
+  if (p.vista) sp.set("vista", p.vista);
+  if (p.publico) sp.set("publico", p.publico);
   if (p.fuente) sp.set("fuente", p.fuente);
+  if (p.quien) sp.set("quien", p.quien);
+  if (p.orden) sp.set("orden", p.orden);
   if (p.tipo && p.tipo !== "all") sp.set("tipo", p.tipo);
   if (p.sitio) sp.set("sitio", p.sitio);
   if (p.estado) sp.set("estado", p.estado);
@@ -328,29 +348,40 @@ export default async function AdminLeadsPage({
     agrupar?: string;
     fuente?: string;
     negocio?: string;
+    quien?: string;
+    orden?: string;
+    publico?: string;
+    vista?: string;
   }>;
 }) {
-  const [{ tipo, sitio, estado, tel, q, msg, agrupar, fuente, negocio }, user] = await Promise.all([
-    searchParams,
-    requireStaffOrAbove(),
-  ]);
+  const [{ tipo, sitio, estado, tel, q, msg, agrupar, fuente, negocio, quien, orden, publico, vista }, user, jar] =
+    await Promise.all([searchParams, requireStaffOrAbove(), cookies()]);
 
-  const internalOnly = isStaff(user.role);
-  const [reviewCount, recentLeads, counts, siteCounts, statusCounts, reportCount] =
+  // Staff are internal-only by role. Everyone else picks "Mis consultas"
+  // (the internal lane, what the tab badge counts) or "Todas"; the choice is
+  // remembered in a cookie and every count, list and export below follows it.
+  const staffOnly = isStaff(user.role);
+  const viewCookie = jar.get(ADMIN_LEAD_VIEW_COOKIE)?.value;
+  const view = parseAdminLeadView(vista, viewCookie);
+  const internalOnly = adminLeadsInternalOnly(view, staffOnly);
+  const [badges, recentLeads, counts, siteCounts, statusCounts, reportCount, kindCounts, publisherCounts] =
     await Promise.all([
-      countReviewQueue(),
+      getAdminBadges(user),
       countRecentLeads(24, internalOnly),
       countLeadsByType(internalOnly),
       countLeadsByVertical(internalOnly),
       countLeadsByStatus(internalOnly),
       countReportLeads(internalOnly),
+      countLeadsByContactKind(internalOnly),
+      countLeadsByPublisher(internalOnly),
     ]);
   // One parser for the page and its CSV export (src/lib/lead-export.ts): a
   // site is only a value some lead actually carries, a number only a
   // well-formed key — never free text.
   const filter = parseAdminLeadFilter(
-    { tipo, sitio, estado, tel, q, fuente },
+    { tipo, sitio, estado, tel, q, fuente, quien, orden, publico, vista },
     siteCounts.map((s) => s.vertical),
+    viewCookie,
   );
   const {
     type: activeType,
@@ -359,15 +390,30 @@ export default async function AdminLeadsPage({
     phoneKey: activeTel,
   } = filter;
   const reportsOnly = filter.reports === true;
+  const activeKind = filter.contactKind;
+  const activeSort = filter.sort;
+  const activePublisher = filter.publisher;
+  /**
+   * Every filter link on the page keeps "Quién escribe" and the sort, so
+   * picking a type or a site never silently drops them.
+   */
+  const linkTo = (p: Parameters<typeof leadsHref>[0]) =>
+    leadsHref({
+      vista: view,
+      quien: activeKind,
+      publico: activePublisher,
+      orden: activeSort === "recent" ? undefined : activeSort,
+      ...p,
+    });
   // Superadmin 7: one card per WhatsApp number. Display only — every lead
   // keeps its own row, status, note and shares.
   const grouped = agrupar === "1";
-  const rows = await adminLeadRows(filter, internalOnly);
+  const rows = await adminLeadRows(filter, staffOnly);
   const exportQuery = adminLeadFilterQuery(filter);
   // Which numbers on this page wrote more than once (one GROUP BY), who each
   // lead is shared with, the partners it could be shared with, and — for the
   // super-admin — how those partners answer. One query each for the page.
-  const [repeats, sharesByLead, shareTargets, board, origin, threads, history, door] = await Promise.all([
+  const [repeats, sharesByLead, shareTargets, board, origin, threads, history, door, professionals] = await Promise.all([
     countLeadsByPhoneKey(
       rows.map((r) => leadPhoneKey(r.whatsapp)),
       internalOnly,
@@ -389,6 +435,10 @@ export default async function AdminLeadsPage({
           internalOnly,
         }),
     currentVertical(),
+    // Display only; a failed read must not cost the operator the inbox.
+    findProfessionalsByPhoneKey(rows.map((r) => leadPhoneKey(r.whatsapp))).catch(
+      () => new Map<string, { kind: "agent" | "agency"; name: string }>(),
+    ),
   ]);
   // The deal ledger (batch 6): the super-admin gets the full row, staff the
   // stage alone — their query never selects a money column.
@@ -414,7 +464,7 @@ export default async function AdminLeadsPage({
   const replyAvailable = leadEmailReplyAvailable();
   const partnerPanelUrl = `${origin}/agencia/leads`;
   // Where "Guardar" on a card sends the operator back to.
-  const backHref = leadsHref({
+  const backHref = linkTo({
     tipo: activeType,
     sitio: activeSite,
     estado: activeStatus,
@@ -464,6 +514,30 @@ export default async function AdminLeadsPage({
             <span>
               {LEAD_TYPE_LABEL[lead.leadType] ?? lead.leadType}
             </span>
+            <Link
+              className={`panel-kind panel-kind--${lead.publisherKind === "no_listing" ? "none" : lead.publisherKind}`}
+              href={linkTo({ publico: lead.publisherKind })}
+              title={esTriage.leadPublisherFilterLabel}
+            >
+              {esTriage.leadPublisherPill(lead.publisherKind, lead.publisherName)}
+            </Link>
+            <Link
+              className={`panel-kind panel-kind--${lead.contactKind}`}
+              href={linkTo({ quien: lead.contactKind })}
+              title={esTriage.contactFilterLabel}
+            >
+              {esTriage.contact[lead.contactKind]}
+            </Link>
+            {(() => {
+              // A professional in the directory, recognised by their WhatsApp
+              // even when they never said so on the form.
+              const pro = professionals.get(leadPhoneKey(lead.whatsapp));
+              return pro ? (
+                <span className={`panel-kind panel-kind--${pro.kind}`}>
+                  {pro.kind === "agent" ? esTriage.knownAgent(pro.name) : esTriage.knownAgency(pro.name)}
+                </span>
+              ) : null;
+            })()}
             <span>{formatWhen(lead.createdAt)}</span>
             <span>{lead.whatsapp}</span>
             {/* The same person writing again — or the same bot. */}
@@ -473,7 +547,7 @@ export default async function AdminLeadsPage({
               return n && !activeTel ? (
                 <Link
                   className="panel-chip panel-chip--active"
-                  href={leadsHref({ tel: key })}
+                  href={linkTo({ tel: key })}
                 >
                   {esPanel.leadsSamePhone(n)}
                 </Link>
@@ -694,7 +768,7 @@ export default async function AdminLeadsPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("leads", reviewCount, undefined, recentLeads)}
+        tabs={adminTabs("leads", badges)}
       />
       <main className="panel site-main">
         {flash ? (
@@ -705,10 +779,41 @@ export default async function AdminLeadsPage({
 
         <h2 className="panel-section__title">{esPanel.adminLeadsTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 13, marginTop: 0 }}>
-          {internalOnly ? esPanel.staffLeadsHint : esPanel.adminLeadsHint}
+          {staffOnly ? esPanel.staffLeadsHint : esPanel.adminLeadsHint}
         </p>
+        {staffOnly ? null : (
+          <>
+            <RememberView name={ADMIN_LEAD_VIEW_COOKIE} value={view} />
+            <nav className="panel-chips" aria-label={esTriage.leadViewLabel}>
+              {ADMIN_LEAD_VIEWS.map((v) => (
+                <Link
+                  key={v}
+                  href={linkTo({
+                    vista: v,
+                    tipo: activeType,
+                    sitio: activeSite,
+                    estado: activeStatus,
+                    q,
+                    agrupar: grouped,
+                    fuente: reportsOnly ? "reportes" : undefined,
+                  })}
+                  className={`panel-chip${v === view ? " panel-chip--active" : ""}`}
+                  aria-current={v === view ? "page" : undefined}
+                >
+                  {esTriage.leadView[v]}
+                </Link>
+              ))}
+              <span className="panel-chips__label">{esTriage.leadViewHint[view]}</span>
+            </nav>
+          </>
+        )}
         {/* Says what the tab badge is counting — a bare number next to
             "Consultas" would read as the all-time total. */}
+        {badges.leads > 0 ? (
+          <p className="panel-note">
+            <Link href={linkTo({ estado: "new" })}>{esTriage.leadsBadgeNote(badges.leads)}</Link>
+          </p>
+        ) : null}
         {recentLeads > 0 ? (
           <p className="panel-note">{esPanel.adminLeadsRecent(recentLeads)}</p>
         ) : null}
@@ -724,7 +829,7 @@ export default async function AdminLeadsPage({
 
         <nav className="panel-chips">
           {LEAD_TYPES.map((t) => {
-            const href = leadsHref({
+            const href = linkTo({
               tipo: t,
               sitio: activeSite,
               estado: activeStatus,
@@ -746,7 +851,7 @@ export default async function AdminLeadsPage({
           {/* Listing reports from "Reportar este aviso" (A3) — a subset of
               "Consulta", marked by utm.source rather than a type of its own. */}
           <Link
-            href={leadsHref({
+            href={linkTo({
               tipo: activeType,
               sitio: activeSite,
               estado: activeStatus,
@@ -761,12 +866,56 @@ export default async function AdminLeadsPage({
           </Link>
         </nav>
 
+        {/* Who the lead is from: the visitor's own "¿Quién sos?" answer read
+            with the lead type (src/lib/contact-kind.ts). Counts across every
+            type and site, like the chips above. */}
+        <nav className="panel-chips" aria-label={esTriage.contactFilterLabel}>
+          <span className="panel-chips__label">{esTriage.contactFilterLabel}</span>
+          <Link
+            href={linkTo({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped, quien: "" })}
+            className={`panel-chip${activeKind ? "" : " panel-chip--active"}`}
+          >
+            {esTriage.contactAll}
+          </Link>
+          {CONTACT_KINDS.filter((k) => kindCounts[k] > 0 || k === activeKind).map((k) => (
+            <Link
+              key={k}
+              href={linkTo({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped, quien: k })}
+              className={`panel-chip${k === activeKind ? " panel-chip--active" : ""}`}
+            >
+              {esTriage.contact[k]}
+              <span className="panel-tab__count">{kindCounts[k]}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* Who published the lead's listing (src/lib/publisher-kind.ts). */}
+        <nav className="panel-chips" aria-label={esTriage.leadPublisherFilterLabel}>
+          <span className="panel-chips__label">{esTriage.leadPublisherFilterLabel}</span>
+          <Link
+            href={linkTo({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped, publico: "" })}
+            className={`panel-chip${activePublisher ? "" : " panel-chip--active"}`}
+          >
+            {esTriage.contactAll}
+          </Link>
+          {LEAD_PUBLISHER_KINDS.filter((k) => publisherCounts[k] > 0 || k === activePublisher).map((k) => (
+            <Link
+              key={k}
+              href={linkTo({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped, publico: k })}
+              className={`panel-chip${k === activePublisher ? " panel-chip--active" : ""}`}
+            >
+              {esTriage.leadPublisherChip[k]}
+              <span className="panel-tab__count">{publisherCounts[k]}</span>
+            </Link>
+          ))}
+        </nav>
+
         {/* Which door captured the lead. Counts are per site across every
             type, the same way the type chips count across every site. */}
         {siteCounts.length > 1 ? (
           <nav className="panel-chips" aria-label="Sitio">
             <Link
-              href={leadsHref({ tipo: activeType, estado: activeStatus, q, agrupar: grouped })}
+              href={linkTo({ tipo: activeType, estado: activeStatus, q, agrupar: grouped })}
               className={`panel-chip${activeSite ? "" : " panel-chip--active"}`}
             >
               Todos los sitios
@@ -775,7 +924,7 @@ export default async function AdminLeadsPage({
             {siteCounts.map((s) => (
               <Link
                 key={s.vertical}
-                href={leadsHref({
+                href={linkTo({
                   tipo: activeType,
                   sitio: s.vertical,
                   estado: activeStatus,
@@ -794,7 +943,7 @@ export default async function AdminLeadsPage({
         {/* Follow-up state. "Nuevas" is the inbox: what nobody answered yet. */}
         <nav className="panel-chips" aria-label="Estado">
           <Link
-            href={leadsHref({ tipo: activeType, sitio: activeSite, q, agrupar: grouped })}
+            href={linkTo({ tipo: activeType, sitio: activeSite, q, agrupar: grouped })}
             className={`panel-chip${activeStatus ? "" : " panel-chip--active"}`}
           >
             Todos los estados
@@ -802,7 +951,7 @@ export default async function AdminLeadsPage({
           {FOLLOW_UP.map((st) => (
             <Link
               key={st}
-              href={leadsHref({
+              href={linkTo({
                 tipo: activeType,
                 sitio: activeSite,
                 estado: st,
@@ -816,7 +965,7 @@ export default async function AdminLeadsPage({
             </Link>
           ))}
           <Link
-            href={leadsHref({ tipo: activeType, sitio: activeSite, estado: "spam", q, agrupar: grouped })}
+            href={linkTo({ tipo: activeType, sitio: activeSite, estado: "spam", q, agrupar: grouped })}
             className={`panel-chip${activeStatus === "spam" ? " panel-chip--active" : ""}`}
           >
             {esPanel.spamChip}
@@ -837,6 +986,9 @@ export default async function AdminLeadsPage({
           ) : null}
           {grouped ? <input type="hidden" name="agrupar" value="1" /> : null}
           {reportsOnly ? <input type="hidden" name="fuente" value="reportes" /> : null}
+          {activeKind ? <input type="hidden" name="quien" value={activeKind} /> : null}
+          {activePublisher ? <input type="hidden" name="publico" value={activePublisher} /> : null}
+          <input type="hidden" name="vista" value={view} />
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">
               {esPanel.adminLeadsSearchLabel}
@@ -848,6 +1000,16 @@ export default async function AdminLeadsPage({
               defaultValue={q ?? ""}
             />
           </label>
+          <label className="panel-form__field" style={{ flexBasis: "180px" }}>
+            <span className="auth-field__label">{esTriage.sortLabel}</span>
+            <select className="panel-select" name="orden" defaultValue={activeSort}>
+              {LEAD_SORTS.map((o) => (
+                <option key={o} value={o}>
+                  {esTriage.sort[o]}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="panel-form__field panel-form__field--action">
             <button className="panel-btn" type="submit">
               {esPanel.searchSubmit}
@@ -857,7 +1019,7 @@ export default async function AdminLeadsPage({
 
         <nav className="panel-chips" aria-label={esA1.groupToggle}>
           <Link
-            href={leadsHref({
+            href={linkTo({
               tipo: activeType,
               sitio: activeSite,
               estado: activeStatus,
@@ -884,7 +1046,7 @@ export default async function AdminLeadsPage({
         {activeTel ? (
           <p className="panel-note">
             {esPanel.leadsSamePhoneFilter}{" "}
-            <Link href={leadsHref({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped })}>
+            <Link href={linkTo({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped })}>
               {esPanel.leadsSamePhoneClear}
             </Link>
           </p>

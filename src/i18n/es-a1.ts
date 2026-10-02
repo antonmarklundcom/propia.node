@@ -66,6 +66,7 @@ export const esA1 = {
   csvAdminHead: [
     "Fecha",
     "Tipo",
+    "Quién escribe",
     "Estado",
     "Nombre",
     "WhatsApp",
@@ -75,6 +76,7 @@ export const esA1 = {
     "Derivada a",
     "Propiedad",
     "URL de la propiedad",
+    "Publicó",
     "Nota interna",
     "Origen",
   ],

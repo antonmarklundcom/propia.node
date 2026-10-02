@@ -1,9 +1,10 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { ImportUpload } from "@/components/panel/ImportUpload";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue, listAgencies } from "@/lib/panel-queries";
+import { listAgencies } from "@/lib/panel-queries";
 import { listImportJobs } from "@/lib/import/jobs";
 import { recentPriceChanges } from "@/lib/import/resync";
 import { UPLOAD_SOURCES } from "@/lib/import/intake";
@@ -36,8 +37,8 @@ function formatDate(d: Date): string {
 
 export default async function AdminImportPage() {
   const user = await requireSuperAdmin();
-  const [reviewCount, agencies, jobs, priceChanges] = await Promise.all([
-    countReviewQueue(),
+  const [badges, agencies, jobs, priceChanges] = await Promise.all([
+    getAdminBadges(user),
     listAgencies(),
     listImportJobs(),
     recentPriceChanges(25),
@@ -49,7 +50,7 @@ export default async function AdminImportPage() {
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("import", reviewCount)}
+        tabs={adminTabs("import", badges)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.adminImportTitle}</h2>

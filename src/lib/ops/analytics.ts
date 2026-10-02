@@ -22,6 +22,13 @@ import { getAnalyticsRawDays } from "@/lib/site-settings";
 import { countWebVitalsBefore, deleteWebVitalsBefore } from "@/lib/web-vitals";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
 
+/**
+ * A visitor's one source over their events of a day (used inside a GROUP BY
+ * day, vertical, visitor_hash): utm_source, else referrer host, else ''.
+ */
+export const VISITOR_SOURCE_SQL =
+  "LEFT(COALESCE(MIN(NULLIF(utm_source, '')), MIN(NULLIF(referrer_host, '')), ''), 191)";
+
 /** One statement per dimension; `value` is what `analytics_daily.value` holds. */
 const DIMENSIONS: Array<{ dim: string; value: string; where: string }> = [
   { dim: "total", value: "''", where: "1=1" },
@@ -68,6 +75,23 @@ export async function rollUpDay(day: string): Promise<void> {
         ON DUPLICATE KEY UPDATE count = VALUES(count), uniques = VALUES(uniques)
       `);
     }
+    // "Fuente" (/admin/analitica): one source per visitor per day — their
+    // utm_source, else their referrer host, else '' (direct) — so a visitor is
+    // counted once under one source. Same rule as sourceTable() reads raw.
+    await tx.execute(sql`
+      INSERT INTO analytics_daily (day, vertical, event, dim, value, count, uniques)
+      SELECT e.day, e.vertical, e.event, 'source', s.src AS v,
+             COUNT(*), COUNT(DISTINCT e.visitor_hash)
+      FROM analytics_events e
+      JOIN (
+        SELECT day, vertical, visitor_hash, ${sql.raw(VISITOR_SOURCE_SQL)} AS src
+        FROM analytics_events WHERE day = ${day}
+        GROUP BY day, vertical, visitor_hash
+      ) s ON s.day = e.day AND s.vertical = e.vertical AND s.visitor_hash = e.visitor_hash
+      WHERE e.day = ${day}
+      GROUP BY e.day, e.vertical, e.event, v
+      ON DUPLICATE KEY UPDATE count = VALUES(count), uniques = VALUES(uniques)
+    `);
   });
 }
 

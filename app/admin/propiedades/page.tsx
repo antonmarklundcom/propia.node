@@ -1,16 +1,21 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { isStaff } from "@/lib/auth/roles";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import {
   ADMIN_STATUSES,
   STAFF_STATUSES,
+  countListingsByPublisher,
   countListingsByStatus,
   listAllListings,
   type ListingStatusValue,
 } from "@/lib/listing-edit";
+import { isPublisherKind, PUBLISHER_KINDS, type PublisherKind } from "@/lib/publisher-kind";
+import { getHouseAgencyId } from "@/lib/site-settings";
+import { isSuperAdmin } from "@/lib/auth/roles";
+import { esTriage } from "@/i18n/es-triage";
 import { esPanel, listingStatusLabel } from "@/i18n/es";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -47,17 +52,32 @@ function isStatus(v: string | undefined): v is ListingStatusValue {
 export default async function AdminListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; msg?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; quien?: string; msg?: string }>;
 }) {
   const [params, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
   const status = isStatus(params.status) ? params.status : "all";
   const q = params.q?.trim() ?? "";
+  const publisher: PublisherKind | undefined = isPublisherKind(params.quien) ? params.quien : undefined;
 
-  const [reviewCount, counts, rows] = await Promise.all([
-    countReviewQueue(),
+  const [badges, counts, publisherCounts, houseAgencyId, rows] = await Promise.all([
+    getAdminBadges(user),
     countListingsByStatus(),
-    listAllListings({ status, q }),
+    countListingsByPublisher(status),
+    getHouseAgencyId(),
+    listAllListings({ status, q, publisher }),
   ]);
+  /** One URL builder, so the status chips, the publisher chips and the search keep each other. */
+  const href = (p: { status?: string; quien?: PublisherKind | null }) => {
+    const sp = new URLSearchParams();
+    const st = p.status ?? status;
+    if (st !== "all") sp.set("status", st);
+    const who = p.quien === null ? undefined : (p.quien ?? publisher);
+    if (who) sp.set("quien", who);
+    if (q) sp.set("q", q);
+    const qs = sp.toString();
+    return qs ? `/admin/propiedades?${qs}` : "/admin/propiedades";
+  };
+  const publisherTotal = PUBLISHER_KINDS.reduce((sum, k) => sum + publisherCounts[k], 0);
 
   const flash = params.msg ? FLASH[params.msg] : undefined;
   const staff = isStaff(user.role);
@@ -69,7 +89,7 @@ export default async function AdminListingsPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("listings", reviewCount)}
+        tabs={adminTabs("listings", badges)}
       />
       <main className="panel site-main">
         {flash ? <p className="panel-flash">{flash}</p> : null}
@@ -80,6 +100,7 @@ export default async function AdminListingsPage({
           {status !== "all" ? (
             <input type="hidden" name="status" value={status} />
           ) : null}
+          {publisher ? <input type="hidden" name="quien" value={publisher} /> : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">{esPanel.searchListingsLabel}</span>
             <input
@@ -98,13 +119,12 @@ export default async function AdminListingsPage({
 
         <nav className="panel-chips" aria-label="Filtrar por estado">
           {chips.map((s) => {
-            const href = `/admin/propiedades?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
             const label = s === "all" ? esPanel.filterAll : listingStatusLabel[s];
             const count = counts[s] ?? 0;
             return (
               <Link
                 key={s}
-                href={href}
+                href={href({ status: s })}
                 className={`panel-chip${s === status ? " panel-chip--active" : ""}`}
               >
                 {label}
@@ -113,6 +133,36 @@ export default async function AdminListingsPage({
             );
           })}
         </nav>
+
+        <nav className="panel-chips" aria-label={esTriage.publisherFilterLabel}>
+          <span className="panel-chips__label">{esTriage.publisherColumn}</span>
+          <Link
+            href={href({ quien: null })}
+            className={`panel-chip${publisher ? "" : " panel-chip--active"}`}
+          >
+            {esTriage.publisherAll}
+            <span className="panel-tab__count">{publisherTotal}</span>
+          </Link>
+          {PUBLISHER_KINDS.filter((k) => publisherCounts[k] > 0 || k === publisher).map((k) => (
+            <Link
+              key={k}
+              href={href({ quien: k })}
+              className={`panel-chip${k === publisher ? " panel-chip--active" : ""}`}
+            >
+              {esTriage.publisherChip[k]}
+              <span className="panel-tab__count">{publisherCounts[k]}</span>
+            </Link>
+          ))}
+        </nav>
+        <p className="panel-bulk__hint">
+          {esTriage.publisherHelp}
+          {!houseAgencyId && isSuperAdmin(user.role) ? (
+            <>
+              {" "}
+              <Link href="/admin/ajustes#mi-inmobiliaria">{esTriage.houseAgencyMissing}</Link>
+            </>
+          ) : null}
+        </p>
 
         {rows.length === 0 ? (
           <p className="panel-empty">{esPanel.adminListingsEmpty}</p>
@@ -170,7 +220,7 @@ export default async function AdminListingsPage({
                   <th>Propiedad</th>
                   <th>Operación</th>
                   <th>Tipo</th>
-                  <th>Inmobiliaria</th>
+                  <th>{esTriage.publisherColumn}</th>
                   <th>Precio</th>
                   <th>{esPanel.statusLabel}</th>
                   <th></th>
@@ -188,7 +238,9 @@ export default async function AdminListingsPage({
                       />
                     </td>
                     <td className="panel-table__name">
-                      {row.title}
+                      {/* The title opens the listing's full record (every
+                          status); "Ver" opens the public page once published. */}
+                      <Link href={`/admin/propiedades/${row.id}`}>{row.title}</Link>
                       <div className="panel-card__meta">
                         <span>#{row.publicId}</span>
                         {row.locationName ? <span>{row.locationName}</span> : null}
@@ -196,7 +248,14 @@ export default async function AdminListingsPage({
                     </td>
                     <td>{OPERATION_LABEL[row.operation] ?? row.operation}</td>
                     <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
-                    <td>{row.agencyName ?? "Particular"}</td>
+                    <td>
+                      <span className={`panel-kind panel-kind--${row.publisherKind}`}>
+                        {esTriage.publisher[row.publisherKind]}
+                      </span>
+                      <div className="panel-card__meta">
+                        <span>{row.agencyName ?? row.publisherName ?? "—"}</span>
+                      </div>
+                    </td>
                     <td>
                       {formatPrice({
                         priceAmount: row.priceAmount,

@@ -1,9 +1,9 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { inArray } from "drizzle-orm";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import { db } from "@/db";
 import { listings } from "@/db/schema";
 import { VERTICALS } from "@/config/verticals";
@@ -15,9 +15,8 @@ import {
   summaryByVertical,
   topListings,
   topPages,
-  topReferrers,
   topUtmCampaigns,
-  topUtmSources,
+  sourceTable,
   type DimRow,
 } from "@/lib/analytics-queries";
 import { esAnalytics } from "@/i18n/es-analytics";
@@ -43,7 +42,7 @@ const fmt = (v: number) => v.toLocaleString("es-PY");
 const pct = (part: number, whole: number) =>
   whole > 0 ? `${((part / whole) * 100).toLocaleString("es-PY", { maximumFractionDigits: 1 })} %` : "—";
 
-function DimTable({
+function DimTable<R extends { value: string } = DimRow>({
   title,
   head,
   rows,
@@ -52,9 +51,9 @@ function DimTable({
 }: {
   title: string;
   head: readonly string[];
-  rows: DimRow[];
-  label: (r: DimRow) => React.ReactNode;
-  cells: (r: DimRow) => number[];
+  rows: R[];
+  label: (r: R) => React.ReactNode;
+  cells: (r: R) => number[];
 }) {
   if (rows.length === 0) return null;
   return (
@@ -193,15 +192,14 @@ export default async function AdminAnalyticsPage({
     `/admin/analitica?${new URLSearchParams({ dias: String(days), ...(vertical ? { sitio: vertical } : {}), disp: d })}`;
 
   const w = await analyticsWindow(days, vertical);
-  const [reviewCount, summary, daily, pages, listingRows, referrers, utmSources, campaigns, devices, vitals] =
+  const [badges, summary, daily, pages, listingRows, sources, campaigns, devices, vitals] =
     await Promise.all([
-      countReviewQueue(),
+      getAdminBadges(user),
       summaryByVertical(w),
       byDay(w),
       topPages(w),
       topListings(w),
-      topReferrers(w),
-      topUtmSources(w),
+      sourceTable(w),
       topUtmCampaigns(w),
       byDevice(w),
       webVitalsSummary({ days: 7, vertical, device }),
@@ -238,7 +236,7 @@ export default async function AdminAnalyticsPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("analytics", reviewCount)}
+        tabs={adminTabs("analytics", badges)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{t.title}</h2>
@@ -372,21 +370,16 @@ export default async function AdminAnalyticsPage({
               cells={(r) => [r.pageViews]}
             />
 
+            {/* One visitor, one source: utm_source, else the site they came
+                from, else direct (src/lib/analytics-queries.ts sourceTable). */}
             <DimTable
               title={t.sourcesTitle}
               head={t.sourcesHead}
-              rows={referrers}
+              rows={sources}
               label={(r) => r.value || t.direct}
-              cells={(r) => [r.visitors]}
-            />
-
-            <DimTable
-              title={t.utmSourcesTitle}
-              head={t.campaignsHead}
-              rows={utmSources}
-              label={(r) => r.value}
               cells={(r) => [r.visitors, r.waClicks, r.leads]}
             />
+            {sources.length > 0 ? <p className="panel-note">{t.sourcesNote}</p> : null}
 
             <DimTable
               title={t.campaignsTitle}

@@ -1,3 +1,4 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
@@ -10,7 +11,6 @@ import {
 } from "@/lib/agency-invites";
 import { requestOrigin } from "@/lib/request-origin";
 import {
-  countReviewQueue,
   listAgencies,
   listAgencyReadiness,
   listAgents,
@@ -50,7 +50,7 @@ function VerifiedPill({ on }: { on: boolean }) {
 const PLAN_OPTIONS: { value: "free" | "destacado" | "partner"; label: string }[] = [
   { value: "free", label: "Gratis" },
   { value: "destacado", label: "Destacado" },
-  { value: "partner", label: "Partner" },
+  { value: "partner", label: "Socio" },
 ];
 
 /**
@@ -96,8 +96,8 @@ export default async function AdminAgenciesPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [{ msg }, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
-  const [reviewCount, agencies, agents, readiness] = await Promise.all([
-    countReviewQueue(),
+  const [badges, agencies, agents, readiness] = await Promise.all([
+    getAdminBadges(user),
     listAgencies(),
     listAgents(),
     listAgencyReadiness(),
@@ -117,7 +117,7 @@ export default async function AdminAgenciesPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("agencies", reviewCount)}
+        tabs={adminTabs("agencies", badges)}
       />
       <main className="panel site-main">
         {flash ? (

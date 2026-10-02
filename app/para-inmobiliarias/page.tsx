@@ -210,6 +210,7 @@ export default async function ParaInmobiliariasPage() {
         <LeadForm
           locale={locale}
           leadType="agent_signup"
+          contactRoles={["agent", "agency", "developer"]}
           companyField
           submitLabel={c.submitLabel}
           messagePlaceholder={c.messagePlaceholder}

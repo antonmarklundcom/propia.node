@@ -1,3 +1,4 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -5,7 +6,6 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { WhatsAppMessageView, WhatsAppReplyBox } from "@/components/panel/WhatsAppThread";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { isStaff, isSuperAdmin } from "@/lib/auth/roles";
-import { countRecentLeads, countReviewQueue } from "@/lib/panel-queries";
 import { countUnreadInbox } from "@/lib/inbox";
 import { isAiReplyEnabled } from "@/lib/ai-reply";
 import { isWhatsAppConfigured } from "@/lib/whatsapp";
@@ -57,11 +57,9 @@ export default async function AdminWhatsAppChatPage({
   // Opening the chat is reading it.
   await markWhatsAppChatRead(phone);
   const viewer = { userId: user.id, superAdmin: isSuperAdmin(user.role) };
-  const [contact, reviewCount, recentLeads, unread] = await Promise.all([
+  const [contact, badges] = await Promise.all([
     getWhatsAppContact(phone),
-    countReviewQueue(),
-    countRecentLeads(24, isStaff(user.role)),
-    countUnreadInbox(viewer),
+    getAdminBadges(user),
   ]);
   const flash = msg ? LEAD_WHATSAPP_FLASH[msg] : undefined;
   const who = contact?.name ? `${contact.name} (+${phone})` : `+${phone}`;
@@ -72,7 +70,7 @@ export default async function AdminWhatsAppChatPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("inbox", reviewCount, undefined, recentLeads, unread)}
+        tabs={adminTabs("inbox", badges)}
       />
       <main className="panel site-main">
         {flash ? <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p> : null}

@@ -25,6 +25,8 @@ export interface WhatsappLeadState {
     message: string;
     leadType: string;
     vertical: string;
+    /** "¿Quién es?" — a `ContactRole` or "" (src/lib/contact-role.ts). */
+    contactRole: string;
   };
 }
 

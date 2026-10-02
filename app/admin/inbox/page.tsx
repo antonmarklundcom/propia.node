@@ -1,9 +1,9 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { isStaff, isSuperAdmin } from "@/lib/auth/roles";
-import { countRecentLeads, countReviewQueue } from "@/lib/panel-queries";
 import {
   composeMailboxes,
   countUnreadInbox,
@@ -51,9 +51,8 @@ export default async function AdminInboxPage({
   const view: View = vista === "archivados" || vista === "consultas" || vista === "whatsapp" ? vista : "bandeja";
   const email = view !== "whatsapp";
 
-  const [reviewCount, recentLeads, unread, mailboxes, threads, leadReplies, waChats, waUnread] = await Promise.all([
-    countReviewQueue(),
-    countRecentLeads(24, internalOnly),
+  const [badges, unread, mailboxes, threads, leadReplies, waChats, waUnread] = await Promise.all([
+    getAdminBadges(user),
     countUnreadInbox(viewer),
     composeMailboxes(viewer),
     view === "bandeja" || view === "archivados" ? listInboxThreads(viewer, { archived: view === "archivados" }) : Promise.resolve([]),
@@ -86,7 +85,7 @@ export default async function AdminInboxPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("inbox", reviewCount, undefined, recentLeads, unread)}
+        tabs={adminTabs("inbox", badges)}
       />
       <main className="panel site-main">
         {flash ? <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p> : null}

@@ -141,6 +141,7 @@ export function RentalServicePage({
             source={`rental:${service.slug}`}
             submitLabel={c.ctaButton}
             messagePlaceholder={t.serviceFormLead}
+            contactRoles={["owner", "particular", "agent", "agency"]}
           />
         </div>
       </section>

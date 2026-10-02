@@ -1,3 +1,4 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -5,7 +6,6 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { EmailMessageView } from "@/components/panel/EmailThread";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { isStaff, isSuperAdmin } from "@/lib/auth/roles";
-import { countRecentLeads, countReviewQueue } from "@/lib/panel-queries";
 import {
   countUnreadInbox,
   getInboxThread,
@@ -64,10 +64,8 @@ export default async function AdminInboxThreadPage({
 
   // Opening the thread is reading it.
   await markInboxThreadRead(viewer, thread);
-  const [reviewCount, recentLeads, unread] = await Promise.all([
-    countReviewQueue(),
-    countRecentLeads(24, isStaff(user.role)),
-    countUnreadInbox(viewer),
+  const [badges] = await Promise.all([
+    getAdminBadges(user),
   ]);
 
   const flash = msg ? FLASH[msg] : undefined;
@@ -83,7 +81,7 @@ export default async function AdminInboxThreadPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("inbox", reviewCount, undefined, recentLeads, unread)}
+        tabs={adminTabs("inbox", badges)}
       />
       <main className="panel site-main">
         {flash ? <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p> : null}

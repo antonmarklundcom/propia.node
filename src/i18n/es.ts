@@ -2550,6 +2550,24 @@ export const esLeadForm = {
 } as const;
 
 /**
+ * The optional "who is writing" select on the public lead forms
+ * (`ContactRoleField`). Keys of `options` are the `ContactRole` members in
+ * `src/lib/contact-role.ts`; a form shows only the subset that makes sense for
+ * it, in its own order.
+ */
+export const esContactRole = {
+  label: "Soy",
+  placeholder: "Elegí una opción (opcional)",
+  options: {
+    particular: "Particular",
+    owner: "Dueño/a de una propiedad",
+    agent: "Agente inmobiliario independiente",
+    agency: "Inmobiliaria",
+    developer: "Desarrolladora / constructora",
+  },
+} as const;
+
+/**
  * The seven rental service pages (`/servicios/<slug>`), keyed by `dictKey` in
  * `src/config/rental-services.ts`. Shape is fixed — plan Appendix C — so
  * `RentalServicePage` renders every one of them without knowing which.
@@ -3668,6 +3686,9 @@ export const esContactPage = {
   subtitle: "Respondemos consultas sobre publicación, cuentas de inmobiliaria, proyectos y todo lo que tenga que ver con el portal.",
   formHeading: "Dejanos tu consulta",
   reasonSeller: "Quiero publicar una propiedad",
+  reasonLandlord: "Quiero poner en alquiler mi propiedad",
+  reasonBuyer: "Quiero comprar",
+  reasonRenter: "Quiero alquilar",
   reasonAgent: "Soy inmobiliaria o agente",
   reasonDeveloper: "Soy desarrolladora / tengo un proyecto",
   reasonOther: "Otra consulta",

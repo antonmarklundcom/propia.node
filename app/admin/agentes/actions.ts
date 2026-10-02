@@ -11,7 +11,18 @@
 import { revalidatePath } from "next/cache";
 import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
-import { requireStaffOrAbove } from "@/lib/auth/guards";
+import { requireStaffOrAbove, requireSuperAdmin } from "@/lib/auth/guards";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { agents } from "@/db/schema";
+import { recordAdminEvent } from "@/lib/admin-events";
+import {
+  formatPartnerAgentIds,
+  getPartnerAgentIds,
+  parsePartnerAgentIds,
+  setSiteSetting,
+  SETTING_KEYS,
+} from "@/lib/site-settings";
 import { moveAgentToAgency, type TeamRole } from "@/lib/team-queries";
 
 const ROUTE = "/admin/agentes";
@@ -55,4 +66,39 @@ export async function moveAgentAction(formData: FormData): Promise<void> {
           ? "protected"
           : "invalid",
   );
+}
+
+/**
+ * "Socio" on an independent agent: adds or removes the agent's id in the
+ * `partner_agent_ids` site setting, which makes their listings read as
+ * "Socio" in /admin (src/lib/publisher-kind.ts). Display only — no public
+ * page and no lead routing changes. Super-admin only, logged in
+ * /admin/historial like every other setting.
+ */
+export async function setAgentPartnerAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  const agentId = toId(formData.get("agentId"));
+  const on = formData.get("partner") === "1";
+  if (!agentId) redirect(`${ROUTE}?msg=invalid`);
+  const [row] = await db
+    .select({ id: agents.id, agencyId: agents.agencyId })
+    .from(agents)
+    .where(eq(agents.id, agentId))
+    .limit(1);
+  // Only an independent agent: an agency's agents follow their agency's plan.
+  if (!row || (on && row.agencyId != null)) redirect(`${ROUTE}?msg=invalid`);
+  const current = await getPartnerAgentIds({ uncached: true });
+  const next = on ? [...current, agentId] : current.filter((id) => id !== agentId);
+  const value = formatPartnerAgentIds(next);
+  if (value !== formatPartnerAgentIds(current)) {
+    await setSiteSetting(SETTING_KEYS.partnerAgentIds, value, user.id);
+    await recordAdminEvent(user.id, "setting.change", "setting", 0, {
+      key: SETTING_KEYS.partnerAgentIds,
+      agentId,
+      from: current,
+      to: parsePartnerAgentIds(value),
+    });
+  }
+  revalidatePath(ROUTE);
+  redirect(`${ROUTE}?msg=${on ? "partner_on" : "partner_off"}#agent-${agentId}`);
 }

@@ -102,6 +102,9 @@ export default async function ContactoPage() {
               leadType="seller"
               reasons={[
                 { value: "seller", label: c.reasonSeller },
+                { value: "landlord", label: c.reasonLandlord },
+                { value: "buyer", label: c.reasonBuyer },
+                { value: "renter", label: c.reasonRenter },
                 {
                   value: "agent_signup",
                   label: c.reasonAgent,
@@ -112,6 +115,7 @@ export default async function ContactoPage() {
                 },
                 { value: "question", label: c.reasonOther },
               ]}
+              contactRoles={["particular", "owner", "agent", "agency", "developer"]}
               companyField
             />
           </div>

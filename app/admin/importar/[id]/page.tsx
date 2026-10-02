@@ -1,9 +1,9 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import {
   countImportRows,
   getImportJob,
@@ -50,8 +50,8 @@ export default async function ImportJobPage({
   const jobId = Number(id);
   if (!Number.isInteger(jobId) || jobId <= 0) notFound();
 
-  const [reviewCount, job] = await Promise.all([
-    countReviewQueue(),
+  const [badges, job] = await Promise.all([
+    getAdminBadges(user),
     getImportJob(jobId),
   ]);
   if (!job) notFound();
@@ -68,7 +68,7 @@ export default async function ImportJobPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("import", reviewCount)}
+        tabs={adminTabs("import", badges)}
       />
       <main className="panel site-main">
         <p className="panel-card__meta">

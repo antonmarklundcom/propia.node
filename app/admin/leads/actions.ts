@@ -56,6 +56,7 @@ import { parseListingRef } from "@/lib/urls";
 import { VERTICALS } from "@/config/verticals";
 import { currentVertical } from "@/lib/vertical-context";
 import { isAgencyMode } from "@/lib/site-settings";
+import { CONTACT_ROLE_UTM_KEY, isContactRole } from "@/lib/contact-role";
 import { esWa } from "@/i18n/es-wa";
 import {
   WHATSAPP_MANUAL_SOURCE,
@@ -443,6 +444,7 @@ export async function logWhatsappLeadAction(
     message: field(formData, "message", 2000),
     leadType: field(formData, "leadType", 20),
     vertical: field(formData, "vertical", 40),
+    contactRole: field(formData, "contactRole", 20),
   };
   const fail = (message: string): WhatsappLeadState => ({
     ok: false,
@@ -485,7 +487,13 @@ export async function logWhatsappLeadAction(
     (await currentVertical());
 
   const routedTo = leadLaneFor({ internal: await isAgencyMode(), listing });
-  const utm = { source: WHATSAPP_MANUAL_SOURCE, medium: "manual" };
+  // The operator's own answer to "¿Quién es?", from the enum only — the same
+  // `utm.contact_role` the public forms stamp (src/lib/contact-role.ts).
+  const utm: Record<string, string> = {
+    source: WHATSAPP_MANUAL_SOURCE,
+    medium: "manual",
+    ...(isContactRole(values.contactRole) ? { [CONTACT_ROLE_UTM_KEY]: values.contactRole } : {}),
+  };
 
   const { leadId, payload } = await recordLead({
     leadType,

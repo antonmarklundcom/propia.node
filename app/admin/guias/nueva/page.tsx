@@ -1,10 +1,10 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { PostForm } from "@/components/panel/PostForm";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
-import { countDraftPosts, isPostsTableReady } from "@/lib/post-queries";
+import { isPostsTableReady } from "@/lib/post-queries";
 import { adminTabs } from "../../tabs";
 import { createPostAction } from "../actions";
 
@@ -21,9 +21,8 @@ export default async function NewPostPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [params, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
-  const [reviewCount, drafts, ready] = await Promise.all([
-    countReviewQueue(),
-    countDraftPosts(),
+  const [badges, ready] = await Promise.all([
+    getAdminBadges(user),
     isPostsTableReady(),
   ]);
 
@@ -33,7 +32,7 @@ export default async function NewPostPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("posts", reviewCount, drafts)}
+        tabs={adminTabs("posts", badges)}
       />
       <main className="panel site-main">
         <Link className="panel-post__back" href="/admin/guias">

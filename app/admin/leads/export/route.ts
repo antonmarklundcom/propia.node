@@ -7,7 +7,7 @@ import type { NextRequest } from "next/server";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { isStaff } from "@/lib/auth/roles";
 import { csvFilename, csvResponse } from "@/lib/csv";
-import { adminLeadRows, adminLeadsCsv, parseAdminLeadFilter } from "@/lib/lead-export";
+import { ADMIN_LEAD_VIEW_COOKIE, adminLeadRows, adminLeadsCsv, parseAdminLeadFilter } from "@/lib/lead-export";
 import { listingCanonicalOrigin } from "@/lib/origin";
 import { countLeadsByVertical } from "@/lib/panel-queries";
 
@@ -25,8 +25,14 @@ export async function GET(req: NextRequest): Promise<Response> {
       estado: sp.get("estado") ?? undefined,
       tel: sp.get("tel") ?? undefined,
       q: sp.get("q") ?? undefined,
+      fuente: sp.get("fuente") ?? undefined,
+      quien: sp.get("quien") ?? undefined,
+      orden: sp.get("orden") ?? undefined,
+      publico: sp.get("publico") ?? undefined,
+      vista: sp.get("vista") ?? undefined,
     },
     sites.map((s) => s.vertical),
+    req.cookies.get(ADMIN_LEAD_VIEW_COOKIE)?.value,
   );
   const [rows, origin] = await Promise.all([
     adminLeadRows(filter, internalOnly),

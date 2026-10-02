@@ -8,9 +8,14 @@ import { redirect } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { recordAdminEvent } from "@/lib/admin-events";
 import { officeHoursFromForm, parseCooldownHours, parseOfficeHours } from "@/lib/whatsapp-auto-policy";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { agencies } from "@/db/schema";
 import {
   getAnalyticsRawDays,
   getBusinessMode,
+  getHouseAgencyId,
+  parseHouseAgencyId,
   getWhatsAppAutoSettings,
   parseBusinessMode,
   parseRawDays,
@@ -88,4 +93,30 @@ export async function saveWhatsAppAutoAction(formData: FormData): Promise<void> 
     await recordAdminEvent(user.id, "setting.change", "setting", 0, { key, from: before, to: value });
   }
   redirect("/admin/ajustes?msg=wa_saved#whatsapp");
+}
+
+/**
+ * "Mi inmobiliaria": the agency whose listings /admin labels "Propias"
+ * (src/lib/publisher-kind.ts). Display only — it changes no public page and
+ * no lead routing. "0" clears it. Logged in /admin/historial like the rest.
+ */
+export async function saveHouseAgencyAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  const raw = String(formData.get("houseAgencyId") ?? "").trim();
+  const id = raw === "0" || raw === "" ? null : parseHouseAgencyId(raw);
+  if (raw !== "0" && raw !== "" && id === null) redirect("/admin/ajustes?msg=house_invalid#mi-inmobiliaria");
+  if (id !== null) {
+    const [row] = await db.select({ id: agencies.id }).from(agencies).where(eq(agencies.id, id)).limit(1);
+    if (!row) redirect("/admin/ajustes?msg=house_invalid#mi-inmobiliaria");
+  }
+  const current = await getHouseAgencyId();
+  if (current !== id) {
+    await setSiteSetting(SETTING_KEYS.houseAgencyId, id === null ? "" : String(id), user.id);
+    await recordAdminEvent(user.id, "setting.change", "setting", 0, {
+      key: SETTING_KEYS.houseAgencyId,
+      from: current,
+      to: id,
+    });
+  }
+  redirect("/admin/ajustes?msg=house_saved#mi-inmobiliaria");
 }

@@ -1,8 +1,8 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import { AccountForm } from "@/components/panel/AccountForm";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { adminTabs } from "../tabs";
 import { updateAdminAccountAction } from "./actions";
@@ -28,7 +28,7 @@ export default async function AdminAccountPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [{ msg }, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
-  const reviewCount = await countReviewQueue();
+  const badges = await getAdminBadges(user);
   const flash = msg ? FLASH[msg] : undefined;
 
   return (
@@ -37,7 +37,7 @@ export default async function AdminAccountPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("account", reviewCount)}
+        tabs={adminTabs("account", badges)}
       />
       <main className="panel site-main">
         {flash ? (

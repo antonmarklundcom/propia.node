@@ -54,6 +54,22 @@ function bulkIds(formData: FormData): number[] {
 }
 
 /**
+ * The queue's filters (`q`, `op`, `tipo`, `quien`) the bulk form carried in
+ * `back`, re-encoded key by key so the redirect can only ever land on /admin
+ * with those four, whatever was posted. The operator returns to the same view.
+ */
+function queueRedirect(formData: FormData, result: string): string {
+  const posted = new URLSearchParams(String(formData.get("back") ?? ""));
+  const sp = new URLSearchParams();
+  for (const key of ["q", "op", "tipo", "quien"]) {
+    const v = posted.get(key);
+    if (v) sp.set(key, v.slice(0, 100));
+  }
+  const qs = sp.toString();
+  return `/admin?${qs ? `${qs}&` : ""}${result}`;
+}
+
+/**
  * Approve the ticked listings. Each goes through the same `approveListing()` as
  * the single button, which only moves a `pending_review` row, so a listing
  * someone else already handled is skipped, not overwritten.
@@ -69,21 +85,21 @@ export async function approveManyAction(formData: FormData): Promise<void> {
   }
   revalidatePath("/admin");
   if (done > 0) revalidateListings();
-  redirect(done > 0 ? `/admin?bulk=approved&n=${done}` : "/admin?bulk=none");
+  redirect(queueRedirect(formData, done > 0 ? `bulk=approved&n=${done}` : "bulk=none"));
 }
 
 /** Reject the ticked listings with one shared reason (required). */
 export async function rejectManyAction(formData: FormData): Promise<void> {
   await requireSuperAdmin();
   const reason = String(formData.get("reason") ?? "").trim();
-  if (!reason) redirect("/admin?bulk=reason");
+  if (!reason) redirect(queueRedirect(formData, "bulk=reason"));
   let done = 0;
   for (const id of bulkIds(formData)) {
     if ((await rejectListing(id, reason)) > 0) done += 1;
   }
   revalidatePath("/admin");
   if (done > 0) revalidateListings();
-  redirect(done > 0 ? `/admin?bulk=rejected&n=${done}` : "/admin?bulk=none");
+  redirect(queueRedirect(formData, done > 0 ? `bulk=rejected&n=${done}` : "bulk=none"));
 }
 
 export async function toggleAgencyVerifiedAction(formData: FormData): Promise<void> {

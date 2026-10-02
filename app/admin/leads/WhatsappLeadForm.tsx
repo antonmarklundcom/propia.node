@@ -7,6 +7,8 @@ import {
   type WhatsappLeadState,
 } from "@/lib/whatsapp-lead";
 import { logWhatsappLeadAction } from "./actions";
+import { CONTACT_ROLES } from "@/lib/contact-role";
+import { esTriage } from "@/i18n/es-triage";
 
 /**
  * "Registrar consulta de WhatsApp": the operator copies the buyer's number and
@@ -26,6 +28,7 @@ export function WhatsappLeadForm({
   types: { value: string; label: string }[];
 }) {
   const t = getDictionary("es").wa;
+  const roles = getDictionary("es").contactRole;
   const [state, action, pending] = useActionState<WhatsappLeadState, FormData>(
     logWhatsappLeadAction,
     WHATSAPP_LEAD_INITIAL,
@@ -90,6 +93,21 @@ export function WhatsappLeadForm({
             {types.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="panel-form__field">
+          <span className="auth-field__label">{esTriage.contactFilterLabel}</span>
+          <select
+            className="auth-field__input"
+            name="contactRole"
+            defaultValue={v?.contactRole ?? ""}
+          >
+            <option value="">{esTriage.contactUnknown}</option>
+            {CONTACT_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {roles.options[r]}
               </option>
             ))}
           </select>

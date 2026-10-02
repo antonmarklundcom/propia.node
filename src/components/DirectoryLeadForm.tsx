@@ -1,10 +1,17 @@
 "use client";
 
+import { readVisitUtm } from "@/lib/visit-source";
+
 import { useState } from "react";
+import { ContactRoleField } from "@/components/ContactRoleField";
 import { getDictionary, type Locale } from "@/i18n";
+import type { ContactRole } from "@/lib/contact-role";
 import { checkPhone } from "@/lib/wa";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { PropertyType } from "@/lib/import/types";
+
+/** Who is asking for a realtor, for the optional "I am…" select. */
+const DIRECTORY_ROLES: readonly ContactRole[] = ["owner", "agent", "agency"];
 
 export interface DirectoryFormCity {
   slug: string;
@@ -69,6 +76,7 @@ export function DirectoryLeadForm({
   source?: "directory:home" | "directory:profile";
 }) {
   const t = getDictionary(locale).directory;
+  const roleCopy = getDictionary(locale).contactRole;
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -76,6 +84,7 @@ export function DirectoryLeadForm({
   const [operation, setOperation] = useState("");
   const [propertyType, setPropertyType] = useState<PropertyType | "">("");
   const [message, setMessage] = useState("");
+  const [contactRole, setContactRole] = useState<ContactRole | "">("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">(
     "idle",
   );
@@ -141,6 +150,7 @@ export function DirectoryLeadForm({
           agentSlug,
           agencySlug,
           utm: { ...readUtm(), source },
+          ...(contactRole ? { contactRole } : {}),
         }),
       });
       if (!res.ok) throw new Error(String(res.status));
@@ -213,6 +223,17 @@ export function DirectoryLeadForm({
               autoComplete="tel"
             />
           </label>
+
+          <ContactRoleField
+            id={id("role")}
+            locale={locale}
+            roles={DIRECTORY_ROLES}
+            value={contactRole}
+            onChange={setContactRole}
+            className="vd-form__field"
+            labelClassName="vd-form__label"
+            inputClassName="vd-form__input vd-form__select"
+          />
 
           {state === "error" && errorText && (
             <p className="vd-form__error" role="alert">
@@ -330,6 +351,12 @@ export function DirectoryLeadForm({
               <span>{t.formPhoneLabel}</span>
               <strong>{phone.trim() || "—"}</strong>
             </li>
+            {contactRole && (
+              <li className="df-summary__row">
+                <span>{roleCopy.label}</span>
+                <strong>{roleCopy.options[contactRole]}</strong>
+              </li>
+            )}
             <li className="df-summary__row">
               <span>{t.formOperationLabel}</span>
               <strong>{operationLabel ?? "—"}</strong>
@@ -390,12 +417,6 @@ export function DirectoryLeadForm({
 
 /** Same reader as VenderForm's: campaign params survive into the lead row. */
 function readUtm(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const p = new URLSearchParams(window.location.search);
-  const utm: Record<string, string> = {};
-  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_content"]) {
-    const v = p.get(k);
-    if (v) utm[k] = v;
-  }
-  return utm;
+  // URL utm first, else the visit's stored source (src/lib/visit-source.ts).
+  return readVisitUtm();
 }

@@ -1,10 +1,11 @@
+import { getAdminBadges } from "@/lib/admin-badges";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
-import { countReviewQueue } from "@/lib/panel-queries";
 import { listQualityRows, type QualityRow } from "@/lib/quality-queries";
 import type { QualityIssue } from "@/lib/listing-score";
+import { esTriage } from "@/i18n/es-triage";
 import { listingUrl } from "@/lib/urls";
 import { esPanel, listingStatusLabel } from "@/i18n/es";
 import { adminTabs } from "../tabs";
@@ -34,15 +35,16 @@ const avg = (rows: QualityRow[]) =>
  * /admin/calidad — how complete each published / in-review listing is
  * (`src/lib/listing-score.ts`), worst first, with a per-agency summary so
  * the operator knows whom to ask for photos, a description or a position.
- * `?agencia=<id>` narrows to one agency, `?agencia=none` to unowned listings.
+ * `?agencia=<id>` narrows to one agency, `?agencia=none` to unowned listings;
+ * `?problema=<issue>` to the listings with that problem. The two combine.
  */
 export default async function AdminQualityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ agencia?: string }>;
+  searchParams: Promise<{ agencia?: string; problema?: string }>;
 }) {
-  const [{ agencia }, user] = await Promise.all([searchParams, requireSuperAdmin()]);
-  const [reviewCount, all] = await Promise.all([countReviewQueue(), listQualityRows()]);
+  const [{ agencia, problema }, user] = await Promise.all([searchParams, requireSuperAdmin()]);
+  const [badges, all] = await Promise.all([getAdminBadges(user), listQualityRows()]);
 
   const agencyKey = (r: QualityRow) => (r.agencyId == null ? "none" : String(r.agencyId));
   const groups = new Map<string, { name: string; rows: QualityRow[] }>();
@@ -56,11 +58,23 @@ export default async function AdminQualityPage({
     .map(([key, g]) => ({ key, name: g.name, rows: g.rows, average: avg(g.rows) }))
     .sort((a, b) => a.average - b.average);
 
-  const filtered = agencia ? all.filter((r) => agencyKey(r) === agencia) : all;
-  const worst = [...filtered].sort((a, b) => a.score - b.score || a.id - b.id).slice(0, SHOWN);
+  const byAgency = agencia ? all.filter((r) => agencyKey(r) === agencia) : all;
 
+  // Chip counts within the agency filter; the issue filter applies after.
   const issueCounts = new Map<QualityIssue, number>();
-  for (const r of filtered) for (const i of r.issues) issueCounts.set(i, (issueCounts.get(i) ?? 0) + 1);
+  for (const r of byAgency) for (const i of r.issues) issueCounts.set(i, (issueCounts.get(i) ?? 0) + 1);
+  const issue = [...issueCounts.keys()].find((i) => i === problema) ?? null;
+  const filtered = issue ? byAgency.filter((r) => r.issues.includes(issue)) : byAgency;
+  const worst = [...filtered].sort((a, b) => a.score - b.score || a.id - b.id).slice(0, SHOWN);
+  const qualityHref = (p: { agencia?: string | null; problema?: string | null }) => {
+    const sp = new URLSearchParams();
+    const ag = p.agencia === null ? undefined : (p.agencia ?? agencia);
+    const pr = p.problema === null ? undefined : (p.problema ?? issue ?? undefined);
+    if (ag) sp.set("agencia", ag);
+    if (pr) sp.set("problema", pr);
+    const qs = sp.toString();
+    return qs ? `/admin/calidad?${qs}` : "/admin/calidad";
+  };
 
   return (
     <>
@@ -68,7 +82,7 @@ export default async function AdminQualityPage({
         title="Panel de administración"
         role={user.role}
         userName={user.name}
-        tabs={adminTabs("quality", reviewCount)}
+        tabs={adminTabs("quality", badges)}
       />
       <main className="panel site-main">
         <h2 className="panel-section__title">{esPanel.qualityTitle}</h2>
@@ -83,13 +97,34 @@ export default async function AdminQualityPage({
                 {esPanel.qualityAllAgencies}
                 <span className="panel-tab__count">{all.length}</span>
               </Link>
+              {agencia ? (
+                <Link href={qualityHref({ agencia: null })} className="panel-chip panel-chip--active">
+                  {groups.get(agencia)?.name ?? esPanel.qualityNoAgency} ✕
+                </Link>
+              ) : null}
+            </nav>
+            {/* Each problem filters the "needs work" table below. */}
+            <nav className="panel-chips" aria-label={esTriage.quality.issueFilterLabel}>
+              <span className="panel-chips__label">{esTriage.quality.issueFilterLabel}</span>
+              <Link
+                href={`${qualityHref({ problema: null })}#lista`}
+                className={`panel-chip${issue ? "" : " panel-chip--active"}`}
+              >
+                {esTriage.quality.allIssues}
+                <span className="panel-tab__count">{byAgency.length}</span>
+              </Link>
               {[...issueCounts]
                 .sort((a, b) => b[1] - a[1])
-                .map(([issue, n]) => (
-                  <span key={issue} className="panel-chip">
-                    {esPanel.qualityIssue[issue]}
-                    <span className="panel-tab__count">{n}</span>
-                  </span>
+                .map(([i, count]) => (
+                  <Link
+                    key={i}
+                    href={`${qualityHref({ problema: i })}#lista`}
+                    className={`panel-chip${i === issue ? " panel-chip--active" : ""}`}
+                    aria-current={i === issue ? "true" : undefined}
+                  >
+                    {esPanel.qualityIssue[i]}
+                    <span className="panel-tab__count">{count}</span>
+                  </Link>
                 ))}
             </nav>
 
@@ -113,7 +148,7 @@ export default async function AdminQualityPage({
                     return (
                       <tr key={g.key}>
                         <td className="panel-table__name">
-                          <Link href={`/admin/calidad?agencia=${g.key}`}>{g.name}</Link>
+                          <Link href={qualityHref({ agencia: g.key })}>{g.name}</Link>
                         </td>
                         <td>{g.rows.length}</td>
                         <td>
@@ -128,8 +163,9 @@ export default async function AdminQualityPage({
               </table>
             </div>
 
-            <h3 className="panel-section__title" style={{ marginTop: 24 }}>
+            <h3 className="panel-section__title" style={{ marginTop: 24 }} id="lista">
               {esPanel.qualityWorst}
+              {issue ? ` — ${esPanel.qualityIssue[issue]}` : ""}
             </h3>
             <p className="panel-card__meta">{esPanel.qualityShowing(worst.length, filtered.length)}</p>
             <div className="panel-table__wrap">
@@ -150,9 +186,15 @@ export default async function AdminQualityPage({
                         <strong>{r.score}</strong>
                       </td>
                       <td className="panel-table__name">
-                        <a href={listingUrl(r)} target="_blank" rel="noopener noreferrer">
-                          {r.title}
-                        </a>
+                        {/* Published: the public page, as a buyer sees it. In
+                            review: the record, since the public page 404s. */}
+                        {r.status === "published" ? (
+                          <a href={listingUrl(r)} target="_blank" rel="noopener noreferrer">
+                            {r.title}
+                          </a>
+                        ) : (
+                          <Link href={`/admin/propiedades/${r.id}`}>{r.title}</Link>
+                        )}
                         <span className="panel-card__meta" style={{ display: "block" }}>
                           {listingStatusLabel[r.status as keyof typeof listingStatusLabel] ?? r.status}
                         </span>
