@@ -159,16 +159,32 @@ const nextConfig: NextConfig = {
       [["alquiler.com.py", "www.alquiler.com.py"], localeMap("es")],
     ];
 
+    /**
+     * Next matches `has: host` against the raw Host header only — never
+     * `x-forwarded-host`. Behind the Cloudflare Worker
+     * (docs/hosting-process-cap.md) every request arrives with the ONE
+     * origin hostname as Host and the door in `x-forwarded-host`, so each
+     * host rule gets a twin on that header; without it these redirects would
+     * silently stop matching the day a door moves behind the Worker. A forged
+     * header can only redirect the request that forged it.
+     */
+    const forHost = (host: string) => [
+      [{ type: "host" as const, value: host }],
+      [{ type: "header" as const, key: "x-forwarded-host", value: host }],
+    ];
+
     const hostRedirects = byHost.flatMap(([hosts, map]) =>
       hosts.flatMap((host) =>
-        map.flatMap(([oldPath, destination]) =>
-          // Trailing-slash and bare forms both match.
-          [oldPath, `${oldPath}/`].map((source) => ({
-            source,
-            has: [{ type: "host" as const, value: host }],
-            destination,
-            permanent: true,
-          })),
+        forHost(host).flatMap((has) =>
+          map.flatMap(([oldPath, destination]) =>
+            // Trailing-slash and bare forms both match.
+            [oldPath, `${oldPath}/`].map((source) => ({
+              source,
+              has,
+              destination,
+              permanent: true,
+            })),
+          ),
         ),
       ),
     );
@@ -188,12 +204,14 @@ const nextConfig: NextConfig = {
     const landDuplicateRedirect = [
       "landforsaleinparaguay.com",
       "www.landforsaleinparaguay.com",
-    ].map((host) => ({
-      source: "/:path*",
-      has: [{ type: "host" as const, value: host }],
-      destination: "https://landforsaleparaguay.com/:path*",
-      permanent: true,
-    }));
+    ].flatMap((host) =>
+      forHost(host).map((has) => ({
+        source: "/:path*",
+        has,
+        destination: "https://landforsaleparaguay.com/:path*",
+        permanent: true,
+      })),
+    );
 
     return [...hostRedirects, ...landDuplicateRedirect];
   },

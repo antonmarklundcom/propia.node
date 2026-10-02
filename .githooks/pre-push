@@ -31,4 +31,8 @@ echo "pre-push: verify:whatsapp…"
 npm run --silent verify:whatsapp
 echo "pre-push: verify:publish…"
 npm run --silent verify:publish
+echo "pre-push: verify:lifecycle…"
+npm run --silent verify:lifecycle
+echo "pre-push: verify:proxy…"
+npm run --silent verify:proxy
 echo "pre-push: OK"

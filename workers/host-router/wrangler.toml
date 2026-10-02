@@ -1,0 +1,37 @@
+# host-router: every door → ONE origin hostname on Hostinger, so the launcher
+# sees one virtual host for the app (docs/hosting-process-cap.md).
+# Deployed by hand with wrangler (README.md) — never from CI.
+name = "host-router"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+workers_dev = false
+
+[vars]
+# The Node app's main domain on Hostinger. It must NOT be routed to this
+# Worker itself (the Worker refuses with 508 if it is).
+ORIGIN_HOST = "realestateinparaguay.com"
+
+# Secret — `npx wrangler secret put ORIGIN_PROXY_SECRET`, never written here.
+# The same value goes in hPanel as ORIGIN_PROXY_SECRET.
+
+# One door at a time (docs/hosting-process-cap.md, "Migration checklist").
+# Pilot first; add the others only after the copy count proved the point.
+routes = [
+  { pattern = "terreno.com.py/*", zone_name = "terreno.com.py" },
+  { pattern = "www.terreno.com.py/*", zone_name = "terreno.com.py" },
+  # { pattern = "landforsaleparaguay.com/*", zone_name = "landforsaleparaguay.com" },
+  # { pattern = "www.landforsaleparaguay.com/*", zone_name = "landforsaleparaguay.com" },
+  # { pattern = "landforsaleinparaguay.com/*", zone_name = "landforsaleinparaguay.com" },
+  # { pattern = "www.landforsaleinparaguay.com/*", zone_name = "landforsaleinparaguay.com" },
+  # { pattern = "rentparaguay.com/*", zone_name = "rentparaguay.com" },
+  # { pattern = "www.rentparaguay.com/*", zone_name = "rentparaguay.com" },
+  # { pattern = "inmobiliarios.com.py/*", zone_name = "inmobiliarios.com.py" },
+  # { pattern = "www.inmobiliarios.com.py/*", zone_name = "inmobiliarios.com.py" },
+  # { pattern = "residenciaenparaguay.es/*", zone_name = "residenciaenparaguay.es" },
+  # { pattern = "www.residenciaenparaguay.es/*", zone_name = "residenciaenparaguay.es" },
+  # { pattern = "inmobiliaria.com.py/*", zone_name = "inmobiliaria.com.py" },
+  # { pattern = "www.inmobiliaria.com.py/*", zone_name = "inmobiliaria.com.py" },
+]
+
+[observability]
+enabled = true

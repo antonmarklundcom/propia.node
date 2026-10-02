@@ -4,11 +4,15 @@
  * imported only under `NEXT_RUNTIME === "nodejs"`, the pattern Next documents
  * for keeping Node-only code out of the edge build (middleware).
  *
- * - `register()` — a minute after a (re)start, which on Hostinger means after
- *   every deploy, run `check:live` once (`src/lib/ops/live-check.ts`): load
- *   each live door's key pages and alert the operator when one is not a 200.
- *   A one-shot timer in a process that is running anyway, not a loop. Off
- *   with `LIVE_CHECK=0`, and outside production.
+ * - `register()` — two things:
+ *   1. `installProcessLifecycle()` (`src/lib/process-lifecycle.ts`): a copy
+ *      of the app whose launcher has gone ends itself once idle, and SIGTERM
+ *      always ends the process (docs/hosting-process-cap.md).
+ *   2. A minute after the first start of a new build, i.e. after a deploy,
+ *      run `check:live` once (`src/lib/ops/live-check.ts`): load each live
+ *      door's key pages and alert the operator when one is not a 200. Once
+ *      per build across every process, not once per process. Off with
+ *      `LIVE_CHECK=0`, and outside production.
  * - `onRequestError()` — a server error goes to the operator's Telegram and
  *   inbox, throttled (`src/lib/error-alerts.ts`).
  */
@@ -16,7 +20,10 @@ import type { Instrumentation } from "next";
 
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { scheduleLiveCheckAfterStart } = await import("./instrumentation-node");
+    const { installProcessLifecycle, scheduleLiveCheckAfterStart } = await import(
+      "./instrumentation-node"
+    );
+    installProcessLifecycle();
     scheduleLiveCheckAfterStart();
   }
 }

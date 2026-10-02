@@ -499,6 +499,16 @@ default, `--dry` first). It records itself as a revertible import job.
     `coalesce(last_sent_at, confirmed_at)` and moves the cursor only when the
     mail was accepted. The door's own `filters` narrow every alert.
 
+23. **Hostinger "Max Processes" (2026-10-02, `docs/hosting-process-cap.md`).**
+    The launcher piles up orphaned copies of this app (PPID 1), apparently one
+    per hostname. In code: `src/lib/process-lifecycle.ts` ends an orphaned
+    idle copy; `check:live` runs once per build across processes (lock file,
+    `src/lib/ops/process-lock.ts`) and `LIVE_CHECK=0` stops the daily run too;
+    `ORIGIN_PROXY_SECRET` (`src/lib/proxy-trust.ts`) makes `x-forwarded-host` /
+    `x-client-ip` count only from the Cloudflare Worker `workers/host-router/`;
+    `next.config.ts` host redirects match `x-forwarded-host` too. The Worker
+    migration is unproven and the founder's to run, one door at a time.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
