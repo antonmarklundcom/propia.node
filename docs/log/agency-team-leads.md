@@ -34,7 +34,7 @@ How it is built:
 ## Verified
 - `npm run verify:local` green, via the pre-push hook.
 - **`npm run verify:scopes` against a local MariaDB 11.8: all checks
-  passed**, including 22 new ones. The new checks cover:
+  passed**, including 23 new ones. The new checks cover:
   - an agent's inbox, shares and CSV;
   - thread access to their own lead, a teammate's lead, an unassigned lead,
     an agency share and their own share;
