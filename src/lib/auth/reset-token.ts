@@ -33,7 +33,10 @@ export const MIN_SECRET_LENGTH = 32;
 /** Longest token we will even try to decode — the real ones are ~90 chars. */
 const MAX_TOKEN_LENGTH = 200;
 
-const MAC_DOMAIN = "pwreset.v1";
+// v2 (audit 2026-10 A4): the MAC also covers the account's email, so a link
+// sent to an address dies when the account moves to another one. Bumping the
+// domain retires every v1 link at once — they live an hour at most.
+const MAC_DOMAIN = "pwreset.v2";
 
 /** `AUTH_TOKEN_SECRET`, or null when unset or too short to be a key. */
 export function resetSecret(): string | null {
@@ -51,22 +54,30 @@ export function isPasswordResetEnabled(): boolean {
   return resetSecret() !== null && isEmailConfigured();
 }
 
-function mac(secret: string, userId: number, expires: number, passwordHash: string | null): Buffer {
+function mac(
+  secret: string,
+  userId: number,
+  expires: number,
+  passwordHash: string | null,
+  email: string | null | undefined,
+): Buffer {
   return createHmac("sha256", secret)
-    .update(`${MAC_DOMAIN}|${userId}|${expires}|${passwordHash ?? ""}`)
+    .update(`${MAC_DOMAIN}|${userId}|${expires}|${passwordHash ?? ""}|${(email ?? "").trim().toLowerCase()}`)
     .digest();
 }
 
 export function mintResetToken(p: {
   userId: number;
   passwordHash: string | null;
+  /** The address the link is sent to — the account's email now. */
+  email?: string | null;
   secret: string;
   /** Unix seconds; injectable for tests. */
   now?: number;
 }): string {
   const now = p.now ?? Math.floor(Date.now() / 1000);
   const expires = now + RESET_TOKEN_TTL_SECONDS;
-  const sig = mac(p.secret, p.userId, expires, p.passwordHash).toString("base64url");
+  const sig = mac(p.secret, p.userId, expires, p.passwordHash, p.email).toString("base64url");
   return Buffer.from(`${p.userId}.${expires}.${sig}`, "utf8").toString("base64url");
 }
 
@@ -109,12 +120,12 @@ export type ResetTokenCheck =
 
 /**
  * Is this token a live reset link for this user as they are *now*?
- * `passwordHash` must be the hash just read from the database for the id the
- * token claims — never a value that came with the request.
+ * `passwordHash` and `email` must be the values just read from the database
+ * for the id the token claims — never values that came with the request.
  */
 export function verifyResetToken(
   token: unknown,
-  user: { id: number; passwordHash: string | null },
+  user: { id: number; passwordHash: string | null; email?: string | null },
   opts: { secret: string; now?: number },
 ): ResetTokenCheck {
   const parsed = parseResetToken(token);
@@ -122,7 +133,7 @@ export function verifyResetToken(
   const now = opts.now ?? Math.floor(Date.now() / 1000);
   // The MAC is checked first and in constant time, so a response never tells
   // a forger which half they got wrong.
-  const expected = mac(opts.secret, parsed.userId, parsed.expires, user.passwordHash);
+  const expected = mac(opts.secret, parsed.userId, parsed.expires, user.passwordHash, user.email);
   const sameUser = parsed.userId === user.id;
   const macOk = timingSafeEqual(expected, parsed.mac);
   if (!sameUser || !macOk) return { ok: false, reason: "invalid" };

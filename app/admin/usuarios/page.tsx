@@ -42,6 +42,7 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   password_reset: { text: esPanel.userPasswordReset },
   agency_linked: { text: esPanel.userAgencyLinked },
   email_taken: { text: esPanel.userEmailTaken, error: true },
+  weak_password: { text: esPanel.userWeakPassword, error: true },
   self_role: { text: esPanel.userSelfRoleError, error: true },
   self_delete: { text: esPanel.userSelfDeleteError, error: true },
   last_admin: { text: esPanel.userLastAdminError, error: true },

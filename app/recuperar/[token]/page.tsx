@@ -32,7 +32,7 @@ async function linkIsLive(token: string): Promise<boolean> {
   const parsed = parseResetToken(token);
   if (!secret || !parsed) return false;
   const [user] = await db
-    .select({ id: users.id, passwordHash: users.passwordHash })
+    .select({ id: users.id, email: users.email, passwordHash: users.passwordHash })
     .from(users)
     .where(eq(users.id, parsed.userId))
     .limit(1);

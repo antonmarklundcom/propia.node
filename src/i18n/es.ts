@@ -446,6 +446,7 @@ export const esPanel = {
   deleteUser: "Eliminar",
   linkAgency: "Vincular",
   noPasswordBadge: "Sin contraseña",
+  userWeakPassword: "La contraseña necesita al menos 8 caracteres.",
   userEmailTaken: "Ese email ya está en uso por otra cuenta.",
   userSelfRoleError: "No podés cambiarte el rol a vos mismo.",
   userSelfDeleteError: "No podés eliminar tu propia cuenta.",

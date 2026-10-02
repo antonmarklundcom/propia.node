@@ -52,7 +52,7 @@ function encode(raw: string): string {
 /** A token signed the real way but over arbitrary fields — for expiry edge cases. */
 function forge(userId: number, expires: number, hash: string | null, secret = SECRET): string {
   const mac = createHmac("sha256", secret)
-    .update(`pwreset.v1|${userId}|${expires}|${hash ?? ""}`)
+    .update(`pwreset.v2|${userId}|${expires}|${hash ?? ""}|`)
     .digest("base64url");
   return encode(`${userId}.${expires}.${mac}`);
 }
@@ -109,6 +109,12 @@ function main() {
   check("NULL-hash account: token verifies while still NULL", verifyResetToken(first, { id: 7, passwordHash: null }, { secret: SECRET, now: NOW }).ok);
   check("NULL-hash account: dead once a first password is set", !verifyResetToken(first, { id: 7, passwordHash: HASH }, { secret: SECRET, now: NOW }).ok);
   check("NULL and empty-string hash sign the same (documented)", verifyResetToken(first, { id: 7, passwordHash: "" }, { secret: SECRET, now: NOW }).ok);
+
+  console.log("bound to the account email (audit 2026-10 A4)");
+  const mailed = mintResetToken({ userId: 9, passwordHash: HASH, email: "Ana@Example.test", secret: SECRET, now: NOW });
+  check("verifies for the address it was sent to", verifyResetToken(mailed, { id: 9, passwordHash: HASH, email: "ana@example.test" }, { secret: SECRET, now: NOW }).ok);
+  check("refused once the account email changes", !verifyResetToken(mailed, { id: 9, passwordHash: HASH, email: "new@example.test" }, { secret: SECRET, now: NOW }).ok);
+  check("refused once the account email is cleared", !verifyResetToken(mailed, { id: 9, passwordHash: HASH, email: null }, { secret: SECRET, now: NOW }).ok);
 
   console.log("secret");
   check("wrong secret refused", !verifyResetToken(token, user, { secret: OTHER, now: NOW }).ok);

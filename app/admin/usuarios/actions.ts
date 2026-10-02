@@ -23,6 +23,8 @@ import {
   type UserRoleValue,
 } from "@/lib/panel-queries";
 import { recordAdminEvent } from "@/lib/admin-events";
+import { MIN_PASSWORD_LENGTH } from "@/lib/registration";
+import { isPlausibleEmail } from "@/lib/email";
 
 const ROUTE = "/admin/usuarios";
 
@@ -66,6 +68,10 @@ export async function createUserAction(formData: FormData): Promise<void> {
   const password = str(formData.get("password"));
   const role = toRole(formData.get("role"));
   if (!email || !password || !role) done("invalid");
+  // The same rules as every other way an account gets a password (audit
+  // 2026-10 A5): a real-looking address, and at least 8 characters.
+  if (!isPlausibleEmail(email)) done("invalid");
+  if (password.length < MIN_PASSWORD_LENGTH) done("weak_password");
 
   const id = await createPanelUser({
     name: str(formData.get("name")) || null,
@@ -85,6 +91,7 @@ export async function updateUserAction(formData: FormData): Promise<void> {
   const email = str(formData.get("email"));
   const role = toRole(formData.get("role"));
   if (!id || !email || !role) done("invalid");
+  if (!isPlausibleEmail(email)) done("invalid");
 
   // Changing your own role is how an admin locks themselves out of /admin.
   if (id === me.id && role !== me.role) done("self_role");
@@ -100,6 +107,8 @@ export async function updateUserAction(formData: FormData): Promise<void> {
   }
 
   const password = str(formData.get("password"));
+  // Blank keeps the current password; a new one meets the same minimum.
+  if (password && password.length < MIN_PASSWORD_LENGTH) done("weak_password");
   const ok = await updatePanelUser(id, {
     name: str(formData.get("name")) || null,
     email,
