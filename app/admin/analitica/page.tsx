@@ -23,6 +23,9 @@ import { esAnalytics } from "@/i18n/es-analytics";
 import { webVitalsSummary, type VitalSummary } from "@/lib/web-vitals";
 import { PAGE_TYPES, VITAL_METRICS, vitalRating, type VitalMetric, type VitalRating } from "@/lib/web-vitals-shared";
 import { adminTabs } from "../tabs";
+import { esTriage } from "@/i18n/es-triage";
+import { deltaOf } from "@/lib/analytics-delta";
+import { dayMinus } from "@/lib/ops/analytics";
 
 export const metadata: Metadata = {
   title: esAnalytics.title,
@@ -192,8 +195,11 @@ export default async function AdminAnalyticsPage({
     `/admin/analitica?${new URLSearchParams({ dias: String(days), ...(vertical ? { sitio: vertical } : {}), disp: d })}`;
 
   const w = await analyticsWindow(days, vertical);
-  const [badges, summary, daily, pages, listingRows, sources, campaigns, devices, vitals] =
+  // The period of equal length right before this one, for the +/- on the headline numbers.
+  const prevWindow = await analyticsWindow(days, vertical, dayMinus(w.from, 1));
+  const [prevSummary, badges, summary, daily, pages, listingRows, sources, campaigns, devices, vitals] =
     await Promise.all([
+      summaryByVertical(prevWindow),
       getAdminBadges(user),
       summaryByVertical(w),
       byDay(w),
@@ -216,6 +222,43 @@ export default async function AdminAnalyticsPage({
         ).map((l) => [l.id, l])
       : [],
   );
+
+  const sumOf = (rows: typeof summary) =>
+    rows.reduce(
+      (acc, s) => ({
+        visitors: acc.visitors + s.visitors,
+        pageViews: acc.pageViews + s.pageViews,
+        listingViews: acc.listingViews + s.listingViews,
+        waClicks: acc.waClicks + s.waClicks,
+        leads: acc.leads + s.leads,
+      }),
+      { visitors: 0, pageViews: 0, listingViews: 0, waClicks: 0, leads: 0 },
+    );
+  const prevTotal = sumOf(prevSummary);
+  const prevByVertical = new Map(prevSummary.map((s) => [s.vertical, s]));
+  type Metric = "visitors" | "pageViews" | "listingViews" | "waClicks" | "leads";
+  /** A number with its change against the previous period, small and muted beside it. */
+  const withDelta = (value: number, previous: number) => {
+    const d = deltaOf(value, previous);
+    const dt = esTriage.delta;
+    const text =
+      d.kind === "up" ? dt.up(d.pct) : d.kind === "down" ? dt.down(d.pct) : d.kind === "flat" ? dt.flat : d.kind === "fresh" ? dt.fresh : "";
+    return (
+      <>
+        {fmt(value)}
+        {text ? (
+          <small
+            className={`panel-delta panel-delta--${d.kind}`}
+            title={`${dt.vsPrevious(days)} · ${dt.title(fmt(previous))}`}
+          >
+            {text}
+          </small>
+        ) : null}
+      </>
+    );
+  };
+  const siteCell = (s: (typeof summary)[number], m: Metric) =>
+    withDelta(s[m], prevByVertical.get(s.vertical)?.[m] ?? 0);
 
   const total = summary.reduce(
     (acc, s) => ({
@@ -320,30 +363,30 @@ export default async function AdminAnalyticsPage({
                   <tbody>
                     {summary.map((s) => (
                       <tr key={s.vertical}>
-                        <td>
+                        <td data-label={t.summaryHead[0]}>
                           <Link href={`/admin/analitica?dias=${days}&sitio=${s.vertical}`}>
                             {HOST_BY_VERTICAL[s.vertical] ?? s.vertical}
                           </Link>
                         </td>
-                        <td>{fmt(s.visitors)}</td>
-                        <td>{fmt(s.pageViews)}</td>
-                        <td>{fmt(s.listingViews)}</td>
-                        <td>{fmt(s.waClicks)}</td>
-                        <td>{fmt(s.leads)}</td>
-                        <td>{pct(s.waClickers, s.visitors)}</td>
+                        <td data-label={t.summaryHead[1]}>{siteCell(s, "visitors")}</td>
+                        <td data-label={t.summaryHead[2]}>{siteCell(s, "pageViews")}</td>
+                        <td data-label={t.summaryHead[3]}>{siteCell(s, "listingViews")}</td>
+                        <td data-label={t.summaryHead[4]}>{siteCell(s, "waClicks")}</td>
+                        <td data-label={t.summaryHead[5]}>{siteCell(s, "leads")}</td>
+                        <td data-label={t.summaryHead[6]}>{pct(s.waClickers, s.visitors)}</td>
                       </tr>
                     ))}
                     {summary.length > 1 && (
                       <tr>
-                        <td>
+                        <td data-label={t.summaryHead[0]}>
                           <strong>{t.totalRow}</strong>
                         </td>
-                        <td>{fmt(total.visitors)}</td>
-                        <td>{fmt(total.pageViews)}</td>
-                        <td>{fmt(total.listingViews)}</td>
-                        <td>{fmt(total.waClicks)}</td>
-                        <td>{fmt(total.leads)}</td>
-                        <td>{pct(total.waClickers, total.visitors)}</td>
+                        <td data-label={t.summaryHead[1]}>{withDelta(total.visitors, prevTotal.visitors)}</td>
+                        <td data-label={t.summaryHead[2]}>{withDelta(total.pageViews, prevTotal.pageViews)}</td>
+                        <td data-label={t.summaryHead[3]}>{withDelta(total.listingViews, prevTotal.listingViews)}</td>
+                        <td data-label={t.summaryHead[4]}>{withDelta(total.waClicks, prevTotal.waClicks)}</td>
+                        <td data-label={t.summaryHead[5]}>{withDelta(total.leads, prevTotal.leads)}</td>
+                        <td data-label={t.summaryHead[6]}>{pct(total.waClickers, total.visitors)}</td>
                       </tr>
                     )}
                   </tbody>

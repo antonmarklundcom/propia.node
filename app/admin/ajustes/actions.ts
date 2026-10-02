@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { recordAdminEvent } from "@/lib/admin-events";
 import { officeHoursFromForm, parseCooldownHours, parseOfficeHours } from "@/lib/whatsapp-auto-policy";
+import { templatesFromText } from "@/lib/reply-templates";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies } from "@/db/schema";
@@ -27,6 +28,7 @@ import {
   getHouseAgencyId,
   parseHouseAgencyId,
   getWhatsAppAutoSettings,
+  getReplyTemplates,
   parseBusinessMode,
   parseRawDays,
   setSiteSetting,
@@ -188,4 +190,26 @@ export async function saveLeadRoutingAction(formData: FormData): Promise<void> {
     });
   }
   redirect("/admin/ajustes?msg=routing_saved#reparto");
+}
+
+/**
+ * "Plantillas de respuesta": up to 20 saved texts (src/lib/reply-templates.ts),
+ * one JSON array in `reply_templates`. Super-admin only; logged like every
+ * other setting. A template is only ever copied into a textarea client-side.
+ */
+export async function saveReplyTemplatesAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  const parsed = templatesFromText(String(formData.get("templates") ?? ""));
+  if (!parsed.ok) redirect(`/admin/ajustes?msg=${parsed.error === "too_many" ? "tpl_many" : "tpl_long"}#plantillas`);
+  const current = await getReplyTemplates({ uncached: true });
+  const next = JSON.stringify(parsed.templates);
+  if (next !== JSON.stringify(current)) {
+    await setSiteSetting(SETTING_KEYS.replyTemplates, next, user.id);
+    await recordAdminEvent(user.id, "setting.change", "setting", 0, {
+      key: SETTING_KEYS.replyTemplates,
+      from: current.length,
+      to: parsed.templates.length,
+    });
+  }
+  redirect("/admin/ajustes?msg=tpl_saved#plantillas");
 }

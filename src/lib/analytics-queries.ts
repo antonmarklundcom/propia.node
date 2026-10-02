@@ -30,8 +30,13 @@ export interface AnalyticsWindow {
   vertical: string | null;
 }
 
-export async function analyticsWindow(days: number, vertical: string | null): Promise<AnalyticsWindow> {
-  const to = analyticsDay();
+/** `endDay` ends the window earlier than today (the previous period of a comparison). */
+export async function analyticsWindow(
+  days: number,
+  vertical: string | null,
+  endDay?: string,
+): Promise<AnalyticsWindow> {
+  const to = endDay ?? analyticsDay();
   const from = dayMinus(to, days - 1);
   const cutoff = dayMinus(to, await getAnalyticsRawDays());
   return { from, to, rawFrom: from > cutoff ? from : cutoff, vertical };
@@ -44,7 +49,9 @@ function rawWhere(w: AnalyticsWindow): SQL {
 /** Null when the window is entirely inside the raw retention. */
 function dailyWhere(w: AnalyticsWindow): SQL | null {
   if (w.from >= w.rawFrom) return null;
-  const last = dayMinus(w.rawFrom, 1);
+  const before = dayMinus(w.rawFrom, 1);
+  // A window that ends before the raw retention starts is all rollup.
+  const last = before < w.to ? before : w.to;
   return sql`day BETWEEN ${w.from} AND ${last}${w.vertical ? sql` AND vertical = ${w.vertical}` : sql``}`;
 }
 

@@ -166,4 +166,66 @@ export const esTriage = {
     houseSaved: "Guardado: tu inmobiliaria.",
     houseInvalid: "Esa inmobiliaria no existe.",
   },
+
+  /** Admin triage 3: CSV buttons, reply templates, bulk "contactadas", shortcuts, deltas. */
+  export: {
+    button: "Descargar CSV",
+    hint: "Descarga la vista actual, con sus filtros.",
+    colTitle: "Título",
+    colOperation: "Operación",
+    colType: "Tipo",
+    colPlace: "Zona",
+    colPublisherName: "Nombre de quien publicó",
+    colPrice: "Precio",
+    colCurrency: "Moneda",
+    colUpdated: "Actualizada",
+    colUrl: "Enlace público",
+  },
+
+  templates: {
+    title: "Plantillas de respuesta",
+    hint: "Textos guardados para responder más rápido desde Consultas. Separá cada plantilla con una línea que tenga solo «---». Podés usar {nombre} (quien consulta) y {propiedad} (el aviso). Hasta 20 plantillas de 1000 caracteres. Nunca se envían solas: solo llenan el cuadro de respuesta.",
+    label: "Plantillas",
+    save: "Guardar plantillas",
+    saved: "Guardado: plantillas de respuesta.",
+    tooMany: "Son demasiadas plantillas: el máximo es 20.",
+    tooLong: "Una plantilla pasa los 1000 caracteres.",
+    pickerLabel: "Plantilla",
+    pickerNone: "Elegir una plantilla…",
+    replaceConfirm: "El cuadro ya tiene texto. ¿Reemplazarlo con la plantilla?",
+    manage: "Editar plantillas",
+  },
+
+  bulkContacted: {
+    button: "Marcar contactadas",
+    hint: "Pasa las consultas tildadas de «Nueva» a «Contactada». Las que ya tienen otro estado no se tocan.",
+    done: (n: number) => (n === 1 ? "1 consulta marcada como contactada." : `${n} consultas marcadas como contactadas.`),
+    none: "Ninguna de las consultas tildadas estaba «Nueva».",
+    invalid: "Tildá al menos una consulta.",
+  },
+
+  shortcuts: {
+    hint: "Atajos: j/k · x · a · r · ?",
+    title: "Atajos de teclado",
+    keys: [
+      ["j / k", "Bajar / subir una fila"],
+      ["x", "Tildar o destildar la fila"],
+      ["a", "Aprobar la fila"],
+      ["r", "Abrir el cuadro para rechazar"],
+      ["?", "Mostrar u ocultar esta ayuda"],
+    ] as ReadonlyArray<readonly [string, string]>,
+    close: "Cerrar",
+  },
+
+  delta: {
+    vsPrevious: (n: number) => `Comparado con los ${n} días anteriores`,
+    up: (pct: string) => `+${pct} %`,
+    down: (pct: string) => `−${pct} %`,
+    flat: "0 %",
+    fresh: "nuevo",
+    title: (prev: string) => `Período anterior: ${prev}`,
+  },
+
+  /** Thumbnail alt for listings without a photo. */
+  noCover: "Sin foto",
 } as const;

@@ -6,8 +6,9 @@ import { getAnalyticsRawDays, getBusinessMode } from "@/lib/site-settings";
 import { CONTACT_WHATSAPP } from "@/config/contact";
 import { esAgency } from "@/i18n/es-agency";
 import { adminTabs } from "../tabs";
-import { saveHouseAgencyAction, saveLeadRoutingAction, saveSettingsAction, saveWhatsAppAutoAction } from "./actions";
-import { getHouseAgencyId } from "@/lib/site-settings";
+import { saveHouseAgencyAction, saveLeadRoutingAction, saveReplyTemplatesAction, saveSettingsAction, saveWhatsAppAutoAction } from "./actions";
+import { getHouseAgencyId, getReplyTemplates } from "@/lib/site-settings";
+import { REPLY_TEMPLATES_MAX, REPLY_TEMPLATE_CHARS, templatesToText } from "@/lib/reply-templates";
 import { listAgencies } from "@/lib/panel-queries";
 import { esTriage } from "@/i18n/es-triage";
 import { getWhatsAppAutoSettings } from "@/lib/site-settings";
@@ -39,6 +40,9 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   house_invalid: { text: esTriage.settings.houseInvalid, error: true },
   routing_saved: { text: esRouting.saved },
   routing_invalid: { text: esRouting.invalid, error: true },
+  tpl_saved: { text: esTriage.templates.saved },
+  tpl_many: { text: esTriage.templates.tooMany, error: true },
+  tpl_long: { text: esTriage.templates.tooLong, error: true },
 };
 
 function whenText(ms: number): string {
@@ -68,16 +72,18 @@ export default async function AdminSettingsPage({
     aiReplyUsageThisMonth().catch(() => null),
     getWhatsAppAutoSettings(),
   ]);
-  const [houseAgencyId, agencyOptions, routing, locationOptions] = await Promise.all([
+  const [houseAgencyId, agencyOptions, routing, locationOptions, replyTemplates] = await Promise.all([
     getHouseAgencyId(),
     listAgencies(),
     loadRoutingContext(),
     listPublishLocations(),
+    getReplyTemplates({ uncached: true }),
   ]);
   const routingPreview = await previewRouting(routing);
   const rt = esRouting;
   const ruleFor = new Map(routing.config.rules.map((r) => [r.partner, r]));
   const socioName = new Map<string, string>(routing.socios.map((s) => [s.key, s.name]));
+  const tp = esTriage.templates;
   const hs = esTriage.settings;
   const ai = aiReplyConfig();
   const waHours = parseOfficeHours(waAuto.officeHoursRaw);
@@ -418,6 +424,28 @@ export default async function AdminSettingsPage({
             </div>
           )}
         </article>
+
+        <form action={saveReplyTemplatesAction} className="panel-form" id="plantillas">
+          <article className="panel-card" style={{ flexBasis: "100%" }}>
+            <h3 className="panel-section__title">{tp.title}</h3>
+            <p className="panel-note">{tp.hint}</p>
+            <label className="panel-form__field">
+              <span className="auth-field__label">
+                {tp.label} ({replyTemplates.length}/{REPLY_TEMPLATES_MAX})
+              </span>
+              <textarea
+                className="auth-field__input"
+                name="templates"
+                rows={10}
+                defaultValue={templatesToText(replyTemplates)}
+                maxLength={REPLY_TEMPLATES_MAX * (REPLY_TEMPLATE_CHARS + 8)}
+              />
+            </label>
+          </article>
+          <button className="panel-btn panel-btn--primary" type="submit">
+            {tp.save}
+          </button>
+        </form>
 
         <article className="panel-card">
           <h3 className="panel-section__title">{esAiReply.usage.title}</h3>

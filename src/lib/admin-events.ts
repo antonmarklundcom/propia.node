@@ -18,6 +18,7 @@ export type AdminEventAction =
   | "lead.revoke"
   | "lead.spam"
   | "lead.unspam"
+  | "lead.contacted"
   | "lead.delete"
   | "listing.publish"
   | "listing.delete"
