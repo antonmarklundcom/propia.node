@@ -130,7 +130,7 @@ export async function countRecentLeads(hours = 24, internalOnly = false): Promis
     .select({ n: sql<number>`count(*)` })
     .from(leads)
     .where(and(
-      sql`${leads.createdAt} >= now() - interval ${sql.raw(String(Math.max(1, Math.floor(hours))))} hour`,
+      sql`${leads.createdAt} >= now() - interval ${sql.raw(String(Number.isFinite(hours) ? Math.max(1, Math.floor(hours)) : 24))} hour`,
       ne(leads.status, "spam"),
       internalOnly ? eq(leads.routedTo, "internal") : undefined,
     ));
@@ -699,11 +699,15 @@ export async function listAllLeads(params: {
   const filters: SQL[] = [];
   const pubKind = leadPublisherKindSql(await getPublisherSettings());
   if (params.internalOnly) filters.push(eq(leads.routedTo, "internal"));
-  if (params.publisher && isLeadPublisherKind(params.publisher)) {
-    filters.push(sql`${pubKind} = ${sql.raw(`'${params.publisher}'`)}`);
+  // Spelled raw (ONLY_FULL_GROUP_BY, see publisher-kind.ts) from the enum's own
+  // element, never from the request value (audit 2026-10 Q3).
+  const publisher = LEAD_PUBLISHER_KINDS.find((k) => k === params.publisher);
+  if (publisher) {
+    filters.push(sql`${pubKind} = ${sql.raw(`'${publisher}'`)}`);
   }
-  if (params.contactKind && isContactKind(params.contactKind)) {
-    filters.push(sql`${CONTACT_KIND_SQL} = ${sql.raw(`'${params.contactKind}'`)}`);
+  const contactKind = CONTACT_KINDS.find((k) => k === params.contactKind);
+  if (contactKind) {
+    filters.push(sql`${CONTACT_KIND_SQL} = ${sql.raw(`'${contactKind}'`)}`);
   }
   if (params.type && params.type !== "all") {
     filters.push(eq(leads.leadType, params.type));

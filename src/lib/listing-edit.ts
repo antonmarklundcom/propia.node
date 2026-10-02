@@ -211,8 +211,10 @@ export async function listAllListings(params: {
 }): Promise<AdminListingRow[]> {
   const filters: SQL[] = [];
   const kind = publisherKindSql(await getPublisherSettings());
-  if (params.publisher && PUBLISHER_KINDS.includes(params.publisher)) {
-    filters.push(sql`${kind} = ${sql.raw(`'${params.publisher}'`)}`);
+  // The enum's own element, never the request value (audit 2026-10 Q3).
+  const publisher = PUBLISHER_KINDS.find((k) => k === params.publisher);
+  if (publisher) {
+    filters.push(sql`${kind} = ${sql.raw(`'${publisher}'`)}`);
   }
 
   if (params.status && params.status !== "all") {

@@ -21,6 +21,25 @@ import { canonPhone } from "@/lib/import/normalize";
 import { estimateValue, type ValuationResult } from "@/lib/valuation";
 import { OPERATIONS, PROPERTY_TYPES } from "@/lib/import/types";
 import type { Operation, PropertyType } from "@/lib/import/types";
+import { allowRequest } from "@/lib/rate-limit";
+import { clientIpFrom } from "@/lib/client-ip";
+
+/**
+ * Both actions are public. The estimate is a cached read, but its cache key is
+ * the arguments: bounded and normalised here so a loop of unique values can
+ * neither miss the cache every time nor grow it without end (audit 2026-10
+ * S2). The contact request writes a lead, alerts the operator and copies to
+ * the CRM, so it gets `/api/leads`' own per-IP bound (S1).
+ */
+const ESTIMATE_MAX = 60;
+const ESTIMATE_WINDOW_MS = 10 * 60_000;
+const CONTACT_MAX = 10;
+const CONTACT_WINDOW_MS = 10 * 60_000;
+const SLUG = /^[a-z0-9-]{1,80}$/;
+
+async function ip(): Promise<string> {
+  return clientIpFrom(await headers());
+}
 
 export async function estimateAction(input: {
   citySlug: string;
@@ -29,6 +48,14 @@ export async function estimateAction(input: {
   areaM2: number;
 }): Promise<ValuationResult> {
   // Everything is re-validated here; the form is not a trust boundary.
+  const citySlug = typeof input?.citySlug === "string" ? input.citySlug : "";
+  const areaM2 = Math.round(Number(input?.areaM2));
+  if (!SLUG.test(citySlug) || !Number.isFinite(areaM2) || areaM2 < 1 || areaM2 > 1_000_000) {
+    return { ok: false, reason: "no_data" };
+  }
+  if (!allowRequest(`valuation-estimate|${await ip()}`, ESTIMATE_MAX, ESTIMATE_WINDOW_MS)) {
+    return { ok: false, reason: "no_data" };
+  }
   if (!PROPERTY_TYPES.includes(input.propertyType as PropertyType)) {
     return { ok: false, reason: "no_data" };
   }
@@ -36,10 +63,10 @@ export async function estimateAction(input: {
     return { ok: false, reason: "no_data" };
   }
   return estimateValue({
-    citySlug: String(input.citySlug),
+    citySlug,
     propertyType: input.propertyType as PropertyType,
     operation: input.operation as Operation,
-    areaM2: Number(input.areaM2),
+    areaM2,
   });
 }
 
@@ -51,8 +78,20 @@ export async function requestValuationContactAction(input: {
   /** What they asked about, so the follow-up starts informed. */
   context: string;
 }): Promise<ValuationLeadResult> {
-  const whatsapp = canonPhone(input.whatsapp);
-  if (whatsapp.length < 6) return { ok: false };
+  if (
+    typeof input?.name !== "string" ||
+    typeof input.whatsapp !== "string" ||
+    typeof input.context !== "string"
+  ) {
+    return { ok: false };
+  }
+  const whatsapp = canonPhone(input.whatsapp.slice(0, 40));
+  // 6–15 digits: the public form's lower bound, E.164's upper one.
+  const digits = whatsapp.replace(/\D/g, "").length;
+  if (digits < 6 || digits > 15) return { ok: false };
+  if (!allowRequest(`valuation-contact|${await ip()}`, CONTACT_MAX, CONTACT_WINDOW_MS)) {
+    return { ok: false };
+  }
 
   const vertical = (await headers()).get("x-vertical") ?? DEFAULT_VERTICAL_KEY;
 
