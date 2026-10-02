@@ -184,6 +184,12 @@ export const listings = mysqlTable(
      */
     index("idx_geo").on(t.status, t.displayLat, t.displayLng),
     index("idx_agency").on(t.agencyId, t.status),
+    // Owner-scope reads (`owner_user_id = ? AND agency_id IS NULL`, every
+    // /mis-avisos page and an independent agent's /agencia) had only
+    // idx_agency's NULL ref, i.e. every agency-less listing (audit 2026-10 P9).
+    index("idx_owner").on(t.ownerUserId, t.agencyId),
+    // /admin/propiedades' default `ORDER BY updated_at DESC LIMIT 200` (P9).
+    index("idx_updated").on(t.updatedAt),
     index("idx_project").on(t.projectId, t.status),
     index("idx_fresh").on(t.status, t.publishedAt),
     /**
@@ -696,6 +702,10 @@ export const leads = mysqlTable(
     index("idx_type").on(t.leadType, t.createdAt),
     // Panel inboxes default-sort on created_at with no type filter (F38).
     index("idx_created").on(t.createdAt),
+    // The Consultas badge on every /admin page (`routed_to = 'internal' AND
+    // status = 'new'`), the "Mis consultas" view and every panel lane read
+    // (audit 2026-10 P9).
+    index("idx_routed_status").on(t.routedTo, t.status, t.createdAt),
   ],
 );
 
@@ -986,6 +996,8 @@ export const opsRuns = mysqlTable(
     // "The last run of each job", the health panel's query, and the history
     // view's default order.
     index("idx_job_started").on(t.job, t.startedAt),
+    // "Latest run per job" is MAX(id) GROUP BY job (P9).
+    index("idx_job_id").on(t.job, t.id),
     index("idx_started").on(t.startedAt),
   ],
 );
