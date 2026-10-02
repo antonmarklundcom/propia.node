@@ -567,6 +567,22 @@ default, `--dry` first). It records itself as a revertible import job.
     for the /admin/leads chip counts (P7), and /admin/analitica reading the
     rollup (P8).
 
+29. **WhatsApp taps + "Pedir datos antes de WhatsApp" (O9, 2026-10-02, no
+    migration, `docs/log/whatsapp-taps-gate.md`).**
+    - **Taps are the beacon's `wa_click`**: a wa.me link, or any link marked
+      `data-wa-tap` (a WhatsApp button that goes to the form first). Readers
+      are `src/lib/wa-taps.ts` only: `waTapsByPublisher()` for
+      /admin/analitica's "WhatsApp por anunciante" (listing taps by publisher,
+      profile taps, gate leads), `getProfileWaTaps()` for the /agencia line.
+      Per-listing taps were already on /agencia and /mis-avisos.
+    - **The gate is off by default** (`wa_gate_enabled`, /admin/ajustes,
+      `getWaGateEnabled()`). On: the listing's WhatsApp buttons go to
+      `#contacto`, `ContactForm` saves the lead and then opens wa.me.
+    - **A gate lead is `leads.utm.channel = "whatsapp"`**, stamped by
+      `/api/leads` from its `channel` enum only (`src/lib/lead-channel.ts`); a
+      client-sent `utm.channel` is dropped. **No column.**
+    - Paid WhatsApp templates (writing after 24 h) are not built.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

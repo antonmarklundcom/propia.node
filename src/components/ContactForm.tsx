@@ -51,6 +51,7 @@ export function ContactForm({
   locale = "es",
   recipients,
   foreignBuyer = false,
+  waGate = false,
 }: {
   id?: string;
   /** Omit for non-listing inquiries (e.g. a project page). */
@@ -78,6 +79,13 @@ export function ContactForm({
    * asked about a purchase; a renter's form keeps just the phone change.
    */
   foreignBuyer?: boolean;
+  /**
+   * "Pedir datos antes de WhatsApp" (/admin/ajustes, plan-admin-next O9): the
+   * listing's WhatsApp buttons scroll here, and a saved lead opens WhatsApp
+   * with the same message. The lead is marked `utm.channel = "whatsapp"` by
+   * the server. Off: the form as it always was.
+   */
+  waGate?: boolean;
 }) {
   const d = getDictionary(locale);
   const t = d.contactForm;
@@ -116,6 +124,7 @@ export function ContactForm({
     contactWhatsapp,
     detailsBlock ? `${fullMessage}\n\n${detailsBlock}` : fullMessage,
   );
+  const gated = waGate && waHref != null;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -146,6 +155,7 @@ export function ContactForm({
           utm: readUtm(),
           buyerDetails: askDetails ? (normalizeBuyerDetails(details) ?? undefined) : undefined,
           ...(contactRole ? { contactRole } : {}),
+          ...(gated ? { channel: "whatsapp" } : {}),
         }),
       });
       captured = res.ok;
@@ -159,6 +169,9 @@ export function ContactForm({
     // Without a WhatsApp fallback a failed capture means nobody got the
     // message — say so instead of lying with a success state.
     setState(captured ? "sent" : waHref ? "fallback" : "error");
+    // Same tab, so no popup blocker; the "Continuar en WhatsApp" link below
+    // stays as the way back if the navigation does not happen.
+    if (gated && captured && waHref) window.location.assign(waHref);
   }
 
   const fieldsRow = (
@@ -355,11 +368,16 @@ export function ContactForm({
         disabled={state === "sending"}
       >
         {state === "sent"
-          ? t.submitSent
+          ? gated
+            ? t.waGateOpening
+            : t.submitSent
           : state === "sending"
             ? t.submitSending
-            : t.submitIdle}
+            : gated
+              ? t.waGateSubmit
+              : t.submitIdle}
       </button>
+      {gated && state === "idle" && <p className="contact-form__note">{t.waGateHint}</p>}
 
       {state === "fallback" && <p className="contact-form__fallback" role="status">{t.fallbackText}</p>}
       {state === "sent" && recipients && routedTo && (
@@ -399,14 +417,17 @@ export function ContactForm({
         )}
         {waHref && (
           <div className="contact-form__altlinks">
-            <a
-              className="contact-form__altlink"
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Glyph name="whatsapp" /> {t.waLinkLabel}
-            </a>
+            {/* With the gate on, WhatsApp is the submit button above. */}
+            {!gated && (
+              <a
+                className="contact-form__altlink"
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Glyph name="whatsapp" /> {t.waLinkLabel}
+              </a>
+            )}
             {waPhone(contactWhatsapp) && (
               <a
                 className="contact-form__altlink"

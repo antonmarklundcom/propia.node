@@ -88,6 +88,10 @@ export const esContactForm = {
   submitSending: "Enviando…",
   submitSent: "¡Mensaje enviado!",
   waContinue: "Continuar en WhatsApp",
+  /** "Pedir datos antes de WhatsApp" (plan-admin-next O9), switched in /admin/ajustes. */
+  waGateSubmit: "Enviar y abrir WhatsApp",
+  waGateOpening: "Abriendo WhatsApp…",
+  waGateHint: "Dejá tus datos y se abre WhatsApp con el mensaje listo.",
   errorText: "No pudimos enviar tu consulta. Probá de nuevo en unos segundos.",
   directNote: "Tu consulta llega directamente al vendedor",
   waLinkLabel: "WhatsApp",

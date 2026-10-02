@@ -279,7 +279,8 @@ export default async function AgentProfilePage({ params }: Params) {
             )}
             {contactWhatsapp && (
               <div className="agent-profile__contact">
-                <a className="contact-form__altlink" href="#contacto">
+                {/* Goes to the form first; `data-wa-tap` still counts the tap (O9). */}
+                <a className="contact-form__altlink" href="#contacto" data-wa-tap="">
                   <Glyph name="whatsapp" /> {d.agentProfile.whatsappLink}
                 </a>
               </div>
