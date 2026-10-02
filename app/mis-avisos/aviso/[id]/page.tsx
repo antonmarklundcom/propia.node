@@ -16,13 +16,16 @@ import { listPublishLocations } from "@/lib/publish-queries";
 import { esOwner, esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { ownerTabs } from "../../tabs";
-import { ownerUpdateListingAction } from "./actions";
+import { ownerSaveFinancingAction, ownerUpdateListingAction } from "./actions";
 import {
   ownerDeletePhotoAction,
   ownerMovePhotoAction,
   ownerSetCoverAction,
   ownerUploadPhotosAction,
 } from "./photo-actions";
+
+import { SellerFinancingForm } from "@/components/panel/SellerFinancingForm";
+import { getListingFinancing } from "@/lib/listing-financing";
 
 export const metadata: Metadata = {
   title: `Editar aviso`,
@@ -74,6 +77,8 @@ export default async function OwnerListingEditPage({
   // able to tell the difference between a row that is missing and one that is
   // somebody else's.
   if (!listing) notFound();
+  // Read only once the scoped load above found the listing (plan-admin-next O8).
+  const financing = await getListingFinancing(listing.id);
 
   const flash = msg ? FLASH[msg] : undefined;
 
@@ -125,6 +130,14 @@ export default async function OwnerListingEditPage({
             action={ownerUpdateListingAction}
           />
         </article>
+
+        <SellerFinancingForm
+          listingId={listing.id}
+          operation={listing.operation}
+          financing={financing}
+          action={ownerSaveFinancingAction}
+          msg={msg}
+        />
 
         <PhotoManager
           listingId={listing.id}

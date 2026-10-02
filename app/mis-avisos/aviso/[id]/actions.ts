@@ -12,6 +12,7 @@ import { revalidateListings } from "@/lib/cache";
 import { requireOwnerContext } from "@/lib/auth/guards";
 import { updateListing } from "@/lib/listing-edit";
 import { readListingForm } from "@/lib/listing-form-input";
+import { handleFinancingForm } from "@/lib/listing-financing-action";
 
 export async function ownerUpdateListingAction(
   formData: FormData,
@@ -33,4 +34,10 @@ export async function ownerUpdateListingAction(
   redirect(
     `/mis-avisos/aviso/${parsed.id}?msg=${affected ? "saved" : "not_found"}`,
   );
+}
+
+/** "Financiación propia" (plan-admin-next O8), owner rows only. */
+export async function ownerSaveFinancingAction(formData: FormData): Promise<void> {
+  const { user, scope } = await requireOwnerContext();
+  await handleFinancingForm({ formData, scope, userId: user.id, basePath: "/mis-avisos/aviso" });
 }

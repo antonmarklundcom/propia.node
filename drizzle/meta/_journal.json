@@ -169,6 +169,13 @@
       "when": 1790824118181,
       "tag": "0023_pale_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1790971109900,
+      "tag": "0024_wild_iron_man",
+      "breakpoints": true
     }
   ]
 }

@@ -23,13 +23,16 @@ import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../../tabs";
-import { adminDeleteListingAction, adminUpdateListingAction } from "../actions";
+import { adminDeleteListingAction, adminSaveFinancingAction, adminUpdateListingAction } from "../actions";
 import {
   adminDeletePhotoAction,
   adminMovePhotoAction,
   adminSetCoverAction,
   adminUploadPhotosAction,
 } from "./photo-actions";
+
+import { SellerFinancingForm } from "@/components/panel/SellerFinancingForm";
+import { getListingFinancing } from "@/lib/listing-financing";
 
 export const metadata: Metadata = {
   title: `Editar aviso`,
@@ -76,6 +79,8 @@ export default async function AdminListingEditPage({
     getListingDailyViews(listingId, { kind: "admin" }),
   ]);
   if (!listing) notFound();
+  // Read only once the scoped load above found the listing (plan-admin-next O8).
+  const financing = await getListingFinancing(listing.id);
 
   // Lead count for this one listing, from the same scoped aggregate the
   // listings table uses.
@@ -134,6 +139,14 @@ export default async function AdminListingEditPage({
             deleteAction={adminDeleteListingAction}
           />
         </article>
+
+        <SellerFinancingForm
+          listingId={listing.id}
+          operation={listing.operation}
+          financing={financing}
+          action={adminSaveFinancingAction}
+          msg={msg}
+        />
 
 
         <PhotoManager

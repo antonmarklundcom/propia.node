@@ -58,6 +58,7 @@ import {
 } from "@/lib/lead-assignments";
 import { siteOrigin } from "@/lib/origin";
 import { isSuperAdmin } from "@/lib/auth/roles";
+import { getPartnerTerms, type PartnerTermsRow } from "@/lib/partner-terms";
 import { deleteLeadAction, setLeadSpamAction, updateLeadAction } from "./actions";
 import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
 import { esA3, type ReportReason } from "@/i18n/es-a3";
@@ -448,6 +449,33 @@ export default async function AdminLeadsPage({
     superAdmin ? getDealsForLeads(leadIds) : Promise.resolve(new Map<number, DealRow>()),
     superAdmin ? Promise.resolve(new Map<number, DealStageRow>()) : getDealStagesForLeads(leadIds),
   ]);
+
+  /**
+   * The partner whose usual split the "Negocio" block suggests (O2): the
+   * deal's partner, else the lead's one active share. Super-admin only, one
+   * query for the page.
+   */
+  const splitPartnerOf = new Map<number, { kind: "agency" | "agent"; id: number; name: string }>();
+  if (superAdmin) {
+    for (const id of leadIds) {
+      const deal = dealsByLead.get(id);
+      const shares = sharesByLead.get(id) ?? [];
+      const dealShare = deal
+        ? shares.find((sh) => (deal.agencyId ? sh.kind === "agency" && sh.targetId === deal.agencyId : deal.agentId ? sh.kind === "agent" && sh.targetId === deal.agentId : false))
+        : undefined;
+      const active = shares.filter((sh) => !sh.revokedAt);
+      const pick = dealShare ?? (deal?.agencyId || deal?.agentId ? undefined : active.length === 1 ? active[0] : undefined);
+      if (pick) splitPartnerOf.set(id, { kind: pick.kind, id: pick.targetId, name: pick.targetName });
+    }
+  }
+  const splitTerms = superAdmin && splitPartnerOf.size > 0
+    ? await getPartnerTerms([...splitPartnerOf.values()]).catch(() => new Map<string, PartnerTermsRow>())
+    : new Map<string, PartnerTermsRow>();
+  const termsForLead = (id: number) => {
+    const p = splitPartnerOf.get(id);
+    const tr = p ? splitTerms.get(`${p.kind}:${p.id}`) : undefined;
+    return p && tr ? { partnerName: p.name, commissionPct: tr.commissionPct, mySharePct: tr.mySharePct } : null;
+  };
   // WhatsApp threads of exactly these rows (they carry the staff rule), and
   // each number's 24-hour window. A read failure (migration 0021 not applied
   // yet) leaves the cards without a WhatsApp block rather than failing the page.
@@ -732,6 +760,7 @@ export default async function AdminLeadsPage({
           shares={sharesByLead.get(lead.id) ?? []}
           back={backHref}
           open={openDealLead === lead.id}
+          terms={termsForLead(lead.id)}
         />
       ) : (
         <DealStageReadOnly deal={dealStagesByLead.get(lead.id)} />

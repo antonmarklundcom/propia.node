@@ -18,6 +18,7 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
+import { getPublicListingFinancing } from "@/lib/listing-financing";
 import { displayPrice, formatCuota, formatUsd, formatSqft, imageUrl, imageThumbUrl } from "@/lib/format";
 import { isPlaceholderPhoto, isSamplePhoto } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
@@ -234,7 +235,12 @@ export default async function ListingPage({ params }: Params) {
     });
   }
   const vertical = await currentVertical();
-  const cuota = showCuota(vertical.key) ? formatCuota(listing.cuotaGs) : null;
+  // The publisher's own financing terms (plan-admin-next O8) replace the
+  // site-wide estimate on this listing; a purchase only.
+  const sellerFinancing =
+    listing.operation === "venta" ? await getPublicListingFinancing(listing.id) : null;
+  const cuota =
+    showCuota(vertical.key) && !sellerFinancing ? formatCuota(listing.cuotaGs) : null;
   // US$ first on the English marketplace doors (a Guaraní price becomes "≈
   // US$ …" with the listed Guaraní price beside it), with an approximate EUR
   // alternative when USD_EUR_RATE is set; unchanged elsewhere.
@@ -607,6 +613,38 @@ export default async function ListingPage({ params }: Params) {
           )}
           {cuota && !financingProgram && (
             <div className="cuota-chip"><Glyph name="money" /> {cuota}</div>
+          )}
+          {sellerFinancing && (
+            <div className="financing-box" data-seller-financing>
+              <div className="financing-box__head">
+                <Glyph name="money" /> {t.sellerFinancingHead}
+              </div>
+              <dl className="financing-box__grid">
+                {(
+                  [
+                    [t.sellerFinancingEntity, sellerFinancing.entity],
+                    [t.sellerFinancingRate, sellerFinancing.rate],
+                    [t.sellerFinancingTerm, sellerFinancing.term],
+                    [t.sellerFinancingDownPayment, sellerFinancing.downPayment],
+                  ] as const
+                )
+                  .filter(([, value]) => value)
+                  .map(([label, value]) => (
+                    <div key={label}>
+                      <dt className="financing-box__label">{label}</dt>
+                      <dd className="financing-box__value">{value}</dd>
+                    </div>
+                  ))}
+              </dl>
+              {sellerFinancing.notes ? (
+                <p className="financing-box__notes">
+                  <span className="financing-box__label">{t.sellerFinancingNotes}</span> {sellerFinancing.notes}
+                </p>
+              ) : null}
+              <div className="financing-box__foot">
+                {t.sellerFinancingSource(agency?.name ?? agent?.name ?? t.sellerFinancingWhoGeneric)}
+              </div>
+            </div>
           )}
 
           {details.length > 0 && (

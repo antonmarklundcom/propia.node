@@ -4,7 +4,10 @@
  * query cost. Re-derived from `price_usd` (always populated) so it is
  * currency-agnostic.
  *
- * Only venta listings get a cuota (the financing programs are for purchase).
+ * Only venta listings get a cuota (the financing programs are for purchase),
+ * and not one whose publisher switched on their own financing terms
+ * (`listing_financing`, src/lib/listing-financing.ts) — those show the
+ * publisher's terms instead of this estimate.
  * `bestCuota()` returns null when no program fits (e.g. over the cap) → the
  * cached value is cleared and the card omits the line. Every listing is walked,
  * not just venta: a listing flipped venta→alquiler keeps its stale purchase
@@ -21,7 +24,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { listings, financingPrograms } from "@/db/schema";
+import { listingFinancing, listings, financingPrograms } from "@/db/schema";
 import { bestCuota, type FinancingProgram } from "@/lib/cuota";
 import { ENV_FALLBACK_USD_TO_PYG, getLatestFxRateRaw } from "@/lib/fx";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
@@ -73,8 +76,12 @@ export async function runCuotas(opts: OpsOptions): Promise<OpsResult> {
         operation: listings.operation,
         priceUsd: listings.priceUsd,
         cuotaGs: listings.cuotaGs,
+        // The publisher's own financing (plan-admin-next O8) replaces the
+        // estimate on that listing: its cuota stays cleared while it is on.
+        sellerFinancing: listingFinancing.enabled,
       })
-      .from(listings);
+      .from(listings)
+      .leftJoin(listingFinancing, eq(listingFinancing.listingId, listings.id));
 
     out.count("avisos", rows.length);
     out.track("cambian", "sin_cambio", "cuota_borrada");
@@ -82,7 +89,7 @@ export async function runCuotas(opts: OpsOptions): Promise<OpsResult> {
     let sampled = 0;
     for (const row of rows) {
       let cuotaGs: string | null = null;
-      if (row.operation === "venta") {
+      if (row.operation === "venta" && !row.sellerFinancing) {
         const priceGs = Number(row.priceUsd) * usdToPyg;
         const result = bestCuota(priceGs, programs);
         cuotaGs = result ? result.monthlyGs.toString() : null;

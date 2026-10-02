@@ -1088,6 +1088,15 @@ export const enListing = {
   financingFoot:
     "An indicative estimate for this property — approval depends on the bank and on the programme.",
 
+  sellerFinancingHead: "Seller financing",
+  sellerFinancingEntity: "Financed by",
+  sellerFinancingRate: "Rate",
+  sellerFinancingTerm: "Term",
+  sellerFinancingDownPayment: "Down payment",
+  sellerFinancingNotes: "Conditions",
+  sellerFinancingSource: (who: string) => `Information provided by ${who}, not by the portal.`,
+  sellerFinancingWhoGeneric: "the seller",
+
   detailsTitle: "Property details",
   detailBarrio: "Neighbourhood",
   detailCity: "City",

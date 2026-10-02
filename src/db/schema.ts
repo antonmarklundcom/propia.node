@@ -1394,3 +1394,64 @@ export const savedSearches = mysqlTable(
     index("idx_confirmed").on(t.confirmedAt),
   ],
 );
+
+/* ------------------------------------------------------------------ */
+/* Partner terms and seller financing (plan-admin-next O2 + O8)        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The commission split the operator usually agrees with one Socio
+ * (docs/plan-admin-next-2026-10-02.md, O2). A SUGGESTION only: it prefills the
+ * two percentages of a lead's "Negocio" block when they are still empty, and
+ * nothing is saved on a deal until the operator presses Guardar. The founder
+ * signs a separate contract per partner; this row never computes or defaults
+ * an amount. Same target convention as `lead_assignments`: exactly one of
+ * `agency_id` / `agent_id` is non-zero.
+ *
+ * Its own table, not columns on `agencies` / `agents`: those are selected
+ * whole by every directory page, so a column there would 500 the public site
+ * whenever the code ran ahead of the migration. This table is read by
+ * /admin only.
+ */
+export const partnerTerms = mysqlTable(
+  "partner_terms",
+  {
+    id: id(),
+    agencyId: fk("agency_id").notNull().default(0),
+    agentId: fk("agent_id").notNull().default(0),
+    /** Total commission on a sale, percent — the usual figure, editable per deal. */
+    commissionPct: decimal("commission_pct", { precision: 5, scale: 2 }),
+    /** The operator's share of that commission, percent. */
+    mySharePct: decimal("my_share_pct", { precision: 5, scale: 2 }),
+    /** Free text for the operator: "contrato firmado 2026-09", "50/50 en alquileres"… */
+    note: varchar("note", { length: 500 }),
+    updatedByUserId: fk("updated_by_user_id").notNull(),
+    updatedAt: datetime("updated_at").notNull(),
+  },
+  (t) => [uniqueIndex("uq_partner").on(t.agencyId, t.agentId)],
+);
+
+/**
+ * Financing the PUBLISHER offers on one listing (O8): their own terms, typed
+ * by them, shown on the listing page with "Datos provistos por <publisher>,
+ * no por el portal". Off unless `enabled`. While on, that listing shows these
+ * terms instead of the site-wide estimated cuota (`cron:cuotas` skips it and
+ * the save clears its cached `cuota_gs`). Free text on purpose: nothing here
+ * is a number the portal computes with.
+ *
+ * Its own table, not columns on `listings` (selected whole by every public
+ * page), for the same reason as `partner_terms`.
+ */
+export const listingFinancing = mysqlTable("listing_financing", {
+  listingId: fk("listing_id").primaryKey(),
+  enabled: boolean("enabled").notNull().default(false),
+  /** Who finances: "el propietario", "Banco X", "la desarrolladora". */
+  entity: varchar("entity", { length: 120 }),
+  /** As the publisher writes it: "8 % anual", "sin interés". */
+  rate: varchar("rate", { length: 120 }),
+  term: varchar("term", { length: 120 }),
+  downPayment: varchar("down_payment", { length: 120 }),
+  notes: varchar("notes", { length: 500 }),
+  updatedByUserId: fk("updated_by_user_id").notNull(),
+  updatedAt: datetime("updated_at").notNull(),
+});
