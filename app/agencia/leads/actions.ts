@@ -9,6 +9,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAgencyContext } from "@/lib/auth/guards";
+// What this member may answer: an agent only their own shares (panel-lead-access.ts).
+import { panelLeadAccess } from "@/lib/panel-lead-access";
 import {
   setPartnerNote,
   setShareState,
@@ -37,7 +39,7 @@ export async function setPartnerNoteAction(formData: FormData): Promise<void> {
     (await setPartnerNote({
       assignmentId,
       note: String(formData.get("partnerNote") ?? ""),
-      viewer: { agencyId: ctx.agencyId, userId: ctx.user.id },
+      viewer: (await panelLeadAccess(ctx)).viewer,
     })) > 0;
 
   revalidatePath("/agencia/leads");
@@ -56,7 +58,7 @@ export async function setShareStateAction(formData: FormData): Promise<void> {
     (await setShareState({
       assignmentId,
       state,
-      viewer: { agencyId: ctx.agencyId, userId: ctx.user.id },
+      viewer: (await panelLeadAccess(ctx)).viewer,
     })) > 0;
 
   revalidatePath("/agencia/leads");
@@ -86,7 +88,7 @@ export async function setDealStageAction(formData: FormData): Promise<void> {
   const input = parsePartnerStageForm(formData);
   const res = input
     ? await setPartnerDealStage({
-        viewer: { agencyId: ctx.agencyId, userId: ctx.user.id },
+        viewer: (await panelLeadAccess(ctx)).viewer,
         input,
       })
     : "invalid";

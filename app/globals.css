@@ -4265,6 +4265,13 @@ summary.panel-btn::-webkit-details-marker {
   color: #fff;
 }
 
+/* A link chip that is active keeps white text on hover: the site-wide link
+   hover colour put dark gold on the primary fill (both /admin and /agencia). */
+a.panel-chip--active:hover,
+a.panel-chip--active:focus-visible {
+  color: #fff;
+}
+
 .panel-chip--active .panel-tab__count {
   background: rgba(255, 255, 255, 0.24);
   color: #fff;

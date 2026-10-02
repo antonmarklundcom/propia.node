@@ -1191,6 +1191,13 @@ export async function getPanelLeads(
    * checks pass nothing and read everything.
    */
   limit?: number,
+  /**
+   * Only leads on listings assigned to this agent (`listings.agent_id`) — an
+   * agency member's own inbox (`src/lib/panel-lead-access.ts`): an agent
+   * always, an agency admin in "Mis consultas". Applied on top of the scope,
+   * never instead of it. Unset = every lead in the scope.
+   */
+  onlyAgentId?: number | null,
 ): Promise<LeadRow[]> {
   // One join with the ownership predicate applied to the joined listing —
   // the previous shape read every owned listing id into Node first and then
@@ -1228,6 +1235,7 @@ export async function getPanelLeads(
         guard,
         ne(leads.status, "spam"),
         onlyLeadId !== undefined ? eq(leads.id, onlyLeadId) : undefined,
+        onlyAgentId != null ? eq(listings.agentId, onlyAgentId) : undefined,
       ),
     )
     .orderBy(desc(leads.createdAt))

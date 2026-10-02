@@ -567,6 +567,23 @@ default, `--dry` first). It records itself as a revertible import job.
     for the /admin/leads chip counts (P7), and /admin/analitica reading the
     rollup (P8).
 
+28. **/agencia/leads "Mis consultas / Todo el equipo" (2026-10-02, no
+    migration, `docs/log/agency-team-leads.md`).**
+    - **Who sees what:**
+      - An agent inside an agency reads only their own: leads on listings with
+        their `agent_id`, and shares addressed to their own `agents` row.
+      - An agency_admin reads the whole agency ("Todo el equipo", the default).
+        They can narrow to "Mis consultas" with `?vista=mias`; the choice is
+        remembered in the `agencia_leads_vista` cookie.
+      - Independent agents are unchanged.
+    - **One resolver: `panelLeadAccess()` (`src/lib/panel-lead-access.ts`).**
+      The page, the CSV, `panelCanSeeLead()` / `userMaySeeLead()` and the
+      share, note and deal writes all use it. Never build a `PanelViewer` by
+      hand on /agencia: `getPanelLeads(…, onlyAgentId)` and
+      `sharedWithPanel()`'s `onlyAgentId` are its two halves.
+    - **Access checks ask for "team":** the toggle narrows the display only,
+      while the role narrows access. Checked by `npm run verify:scopes`.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

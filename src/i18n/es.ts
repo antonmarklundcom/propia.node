@@ -703,6 +703,14 @@ export const esPanel = {
   agencyListingsEmpty: "Todavía no tenés propiedades cargadas.",
   agencyLeadsTitle: "Consultas recibidas",
   agencyLeadsEmpty: "Todavía no recibiste consultas.",
+  // "Mis consultas / Todo el equipo" (src/lib/panel-lead-access.ts).
+  agencyLeadsViewLabel: "Ver",
+  agencyLeadsViewMine: "Mis consultas",
+  agencyLeadsViewTeam: "Todo el equipo",
+  agencyLeadsViewMineHint:
+    "Las de tus avisos y las que el portal te compartió a vos. Las de avisos sin agente asignado y las compartidas con la inmobiliaria están en «Todo el equipo».",
+  agencyLeadsAgentHint:
+    "Ves las consultas de los avisos asignados a vos y las que el portal te compartió a vos. El resto del equipo lo ve el responsable de la inmobiliaria.",
   agencyWelcome:
     "¡Bienvenido! Tu cuenta ya está lista. Cargá tu primera propiedad y nosotros la revisamos antes de publicarla.",
   agencyNoLink:

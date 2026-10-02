@@ -108,6 +108,7 @@ import {
   parseAdminLeadFilter,
 } from "../src/lib/lead-export";
 import { toCsv } from "../src/lib/csv";
+import { panelLeadAccess, parseAgencyLeadView } from "../src/lib/panel-lead-access";
 import { getAgentNumbers } from "../src/lib/team-stats";
 
 const url = process.env.DATABASE_URL ?? "";
@@ -935,7 +936,7 @@ async function main() {
      * under the same scope, never another agency's row, and for staff never a
      * lane outside `internal`.
      */
-    const setA = await panelLeadSet({ scope: agencyScope, viewer: viewerA, showOwn: true });
+    const setA = await panelLeadSet({ scope: agencyScope, access: { viewer: viewerA, onlyAgentId: null }, showOwn: true });
     const pageOwnA = await getPanelLeads(agencyScope);
     const pageSharedA = await getSharedLeads(viewerA);
     const ids = (rows: { id: number }[]) => rows.map((r) => r.id).join(",");
@@ -944,7 +945,7 @@ async function main() {
     check("export carries the lead shared with the agency", setA.shared.some((l) => l.id === sharedLeadId));
     const setB = await panelLeadSet({
       scope: { kind: "agency", agencyId: otherAgencyId },
-      viewer: viewerB,
+      access: { viewer: viewerB, onlyAgentId: null },
       showOwn: true,
     });
     check("another agency's export lacks the share", setB.shared.every((l) => l.id !== sharedLeadId));
@@ -952,7 +953,7 @@ async function main() {
       "another agency's export lacks the agency's own leads",
       setB.own.every((l) => !pageOwnA.some((a) => a.id === l.id)),
     );
-    const setOwner = await panelLeadSet({ scope: ownerScope, viewer: viewerIndep, showOwn: true });
+    const setOwner = await panelLeadSet({ scope: ownerScope, access: { viewer: viewerIndep, onlyAgentId: null }, showOwn: true });
     check(
       "the independent's export has their owner-lane lead and no internal one",
       setOwner.own.some((l) => l.name === "Verify buyer lead") &&
@@ -1073,7 +1074,7 @@ async function main() {
       name: "Verify team lead",
       routedTo: "agency",
     });
-    const ownAfter = (await panelLeadSet({ scope: agencyScope, viewer: viewerA, showOwn: true })).own;
+    const ownAfter = (await panelLeadSet({ scope: agencyScope, access: { viewer: viewerA, onlyAgentId: null }, showOwn: true })).own;
     check(
       "the agency's export gains the new lead, exactly as its page does",
       ownAfter.some((l) => l.name === "Verify team lead") &&
@@ -1081,7 +1082,7 @@ async function main() {
     );
     check(
       "another agency's export does not",
-      (await panelLeadSet({ scope: { kind: "agency", agencyId: otherAgencyId }, viewer: viewerB, showOwn: true }))
+      (await panelLeadSet({ scope: { kind: "agency", agencyId: otherAgencyId }, access: { viewer: viewerB, onlyAgentId: null }, showOwn: true }))
         .own.every((l) => l.name !== "Verify team lead"),
     );
     await shareLeads({
@@ -1740,6 +1741,136 @@ async function main() {
         (e) => e.agentName === "Verify Admin Moved" && e.listingIds.includes(moved2Listing.id),
       ),
     );
+
+
+    /* ---------------------------------------------------------------- */
+    /* /agencia/leads: an agent sees only their own; the agency admin   */
+    /* picks "Mis consultas" or "Todo el equipo" (panel-lead-access.ts) */
+    /* ---------------------------------------------------------------- */
+    const [teamAgencyRes] = await db.insert(agencies).values({
+      name: `Verify Team Views ${stamp}`,
+      slug: `verify-team-views-${stamp}`,
+      isVerified: true,
+    });
+    const tvAgencyId = Number((teamAgencyRes as unknown as { insertId: number }).insertId);
+    createdAgencyIds.push(tvAgencyId);
+    const tvMember = async (role: "agency_admin" | "agent", who: string) => {
+      const [u] = await db.insert(users).values({ email: mail(`tv-${who}`), name: `TV ${who}`, role });
+      const userId = Number((u as unknown as { insertId: number }).insertId);
+      createdUserIds.push(userId);
+      const [a] = await db.insert(agents).values({
+        userId,
+        agencyId: tvAgencyId,
+        name: `TV ${who} ${stamp}`,
+        slug: `tv-${who}-${stamp}`,
+        isVerified: true,
+      });
+      return { userId, agentId: Number((a as unknown as { insertId: number }).insertId), role };
+    };
+    const tvAdmin = await tvMember("agency_admin", "admin");
+    const tvAgent1 = await tvMember("agent", "one");
+    const tvAgent2 = await tvMember("agent", "two");
+    const tvListing = async (tag: string, agentId: number | null) => {
+      const [r] = await db.insert(listings).values({
+        ...base,
+        publicId: `tv${tag}${String(stamp).slice(-6)}`.slice(0, 10),
+        slug: `verify-tv-${tag}-${stamp}`,
+        title: `Verify team view ${tag}`,
+        priceAmount: "100000",
+        priceUsd: "100000",
+        agencyId: tvAgencyId,
+        agentId,
+      });
+      const id = Number((r as unknown as { insertId: number }).insertId);
+      createdListingIds.push(id);
+      return id;
+    };
+    const lAdmin = await tvListing("a", tvAdmin.agentId);
+    const lOne = await tvListing("b", tvAgent1.agentId);
+    const lTwo = await tvListing("c", tvAgent2.agentId);
+    const lNone = await tvListing("d", null);
+    const tvLead = async (listingId: number | null, routedTo: "agency" | "agent" | "internal", who: string) => {
+      const [r] = await db.insert(leads).values({
+        leadType: "buyer",
+        vertical: "inmobiliaria",
+        listingId,
+        name: `TV lead ${who} ${stamp}`,
+        whatsapp: "+595981000777",
+        routedTo,
+      });
+      const id = Number((r as unknown as { insertId: number }).insertId);
+      createdLeadIds.push(id);
+      return id;
+    };
+    const leadAdmin = await tvLead(lAdmin, "agent", "admin");
+    const leadOne = await tvLead(lOne, "agent", "one");
+    const leadTwo = await tvLead(lTwo, "agent", "two");
+    const leadNone = await tvLead(lNone, "agency", "none");
+    const shareToAgency = await tvLead(null, "internal", "share-agency");
+    const shareToOne = await tvLead(null, "internal", "share-one");
+    const shareToTwo = await tvLead(null, "internal", "share-two");
+    await shareLeads({ leadIds: [shareToAgency], target: { kind: "agency", id: tvAgencyId }, note: null, byUserId: tvAdmin.userId, internalOnly: false });
+    await shareLeads({ leadIds: [shareToOne], target: { kind: "agent", id: tvAgent1.agentId }, note: null, byUserId: tvAdmin.userId, internalOnly: false });
+    await shareLeads({ leadIds: [shareToTwo], target: { kind: "agent", id: tvAgent2.agentId }, note: null, byUserId: tvAdmin.userId, internalOnly: false });
+
+    const tvScope = { kind: "agency", agencyId: tvAgencyId } as const;
+    const tvCtx = (m: { userId: number; role: string }) => ({ agencyId: tvAgencyId, user: { id: m.userId, role: m.role } });
+    const tvIds = (rows: { id: number }[]) => rows.map((r) => r.id).sort((a, b) => a - b);
+    const sorted = (xs: number[]) => [...xs].sort((a, b) => a - b);
+    const same = (a: number[], b: number[]) => JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
+
+    // An agent: only their own, whatever view they ask for.
+    const accOne = await panelLeadAccess(tvCtx(tvAgent1), "team");
+    check("agent: no view toggle", !accOne.canChooseView && accOne.view === "mine");
+    const ownOne = await getPanelLeads(tvScope, undefined, undefined, accOne.onlyAgentId);
+    check("agent: own inbox = leads on their listings only", same(tvIds(ownOne), [leadOne]), JSON.stringify(tvIds(ownOne)));
+    const sharedOne = await getSharedLeads(accOne.viewer);
+    check("agent: shares = only those addressed to them", same(sharedOne.map((l) => l.id), [shareToOne]), JSON.stringify(sharedOne.map((l) => l.id)));
+    const setOne = await panelLeadSet({ scope: tvScope, access: accOne, showOwn: true });
+    check("agent: CSV = exactly their page", same(tvIds(setOne.own), [leadOne]) && same(setOne.shared.map((l) => l.id), [shareToOne]));
+    check("agent: thread access to their own lead", await userMaySeeLead({ id: tvAgent1.userId, role: "agent" } as never, leadOne));
+    check("agent: no thread access to a teammate's lead", !(await userMaySeeLead({ id: tvAgent1.userId, role: "agent" } as never, leadTwo)));
+    check("agent: no thread access to an unassigned agency lead", !(await userMaySeeLead({ id: tvAgent1.userId, role: "agent" } as never, leadNone)));
+    check("agent: no thread access to a share made to the agency", !(await userMaySeeLead({ id: tvAgent1.userId, role: "agent" } as never, shareToAgency)));
+    check("agent: thread access to a share made to them", await userMaySeeLead({ id: tvAgent1.userId, role: "agent" } as never, shareToOne));
+    const [agencyShareRow] = await db
+      .select({ id: leadAssignments.id })
+      .from(leadAssignments)
+      .where(eq(leadAssignments.leadId, shareToAgency));
+    const [teammateShareRow] = await db
+      .select({ id: leadAssignments.id })
+      .from(leadAssignments)
+      .where(eq(leadAssignments.leadId, shareToTwo));
+    const [ownShareRow] = await db
+      .select({ id: leadAssignments.id })
+      .from(leadAssignments)
+      .where(eq(leadAssignments.leadId, shareToOne));
+    check("agent: cannot answer the agency's share", (await setShareState({ assignmentId: agencyShareRow.id, state: "accepted", viewer: accOne.viewer })) === 0);
+    check("agent: cannot answer a teammate's share", (await setShareState({ assignmentId: teammateShareRow.id, state: "accepted", viewer: accOne.viewer })) === 0);
+    check("agent: cannot note a teammate's share", (await setPartnerNote({ assignmentId: teammateShareRow.id, note: "x", viewer: accOne.viewer })) === 0);
+    check("agent: answers their own share", (await setShareState({ assignmentId: ownShareRow.id, state: "accepted", viewer: accOne.viewer })) === 1);
+
+    // The agency admin: everything in "Todo el equipo", their own in "Mis consultas".
+    const accTeam = await panelLeadAccess(tvCtx(tvAdmin), "team");
+    check("admin: toggle offered, team by default", accTeam.canChooseView && accTeam.view === "team" && accTeam.onlyAgentId == null);
+    const teamOwn = await getPanelLeads(tvScope, undefined, undefined, accTeam.onlyAgentId);
+    check("admin team: every agency lead", same(tvIds(teamOwn), [leadAdmin, leadOne, leadTwo, leadNone]), JSON.stringify(tvIds(teamOwn)));
+    const teamShared = await getSharedLeads(accTeam.viewer);
+    check("admin team: every share", same(teamShared.map((l) => l.id), [shareToAgency, shareToOne, shareToTwo]));
+    const accMine = await panelLeadAccess(tvCtx(tvAdmin), "mine");
+    const mineOwn = await getPanelLeads(tvScope, undefined, undefined, accMine.onlyAgentId);
+    check("admin mine: only leads on their own listings", same(tvIds(mineOwn), [leadAdmin]), JSON.stringify(tvIds(mineOwn)));
+    check("admin mine: no shares addressed to others", (await getSharedLeads(accMine.viewer)).length === 0);
+    check("admin: thread access to a teammate's lead whatever the view", await userMaySeeLead({ id: tvAdmin.userId, role: "agency_admin" } as never, leadTwo));
+    check("admin: answers a teammate's share (team access)", (await setShareState({ assignmentId: teammateShareRow.id, state: "contacted", viewer: accTeam.viewer })) === 1);
+    check("view parser: only 'mias' narrows", parseAgencyLeadView("mias", undefined) === "mine" && parseAgencyLeadView(undefined, "mias") === "mine" && parseAgencyLeadView("x", "mias") === "team" && parseAgencyLeadView(undefined, undefined) === "team");
+
+    // An agent who leaves the agency keeps nothing of it.
+    await db.update(agents).set({ agencyId: null }).where(eq(agents.id, tvAgent1.agentId));
+    const leftShares = await getSharedLeads({ agencyId: tvAgencyId, userId: tvAgent1.userId, onlyAgentId: tvAgent1.agentId });
+    check("agent who left: no shares of the old agency through a stale viewer", leftShares.length === 0);
+    const accLeft = await panelLeadAccess({ agencyId: null, user: { id: tvAgent1.userId, role: "agent" } }, "team");
+    check("agent who left: independent again, no agency restriction object", accLeft.onlyAgentId == null && accLeft.viewer.agencyId == null);
 
   } finally {
     // Clean up in FK order: leads before the listings they point at, listings
