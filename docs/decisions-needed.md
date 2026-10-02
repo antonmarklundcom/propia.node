@@ -468,6 +468,26 @@ idempotent — a `listings.expires_at` (and `expiry_reminded_at`) column, i.e. a
 no-op without Cloudflare vars), copy in `esEmail`/`enEmail`, recipient chain
 agent → agency → owner like the lead routing.
 
+## 2026-10-02 — Lead routing rules: four choices made without asking (founder, review)
+
+Built in `claude/lead-routing` (`docs/log/lead-routing.md`). Routing is off
+until you switch it on, so none of these does anything yet. Each is a small
+edit in `src/lib/lead-routing-rules.ts` if you want it the other way:
+
+1. **A lead on a Socio's own listing goes to that Socio**, before any zone
+   rule, and stays with you (not another Socio) while they have a share
+   unanswered for 24 h. The alternative, zone rules for everything, could hand
+   one partner's listing lead to a competitor.
+2. **One coverage per Socio** (several zones, operations, types, one price
+   band), rather than a free list of rules. Enough for "Socio X covers Luque
+   and San Lorenzo, casas and terrenos".
+3. **One US$ price band for all operations.** A Socio covering both venta
+   and alquiler with a band of 50 000–200 000 never gets a rental. Leave the
+   band empty for such a Socio, or ask for a band per operation.
+4. **Only listing leads are routed** (buy/rent/question). Sellers,
+   valuations, directory leads and "contanos qué buscás" briefs stay manual:
+   they have no zone the rules can read reliably.
+
 ## 2026-10-02 — Audit O10: roles and registration (founder)
 
 From `docs/log/audit-2026-10.md`. Nothing here was changed in code. Each one

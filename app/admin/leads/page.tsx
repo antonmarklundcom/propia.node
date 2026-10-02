@@ -47,6 +47,7 @@ import { listingUrl } from "@/lib/urls";
 import { VERTICALS } from "@/config/verticals";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
+import { getReplyTemplates } from "@/lib/site-settings";
 import { MatchPanel } from "./MatchPanel";
 import { SharePanel, ShareTargetSelect } from "./SharePanel";
 import { shareLeadsAction } from "./actions";
@@ -68,6 +69,7 @@ import { esInbox } from "@/i18n/es-e2";
 import { leadReplyRecipient, listLeadThreads } from "@/lib/inbox";
 import { LEAD_EMAIL_FLASH, leadEmailReplyAvailable } from "@/lib/inbox-access";
 import { LeadEmailThread } from "@/components/panel/EmailThread";
+import { markLeadsContactedAction } from "./actions";
 import { leadEmailAction, leadWhatsAppAction, suggestLeadReplyAction, suggestLeadWhatsAppReplyAction } from "./actions";
 import { LeadWhatsAppThread } from "@/components/panel/WhatsAppThread";
 import { getWhatsAppContacts, listLeadWhatsApp, type WhatsAppContact, type WhatsAppMessage } from "@/lib/whatsapp-inbox";
@@ -237,6 +239,8 @@ const MATCH_FLASH: Record<string, { text: string; error?: boolean }> = {
   spam_marked: { text: esPanel.spamFlashMarked },
   spam_restored: { text: esPanel.spamFlashRestored },
   spam_invalid: { text: esPanel.spamFlashInvalid, error: true },
+  contacted_none: { text: esTriage.bulkContacted.none, error: true },
+  contacted_invalid: { text: esTriage.bulkContacted.invalid, error: true },
   lead_deleted: { text: esPanel.deleteFlashDone },
   lead_delete_invalid: { text: esPanel.deleteFlashInvalid, error: true },
   ...LEAD_EMAIL_FLASH,
@@ -488,12 +492,27 @@ export default async function AdminLeadsPage({
   });
 
 
+  // Saved reply texts (Ajustes), offered above each reply box.
+  const replyTemplates = await getReplyTemplates();
+  const templatesFor = (lead: AdminLeadRow) =>
+    replyTemplates.length > 0
+      ? {
+          templates: replyTemplates,
+          vars: { nombre: lead.name, propiedad: lead.listingTitle },
+          labels: {
+            label: esTriage.templates.pickerLabel,
+            none: esTriage.templates.pickerNone,
+            replaceConfirm: esTriage.templates.replaceConfirm,
+          },
+        }
+      : undefined;
+
   const leadCard = (lead: AdminLeadRow) => (
     <article className="panel-card" key={lead.id} id={`lead-${lead.id}`}>
       <div className="panel-card__head">
         <div>
           <h3 className="panel-card__title">
-            {shareTargets.length > 0 && !isReport(lead) ? (
+            {!isReport(lead) ? (
               <input
                 type="checkbox"
                 name="leadIds"
@@ -637,6 +656,7 @@ export default async function AdminLeadsPage({
         replyTo={leadReplyRecipient(threads.get(lead.id) ?? [], lead.email)}
         unavailable={replyAvailable ? null : esInbox.thread.replyUnavailable}
         suggest={isAiReplyEnabled() ? suggestLeadReplyAction.bind(null, lead.id) : undefined}
+        templates={templatesFor(lead)}
       />
 
       <LeadWhatsAppThread
@@ -647,6 +667,7 @@ export default async function AdminLeadsPage({
         phone={normalizeWaPhone(lead.whatsapp)}
         lastInboundAt={waContacts.get(normalizeWaPhone(lead.whatsapp) ?? "")?.lastInboundAt ?? null}
         suggest={isAiReplyEnabled() ? suggestLeadWhatsAppReplyAction.bind(null, lead.id) : undefined}
+        templates={templatesFor(lead)}
       />
 
       <form action={updateLeadAction} className="panel-form">
@@ -760,7 +781,12 @@ export default async function AdminLeadsPage({
     </article>
   );
 
-  const flash = msg ? MATCH_FLASH[msg] : undefined;
+  const contactedN = /^contacted_(\d{1,3})$/.exec(msg ?? "");
+  const flash = contactedN
+    ? { text: esTriage.bulkContacted.done(Number(contactedN[1])), error: false }
+    : msg
+      ? MATCH_FLASH[msg]
+      : undefined;
 
   return (
     <>
@@ -1083,23 +1109,35 @@ export default async function AdminLeadsPage({
           </details>
         ) : null}
 
-        {rows.length > 0 && shareTargets.length > 0 ? (
+        {rows.length > 0 ? (
           <form id={BULK_SHARE_FORM} action={shareLeadsAction} className="panel-form panel-card">
             <input type="hidden" name="back" value={backHref} />
-            <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.shareBulkTitle}</span>
-              <ShareTargetSelect targets={shareTargets} />
-            </label>
-            <label className="panel-form__field" style={{ flexGrow: 1 }}>
-              <span className="auth-field__label">{esPanel.shareNoteLabel}</span>
-              <input className="auth-field__input" name="shareNote" maxLength={280} />
-            </label>
+            {shareTargets.length > 0 ? (
+              <>
+                <label className="panel-form__field">
+                  <span className="auth-field__label">{esPanel.shareBulkTitle}</span>
+                  <ShareTargetSelect targets={shareTargets} />
+                </label>
+                <label className="panel-form__field" style={{ flexGrow: 1 }}>
+                  <span className="auth-field__label">{esPanel.shareNoteLabel}</span>
+                  <input className="auth-field__input" name="shareNote" maxLength={280} />
+                </label>
+                <div className="panel-form__field panel-form__field--action">
+                  <button className="panel-btn panel-btn--primary" type="submit">
+                    {esPanel.shareBulkSubmit}
+                  </button>
+                </div>
+                <p className="panel-note" style={{ flexBasis: "100%" }}>{esPanel.shareHint}</p>
+              </>
+            ) : null}
             <div className="panel-form__field panel-form__field--action">
-              <button className="panel-btn panel-btn--primary" type="submit">
-                {esPanel.shareBulkSubmit}
+              {/* Same ticked cards (`leadIds`), a different action; the share
+                  fields above are `required`, so skip their validation. */}
+              <button className="panel-btn" type="submit" formAction={markLeadsContactedAction} formNoValidate>
+                {esTriage.bulkContacted.button}
               </button>
             </div>
-            <p className="panel-note" style={{ flexBasis: "100%" }}>{esPanel.shareHint}</p>
+            <p className="panel-note" style={{ flexBasis: "100%" }}>{esTriage.bulkContacted.hint}</p>
           </form>
         ) : null}
 

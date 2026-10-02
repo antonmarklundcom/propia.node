@@ -12,7 +12,7 @@ import {
   listAllListings,
   type ListingStatusValue,
 } from "@/lib/listing-edit";
-import { isPublisherKind, PUBLISHER_KINDS, type PublisherKind } from "@/lib/publisher-kind";
+import { PUBLISHER_KINDS, type PublisherKind } from "@/lib/publisher-kind";
 import { getHouseAgencyId } from "@/lib/site-settings";
 import { isSuperAdmin } from "@/lib/auth/roles";
 import { esTriage } from "@/i18n/es-triage";
@@ -22,6 +22,9 @@ import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
 import { BulkCount, BulkSelectAll } from "@/components/panel/BulkSelect";
 import { adminTabs } from "../tabs";
+import { listingFilterQuery, parseListingFilter } from "@/lib/admin-listing-export";
+import { getCoverThumbs } from "@/lib/admin-covers";
+import { CoverThumb } from "@/components/panel/CoverThumb";
 import { bulkListingAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -45,19 +48,13 @@ const FLASH: Record<string, string> = {
 /** The whole table is one form, so the bulk bar can live above the rows. */
 const BULK_FORM_ID = "admin-bulk";
 
-function isStatus(v: string | undefined): v is ListingStatusValue {
-  return Boolean(v) && (ADMIN_STATUSES as readonly string[]).includes(v!);
-}
-
 export default async function AdminListingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string; q?: string; quien?: string; msg?: string }>;
 }) {
   const [params, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
-  const status = isStatus(params.status) ? params.status : "all";
-  const q = params.q?.trim() ?? "";
-  const publisher: PublisherKind | undefined = isPublisherKind(params.quien) ? params.quien : undefined;
+  const { status, q, publisher } = parseListingFilter(params);
 
   const [badges, counts, publisherCounts, houseAgencyId, rows] = await Promise.all([
     getAdminBadges(user),
@@ -66,6 +63,9 @@ export default async function AdminListingsPage({
     getHouseAgencyId(),
     listAllListings({ status, q, publisher }),
   ]);
+  // One read for the covers of the rows on screen.
+  const covers = await getCoverThumbs(rows.map((r) => r.id));
+  const exportQuery = listingFilterQuery({ status, q, publisher });
   /** One URL builder, so the status chips, the publisher chips and the search keep each other. */
   const href = (p: { status?: string; quien?: PublisherKind | null }) => {
     const sp = new URLSearchParams();
@@ -95,6 +95,16 @@ export default async function AdminListingsPage({
         {flash ? <p className="panel-flash">{flash}</p> : null}
 
         <h2 className="panel-section__title">{esPanel.adminListingsTitle}</h2>
+        <p className="panel-export">
+          <a
+            className="panel-btn"
+            href={`/admin/propiedades/export${exportQuery ? `?${exportQuery}` : ""}`}
+            download
+          >
+            {esTriage.export.button}
+          </a>
+          <span className="panel-card__meta">{esTriage.export.hint}</span>
+        </p>
 
         <form action="/admin/propiedades" className="panel-form">
           {status !== "all" ? (
@@ -211,12 +221,13 @@ export default async function AdminListingsPage({
             </p>
 
           <div className="panel-table__wrap">
-            <table className="panel-table">
+            <table className="panel-table panel-table--stack">
               <thead>
                 <tr>
                   <th className="panel-table__check">
                     <BulkSelectAll formId={BULK_FORM_ID} />
                   </th>
+                  <th aria-label={esTriage.noCover}></th>
                   <th>Propiedad</th>
                   <th>Operación</th>
                   <th>Tipo</th>
@@ -237,6 +248,9 @@ export default async function AdminListingsPage({
                         aria-label={`Seleccionar ${row.title}`}
                       />
                     </td>
+                    <td className="panel-table__thumb">
+                      <CoverThumb src={covers.get(row.id)} />
+                    </td>
                     <td className="panel-table__name">
                       {/* The title opens the listing's full record (every
                           status); "Ver" opens the public page once published. */}
@@ -246,9 +260,9 @@ export default async function AdminListingsPage({
                         {row.locationName ? <span>{row.locationName}</span> : null}
                       </div>
                     </td>
-                    <td>{OPERATION_LABEL[row.operation] ?? row.operation}</td>
-                    <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
-                    <td>
+                    <td data-label="Operación">{OPERATION_LABEL[row.operation] ?? row.operation}</td>
+                    <td data-label="Tipo">{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
+                    <td data-label={esTriage.publisherColumn}>
                       <span className={`panel-kind panel-kind--${row.publisherKind}`}>
                         {esTriage.publisher[row.publisherKind]}
                       </span>
@@ -256,13 +270,13 @@ export default async function AdminListingsPage({
                         <span>{row.agencyName ?? row.publisherName ?? "—"}</span>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Precio">
                       {formatPrice({
                         priceAmount: row.priceAmount,
                         priceCurrency: row.priceCurrency,
                       })}
                     </td>
-                    <td>
+                    <td data-label={esPanel.statusLabel}>
                       <span className={`panel-status panel-status--${row.status}`}>
                         {listingStatusLabel[row.status] ?? row.status}
                       </span>

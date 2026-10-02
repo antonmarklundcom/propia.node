@@ -1116,6 +1116,33 @@ export async function updateLeadFollowUp(params: {
 }
 
 /**
+ * Bulk "Marcar contactadas": `new` -> `contacted` for the given leads, and
+ * nothing else — a lead already contacted, closed or spam keeps its state, and
+ * the note is untouched. Staff are limited to the internal lane exactly like
+ * `updateLeadFollowUp()`. Returns the ids that actually changed, for the
+ * history line of each.
+ */
+export async function markLeadsContacted(params: {
+  ids: readonly number[];
+  internalOnly: boolean;
+}): Promise<number[]> {
+  if (params.ids.length === 0) return [];
+  const where = and(
+    inArray(leads.id, [...params.ids]),
+    eq(leads.status, "new"),
+    params.internalOnly ? eq(leads.routedTo, "internal") : undefined,
+  );
+  const due = await db.select({ id: leads.id }).from(leads).where(where);
+  if (due.length === 0) return [];
+  const ids = due.map((r) => r.id);
+  await db
+    .update(leads)
+    .set({ status: "contacted" })
+    .where(and(inArray(leads.id, ids), eq(leads.status, "new")));
+  return ids;
+}
+
+/**
  * Lead count per capturing door, for the "Sitio" chips on /admin/leads. Keyed
  * by the raw `leads.vertical` value, so a door that has since been renamed or
  * removed still shows up rather than hiding its leads from the filter.
