@@ -9,12 +9,22 @@
  * choose. Reading the first entry (the common mistake) would let an attacker
  * rotate a fake IP per request and walk straight through anything keyed on it.
  *
+ * Behind the Cloudflare Worker (docs/hosting-process-cap.md) the last hop is a
+ * Cloudflare address shared by every visitor, so the Worker sends the
+ * visitor's own `cf-connecting-ip` as `x-client-ip` — read only on a request
+ * `fromTrustedProxy()` vouches for, never on one anybody could have sent.
+ *
  * Used for rate-limit keys only (audit F26, F28) — never for authorisation.
  */
+import { fromTrustedProxy } from "./proxy-trust";
 
 const MAX_LEN = 64;
 
 export function clientIpFrom(h: { get(name: string): string | null }): string {
+  if (fromTrustedProxy(h)) {
+    const viaWorker = h.get("x-client-ip")?.trim();
+    if (viaWorker) return viaWorker.slice(0, MAX_LEN);
+  }
   const forwarded = h.get("x-forwarded-for");
   if (forwarded) {
     const hops = forwarded.split(",").map((s) => s.trim()).filter(Boolean);

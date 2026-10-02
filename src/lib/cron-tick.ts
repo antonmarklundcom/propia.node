@@ -32,7 +32,8 @@ import { runAnalytics } from "@/lib/ops/analytics";
 import { runSavedSearches } from "@/lib/ops/saved-searches";
 import { runLeadDigest } from "@/lib/ops/lead-digest";
 import { runGeo } from "@/lib/ops/geo";
-import { runLiveCheck } from "@/lib/ops/live-check";
+import { liveCheckEnabled, runLiveCheck } from "@/lib/ops/live-check";
+import { withLock } from "@/lib/ops/process-lock";
 import { runSessions } from "@/lib/ops/sessions";
 import { runTranslate } from "@/lib/ops/translate";
 import { finishOpsRun, lastSuccessfulRunAt, startOpsRun } from "@/lib/ops/runs";
@@ -55,6 +56,9 @@ interface CronTask {
  */
 const TRANSLATE_PER_TICK = 15;
 const TRANSLATE_BUDGET_MS = 35_000;
+
+/** A check:live lock older than this belongs to a process that died mid-run. */
+const LIVE_CHECK_LOCK_STALE_MS = 10 * 60 * 1000;
 
 /** "Once a day" = no successful real run in the last 20 h. */
 const DAILY_MS = 20 * 60 * 60 * 1000;
@@ -132,9 +136,17 @@ const TASKS: CronTask[] = [
   {
     // Loads each live door's key pages once a day; alerts the operator when
     // one stops answering 200. The same check also runs after every deploy
-    // (instrumentation.ts).
+    // (instrumentation.ts). `LIVE_CHECK=0` switches this run off too, and the
+    // cross-process lock means two copies of the app answering two ticks (or
+    // a tick and a deploy) never run it at once (docs/hosting-process-cap.md).
     name: "live-check",
-    run: () => daily("check:live", () => runLiveCheck({ dry: false, reason: "revisión diaria" })),
+    run: async () => {
+      if (!liveCheckEnabled()) return "skipped: LIVE_CHECK=0";
+      const r = await withLock("live-check", LIVE_CHECK_LOCK_STALE_MS, () =>
+        daily("check:live", () => runLiveCheck({ dry: false, reason: "revisión diaria" })),
+      );
+      return r ?? "skipped: another process is running check:live";
+    },
   },
   {
     // Expired `sessions` rows; nothing a visitor reads, so no cache tag.
@@ -168,8 +180,9 @@ const TASKS: CronTask[] = [
  * hour's, or a manual POST) cannot run the same job twice at once.
  *
  * **One web process only.** This is module state: it does not see a second
- * Node process (if Passenger ever starts one), a CLI run from hPanel, or a
- * button on /admin/operaciones. Those still overlap as they always could; the
+ * Node process (Hostinger's launcher does start them —
+ * docs/hosting-process-cap.md), a CLI run from hPanel, or a button on
+ * /admin/operaciones; `check:live` alone also takes a cross-process file lock. Those still overlap as they always could; the
  * jobs are written to tolerate it (translate re-checks each row's hash, geo and
  * sessions are idempotent), this just stops the tick piling up on itself.
  */

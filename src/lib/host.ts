@@ -6,17 +6,31 @@
  *
  * Pure and edge-safe: callable from middleware (web Headers) and from
  * next/headers' ReadonlyHeaders alike.
+ *
+ * `x-forwarded-host` is only believed when `src/lib/proxy-trust.ts` says so:
+ * always while `ORIGIN_PROXY_SECRET` is unset, and only from the Cloudflare
+ * Worker once it is (docs/hosting-process-cap.md).
  */
+import { mayReadForwardedHost } from "./proxy-trust";
+
+/**
+ * The host the visitor typed, as sent (case, `www.` and port kept), first
+ * entry of a proxy list. For links that must open in a browser
+ * (`request-origin.ts`); everything else wants `rawHostFrom`.
+ */
+export function visitorHostFrom(h: {
+  get(name: string): string | null;
+}): string | null {
+  const forwarded = mayReadForwardedHost(h) ? h.get("x-forwarded-host") : null;
+  const raw = (forwarded ?? h.get("host") ?? "").split(",")[0].trim();
+  return raw || null;
+}
 
 /** Lowercased, www-stripped first host of the chain, with port kept. */
 export function rawHostFrom(h: {
   get(name: string): string | null;
 }): string | null {
-  const raw = (h.get("x-forwarded-host") ?? h.get("host") ?? "")
-    .split(",")[0]
-    .trim()
-    .toLowerCase()
-    .replace(/^www\./, "");
+  const raw = (visitorHostFrom(h) ?? "").toLowerCase().replace(/^www\./, "");
   return raw || null;
 }
 

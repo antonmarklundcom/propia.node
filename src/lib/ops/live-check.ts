@@ -48,6 +48,15 @@ export interface LiveCheckOptions extends OpsOptions {
   reason?: string;
 }
 
+/**
+ * `LIVE_CHECK=0` turns off BOTH automatic runs — the one after a deploy
+ * (`instrumentation-node.ts`) and the daily one on the tick
+ * (`src/lib/cron-tick.ts`). The /admin button and the CLI still work.
+ */
+export function liveCheckEnabled(): boolean {
+  return process.env.LIVE_CHECK !== "0";
+}
+
 /** The hosts to check: `LIVE_CHECK_HOSTS` (comma list) when set, else every live door. */
 export function liveHosts(): string[] {
   const env = process.env.LIVE_CHECK_HOSTS?.trim();
