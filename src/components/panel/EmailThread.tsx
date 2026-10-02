@@ -8,6 +8,7 @@
  * remote images off); text is shown as text. Attachments link to the one
  * authenticated download route.
  */
+import { TemplatePicker, type TemplatePickerProps } from "./TemplatePicker";
 import type { ReactNode } from "react";
 import { esInbox } from "@/i18n/es-e2";
 import { emailFrameDocument, emailHtmlForView, hasRemoteImages } from "@/lib/inbox-html";
@@ -99,6 +100,8 @@ export function LeadEmailThread(props: {
    * suggestions are off (`isAiReplyEnabled()`), which keeps the plain box.
    */
   suggest?: () => Promise<SuggestOutcome>;
+  /** Saved reply texts ("Plantilla" select above the box); omitted = no select. */
+  templates?: TemplatePickerProps;
 }): ReactNode {
   const { messages } = props;
   const unread = messages.filter((m) => m.direction === "in" && !m.readAt).length;
@@ -132,6 +135,7 @@ export function LeadEmailThread(props: {
         <form action={props.action} className={`panel-form ${styles.reply}`}>
           {hidden}
           <input type="hidden" name="mode" value="reply" />
+          {props.templates ? <TemplatePicker {...props.templates} /> : null}
           <label className="panel-form__field" style={{ flexBasis: "100%" }}>
             <span className="auth-field__label">{t.replyLabel}</span>
             {props.suggest ? (

@@ -14,6 +14,7 @@ import { unstable_cache } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
+import { parseReplyTemplates } from "./reply-templates";
 import { CACHE_TAGS, CACHE_TTL, revalidateSettings, singleFlight } from "./cache";
 
 /**
@@ -38,6 +39,8 @@ export const SETTING_KEYS = {
   // Independent agents the operator works with as partners ("Socio" in
   // /admin/agentes): comma-separated agents.id. Unset = none.
   partnerAgentIds: "partner_agent_ids",
+  // Saved reply texts for /admin/leads (src/lib/reply-templates.ts): JSON array of strings.
+  replyTemplates: "reply_templates",
 } as const;
 
 /** Uncached — for scripts and jobs, which have no Next.js cache around them. */
@@ -135,6 +138,16 @@ export async function getPartnerAgentIds(opts: { uncached?: boolean } = {}): Pro
     }
   }
   return parsePartnerAgentIds((await readSiteSettings())[SETTING_KEYS.partnerAgentIds]);
+}
+
+/** The saved reply texts the lead cards' pickers offer (empty when none or unreadable). */
+export async function getReplyTemplates(opts: { uncached?: boolean } = {}): Promise<string[]> {
+  try {
+    const s = opts.uncached ? await readSiteSettingsRaw() : await readSiteSettings();
+    return parseReplyTemplates(s[SETTING_KEYS.replyTemplates]);
+  } catch {
+    return [];
+  }
 }
 
 /** What `publisherKindSql()` needs: the house agency and the partner agents. */

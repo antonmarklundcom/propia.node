@@ -25,7 +25,7 @@ import {
   proposeMatches,
   MAX_MATCHES_PER_LEAD,
 } from "@/lib/matching";
-import { deleteLead, setLeadSpam, updateLeadFollowUp, type LeadFollowUp } from "@/lib/panel-queries";
+import { deleteLead, markLeadsContacted, setLeadSpam, updateLeadFollowUp, type LeadFollowUp } from "@/lib/panel-queries";
 import {
   revokeShare,
   shareLeads,
@@ -142,6 +142,24 @@ export async function updateLeadAction(formData: FormData): Promise<void> {
   });
   revalidatePath(ROUTE);
   redirect(target);
+}
+
+/**
+ * Bulk "Marcar contactadas" on the cards ticked in the bulk bar (the same
+ * `leadIds` checkboxes the share form reads): `new` -> `contacted`, staff on
+ * the internal lane only. One history line per lead, back to the same view.
+ */
+export async function markLeadsContactedAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const target = backTarget(formData);
+  const ids = [...new Set(formData.getAll("leadIds").map(toId).filter(Boolean))].slice(0, 500);
+  if (ids.length === 0) redirect(withMsg(target, "contacted_invalid"));
+  const changed = await markLeadsContacted({ ids, internalOnly: isStaff(user.role) });
+  for (const id of changed) {
+    await recordAdminEvent(user.id, "lead.contacted", "lead", id, { bulk: "marcar_contactadas" });
+  }
+  revalidatePath(ROUTE);
+  redirect(withMsg(target, changed.length > 0 ? `contacted_${Math.min(changed.length, 500)}` : "contacted_none"));
 }
 
 /**
