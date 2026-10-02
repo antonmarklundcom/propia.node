@@ -10,7 +10,10 @@ import {
 } from "@/lib/team-queries";
 import { esPanel } from "@/i18n/es";
 import { adminTabs } from "../tabs";
-import { moveAgentAction } from "./actions";
+import { moveAgentAction, setAgentPartnerAction } from "./actions";
+import { isSuperAdmin as isSuperAdminRole } from "@/lib/auth/roles";
+import { getPartnerAgentIds } from "@/lib/site-settings";
+import { esTriage } from "@/i18n/es-triage";
 
 export const metadata: Metadata = {
   title: `Agentes`,
@@ -24,6 +27,8 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   last_admin: { text: esPanel.adminAgentLastAdminError, error: true },
   protected: { text: esPanel.adminAgentProtectedError, error: true },
   invalid: { text: esPanel.profileInvalid, error: true },
+  partner_on: { text: esTriage.agentPartner.flashOn },
+  partner_off: { text: esTriage.agentPartner.flashOff },
 };
 
 function roleName(role: string | null): string {
@@ -48,11 +53,14 @@ export default async function AdminAgentsPage({
   searchParams: Promise<{ msg?: string }>;
 }) {
   const [{ msg }, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
-  const [badges, agents, agencies] = await Promise.all([
+  const superAdmin = isSuperAdminRole(user.role);
+  const [badges, agents, agencies, partnerIds] = await Promise.all([
     getAdminBadges(user),
     listAgentsWithAgency(),
     listAgenciesWithAdminCount(),
+    getPartnerAgentIds({ uncached: true }),
   ]);
+  const partners = new Set(partnerIds);
 
   const flash = msg ? FLASH[msg] : undefined;
   const orphanAgencies = agencies.filter((a) => a.adminCount === 0);
@@ -74,6 +82,7 @@ export default async function AdminAgentsPage({
 
         <h2 className="panel-section__title">{esPanel.adminAgentsTitle}</h2>
         <p className="panel-card__meta">{esPanel.adminAgentsHint}</p>
+        <p className="panel-note">{esTriage.agentPartner.hint}</p>
 
         {/* Never silently invent a responsable when an agent is moved in —
             name the agencies that have none and let the founder decide. */}
@@ -89,7 +98,13 @@ export default async function AdminAgentsPage({
           <p className="panel-empty">{esPanel.adminAgentsEmpty}</p>
         ) : (
           agents.map((agent) => (
-            <AgentCard key={agent.agentId} agent={agent} agencies={agencies} />
+            <AgentCard
+              key={agent.agentId}
+              agent={agent}
+              agencies={agencies}
+              partner={partners.has(agent.agentId)}
+              canSetPartner={superAdmin}
+            />
           ))
         )}
       </main>
@@ -100,26 +115,47 @@ export default async function AdminAgentsPage({
 function AgentCard({
   agent,
   agencies,
+  partner,
+  canSetPartner,
 }: {
   agent: AdminAgentRow;
   agencies: AgencyAdminCount[];
+  /** Listed in `partner_agent_ids` (only counts while independent). */
+  partner: boolean;
+  /** Super-admin only. */
+  canSetPartner: boolean;
 }) {
+  const independent = agent.agencyId == null;
   // A super-admin's own agents row is listed for completeness but never
   // re-roled from here (moveAgentToAgency refuses it too).
   const isSuperAdmin = agent.role === "admin";
 
   return (
-    <article className="panel-card">
+    <article className="panel-card" id={`agent-${agent.agentId}`}>
       <div className="panel-card__head">
         <div>
           <h3 className="panel-card__title">{agent.name}</h3>
           <div className="panel-card__meta">
+            {partner && independent ? (
+              <span className="panel-kind panel-kind--partner">{esTriage.publisher.partner}</span>
+            ) : null}
             <span>{agent.email ?? esPanel.teamRoleNoLogin}</span>
             <span>{agent.agencyName ?? esPanel.agencyNone}</span>
             <span>{roleName(agent.role)}</span>
             {agent.whatsapp ? <span>{agent.whatsapp}</span> : null}
           </div>
         </div>
+        {canSetPartner && (independent || partner) ? (
+          <div className="panel-card__actions">
+            <form action={setAgentPartnerAction}>
+              <input type="hidden" name="agentId" value={agent.agentId} />
+              <input type="hidden" name="partner" value={partner ? "0" : "1"} />
+              <button className={`panel-btn${partner ? "" : " panel-btn--primary"}`} type="submit">
+                {partner ? esTriage.agentPartner.unset : esTriage.agentPartner.set}
+              </button>
+            </form>
+          </div>
+        ) : null}
       </div>
 
       <div className="panel-card__body">

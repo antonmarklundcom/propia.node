@@ -68,6 +68,7 @@ export const enA1 = {
     "Routed to",
     "Property",
     "Property URL",
+    "Published by",
     "Internal note",
     "Source",
   ],

@@ -50,7 +50,7 @@ function VerifiedPill({ on }: { on: boolean }) {
 const PLAN_OPTIONS: { value: "free" | "destacado" | "partner"; label: string }[] = [
   { value: "free", label: "Gratis" },
   { value: "destacado", label: "Destacado" },
-  { value: "partner", label: "Partner" },
+  { value: "partner", label: "Socio" },
 ];
 
 /**

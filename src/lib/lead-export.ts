@@ -17,8 +17,10 @@ import { esTriage } from "@/i18n/es-triage";
 import type { EditScope } from "@/lib/listing-edit";
 import {
   getPanelLeads,
+  isLeadPublisherKind,
   listAllLeads,
   type AdminLeadRow,
+  type LeadPublisherKind,
   type LeadFollowUp,
   type LeadRow,
 } from "@/lib/panel-queries";
@@ -154,6 +156,31 @@ export interface AdminLeadFilter {
   contactKind?: ContactKind;
   /** `?orden=`: newest first unless asked otherwise. */
   sort: LeadSort;
+  /** Who published the lead's listing (`?publico=`, src/lib/publisher-kind.ts). */
+  publisher?: LeadPublisherKind;
+  /**
+   * `?vista=`: "mias" (default) is the internal lane only — the operator's own
+   * leads, the same rule as the Consultas tab badge — "todas" every lane.
+   * Staff see the internal lane whatever this says.
+   */
+  view: AdminLeadView;
+}
+
+export const ADMIN_LEAD_VIEWS = ["mias", "todas"] as const;
+export type AdminLeadView = (typeof ADMIN_LEAD_VIEWS)[number];
+/** The cookie that remembers the operator's last view (set client-side). */
+export const ADMIN_LEAD_VIEW_COOKIE = "admin_leads_vista";
+
+/** `?vista=` wins, then the remembered cookie, then "mias". */
+export function parseAdminLeadView(param: string | undefined, cookie: string | undefined): AdminLeadView {
+  if (param === "mias" || param === "todas") return param;
+  if (cookie === "mias" || cookie === "todas") return cookie;
+  return "mias";
+}
+
+/** The lane rule every read on /admin/leads uses: staff, or the "Mis consultas" view. */
+export function adminLeadsInternalOnly(view: AdminLeadView, staff: boolean): boolean {
+  return staff || view === "mias";
 }
 
 /**
@@ -171,8 +198,11 @@ export function parseAdminLeadFilter(
     fuente?: string;
     quien?: string;
     orden?: string;
+    publico?: string;
+    vista?: string;
   },
   sites: readonly string[],
+  viewCookie?: string,
 ): AdminLeadFilter {
   return {
     type: ADMIN_LEAD_TYPES.includes(sp.tipo as AdminLeadType) ? (sp.tipo as AdminLeadType) : "all",
@@ -184,6 +214,8 @@ export function parseAdminLeadFilter(
     reports: sp.fuente === "reportes" || undefined,
     contactKind: isContactKind(sp.quien) ? sp.quien : undefined,
     sort: isLeadSort(sp.orden) ? sp.orden : "recent",
+    publisher: isLeadPublisherKind(sp.publico) ? sp.publico : undefined,
+    view: parseAdminLeadView(sp.vista, viewCookie),
   };
 }
 
@@ -198,12 +230,16 @@ export function adminLeadFilterQuery(f: AdminLeadFilter): string {
   if (f.reports) sp.set("fuente", "reportes");
   if (f.contactKind) sp.set("quien", f.contactKind);
   if (f.sort !== "recent") sp.set("orden", f.sort);
+  if (f.publisher) sp.set("publico", f.publisher);
+  // Always spelled: the export must follow the page even if the cookie changes.
+  sp.set("vista", f.view);
   return sp.toString();
 }
 
 /**
  * The rows /admin/leads lists for this filter. `internalOnly` comes from the
- * authenticated role (staff), never from the request.
+ * authenticated role (staff), never from the request; the filter's view can
+ * only narrow it further.
  */
 export function adminLeadRows(filter: AdminLeadFilter, internalOnly: boolean): Promise<AdminLeadRow[]> {
   return listAllLeads({
@@ -214,8 +250,9 @@ export function adminLeadRows(filter: AdminLeadFilter, internalOnly: boolean): P
     q: filter.q,
     where: filter.reports ? isReportLead() : undefined,
     contactKind: filter.contactKind,
+    publisher: filter.publisher,
     sort: filter.sort,
-    internalOnly,
+    internalOnly: adminLeadsInternalOnly(filter.view, internalOnly),
   });
 }
 
@@ -247,6 +284,7 @@ export function adminLeadsCsv(rows: readonly AdminLeadRow[], origin: string): st
             ? `${t.csvRouted.owner}: ${l.ownerName ?? l.ownerWhatsapp}`
             : (t.csvRouted[l.routedTo] ?? l.routedTo)),
       ...propertyCells(l, origin),
+      esTriage.leadPublisherPill(l.publisherKind, l.publisherName),
       l.note,
       l.utm?.source ?? null,
     ]),

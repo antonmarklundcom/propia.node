@@ -6,6 +6,8 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import {
   countLeadsByContactKind,
+  countLeadsByPublisher,
+  LEAD_PUBLISHER_KINDS,
   findProfessionalsByPhoneKey,
   countLeadsByStatus,
   countLeadsByPhoneKey,
@@ -19,8 +21,14 @@ import {
   type AdminLeadRow,
   type LeadFollowUp,
 } from "@/lib/panel-queries";
+import { cookies } from "next/headers";
+import { RememberView } from "./RememberView";
 import {
   ADMIN_LEAD_TYPES,
+  ADMIN_LEAD_VIEW_COOKIE,
+  ADMIN_LEAD_VIEWS,
+  adminLeadsInternalOnly,
+  parseAdminLeadView,
   adminLeadFilterQuery,
   adminLeadRows,
   FOLLOW_UP,
@@ -151,8 +159,12 @@ function leadsHref(p: {
   fuente?: string;
   quien?: string;
   orden?: string;
+  publico?: string;
+  vista?: string;
 }): string {
   const sp = new URLSearchParams();
+  if (p.vista) sp.set("vista", p.vista);
+  if (p.publico) sp.set("publico", p.publico);
   if (p.fuente) sp.set("fuente", p.fuente);
   if (p.quien) sp.set("quien", p.quien);
   if (p.orden) sp.set("orden", p.orden);
@@ -338,15 +350,21 @@ export default async function AdminLeadsPage({
     negocio?: string;
     quien?: string;
     orden?: string;
+    publico?: string;
+    vista?: string;
   }>;
 }) {
-  const [{ tipo, sitio, estado, tel, q, msg, agrupar, fuente, negocio, quien, orden }, user] = await Promise.all([
-    searchParams,
-    requireStaffOrAbove(),
-  ]);
+  const [{ tipo, sitio, estado, tel, q, msg, agrupar, fuente, negocio, quien, orden, publico, vista }, user, jar] =
+    await Promise.all([searchParams, requireStaffOrAbove(), cookies()]);
 
-  const internalOnly = isStaff(user.role);
-  const [badges, recentLeads, counts, siteCounts, statusCounts, reportCount, kindCounts] =
+  // Staff are internal-only by role. Everyone else picks "Mis consultas"
+  // (the internal lane, what the tab badge counts) or "Todas"; the choice is
+  // remembered in a cookie and every count, list and export below follows it.
+  const staffOnly = isStaff(user.role);
+  const viewCookie = jar.get(ADMIN_LEAD_VIEW_COOKIE)?.value;
+  const view = parseAdminLeadView(vista, viewCookie);
+  const internalOnly = adminLeadsInternalOnly(view, staffOnly);
+  const [badges, recentLeads, counts, siteCounts, statusCounts, reportCount, kindCounts, publisherCounts] =
     await Promise.all([
       getAdminBadges(user),
       countRecentLeads(24, internalOnly),
@@ -355,13 +373,15 @@ export default async function AdminLeadsPage({
       countLeadsByStatus(internalOnly),
       countReportLeads(internalOnly),
       countLeadsByContactKind(internalOnly),
+      countLeadsByPublisher(internalOnly),
     ]);
   // One parser for the page and its CSV export (src/lib/lead-export.ts): a
   // site is only a value some lead actually carries, a number only a
   // well-formed key — never free text.
   const filter = parseAdminLeadFilter(
-    { tipo, sitio, estado, tel, q, fuente, quien, orden },
+    { tipo, sitio, estado, tel, q, fuente, quien, orden, publico, vista },
     siteCounts.map((s) => s.vertical),
+    viewCookie,
   );
   const {
     type: activeType,
@@ -372,16 +392,23 @@ export default async function AdminLeadsPage({
   const reportsOnly = filter.reports === true;
   const activeKind = filter.contactKind;
   const activeSort = filter.sort;
+  const activePublisher = filter.publisher;
   /**
    * Every filter link on the page keeps "Quién escribe" and the sort, so
    * picking a type or a site never silently drops them.
    */
   const linkTo = (p: Parameters<typeof leadsHref>[0]) =>
-    leadsHref({ quien: activeKind, orden: activeSort === "recent" ? undefined : activeSort, ...p });
+    leadsHref({
+      vista: view,
+      quien: activeKind,
+      publico: activePublisher,
+      orden: activeSort === "recent" ? undefined : activeSort,
+      ...p,
+    });
   // Superadmin 7: one card per WhatsApp number. Display only — every lead
   // keeps its own row, status, note and shares.
   const grouped = agrupar === "1";
-  const rows = await adminLeadRows(filter, internalOnly);
+  const rows = await adminLeadRows(filter, staffOnly);
   const exportQuery = adminLeadFilterQuery(filter);
   // Which numbers on this page wrote more than once (one GROUP BY), who each
   // lead is shared with, the partners it could be shared with, and — for the
@@ -487,6 +514,13 @@ export default async function AdminLeadsPage({
             <span>
               {LEAD_TYPE_LABEL[lead.leadType] ?? lead.leadType}
             </span>
+            <Link
+              className={`panel-kind panel-kind--${lead.publisherKind === "no_listing" ? "none" : lead.publisherKind}`}
+              href={linkTo({ publico: lead.publisherKind })}
+              title={esTriage.leadPublisherFilterLabel}
+            >
+              {esTriage.leadPublisherPill(lead.publisherKind, lead.publisherName)}
+            </Link>
             <Link
               className={`panel-kind panel-kind--${lead.contactKind}`}
               href={linkTo({ quien: lead.contactKind })}
@@ -745,8 +779,34 @@ export default async function AdminLeadsPage({
 
         <h2 className="panel-section__title">{esPanel.adminLeadsTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 13, marginTop: 0 }}>
-          {internalOnly ? esPanel.staffLeadsHint : esPanel.adminLeadsHint}
+          {staffOnly ? esPanel.staffLeadsHint : esPanel.adminLeadsHint}
         </p>
+        {staffOnly ? null : (
+          <>
+            <RememberView name={ADMIN_LEAD_VIEW_COOKIE} value={view} />
+            <nav className="panel-chips" aria-label={esTriage.leadViewLabel}>
+              {ADMIN_LEAD_VIEWS.map((v) => (
+                <Link
+                  key={v}
+                  href={linkTo({
+                    vista: v,
+                    tipo: activeType,
+                    sitio: activeSite,
+                    estado: activeStatus,
+                    q,
+                    agrupar: grouped,
+                    fuente: reportsOnly ? "reportes" : undefined,
+                  })}
+                  className={`panel-chip${v === view ? " panel-chip--active" : ""}`}
+                  aria-current={v === view ? "page" : undefined}
+                >
+                  {esTriage.leadView[v]}
+                </Link>
+              ))}
+              <span className="panel-chips__label">{esTriage.leadViewHint[view]}</span>
+            </nav>
+          </>
+        )}
         {/* Says what the tab badge is counting — a bare number next to
             "Consultas" would read as the all-time total. */}
         {badges.leads > 0 ? (
@@ -829,6 +889,27 @@ export default async function AdminLeadsPage({
           ))}
         </nav>
 
+        {/* Who published the lead's listing (src/lib/publisher-kind.ts). */}
+        <nav className="panel-chips" aria-label={esTriage.leadPublisherFilterLabel}>
+          <span className="panel-chips__label">{esTriage.leadPublisherFilterLabel}</span>
+          <Link
+            href={linkTo({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped, publico: "" })}
+            className={`panel-chip${activePublisher ? "" : " panel-chip--active"}`}
+          >
+            {esTriage.contactAll}
+          </Link>
+          {LEAD_PUBLISHER_KINDS.filter((k) => publisherCounts[k] > 0 || k === activePublisher).map((k) => (
+            <Link
+              key={k}
+              href={linkTo({ tipo: activeType, sitio: activeSite, estado: activeStatus, q, agrupar: grouped, publico: k })}
+              className={`panel-chip${k === activePublisher ? " panel-chip--active" : ""}`}
+            >
+              {esTriage.leadPublisherChip[k]}
+              <span className="panel-tab__count">{publisherCounts[k]}</span>
+            </Link>
+          ))}
+        </nav>
+
         {/* Which door captured the lead. Counts are per site across every
             type, the same way the type chips count across every site. */}
         {siteCounts.length > 1 ? (
@@ -906,6 +987,8 @@ export default async function AdminLeadsPage({
           {grouped ? <input type="hidden" name="agrupar" value="1" /> : null}
           {reportsOnly ? <input type="hidden" name="fuente" value="reportes" /> : null}
           {activeKind ? <input type="hidden" name="quien" value={activeKind} /> : null}
+          {activePublisher ? <input type="hidden" name="publico" value={activePublisher} /> : null}
+          <input type="hidden" name="vista" value={view} />
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">
               {esPanel.adminLeadsSearchLabel}

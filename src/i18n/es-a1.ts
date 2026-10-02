@@ -76,6 +76,7 @@ export const esA1 = {
     "Derivada a",
     "Propiedad",
     "URL de la propiedad",
+    "Publicó",
     "Nota interna",
     "Origen",
   ],

@@ -1,5 +1,7 @@
 "use client";
 
+import { readVisitUtm } from "@/lib/visit-source";
+
 import { useState } from "react";
 import { ContactRoleField } from "@/components/ContactRoleField";
 import { getDictionary, type Locale } from "@/i18n";
@@ -226,12 +228,6 @@ export function VenderForm({
 }
 
 function readUtm(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const p = new URLSearchParams(window.location.search);
-  const utm: Record<string, string> = {};
-  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_content"]) {
-    const v = p.get(k);
-    if (v) utm[k] = v;
-  }
-  return utm;
+  // URL utm first, else the visit's stored source (src/lib/visit-source.ts).
+  return readVisitUtm();
 }

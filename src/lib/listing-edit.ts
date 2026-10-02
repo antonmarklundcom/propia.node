@@ -19,7 +19,7 @@ import { toPriceUsd } from "@/lib/import/normalize";
 import { getUsdToPygRate } from "@/lib/fx";
 import type { Operation, PropertyType } from "@/lib/import/types";
 import { containsPattern } from "@/lib/sql-like";
-import { getHouseAgencyId } from "@/lib/site-settings";
+import { getPublisherSettings } from "@/lib/site-settings";
 import {
   PUBLISHER_KINDS,
   publisherAgent,
@@ -210,7 +210,7 @@ export async function listAllListings(params: {
   limit?: number;
 }): Promise<AdminListingRow[]> {
   const filters: SQL[] = [];
-  const kind = publisherKindSql(await getHouseAgencyId());
+  const kind = publisherKindSql(await getPublisherSettings());
   if (params.publisher && PUBLISHER_KINDS.includes(params.publisher)) {
     filters.push(sql`${kind} = ${sql.raw(`'${params.publisher}'`)}`);
   }
@@ -261,7 +261,7 @@ export async function listAllListings(params: {
 export async function countListingsByPublisher(
   status?: ListingStatusValue | "all",
 ): Promise<Record<PublisherKind, number>> {
-  const kind = publisherKindSql(await getHouseAgencyId());
+  const kind = publisherKindSql(await getPublisherSettings());
   const rows = await db
     .select({ kind, n: sql<number>`count(*)` })
     .from(listings)

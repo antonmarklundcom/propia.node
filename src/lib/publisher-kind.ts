@@ -9,8 +9,10 @@
  *
  * - `own`      the agency picked as "Mi inmobiliaria" in /admin/ajustes, or a
  *              listing with no agency published by an admin/staff account;
- * - `partner`  an agency on the "Partner" plan (/admin/inmobiliarias), or a
- *              verified independent agent — the people leads are shared with;
+ * - `partner`  an agency on the partner plan ("Socio", /admin/inmobiliarias), or
+ *              an independent agent marked "Socio" in /admin/agentes (site
+ *              setting `partner_agent_ids`). Verification alone is not enough:
+ *              a verified agent is trusted, not necessarily a partner;
  * - `agency`   any other agency (or an agency/developer account with none);
  * - `agent`    an independent agent who is not a partner;
  * - `private`  a private owner who published through /publicar (FSBO);
@@ -36,16 +38,24 @@ export const publisherAgent = alias(agents, "publisher_agent");
 /** The account that created the listing (`listings.owner_user_id`). */
 export const publisherOwner = alias(users, "publisher_owner");
 
-export function publisherKindSql(houseAgencyId: number | null): SQL<PublisherKind> {
-  // A validated integer spelled raw, not bound: the expression is SELECTed and
+export function publisherKindSql(settings: {
+  houseAgencyId: number | null;
+  partnerAgentIds?: readonly number[];
+}): SQL<PublisherKind> {
+  const { houseAgencyId } = settings;
+  // Validated integers spelled raw, not bound: the expression is SELECTed and
   // GROUPed BY, and ONLY_FULL_GROUP_BY cannot see two placeholders as one.
+  const partnerIds = (settings.partnerAgentIds ?? []).filter((id) => Number.isSafeInteger(id) && id > 0);
+  const partnerAgent = partnerIds.length
+    ? sql` OR (${listings.agencyId} IS NULL AND ${listings.agentId} IN (${sql.raw(partnerIds.map(String).join(", "))}))`
+    : sql``;
   const house =
     houseAgencyId && Number.isInteger(houseAgencyId) && houseAgencyId > 0
       ? sql`${listings.agencyId} = ${sql.raw(String(houseAgencyId))} OR `
       : sql``;
   return sql<PublisherKind>`CASE
     WHEN ${house}(${listings.agencyId} IS NULL AND ${publisherOwner.role} IN ('admin', 'staff')) THEN 'own'
-    WHEN ${agencies.plan} = 'partner' OR (${listings.agencyId} IS NULL AND ${publisherAgent.isVerified} = 1) THEN 'partner'
+    WHEN ${agencies.plan} = 'partner'${partnerAgent} THEN 'partner'
     WHEN ${listings.agencyId} IS NOT NULL OR ${publisherOwner.role} IN ('agency_admin', 'developer') THEN 'agency'
     WHEN ${listings.agentId} IS NOT NULL OR ${publisherOwner.role} = 'agent' THEN 'agent'
     WHEN ${listings.ownerUserId} IS NOT NULL THEN 'private'

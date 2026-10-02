@@ -26,7 +26,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
 import { listingScopeWhere, maySetStatus, type EditScope } from "@/lib/listing-edit";
 import { containsPattern } from "@/lib/sql-like";
-import { getHouseAgencyId } from "@/lib/site-settings";
+import { getPublisherSettings } from "@/lib/site-settings";
 import {
   CONTACT_KIND_ORDER_SQL,
   CONTACT_KIND_SQL,
@@ -40,6 +40,7 @@ import {
   publisherAgent,
   publisherKindSql,
   publisherOwner,
+  PUBLISHER_KINDS,
   toPublisherKind,
   type PublisherKind,
 } from "@/lib/publisher-kind";
@@ -75,7 +76,7 @@ export interface ReviewRow {
  * the page filters and counts it without a query per chip.
  */
 export async function getReviewQueue(): Promise<ReviewRow[]> {
-  const kind = publisherKindSql(await getHouseAgencyId());
+  const kind = publisherKindSql(await getPublisherSettings());
   const rows = await db
     .select({
       id: listings.id,
@@ -639,6 +640,31 @@ export interface AdminLeadRow extends LeadRow {
   ownerWhatsapp: string | null;
   /** Who the lead is from (src/lib/contact-kind.ts). */
   contactKind: ContactKind;
+  /** Who published the lead's listing (src/lib/publisher-kind.ts); `no_listing` without one. */
+  publisherKind: LeadPublisherKind;
+  /** The agency, agent or account behind that listing, for the card's pill. */
+  publisherName: string | null;
+}
+
+/** A lead's listing publisher kind, plus leads that carry no listing at all. */
+export const LEAD_PUBLISHER_KINDS = [...PUBLISHER_KINDS, "no_listing"] as const;
+export type LeadPublisherKind = (typeof LEAD_PUBLISHER_KINDS)[number];
+
+export function isLeadPublisherKind(v: unknown): v is LeadPublisherKind {
+  return typeof v === "string" && (LEAD_PUBLISHER_KINDS as readonly string[]).includes(v);
+}
+
+/**
+ * `publisherKindSql()` read through a lead's listing. Needs the same joins as
+ * `listAllLeads()`: listings, agencies on listings.agency_id, and the two
+ * publisher aliases.
+ */
+function leadPublisherKindSql(settings: Parameters<typeof publisherKindSql>[0]): SQL<LeadPublisherKind> {
+  return sql<LeadPublisherKind>`CASE WHEN ${listings.id} IS NULL THEN 'no_listing' ELSE ${publisherKindSql(settings)} END`;
+}
+
+function toLeadPublisherKind(v: unknown): LeadPublisherKind {
+  return isLeadPublisherKind(v) ? v : "none";
 }
 
 /**
@@ -663,13 +689,19 @@ export async function listAllLeads(params: {
   where?: SQL;
   /** Who the lead is from ("Quién escribe"). */
   contactKind?: ContactKind;
+  /** Who published the lead's listing ("Publicó"). */
+  publisher?: LeadPublisherKind;
   /** Newest first (default), oldest first, or grouped by who writes. */
   sort?: LeadSort;
   q?: string;
   limit?: number;
 }): Promise<AdminLeadRow[]> {
   const filters: SQL[] = [];
+  const pubKind = leadPublisherKindSql(await getPublisherSettings());
   if (params.internalOnly) filters.push(eq(leads.routedTo, "internal"));
+  if (params.publisher && isLeadPublisherKind(params.publisher)) {
+    filters.push(sql`${pubKind} = ${sql.raw(`'${params.publisher}'`)}`);
+  }
   if (params.contactKind && isContactKind(params.contactKind)) {
     filters.push(sql`${CONTACT_KIND_SQL} = ${sql.raw(`'${params.contactKind}'`)}`);
   }
@@ -725,10 +757,14 @@ export async function listAllLeads(params: {
       ownerName: users.name,
       ownerWhatsapp: users.whatsapp,
       contactKind: CONTACT_KIND_SQL,
+      publisherKind: pubKind,
+      publisherName: sql<string | null>`coalesce(${agencies.name}, ${publisherAgent.name}, ${publisherOwner.name})`,
     })
     .from(leads)
     .leftJoin(listings, eq(leads.listingId, listings.id))
     .leftJoin(agencies, eq(listings.agencyId, agencies.id))
+    .leftJoin(publisherAgent, eq(listings.agentId, publisherAgent.id))
+    .leftJoin(publisherOwner, eq(listings.ownerUserId, publisherOwner.id))
     // Owner only when nobody professional owns the row — the same precedence
     // the detail page's contact chain uses.
     .leftJoin(
@@ -749,7 +785,34 @@ export async function listAllLeads(params: {
     )
     .limit(params.limit ?? 300);
 
-  return rows.map((r) => ({ ...r, utm: parseUtm(r.utm), contactKind: toContactKind(r.contactKind) }));
+  return rows.map((r) => ({
+    ...r,
+    utm: parseUtm(r.utm),
+    contactKind: toContactKind(r.contactKind),
+    publisherKind: toLeadPublisherKind(r.publisherKind),
+  }));
+}
+
+/**
+ * Lead counts per "Publicó" kind (who published the lead's listing), for the
+ * /admin/leads chips. Spam left out like every other count on the page.
+ */
+export async function countLeadsByPublisher(
+  internalOnly = false,
+): Promise<Record<LeadPublisherKind, number>> {
+  const kind = leadPublisherKindSql(await getPublisherSettings());
+  const rows = await db
+    .select({ kind, n: sql<number>`count(*)` })
+    .from(leads)
+    .leftJoin(listings, eq(leads.listingId, listings.id))
+    .leftJoin(agencies, eq(listings.agencyId, agencies.id))
+    .leftJoin(publisherAgent, eq(listings.agentId, publisherAgent.id))
+    .leftJoin(publisherOwner, eq(listings.ownerUserId, publisherOwner.id))
+    .where(and(ne(leads.status, "spam"), internalOnly ? eq(leads.routedTo, "internal") : undefined))
+    .groupBy(kind);
+  const out = Object.fromEntries(LEAD_PUBLISHER_KINDS.map((k) => [k, 0])) as Record<LeadPublisherKind, number>;
+  for (const r of rows) out[toLeadPublisherKind(r.kind)] += Number(r.n);
+  return out;
 }
 
 /**

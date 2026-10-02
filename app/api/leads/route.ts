@@ -30,6 +30,12 @@ import { currentVertical } from "@/lib/vertical-context";
 import { emailSeekerConfirmation } from "@/lib/lead-emails";
 import { isAgencyMode } from "@/lib/site-settings";
 import { recordAnalyticsEvent } from "@/lib/analytics";
+import { VISIT_REFERRER_UTM_KEY } from "@/lib/visit-source";
+
+/** The form's `utm_referrer` is a bare host; analytics wants a URL to parse. */
+function visitReferrerUrl(host: string | undefined): string | null {
+  return host && /^[a-z0-9.-]{1,120}$/i.test(host) ? `https://${host}/` : null;
+}
 import { listingUrl } from "@/lib/urls";
 import { esA3, REPORT_REASONS, type ReportReason } from "@/i18n/es-a3";
 import { getDictionary, numberLocaleFor } from "@/i18n";
@@ -466,6 +472,16 @@ export async function POST(req: NextRequest) {
       vertical,
       ip,
       userAgent: req.headers.get("user-agent"),
+      // The form's own utm keys (the URL's, else the visit's stored source —
+      // src/lib/visit-source.ts), so the "Formulario" column of the campaign
+      // and source tables credits the campaign that brought the visitor.
+      utm: {
+        source: parsed.utm?.utm_source ?? null,
+        medium: parsed.utm?.utm_medium ?? null,
+        campaign: parsed.utm?.utm_campaign ?? null,
+      },
+      referrer: visitReferrerUrl(parsed.utm?.[VISIT_REFERRER_UTM_KEY]),
+      ownHost: req.headers.get("host"),
     });
   }
 

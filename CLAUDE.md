@@ -522,6 +522,13 @@ default, `--dry` first). It records itself as a revertible import job.
     (`src/lib/contact-role.ts`, stamped by `/api/leads` from the enum only).
     **Do not add a column for either** — both are derived on purpose, so old
     rows are classified too.
+    Round 2 (`docs/log/admin-triage-2.md`): /admin/leads "Mis consultas /
+    Todas" (`?vista=`, cookie, default internal lane, `adminLeadsInternalOnly()`
+    for page and CSV); an independent agent is "Socio" only when listed in the
+    `partner_agent_ids` site setting (toggle in /admin/agentes), never just for
+    being verified; lead cards show who published the listing (`?publico=`);
+    lead forms fall back to the beacon's visit source (`src/lib/visit-source.ts`)
+    and /admin/analitica's single "Fuente" table counts each visitor once.
 
 ## Launch track — state as of 2026-09-22
 

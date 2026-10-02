@@ -7,6 +7,7 @@
  */
 import type { PublisherKind } from "@/lib/publisher-kind";
 import type { ContactKind } from "@/lib/contact-kind";
+import type { LeadPublisherKind } from "@/lib/panel-queries";
 
 export const esTriage = {
   publisher: {
@@ -28,11 +29,47 @@ export const esTriage = {
     none: "Sin asignar",
   } satisfies Record<PublisherKind, string>,
 
+  /** /admin/leads: who published the lead's listing. */
+  leadPublisherChip: {
+    own: "Propias",
+    partner: "De socios",
+    agency: "Inmobiliarias",
+    agent: "Agentes independientes",
+    private: "Dueños particulares",
+    none: "Sin asignar",
+    no_listing: "Sin propiedad",
+  } satisfies Record<LeadPublisherKind, string>,
+  /** The pill on a lead card: "Socio: Inmobiliaria X", "Propia", "Sin propiedad". */
+  leadPublisherPill: (kind: LeadPublisherKind, name: string | null): string => {
+    const label: Record<LeadPublisherKind, string> = {
+      own: "Propia",
+      partner: "Socio",
+      agency: "Inmobiliaria",
+      agent: "Agente independiente",
+      private: "Dueño particular",
+      none: "Sin asignar",
+      no_listing: "Sin propiedad",
+    };
+    return name && kind !== "own" && kind !== "none" && kind !== "no_listing"
+      ? `${label[kind]}: ${name}`
+      : label[kind];
+  },
+  leadPublisherFilterLabel: "Publicó",
+  leadViewLabel: "Qué consultas ver",
+  leadView: {
+    mias: "Mis consultas",
+    todas: "Todas",
+  },
+  leadViewHint: {
+    mias: "Solo las consultas que te tocan a vos (derivadas a «Interno»), como el número de la pestaña.",
+    todas: "Todas las consultas del sitio, también las derivadas a inmobiliarias, agentes y dueños.",
+  },
+
   publisherFilterLabel: "Filtrar por quién publicó",
   publisherAll: "Todos",
   publisherColumn: "Publicó",
   publisherHelp:
-    "Propias: tu inmobiliaria (elegila en Ajustes) o lo que publicaste vos o tu equipo. Socio: inmobiliaria con plan Partner o agente independiente verificado (los mismos con quienes compartís consultas). Particular: un dueño que publicó solo.",
+    "Propias: tu inmobiliaria (elegila en Ajustes) o lo que publicaste vos o tu equipo. Socio: inmobiliaria con plan Socio (en Inmobiliarias) o agente independiente marcado «Socio» en Agentes. Verificado no es lo mismo que socio. Particular: un dueño que publicó solo.",
   houseAgencyMissing: "Todavía no elegiste tu inmobiliaria: hacelo en Ajustes para que sus avisos salgan como «Propias».",
 
   contact: {
@@ -108,6 +145,15 @@ export const esTriage = {
     operations: (n: number) => `${n} tareas cuya última corrida falló`,
     agencies: (n: number) => `${n} inmobiliarias registradas sin verificar`,
     agents: (n: number) => `${n} agentes registrados sin verificar`,
+  },
+
+  /** /admin/agentes: the per-agent "Socio" switch (site setting partner_agent_ids). */
+  agentPartner: {
+    hint: "«Socio» marca a un agente independiente con quien trabajás: sus avisos salen como «Socio» en Propiedades, Cola de revisión y Consultas. Los agentes de una inmobiliaria siguen el plan de su inmobiliaria.",
+    set: "Marcar como socio",
+    unset: "Quitar socio",
+    flashOn: "Agente marcado como socio.",
+    flashOff: "El agente ya no figura como socio.",
   },
 
   settings: {

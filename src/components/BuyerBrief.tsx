@@ -1,5 +1,7 @@
 "use client";
 
+import { readVisitUtm } from "@/lib/visit-source";
+
 import { useState } from "react";
 import { Glyph } from "@/components/Glyph";
 import { getDictionary, type Locale } from "@/i18n";
@@ -366,12 +368,7 @@ export function BuyerBrief({
 
 /** Campaign params from the landing URL, same reader as `LeadForm`'s. */
 function readUtm(): Record<string, string> | undefined {
-  if (typeof window === "undefined") return undefined;
-  const params = new URLSearchParams(window.location.search);
-  const utm: Record<string, string> = {};
-  for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"]) {
-    const v = params.get(key);
-    if (v) utm[key] = v;
-  }
+  // URL utm first, else the visit's stored source (src/lib/visit-source.ts).
+  const utm = readVisitUtm();
   return Object.keys(utm).length > 0 ? utm : undefined;
 }

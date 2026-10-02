@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useReportWebVitals } from "next/web-vitals";
 import { useEffect } from "react";
 import { isVitalMetricName } from "@/lib/web-vitals-shared";
+import { parseVisitSource, VISIT_SOURCE_KEY } from "@/lib/visit-source";
 
 /**
  * Queues page views and WhatsApp clicks and sends them in one
@@ -37,13 +38,13 @@ const queue: BeaconEvent[] = [];
  * not turn a campaign visit into "direct".
  */
 type VisitSource = Pick<BeaconEvent, "r" | "us" | "um" | "uc">;
-const SOURCE_KEY = "analytics:visit-source";
+// Shared with the lead forms, which fall back to it (src/lib/visit-source.ts).
+const SOURCE_KEY = VISIT_SOURCE_KEY;
 let visitSource: VisitSource | null = null;
 
 function loadVisitSource(): VisitSource | null {
   try {
-    const raw = sessionStorage.getItem(SOURCE_KEY);
-    return raw ? (JSON.parse(raw) as VisitSource) : null;
+    return parseVisitSource(sessionStorage.getItem(SOURCE_KEY));
   } catch {
     return null;
   }
