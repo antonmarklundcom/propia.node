@@ -2978,3 +2978,16 @@ export const enEmail = {
     `You'll find ${count === 1 ? "it" : "them"} in your panel, under “Compartidas por el portal”. Let us know what you did with each one: La tomo, No puedo, Ya lo contacté or Cerrada.`,
   shareCta: "Open my enquiries",
 } as const;
+
+/** Zone maps — peer of `esZoneMap`. */
+export const enZoneMap = {
+  /** "Map of Asunción with Villa Morra highlighted: houses for sale" */
+  alt: (zone: string, city: string | null, typeLabel: string | null, opLabel: string | null) => {
+    const where = city ? `Map of ${city} with ${zone} highlighted` : `Map of ${zone}`;
+    return typeLabel && opLabel ? `${where}: ${typeLabel.toLowerCase()} ${opLabel}` : where;
+  },
+  /** "Houses for sale" */
+  badge: (typeLabel: string, opLabel: string) => `${typeLabel} ${opLabel}`,
+  credit: "© OpenStreetMap contributors",
+  creditTitle: "Map data: OpenStreetMap, ODbL licence",
+} as const;

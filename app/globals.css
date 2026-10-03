@@ -11166,3 +11166,41 @@ a.panel-chip--active:focus-visible {
 .vd-partner__points {
   margin-top: 18px;
 }
+
+/* Zone map (src/components/ZoneMap.tsx): a pre-rendered WebP, a type badge
+   overlay when the image carries none, and the OpenStreetMap credit, which
+   must stay visible (ODbL attribution). */
+.zone-map {
+  margin: 0;
+}
+.zone-map__frame {
+  position: relative;
+}
+.zone-map__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+.zone-map__badge {
+  position: absolute;
+  top: 2%;
+  left: 2%;
+  padding: 0.35em 0.75em;
+  background: var(--color-primary);
+  border-bottom: 2px solid var(--color-accent);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.zone-map__credit {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--color-ink-secondary);
+  text-align: right;
+}
+.zone-map__credit a {
+  color: inherit;
+}
