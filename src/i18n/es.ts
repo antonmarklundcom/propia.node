@@ -2133,6 +2133,25 @@ export const esCategory = {
   count: (n: number) => `${n} ${n === 1 ? "propiedad" : "propiedades"} disponibles.`,
   emptyTypeNotice: (typeLabel: string, opLabel: string, city: string) =>
     `No hay ${typeLabel} en ${opLabel} en ${city} por el momento. Te mostramos todas las propiedades en ${city}.`,
+  /*
+   * The empty category page (E-1/E-4, plan phase 3): a valid page with no
+   * listing today. Honest about it, then the brief, WhatsApp and the alert,
+   * then the nearest real stock. `what` is already lower-case ("casas",
+   * "propiedades").
+   */
+  emptyNow: (what: string, opLabel: string, where: string) =>
+    `No hay ${what} en ${opLabel} en ${where} en este momento.`,
+  emptyIntro:
+    "Contanos qué buscás y te avisamos cuando entre algo así, o mirá abajo lo más cercano publicado hoy.",
+  emptyWhatsappCta: "Preguntar por WhatsApp",
+  emptyWhatsappText: (what: string, where: string) => `Hola, estoy buscando ${what} en ${where}.`,
+  emptyLinksAria: "Lo más cercano publicado hoy",
+  emptySameTypeTitle: (what: string, opLabel: string) => `Más cerca: ${what} en ${opLabel}`,
+  emptyNearbyCitiesTitle: (what: string, places: string) => `${what} en ciudades cercanas: ${places}`,
+  emptyOtherOpTitle: (where: string) => `Lo mismo en otra operación en ${where}`,
+  /** "Casas en alquiler" — a link label in the other-operation group. */
+  emptyOtherOpLink: (typeLabel: string, opLabel: string) => `${typeLabel} en ${opLabel}`,
+  emptyOtherTypesTitle: (opLabel: string, where: string) => `Otros tipos en ${opLabel} en ${where}`,
   viewSwitchLabel: "Vista",
   viewList: "Lista",
   viewMap: "Mapa",
@@ -4079,6 +4098,8 @@ export const esNotFound = {
   "explanation": "Puede que no haya publicaciones disponibles en esa zona o combinación todavía. Probá con otra ciudad o tipo de propiedad.",
   "popularSearches": "BÚSQUEDAS POPULARES",
   "home": "Volver al inicio",
+  /** A near-miss slug on a category URL: "¿Quisiste decir San Lorenzo?" */
+  didYouMean: (place: string) => `¿Quisiste decir ${place}?`,
   "suggestions": [
     "Casas en Asunción",
     "Departamentos en Asunción",

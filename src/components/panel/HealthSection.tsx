@@ -17,7 +17,9 @@
 import Link from "next/link";
 import { esPanel } from "@/i18n/es";
 import { esTelegram } from "@/i18n/es-telegram";
+import { esAdminInsights, formatUptime } from "@/i18n/es-admin-insights";
 import type { Health } from "@/lib/health";
+import type { RuntimeHealth } from "@/lib/runtime-health";
 import type { OpsJob } from "@/lib/ops/types";
 
 /** One rendered finding. `href` is the page that fixes it, when there is one. */
@@ -122,8 +124,79 @@ function findings(health: Health): Finding[] {
   return out;
 }
 
-export function HealthSection({ health }: { health: Health }) {
-  const items = findings(health);
+/** The live connection / process findings, ahead of the cached ones. */
+function runtimeFindings(runtime: RuntimeHealth | null): Finding[] {
+  if (!runtime) return [];
+  const t = esAdminInsights.runtime;
+  const out: Finding[] = [];
+  const v = runtime.verdict;
+  if (v.kind === "user-near-limit") {
+    out.push({ text: t.verdict.userNearLimit(v.used, v.max), severe: true });
+  } else if (v.kind === "server-near-limit") {
+    out.push({ text: t.verdict.serverNearLimit(v.used, v.max), severe: true });
+  }
+  if (runtime.copies && runtime.copies.orphaned > 0) {
+    out.push({ text: t.orphans(runtime.copies.orphaned) });
+  }
+  return out;
+}
+
+const num = (v: number | null) =>
+  v === null ? esAdminInsights.runtime.unavailable : v.toLocaleString("es-PY");
+
+/** The always-visible numbers behind the runtime findings. */
+function RuntimeLines({ runtime }: { runtime: RuntimeHealth }) {
+  const t = esAdminInsights.runtime;
+  const c = runtime.connections;
+  const p = runtime.process;
+  const verdictText =
+    runtime.verdict.kind === "unknown"
+      ? t.verdict.unknown
+      : runtime.verdict.kind === "ok"
+        ? t.verdict.ok
+        : null;
+  return (
+    <div className="panel-card__meta" style={{ marginTop: 14 }}>
+      <strong>{t.title}:</strong>
+      <ul style={{ margin: "4px 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+        <li>
+          {t.threadsConnected}: {num(c.threadsConnected)} · {t.maxConnections}: {num(c.maxConnections)}
+        </li>
+        <li>
+          {t.userConnections}: {num(c.userConnections)}
+          {c.userIdle !== null && c.userConnections !== null ? ` (${t.userIdle(c.userIdle)})` : ""} ·{" "}
+          {c.maxUserConnections === 0
+            ? t.noUserLimit
+            : `${t.maxUserConnections}: ${num(c.maxUserConnections)}`}
+        </li>
+        <li>
+          {t.thisProcess}: {t.pid} {p.pid} · {t.uptime} {formatUptime(p.uptimeSeconds)}
+          {p.poolLimit !== null ? ` · ${t.pool(p.poolLimit, p.poolQueueLimit)}` : ""}
+        </li>
+        <li>
+          {t.copies}:{" "}
+          {runtime.copies
+            ? t.copiesValue(runtime.copies.copies, runtime.copies.orphaned, runtime.copies.threads)
+            : t.unavailable}
+          {runtime.copies && runtime.copies.otherServers > 0
+            ? ` · ${t.otherServers(runtime.copies.otherServers)}`
+            : ""}
+        </li>
+        {verdictText ? <li>{verdictText}</li> : null}
+      </ul>
+    </div>
+  );
+}
+
+export function HealthSection({
+  health,
+  runtime = null,
+}: {
+  health: Health;
+  /** Live, uncached numbers (`src/lib/runtime-health.ts`); null when not read. */
+  runtime?: RuntimeHealth | null;
+}) {
+  const items = [...runtimeFindings(runtime), ...findings(health)];
 
   return (
     <section className="panel-card" style={{ marginBottom: 24 }}>
@@ -159,6 +232,8 @@ export function HealthSection({ health }: { health: Health }) {
             ))}
           </ul>
         )}
+
+        {runtime ? <RuntimeLines runtime={runtime} /> : null}
 
         <div className="panel-card__meta" style={{ marginTop: 14 }}>
           <strong>{esPanel.healthJobsTitle}:</strong>{" "}

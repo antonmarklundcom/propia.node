@@ -27,8 +27,8 @@ export const BRIEF_CURRENCIES = ["USD", "PYG"] as const;
 export type BriefCurrency = (typeof BRIEF_CURRENCIES)[number];
 
 /** Which surface the brief was filled on — rides in `utm.brief_surface`. */
-/** `evergreen`: the lead block of an evergreen category page (src/content/evergreen/). */
-export const BRIEF_SURFACES = ["empty", "few", "not_found", "evergreen"] as const;
+/** `evergreen`: the lead block of an evergreen category page (src/content/evergreen/). `place`: a place guide (src/content/places/). */
+export const BRIEF_SURFACES = ["empty", "few", "not_found", "evergreen", "place"] as const;
 export type BriefSurface = (typeof BRIEF_SURFACES)[number];
 
 /** Minimum-bedroom choices, same scale as the category filter's `dormitorios`. */

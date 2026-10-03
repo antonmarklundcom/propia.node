@@ -10,6 +10,11 @@
  * signs its own JWT with `node:crypto` and trades it for a one-hour token —
  * the documented service-account flow, two HTTPS calls.
  *
+ * "Candidatas a página evergreen": category URLs with impressions that the
+ * evergreen registry does not list (`src/lib/gsc-candidates.ts`, pure), with
+ * their top searches from one extra page × query read per property — its own
+ * six-hour cache entry, so a failure there leaves the rest of the report intact.
+ *
  * Properties default to `sc-domain:<host>` for every live door;
  * `GSC_PROPERTIES` (comma list, e.g. `sc-domain:inmobiliaria.com.py,https://terreno.com.py/`)
  * overrides that. Results are cached six hours per property (TTL only — no
@@ -20,8 +25,16 @@ import "server-only";
 import { createSign } from "node:crypto";
 import { unstable_cache } from "next/cache";
 import { VERTICALS } from "@/config/verticals";
-import { evergreenPathsFor } from "@/content/evergreen";
+import { evergreenPathsFor, isEvergreenPath } from "@/content/evergreen";
 import { liveHosts } from "@/lib/ops/live-check";
+import {
+  categoryPageFilterRegex,
+  categoryPathOf,
+  evergreenCandidates,
+  type Candidate,
+  type PageQueryRow,
+  type PageRow,
+} from "@/lib/gsc-candidates";
 
 const SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -89,6 +102,8 @@ async function accessToken(sa: ServiceAccount): Promise<string> {
 
 export interface GscRow {
   key: string;
+  /** The dimension values, in request order (absent on hand-built zero rows). */
+  keys?: string[];
   clicks: number;
   impressions: number;
   ctr: number;
@@ -106,7 +121,19 @@ export function reportWindow(now = new Date()): { startDate: string; endDate: st
   return { startDate: isoDay(start), endDate: isoDay(end) };
 }
 
-async function query(site: string, dimensions: string[], rowLimit: number): Promise<GscRow[]> {
+/** One `dimensionFilterGroups` filter of the Search Analytics API. */
+interface DimensionFilter {
+  dimension: string;
+  operator: "includingRegex" | "equals" | "contains";
+  expression: string;
+}
+
+async function query(
+  site: string,
+  dimensions: string[],
+  rowLimit: number,
+  filters: DimensionFilter[] = [],
+): Promise<GscRow[]> {
   const sa = serviceAccount();
   if (!sa) throw new Error("not configured");
   const res = await fetch(
@@ -114,7 +141,12 @@ async function query(site: string, dimensions: string[], rowLimit: number): Prom
     {
       method: "POST",
       headers: { authorization: `Bearer ${await accessToken(sa)}`, "content-type": "application/json" },
-      body: JSON.stringify({ ...reportWindow(), dimensions, rowLimit }),
+      body: JSON.stringify({
+        ...reportWindow(),
+        dimensions,
+        rowLimit,
+        ...(filters.length > 0 ? { dimensionFilterGroups: [{ groupType: "and", filters }] } : {}),
+      }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     },
   );
@@ -125,6 +157,7 @@ async function query(site: string, dimensions: string[], rowLimit: number): Prom
   if (!res.ok) throw new Error(body.error?.message ?? `Search Console ${res.status}`);
   return (body.rows ?? []).map((r) => ({
     key: r.keys?.join(" · ") ?? "",
+    keys: r.keys ?? [],
     clicks: r.clicks,
     impressions: r.impressions,
     ctr: r.ctr,
@@ -141,6 +174,15 @@ export interface PropertyReport {
   topQueries: GscRow[];
   /** Every evergreen path the door owns, with its numbers or zeros. */
   evergreen: (GscRow & { path: string })[];
+  /**
+   * The category-page rows of the page request (`categoryPathOf()` accepts
+   * them), kept for the candidate list — a few dozen rows, not the 1 000.
+   */
+  categoryPages: PageRow[];
+  /** Category pages with impressions that are not evergreen here (`src/lib/gsc-candidates.ts`). */
+  candidates: Candidate[];
+  /** Set when the page × query read failed: candidates then carry no queries. */
+  candidateQueriesError: string | null;
   error: string | null;
 }
 
@@ -173,6 +215,9 @@ function emptyReport(property: string): PropertyReport {
     topPages: [],
     topQueries: [],
     evergreen: [],
+    categoryPages: [],
+    candidates: [],
+    candidateQueriesError: null,
     error: null,
   };
 }
@@ -196,8 +241,15 @@ async function propertyReportUncached(property: string): Promise<PropertyReport>
     }
   }
   const door = host ? VERTICALS[host] : null;
+  const categoryPages: PageRow[] = [];
+  for (const p of pages) {
+    if (categoryPathOf(p.key, host) !== null) {
+      categoryPages.push({ page: p.key, clicks: p.clicks, impressions: p.impressions, position: p.position });
+    }
+  }
   return {
     ...base,
+    categoryPages,
     totals: totals[0] ?? { key: "", clicks: 0, impressions: 0, ctr: 0, position: 0 },
     topPages: pages.slice(0, TOP_ROWS),
     topQueries: queries,
@@ -208,14 +260,72 @@ async function propertyReportUncached(property: string): Promise<PropertyReport>
   };
 }
 
-const cachedReport = unstable_cache(propertyReportUncached, ["gsc:report"], { revalidate: 6 * 60 * 60 });
+const CACHE_SECONDS = 6 * 60 * 60;
+const cachedReport = unstable_cache(propertyReportUncached, ["gsc:report"], { revalidate: CACHE_SECONDS });
+
+/** Rows asked for in the page × query read; category URLs only (pre-filtered). */
+const PAGE_QUERY_ROWS = 5000;
+
+/**
+ * Page × query rows for the category URLs of a property — the searches behind
+ * each evergreen candidate. Its own cache entry (same six hours), so a failure
+ * here never costs the main report, and like it, it throws on any failure so a
+ * failed read is never cached.
+ */
+async function categoryPageQueriesUncached(property: string): Promise<PageQueryRow[]> {
+  const rows = await query(property, ["page", "query"], PAGE_QUERY_ROWS, [
+    { dimension: "page", operator: "includingRegex", expression: categoryPageFilterRegex() },
+  ]);
+  return rows.map((r) => ({
+    page: r.keys?.[0] ?? "",
+    query: r.keys?.[1] ?? "",
+    clicks: r.clicks,
+    impressions: r.impressions,
+    position: r.position,
+  }));
+}
+
+const cachedPageQueries = unstable_cache(categoryPageQueriesUncached, ["gsc:page-query"], {
+  revalidate: CACHE_SECONDS,
+});
+
+const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** The report plus its candidate list; the candidates are derived, never cached on their own. */
+async function reportWithCandidates(property: string): Promise<PropertyReport> {
+  const report = await cachedReport(property);
+  const door = report.host ? VERTICALS[report.host] : null;
+  // Without a door there is no registry to compare against: no candidates.
+  if (!door || (report.categoryPages ?? []).length === 0) return report;
+  const sameLocaleKeys = [
+    ...new Set(Object.values(VERTICALS).filter((v) => v.locale === door.locale).map((v) => v.key)),
+  ];
+  let pageQueries: PageQueryRow[] | null = null;
+  let candidateQueriesError: string | null = null;
+  try {
+    pageQueries = await cachedPageQueries(property);
+  } catch (e) {
+    candidateQueriesError = errorText(e);
+  }
+  return {
+    ...report,
+    candidates: evergreenCandidates(report.categoryPages, pageQueries, {
+      host: report.host,
+      // The door's own registry entries, and also a path evergreen on another
+      // door in the same language: verify:seo allows one evergreen page per
+      // path per language, so that one cannot be promoted here.
+      isEvergreen: (path) => sameLocaleKeys.some((k) => isEvergreenPath(path, k)),
+    }),
+    candidateQueriesError,
+  };
+}
 
 export async function searchConsoleReports(): Promise<PropertyReport[]> {
   return Promise.all(
     searchConsoleProperties().map((p) =>
-      cachedReport(p).catch((e: unknown) => ({
+      reportWithCandidates(p).catch((e: unknown) => ({
         ...emptyReport(p),
-        error: e instanceof Error ? e.message : String(e),
+        error: errorText(e),
       })),
     ),
   );

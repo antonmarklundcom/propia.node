@@ -139,6 +139,8 @@ import { enA1 } from "./en-a1";
 import { esBrief } from "./es-brief";
 import { enBrief } from "./en-brief";
 import { esEvergreen } from "./es-evergreen";
+import { esPlace } from "./es-place";
+import { enPlace } from "./en-place";
 import { enEvergreen } from "./en-evergreen";
 import { esWa } from "./es-wa";
 import { esReview } from "./es-review";
@@ -212,6 +214,7 @@ const esDictionary = {
   telegram: esTelegram,
   brief: esBrief,
   evergreen: esEvergreen,
+  place: esPlace,
   wa: esWa,
   authReset: esAuthReset,
   review: esReview,
@@ -311,6 +314,7 @@ const enDictionary = {
   telegram: enTelegram,
   brief: enBrief,
   evergreen: enEvergreen,
+  place: enPlace,
   wa: enWa,
   authReset: enAuthReset,
   review: enReview,

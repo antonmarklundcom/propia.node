@@ -135,6 +135,30 @@ export function faqJsonLd(items: { q: string; a: string }[]): object {
 }
 
 /**
+ * Place — a place guide (`/zonas/…`, plan phase 4): its name, its URL, the
+ * centroid from the location tree, and the city a barrio is in. Nothing else:
+ * no address, population or rating the page does not state.
+ */
+export function placeJsonLd(p: {
+  name: string;
+  url: string;
+  lat?: number;
+  lng?: number;
+  containedIn?: { name: string; url: string };
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Place",
+    name: p.name,
+    url: p.url,
+    ...(p.lat != null && p.lng != null
+      ? { geo: { "@type": "GeoCoordinates", latitude: p.lat, longitude: p.lng } }
+      : {}),
+    ...(p.containedIn ? { containedInPlace: { "@type": "Place", name: p.containedIn.name, url: p.containedIn.url } } : {}),
+  };
+}
+
+/**
  * Organization — the entity behind the portal. Only fields we can stand
  * behind: name, site URL, contact channel. No invented address, founding
  * date, employee count or aggregate rating.
