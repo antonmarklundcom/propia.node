@@ -1128,6 +1128,9 @@ export const enListing = {
   sellerKindAgent: "Agent",
   /** FSBO: the listing was published by its owner, not by a professional. */
   sellerKindOwner: "Private seller",
+  alsoListedBy: "Also listed by",
+  alsoListedHint: "The same property, listed by other sellers. You can contact any of them.",
+  alsoListedLink: "See their listing",
 
   contactTitle: "Interested in this property?",
   contactSubtitle:

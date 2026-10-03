@@ -43,6 +43,8 @@ export type AdminEventAction =
   | "partner.terms"
   // A listing marked or unmarked exclusive on /admin/propiedades/[id] (O1).
   | "listing.exclusive"
+  // A listing put in or taken out of a duplicate group (O5).
+  | "listing.duplicate"
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
   | "deal.delete";
 

@@ -44,7 +44,7 @@ import {
   VERTICALS,
   type VerticalConfig,
 } from "@/config/verticals";
-import { verticalConds } from "./facet-sql";
+import { notHiddenDuplicate, verticalConds } from "./facet-sql";
 import {
   marketplacePagesEnabled,
   sellerLandingEnabled,
@@ -155,6 +155,8 @@ export async function buildSitemapEntries(
     .where(
       and(
         eq(listings.status, "published"),
+        // A duplicate that is not the primary canonicalises to it (O5).
+        notHiddenDuplicate(),
         ...(vertical ? verticalConds(vertical) : []),
       ),
     );

@@ -1486,3 +1486,25 @@ export const listingExclusives = mysqlTable("listing_exclusives", {
   setByUserId: fk("set_by_user_id").notNull(),
   setAt: datetime("set_at").notNull(),
 });
+
+/**
+ * Duplicate listings (plan-admin-next O5): the same property published by
+ * several listers, grouped by the operator in /admin. One row per member;
+ * `group_id` is the id of the listing the group started from (any member's
+ * id works as a key — it is never shown).
+ *
+ * Who holds the slot is NOT stored: the earliest-published *published* member
+ * is the primary (`primaryOf()`, src/lib/listing-duplicate-rules.ts), so when
+ * it goes the next one takes over by itself. Its own table, not a column on
+ * `listings`, like `listing_financing`.
+ */
+export const listingDuplicates = mysqlTable(
+  "listing_duplicates",
+  {
+    listingId: fk("listing_id").primaryKey(),
+    groupId: fk("group_id").notNull(),
+    markedByUserId: fk("marked_by_user_id").notNull(),
+    markedAt: datetime("marked_at").notNull(),
+  },
+  (t) => [index("idx_group").on(t.groupId)],
+);
