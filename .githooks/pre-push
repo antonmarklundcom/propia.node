@@ -47,4 +47,6 @@ echo "pre-push: verify:reviews…"
 npm run --silent verify:reviews
 echo "pre-push: verify:degrade…"
 npm run --silent verify:degrade
+echo "pre-push: verify:admin-insights…"
+npm run --silent verify:admin-insights
 echo "pre-push: OK"

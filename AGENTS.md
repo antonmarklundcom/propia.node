@@ -80,9 +80,9 @@ git push -u origin claude/<feature-name>
 - **`npm run verify:local` must pass before every push.** It is
   `typecheck → build → verify:import → verify:facets → verify:i18n → verify:seo →
   verify:rate-limit → verify:inbox → verify:prices → verify:telegram → verify:reset → verify:ai-reply → verify:whatsapp → verify:publish → verify:lifecycle →
-  verify:proxy → verify:routing → verify:financing → verify:duplicates → verify:reviews → verify:degrade`. Everything after `build` needs no network.
+  verify:proxy → verify:routing → verify:financing → verify:duplicates → verify:reviews → verify:degrade → verify:admin-insights`. Everything after `build` needs no network.
   `verify:facets`, `verify:i18n`, `verify:seo`, `verify:rate-limit` (a fake clock),
-  `verify:inbox`, `verify:prices`, `verify:telegram`, `verify:reset`, `verify:ai-reply`, `verify:whatsapp`, `verify:routing`, `verify:financing`, `verify:duplicates`, `verify:reviews` and `verify:degrade` never touch a database;
+  `verify:inbox`, `verify:prices`, `verify:telegram`, `verify:reset`, `verify:ai-reply`, `verify:whatsapp`, `verify:routing`, `verify:financing`, `verify:duplicates`, `verify:reviews`, `verify:degrade` and `verify:admin-insights` never touch a database;
   `verify:import` also runs a database half (plan → commit → re-run → rollback)
   when `DATABASE_URL` points at localhost, and refuses any other host.
 - **Never `git push --no-verify`.** `.githooks/pre-push` runs the same gate; it is

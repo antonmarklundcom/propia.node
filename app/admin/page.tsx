@@ -5,6 +5,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { HealthSection } from "@/components/panel/HealthSection";
 import { requireStaffOrAbove } from "@/lib/auth/guards";
 import { getHealth } from "@/lib/health";
+import { getRuntimeHealth } from "@/lib/runtime-health";
 import { getReviewQueue } from "@/lib/panel-queries";
 import { getAdminBadges } from "@/lib/admin-badges";
 import { esPanel } from "@/i18n/es";
@@ -75,7 +76,7 @@ export default async function AdminReviewPage({
             ? { text: esPanel.bulkFlash.reason, error: true }
             : null;
   const user = await requireStaffOrAbove();
-  const [queue, badges, health] = await Promise.all([
+  const [queue, badges, health, runtime] = await Promise.all([
     getReviewQueue(),
     getAdminBadges(user),
     /**
@@ -86,6 +87,13 @@ export default async function AdminReviewPage({
      * is a section nobody reads.
      */
     isSuperAdmin(user.role) ? getHealth() : Promise.resolve(null),
+    /**
+     * Live, uncached connection and process numbers (`src/lib/runtime-health.ts`):
+     * per process by nature, so never through the shared data cache. Each read
+     * degrades on its own; the catch is the last guard so /admin never 500s
+     * over a diagnostic.
+     */
+    isSuperAdmin(user.role) ? getRuntimeHealth().catch(() => null) : Promise.resolve(null),
   ]);
   const superAdmin = isSuperAdmin(user.role);
   const t = esTriage.review;
@@ -125,7 +133,7 @@ export default async function AdminReviewPage({
         tabs={adminTabs("review", badges)}
       />
       <main className="panel site-main">
-        {health ? <HealthSection health={health} /> : null}
+        {health ? <HealthSection health={health} runtime={runtime} /> : null}
 
         <h2 className="panel-section__title">{esPanel.adminReviewTitle}</h2>
 
