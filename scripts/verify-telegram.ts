@@ -28,6 +28,13 @@ import {
 } from "../src/lib/telegram-text";
 import { errorKey, planErrorAlert, resetErrorThrottle } from "../src/lib/error-alerts";
 import { liveHosts, sampleSitemap, sitemapLocs } from "../src/lib/ops/live-check";
+import {
+  EMPTY_LIVE_CHECK_STATE,
+  LIVE_CHECK_REMIND_MS,
+  failureFingerprint,
+  parseLiveCheckState,
+  planLiveCheckAlert,
+} from "../src/lib/live-check-alerts";
 import { isVitalMetricName, p75, pageTypeOf, vitalRating } from "../src/lib/web-vitals-shared";
 
 let failures = 0;
@@ -196,6 +203,28 @@ function main() {
   const hosts = liveHosts();
   check("unpurchased / unconfirmed doors are not checked", !hosts.includes("alquiler.com.py") && !hosts.includes("landforsaleparaguay.com"), hosts.join());
   check("the marketplace primary is checked", hosts.includes("inmobiliaria.com.py"));
+
+  // Live check alerts (src/lib/live-check-alerts.ts): once per failure set.
+  const setA = [{ url: "https://a.com/x", why: "404" }, { url: "https://a.com/y", why: "500" }];
+  const setB = [{ url: "https://b.com/z", why: "404" }];
+  check("the fingerprint ignores order", failureFingerprint(setA) === failureFingerprint([...setA].reverse()));
+  const T = 1_000_000_000_000;
+  const lcFirst = planLiveCheckAlert(EMPTY_LIVE_CHECK_STATE, setA, T);
+  check("a new failure set alerts", lcFirst.kind === "new");
+  const lcAgain = planLiveCheckAlert(lcFirst.next!, [...setA].reverse(), T + 60_000);
+  check("the same set a minute later is silent", lcAgain.kind === "none");
+  const lcOther = planLiveCheckAlert(lcFirst.next!, setB, T + 120_000);
+  check("a different set alerts", lcOther.kind === "new");
+  const lcFlip = planLiveCheckAlert(lcOther.next!, setA, T + 180_000);
+  check("two builds seeing two sets do not alert each other's set", lcFlip.kind === "none");
+  const lcLater = planLiveCheckAlert(lcFirst.next!, setA, T + LIVE_CHECK_REMIND_MS + 1);
+  check("the same set a day later is one reminder", lcLater.kind === "reminder");
+  const lcOk = planLiveCheckAlert(lcFirst.next!, [], T + 300_000);
+  check("a recovery after an alert is announced once", lcOk.kind === "resolved" && lcOk.next?.failing === false);
+  check("…and not again", planLiveCheckAlert(lcOk.next!, [], T + 360_000).kind === "none");
+  check("a healthy run with nothing alerted is silent", planLiveCheckAlert(EMPTY_LIVE_CHECK_STATE, [], T).kind === "none");
+  check("the stored state survives a round trip", JSON.stringify(parseLiveCheckState(JSON.stringify(lcFirst.next))) === JSON.stringify(lcFirst.next));
+  check("garbage state reads as empty", Object.keys(parseLiveCheckState("{not json").seen).length === 0);
 
   // Page speed (src/lib/web-vitals-shared.ts): what a path is, p75, the colours.
   const types: Array<[string, string]> = [

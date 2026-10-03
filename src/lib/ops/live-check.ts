@@ -8,7 +8,9 @@
  * that is not a 200 is a failure: a 404 or 5xx, a timeout, or a redirect (a
  * URL we submit to Google must not bounce). With failures, the operator gets
  * one Telegram message (and one email when email sending is configured) with
- * the first few URLs.
+ * the first few URLs — once per failure set, then a reminder a day while it
+ * lasts and one line when it clears (`src/lib/live-check-alerts.ts`; the
+ * memory is the `live_check_alert_state` site setting).
  *
  * It runs on its own after every deploy (`instrumentation.ts`, a minute after
  * the server starts) and once a day from the hourly tick. It would have caught
@@ -21,6 +23,8 @@ import "server-only";
 import { VERTICALS } from "@/config/verticals";
 import { evergreenPathsFor } from "@/content/evergreen";
 import { alertOperatorSystem } from "@/lib/crm";
+import { planLiveCheckAlert, parseLiveCheckState } from "@/lib/live-check-alerts";
+import { readSiteSettingsRaw, setSystemSetting, SETTING_KEYS } from "@/lib/site-settings";
 import { opsRun, type OpsOptions, type OpsResult } from "./types";
 
 /**
@@ -150,12 +154,14 @@ export async function runLiveCheck(opts: LiveCheckOptions): Promise<OpsResult> {
     }
 
     let probed = 0;
+    let skipped = 0;
     const queue = [...urls];
     const failures: Extract<Outcome, { ok: false }>[] = [];
     const worker = async () => {
       for (let url = queue.shift(); url; url = queue.shift()) {
         if (Date.now() > deadline) {
           out.count("sin_revisar");
+          skipped += 1;
           continue;
         }
         const r = await probe(url);
@@ -183,18 +189,54 @@ export async function runLiveCheck(opts: LiveCheckOptions): Promise<OpsResult> {
       );
     }
 
-    if (failures.length > 0 && !opts.dry) {
-      const lines = failures.slice(0, ALERT_LINES).map((f) => `${f.why}  ${f.url}`);
-      if (whole) {
-        lines.unshift(
-          `Todas fallan con ${failures[0].why}: probablemente la revisión misma está bloqueada (firewall o protección de bots de Cloudflare). Abrí el sitio en el navegador: si carga, el sitio está bien.`,
-        );
-      }
-      if (failures.length > ALERT_LINES) lines.push(`… y ${failures.length - ALERT_LINES} más (ver /admin/operaciones)`);
-      await alertOperatorSystem({
-        title: `⚠️ ${failures.length} página(s) del sitio no cargan${opts.reason ? ` (${opts.reason})` : ""}`,
-        detail: lines.join("\n"),
-      });
+    // A run cut short by its budget proves nothing about the pages it skipped,
+    // so it can neither announce a recovery nor be compared with a full run.
+    if (opts.dry || (failures.length === 0 && skipped > 0)) return;
+
+    // Same broken pages as an alert already sent: stay quiet (a reminder a
+    // day). The memory failing to load must never silence a real alert, so a
+    // read error counts as "nothing sent yet".
+    let prevRaw: string | undefined;
+    try {
+      prevRaw = (await readSiteSettingsRaw())[SETTING_KEYS.liveCheckAlerts];
+    } catch {
+      prevRaw = undefined;
     }
+    const plan = planLiveCheckAlert(parseLiveCheckState(prevRaw), failures, Date.now());
+    if (plan.next) {
+      try {
+        await setSystemSetting(SETTING_KEYS.liveCheckAlerts, JSON.stringify(plan.next));
+      } catch {
+        /* no memory this time: the next run may repeat the alert, never miss it */
+      }
+    }
+    if (plan.kind === "none") {
+      if (failures.length > 0) out.note("Mismo fallo que el último aviso: no se repite (recordatorio cada 24 h).");
+      return;
+    }
+    if (plan.kind === "resolved") {
+      await alertOperatorSystem({
+        title: `✅ Todas las páginas revisadas cargan de nuevo${opts.reason ? ` (${opts.reason})` : ""}`,
+        detail: `${probed} URLs revisadas, ninguna falla.`,
+      });
+      return;
+    }
+
+    const lines = failures.slice(0, ALERT_LINES).map((f) => `${f.why}  ${f.url}`);
+    if (whole) {
+      lines.unshift(
+        `Todas fallan con ${failures[0].why}: probablemente la revisión misma está bloqueada (firewall o protección de bots de Cloudflare). Abrí el sitio en el navegador: si carga, el sitio está bien.`,
+      );
+    }
+    if (failures.length > ALERT_LINES) lines.push(`… y ${failures.length - ALERT_LINES} más (ver /admin/operaciones)`);
+    lines.push(
+      plan.kind === "reminder"
+        ? "Recordatorio: sigue igual que hace 24 h."
+        : "No se vuelve a avisar por este mismo fallo hasta dentro de 24 h, salvo que cambie.",
+    );
+    await alertOperatorSystem({
+      title: `⚠️ ${failures.length} página(s) del sitio no cargan${opts.reason ? ` (${opts.reason})` : ""}`,
+      detail: lines.join("\n"),
+    });
   });
 }
