@@ -7,6 +7,15 @@ cloud session that wrote this has no network path to production, so **no live
 URL was fetched**. Every cause below is inferred from code and docs. Where it
 is a hypothesis, the text says so and names the check that would settle it.
 
+**Status (later on 2026-10-03):**
+- **A** fixed: the founder ran `seed:locations` on production.
+- **B** resolved by removing `residenciaenparaguay.es` from this app. It
+  belongs to a separate site and repo.
+- **D** fixed: `check:live` now alerts once per failure set
+  (`src/lib/live-check-alerts.ts`).
+- **E** is planned in `docs/plan-empty-category-seo-2026-10-03.md`.
+- **C** is still open.
+
 ## 0. Summary
 
 The chat holds about 40 messages, but they reduce to **five problems**:
