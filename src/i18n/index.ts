@@ -65,6 +65,7 @@ import {
   esSearchBar,
   esVender,
   esEmail,
+  esZoneMap,
 } from "./es";
 import { esA5 } from "./es-a5";
 import { esInbox } from "./es-e2";
@@ -119,6 +120,7 @@ import {
   enSearchBar,
   enVender,
   enEmail,
+  enZoneMap,
 } from "./en";
 import { esA3 } from "./es-a3";
 import { enA3 } from "./en-a3";
@@ -213,6 +215,7 @@ const esDictionary = {
   wa: esWa,
   authReset: esAuthReset,
   review: esReview,
+  zoneMap: esZoneMap,
 } as const;
 
 /**
@@ -311,6 +314,7 @@ const enDictionary = {
   wa: enWa,
   authReset: enAuthReset,
   review: enReview,
+  zoneMap: enZoneMap,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

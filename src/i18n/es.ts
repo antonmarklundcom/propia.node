@@ -4134,3 +4134,20 @@ export const esEmail = {
     `${count === 1 ? "La vas a encontrar" : "Las vas a encontrar"} en tu panel, en «Compartidas por el portal». Contanos qué hiciste con cada una: La tomo, No puedo, Ya lo contacté o Cerrada.`,
   shareCta: "Abrir mis consultas",
 } as const;
+
+/**
+ * Zone maps (`<ZoneMap>`, docs/plan-category-pages-build.md phase 7). The
+ * credit is OpenStreetMap's own attribution wording (ODbL), kept as OSM
+ * spells it on both doors.
+ */
+export const esZoneMap = {
+  /** "Mapa de Asunción con Villa Morra resaltado, casas en venta" */
+  alt: (zone: string, city: string | null, typeLabel: string | null, opLabel: string | null) => {
+    const where = city ? `Mapa de ${city} con ${zone} resaltado` : `Mapa de ${zone}`;
+    return typeLabel && opLabel ? `${where}, ${typeLabel.toLowerCase()} en ${opLabel}` : where;
+  },
+  /** The type badge drawn on (or over) the map: "Casas en venta". */
+  badge: (typeLabel: string, opLabel: string) => `${typeLabel} en ${opLabel}`,
+  credit: "© OpenStreetMap contributors",
+  creditTitle: "Datos del mapa: OpenStreetMap, licencia ODbL",
+} as const;
