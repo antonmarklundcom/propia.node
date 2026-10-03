@@ -17,7 +17,7 @@
  *   be talked into serving ventas with a query string.
  */
 import "server-only";
-import { and, eq, gte, inArray, lte, type SQL } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm";
 import { listings } from "@/db/schema";
 import type { ListingFacets } from "./facets";
 import type { VerticalConfig } from "@/config/verticals";
@@ -92,6 +92,37 @@ export function verticalAdmits(
 }
 
 /**
+ * Duplicate listings (plan-admin-next O5): false for a published listing that
+ * belongs to a duplicate group whose slot another published member holds —
+ * the one published earliest (ties: lowest id). The rule is
+ * `primaryOf()` in src/lib/listing-duplicate-rules.ts;
+ * tests/e2e/listing-duplicates.spec.ts checks this SQL against it.
+ *
+ * Every public *grid* ANDs this in (category, hub, home rails, map, similar,
+ * sitemap, counts). Pages that list one publisher's own listings (agency and
+ * agent profiles) do not: a duplicate is still that publisher's listing.
+ *
+ * Cheap where it matters: a listing outside every group fails the first
+ * lookup (the primary key of `listing_duplicates`) and never reaches the join.
+ * The table is fixed SQL here; no request value is interpolated.
+ */
+export function notHiddenDuplicate(): SQL {
+  return sql`not exists (
+    select 1 from listing_duplicates dup_self
+    join listing_duplicates dup_other
+      on dup_other.group_id = dup_self.group_id and dup_other.listing_id <> dup_self.listing_id
+    join listings dup_l on dup_l.id = dup_other.listing_id
+    where dup_self.listing_id = ${listings.id}
+      and dup_l.status = 'published'
+      and (
+        coalesce(dup_l.published_at, dup_l.created_at) < coalesce(${listings.publishedAt}, ${listings.createdAt})
+        or (coalesce(dup_l.published_at, dup_l.created_at) = coalesce(${listings.publishedAt}, ${listings.createdAt})
+            and dup_l.id < ${listings.id})
+      )
+  )`;
+}
+
+/**
  * The complete WHERE for a public listing query: published, narrowed by the
  * visitor's facets, narrowed again by the door they arrived through.
  *
@@ -105,6 +136,7 @@ export function publishedFacetWhere(
 ): SQL | undefined {
   return and(
     eq(listings.status, "published"),
+    notHiddenDuplicate(),
     ...facetConds(f),
     ...(vertical ? verticalConds(vertical) : []),
   );

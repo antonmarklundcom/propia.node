@@ -5,7 +5,9 @@ import {
   estimateMyShareUsd,
   formatUsd,
   paidDateInput,
+  splitPrefill,
 } from "@/lib/deal-form";
+import { esLedger } from "@/i18n/es-ledger";
 import type { DealRow, DealStageRow } from "@/lib/deals";
 import type { ShareRow } from "@/lib/lead-assignments";
 import { deleteDealAction, saveDealAction } from "./actions";
@@ -47,12 +49,20 @@ export function DealPanel({
   shares,
   back,
   open,
+  terms,
 }: {
   leadId: number;
   deal: DealRow | undefined;
   shares: ShareRow[];
   back: string;
   open: boolean;
+  /**
+   * The usual split of this lead's partner (plan-admin-next O2): the deal's
+   * partner, else the one partner it is actively shared with. A suggestion —
+   * it only fills a percentage field that is still empty, and is never saved
+   * unless the operator presses Guardar.
+   */
+  terms?: { partnerName: string; commissionPct: string | null; mySharePct: string | null } | null;
 }) {
   const current = deal?.agencyId
     ? `agency:${deal.agencyId}`
@@ -68,6 +78,8 @@ export function DealPanel({
     if (!options.has(key) || !s.revokedAt) options.set(key, label);
   }
   if (current !== "none" && !options.has(current)) options.set(current, deal?.partnerName ?? "—");
+
+  const prefill = splitPrefill(deal, terms);
 
   const estimate = deal
     ? estimateMyShareUsd(deal.salePriceUsd, deal.commissionPct, deal.mySharePct)
@@ -138,7 +150,7 @@ export function DealPanel({
             max={100}
             step="0.01"
             inputMode="decimal"
-            defaultValue={deal?.commissionPct ?? ""}
+            defaultValue={prefill.commissionPct ?? ""}
           />
         </label>
         <label className="panel-form__field">
@@ -151,7 +163,7 @@ export function DealPanel({
             max={100}
             step="0.01"
             inputMode="decimal"
-            defaultValue={deal?.mySharePct ?? ""}
+            defaultValue={prefill.mySharePct ?? ""}
           />
         </label>
         <label className="panel-form__field">
@@ -194,6 +206,9 @@ export function DealPanel({
           </button>
         </div>
       </form>
+      {prefill.suggested && terms ? (
+        <p className="panel-hint" data-split-suggested>{esLedger.suggestionFor(terms.partnerName)}</p>
+      ) : null}
       <p className="panel-note">
         {shares.length === 0 ? `${esDeals.partnerHint} ` : null}
         {esDeals.moneyHint}

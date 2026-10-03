@@ -91,6 +91,7 @@ export async function requestResetAction(formData: FormData): Promise<void> {
     const url = `${origin}/recuperar/${mintResetToken({
       userId: user.id,
       passwordHash: user.passwordHash,
+      email: user.email,
       secret,
     })}`;
     after(async () => {

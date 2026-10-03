@@ -10,9 +10,17 @@
  * user can edit, pause, unpublish or soft-remove, never publish or destroy.
  */
 import { revalidatePath } from "next/cache";
+import { markDuplicate, removeFromDuplicateGroup } from "@/lib/listing-duplicates";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { listings } from "@/db/schema";
+import { parseListingRef } from "@/lib/urls";
+import { exclusiveFromForm } from "@/lib/listing-exclusive-state";
+import { saveListingExclusive } from "@/lib/listing-exclusive";
 import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireStaffOrAbove, requireSuperAdmin } from "@/lib/auth/guards";
+import { handleFinancingForm } from "@/lib/listing-financing-action";
 import { isStaff } from "@/lib/auth/roles";
 import {
   ADMIN_STATUSES,
@@ -140,4 +148,61 @@ export async function bulkListingAction(formData: FormData): Promise<void> {
   revalidatePath("/admin/propiedades");
   revalidatePath("/admin");
   revalidateListings();
+}
+
+/**
+ * "Financiación propia" (plan-admin-next O8) from /admin: staff and the
+ * super-admin, like every other listing edit here. It is the publisher's
+ * text, not the operator's money.
+ */
+export async function adminSaveFinancingAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  await handleFinancingForm({ formData, scope: { kind: "admin" }, userId: user.id, basePath: "/admin/propiedades" });
+}
+
+/**
+ * Mark or unmark a listing exclusive (plan-admin-next O1). Admin only: the
+ * flag is never shown to visitors. Staff may set it — they manage listings.
+ */
+export async function adminSaveExclusiveAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const listingId = Number(formData.get("listingId"));
+  if (!Number.isInteger(listingId) || listingId <= 0) redirect("/admin/propiedades");
+  const input = exclusiveFromForm((k) => formData.get(k));
+  if ("error" in input) redirect(`/admin/propiedades/${listingId}?msg=exclusive_invalid#exclusiva`);
+  const ok = await saveListingExclusive({ listingId, input, userId: user.id });
+  if (!ok) redirect("/admin/propiedades?msg=not_found");
+  revalidatePath("/admin/propiedades");
+  redirect(`/admin/propiedades/${listingId}?msg=exclusive_saved#exclusiva`);
+}
+
+/**
+ * Duplicate listings (plan-admin-next O5): put this listing in the same group
+ * as another one, given its code or link. Staff and super-admin.
+ */
+export async function adminMarkDuplicateAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const listingId = Number(formData.get("listingId"));
+  if (!Number.isInteger(listingId) || listingId <= 0) redirect("/admin/propiedades");
+  const back = `/admin/propiedades/${listingId}`;
+  const publicId = parseListingRef(String(formData.get("ref") ?? ""));
+  if (!publicId) redirect(`${back}?msg=dup_bad_ref#duplicados`);
+  const [other] = await db.select({ id: listings.id }).from(listings).where(eq(listings.publicId, publicId)).limit(1);
+  if (!other) redirect(`${back}?msg=dup_bad_ref#duplicados`);
+  const result = await markDuplicate({ listingId, ofListingId: other.id, userId: user.id });
+  if (result === "same") redirect(`${back}?msg=dup_same#duplicados`);
+  if (result === "not_found") redirect(`${back}?msg=dup_bad_ref#duplicados`);
+  redirect(`${back}?msg=dup_saved#duplicados`);
+}
+
+/** Take one member out of its duplicate group (O5). */
+export async function adminRemoveDuplicateAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const listingId = Number(formData.get("listingId"));
+  const removeId = Number(formData.get("removeId"));
+  if (!Number.isInteger(listingId) || listingId <= 0 || !Number.isInteger(removeId) || removeId <= 0) {
+    redirect("/admin/propiedades");
+  }
+  await removeFromDuplicateGroup({ listingId: removeId, userId: user.id });
+  redirect(`/admin/propiedades/${listingId}?msg=dup_removed#duplicados`);
 }

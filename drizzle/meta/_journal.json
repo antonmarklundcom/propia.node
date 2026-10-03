@@ -169,6 +169,41 @@
       "when": 1790824118181,
       "tag": "0023_pale_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1790971109900,
+      "tag": "0024_wild_iron_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1790972866264,
+      "tag": "0025_mute_the_hand",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1790985482480,
+      "tag": "0026_dizzy_lorna_dane",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1790986170489,
+      "tag": "0027_burly_proudstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1790986718276,
+      "tag": "0028_crazy_slayback",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,6 @@
 import { getAdminBadges } from "@/lib/admin-badges";
+import { reviewLink, reviewTargetsForLeads, reviewedKeys, reviewsEnabled, type ReviewTarget } from "@/lib/reviews";
+import { esReviewsAdmin } from "@/i18n/es-reviews-admin";
 import { isStaff } from "@/lib/auth/roles";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -59,6 +61,7 @@ import {
 } from "@/lib/lead-assignments";
 import { siteOrigin } from "@/lib/origin";
 import { isSuperAdmin } from "@/lib/auth/roles";
+import { getPartnerTerms, type PartnerTermsRow } from "@/lib/partner-terms";
 import { deleteLeadAction, setLeadSpamAction, updateLeadAction } from "./actions";
 import { countReportLeads, REPORT_SOURCE } from "@/lib/report-queries";
 import { esA3, type ReportReason } from "@/i18n/es-a3";
@@ -448,6 +451,15 @@ export default async function AdminLeadsPage({
   // stage alone — their query never selects a money column.
   const superAdmin = isSuperAdmin(user.role);
   const leadIds = rows.map((r) => r.id);
+  // Review invitations (O7): which partner worked each lead, and which of those
+  // already have a review. Skipped without the signing secret; a read failure
+  // (migration 0028 not applied) only hides the block.
+  const [reviewTargets, reviewed] = reviewsEnabled()
+    ? await Promise.all([
+        reviewTargetsForLeads(leadIds).catch(() => new Map<number, ReviewTarget[]>()),
+        reviewedKeys(leadIds).catch(() => new Set<string>()),
+      ])
+    : [new Map<number, ReviewTarget[]>(), new Set<string>()];
   // D3 matching, loaded once for the page rather than per card: one candidate
   // query and one matches query, then the ranking is pure TS per lead. Skipped
   // entirely when the filter shows no directory lead — a buyer inbox must not
@@ -472,6 +484,33 @@ export default async function AdminLeadsPage({
       ? listMatchesForLeads(directoryLeads.map((l) => l.id))
       : Promise.resolve(new Map<number, LeadMatchRow[]>()),
   ]);
+
+  /**
+   * The partner whose usual split the "Negocio" block suggests (O2): the
+   * deal's partner, else the lead's one active share. Super-admin only, one
+   * query for the page.
+   */
+  const splitPartnerOf = new Map<number, { kind: "agency" | "agent"; id: number; name: string }>();
+  if (superAdmin) {
+    for (const id of leadIds) {
+      const deal = dealsByLead.get(id);
+      const shares = sharesByLead.get(id) ?? [];
+      const dealShare = deal
+        ? shares.find((sh) => (deal.agencyId ? sh.kind === "agency" && sh.targetId === deal.agencyId : deal.agentId ? sh.kind === "agent" && sh.targetId === deal.agentId : false))
+        : undefined;
+      const active = shares.filter((sh) => !sh.revokedAt);
+      const pick = dealShare ?? (deal?.agencyId || deal?.agentId ? undefined : active.length === 1 ? active[0] : undefined);
+      if (pick) splitPartnerOf.set(id, { kind: pick.kind, id: pick.targetId, name: pick.targetName });
+    }
+  }
+  const splitTerms = superAdmin && splitPartnerOf.size > 0
+    ? await getPartnerTerms([...splitPartnerOf.values()]).catch(() => new Map<string, PartnerTermsRow>())
+    : new Map<string, PartnerTermsRow>();
+  const termsForLead = (id: number) => {
+    const p = splitPartnerOf.get(id);
+    const tr = p ? splitTerms.get(`${p.kind}:${p.id}`) : undefined;
+    return p && tr ? { partnerName: p.name, commissionPct: tr.commissionPct, mySharePct: tr.mySharePct } : null;
+  };
   const waSendable = isWhatsAppConfigured();
   const openDealLead = Number(negocio) || 0;
   // The doors "Registrar consulta de WhatsApp" can file a lead under.
@@ -603,9 +642,9 @@ export default async function AdminLeadsPage({
                 {esWa.sourceChip}
               </span>
             ) : null}
-            {lead.utm?.source === "vender" ? (
+            {lead.utm?.source === "vender" || lead.utm?.source === "vender:socio" ? (
               <span className="panel-chip panel-chip--active">
-                /vender
+                {lead.utm?.source === "vender:socio" ? "/vender · socio" : "/vender"}
               </span>
             ) : null}
             {lead.utm?.source === BRIEF_SOURCE ? (
@@ -745,6 +784,41 @@ export default async function AdminLeadsPage({
         />
       )}
 
+      {/* Review invitation (O7): only for a partner who worked this lead. */}
+      {!isReport(lead) && (reviewTargets.get(lead.id)?.length ?? 0) > 0 ? (
+        <details className="panel-card__review" data-review-ask={lead.id}>
+          <summary>{esReviewsAdmin.askTitle}</summary>
+          <p className="panel-note">{esReviewsAdmin.askHint}</p>
+          {reviewTargets.get(lead.id)!.map((target) => {
+            if (reviewed.has(`${lead.id}:${target.kind}:${target.id}`)) {
+              return (
+                <p key={`${target.kind}:${target.id}`} className="panel-card__meta">
+                  <strong>{target.name}</strong> · {esReviewsAdmin.askDone}
+                </p>
+              );
+            }
+            const link = reviewLink(origin, lead.id, target);
+            if (!link) return null;
+            const wa = waLink(lead.whatsapp, esReviewsAdmin.askMessage(target.name, link));
+            return (
+              <div key={`${target.kind}:${target.id}`} className="panel-form" data-review-link={`${target.kind}:${target.id}`}>
+                <label className="panel-form__field" style={{ flexBasis: "360px" }}>
+                  <span className="auth-field__label">{target.name}</span>
+                  <input className="auth-field__input" readOnly value={link} />
+                </label>
+                {wa ? (
+                  <div className="panel-form__field panel-form__field--action">
+                    <a className="panel-btn panel-btn--whatsapp" href={wa} target="_blank" rel="noopener noreferrer">
+                      {esReviewsAdmin.askWhatsApp}
+                    </a>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </details>
+      ) : null}
+
       {/* The deal and commission ledger. A report never becomes a deal. */}
       {isReport(lead) ? null : superAdmin ? (
         <DealPanel
@@ -753,6 +827,7 @@ export default async function AdminLeadsPage({
           shares={sharesByLead.get(lead.id) ?? []}
           back={backHref}
           open={openDealLead === lead.id}
+          terms={termsForLead(lead.id)}
         />
       ) : (
         <DealStageReadOnly deal={dealStagesByLead.get(lead.id)} />

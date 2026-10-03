@@ -41,7 +41,7 @@ export function PanelBar({
   if (isStaff(role)) {
     tabs = tabs.filter((tab) => [
       "/admin", "/admin/propiedades", "/admin/leads", "/admin/guias",
-      "/admin/inmobiliarias", "/admin/agentes", "/admin/cuenta",
+      "/admin/inmobiliarias", "/admin/agentes", "/admin/cuenta", "/admin/resenas",
     ].includes(tab.href));
   }
   const manage = tabs.filter((t) => t.group === "manage");

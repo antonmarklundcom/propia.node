@@ -39,10 +39,18 @@ export type AdminEventAction =
   // One "Sugerir respuesta" call that reached a provider; its detail carries
   // the token counts /admin/ajustes sums into a monthly cost (src/lib/ai-reply.ts).
   | "ai.reply"
+  // A Socio's usual commission split edited on /admin/negocios/socios (O2).
+  | "partner.terms"
+  // A listing marked or unmarked exclusive on /admin/propiedades/[id] (O1).
+  | "listing.exclusive"
+  // A listing put in or taken out of a duplicate group (O5).
+  | "listing.duplicate"
+  // A partner review approved, rejected or taken down on /admin/resenas (O7).
+  | "review.moderate"
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
   | "deal.delete";
 
-export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "setting" | "email" | "whatsapp";
+export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "agent" | "setting" | "email" | "whatsapp" | "review";
 
 type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 

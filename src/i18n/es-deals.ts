@@ -145,5 +145,6 @@ export const esDeals = {
     "deal.update": "Editó un negocio",
     "deal.stage": "Un socio movió la etapa de un negocio",
     "deal.delete": "Borró un negocio",
+    "partner.terms": "Cambió el reparto habitual de un socio",
   } as Record<string, string>,
 } as const;

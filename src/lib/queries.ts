@@ -35,7 +35,7 @@ import { CACHE_TAGS, CACHE_TTL, singleFlight } from "./cache";
 import { logDegraded } from "./degrade";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import type { InventoryRow } from "./category-context";
-import { facetConds, verticalConds, publishedFacetWhere } from "./facet-sql";
+import { facetConds, notHiddenDuplicate, verticalConds, publishedFacetWhere } from "./facet-sql";
 import { categoryUrl, parseOperation, parseTypePlural } from "./urls";
 import { evergreenPathsFor } from "../content/evergreen";
 import type { ListingFacets, SortOption } from "./facets";
@@ -352,6 +352,7 @@ function categoryFacets(q: CategoryQuery): ListingFacets {
 function categoryConds(q: CategoryQuery) {
   return and(
     eq(listings.status, "published"),
+    notHiddenDuplicate(),
     ...facetConds(categoryFacets(q)),
     ...(q.vertical ? verticalConds(q.vertical) : []),
   );
@@ -383,6 +384,7 @@ export interface CategoryFilters {
 function filterConds(q: CategoryQuery, f: CategoryFilters) {
   return and(
     eq(listings.status, "published"),
+    notHiddenDuplicate(),
     ...facetConds({
       ...categoryFacets(q),
       priceMin: f.priceMin,
@@ -559,6 +561,7 @@ export async function countPublished(
   return countRows(
     and(
       eq(listings.status, "published"),
+      notHiddenDuplicate(),
       ...(vertical ? verticalConds(vertical) : []),
     ),
   );
@@ -582,6 +585,7 @@ export async function getRecentListingsBy(
     .where(
       and(
         eq(listings.status, "published"),
+        notHiddenDuplicate(),
         ...facetConds({ operation: by.operation, propertyType: by.type }),
         ...(by.vertical ? verticalConds(by.vertical) : []),
       ),
@@ -732,6 +736,7 @@ export async function getRecentListings(
     .where(
       and(
         eq(listings.status, "published"),
+        notHiddenDuplicate(),
         ...(vertical ? verticalConds(vertical) : []),
       ),
     )
@@ -912,6 +917,7 @@ export async function getSimilarListings(params: {
     .where(
       and(
         eq(listings.status, "published"),
+        notHiddenDuplicate(),
         ...facetConds({
           operation: params.operation,
           propertyType: params.type,

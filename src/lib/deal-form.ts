@@ -179,6 +179,58 @@ export function parsePartnerStageForm(form: FormLike): PartnerStageInput | null 
   return { ...v, lostReason: v.stage === "lost" ? v.lostReason : null };
 }
 
+/* --------------------- partner terms (plan-admin-next O2) --------------------- */
+
+/** The usual split with one Socio, as /admin/negocios/socios edits it. */
+export interface PartnerTermsInput {
+  commissionPct: string | null;
+  mySharePct: string | null;
+  note: string | null;
+}
+
+export const PARTNER_TERMS_NOTE_MAX = 500;
+
+const partnerTermsSchema = z.object({
+  commissionPct: percent,
+  mySharePct: percent,
+  note: z.preprocess(blankToNull, z.string().max(PARTNER_TERMS_NOTE_MAX).nullable()),
+});
+
+/** Same percent rules as the deal form; blank = no suggestion for that field. */
+export function parsePartnerTermsForm(form: FormLike): PartnerTermsInput | null {
+  const r = partnerTermsSchema.safeParse({
+    commissionPct: field(form, "commissionPct"),
+    mySharePct: field(form, "mySharePct"),
+    note: field(form, "note"),
+  });
+  return r.success ? (r.data as PartnerTermsInput) : null;
+}
+
+export interface SplitPrefill {
+  commissionPct: string | null;
+  mySharePct: string | null;
+  /** True when at least one value shown came from the partner's usual terms. */
+  suggested: boolean;
+}
+
+/**
+ * What the "Negocio" form shows in its two percentage fields. A value already
+ * on the deal always wins — the suggestion only fills a field that is still
+ * empty, and nothing is stored until the operator saves. No amount is
+ * derived here.
+ */
+export function splitPrefill(
+  deal: { commissionPct: string | null; mySharePct: string | null } | null | undefined,
+  terms: { commissionPct: string | null; mySharePct: string | null } | null | undefined,
+): SplitPrefill {
+  const commissionPct = deal?.commissionPct ?? terms?.commissionPct ?? null;
+  const mySharePct = deal?.mySharePct ?? terms?.mySharePct ?? null;
+  const suggested =
+    (deal?.commissionPct == null && terms?.commissionPct != null) ||
+    (deal?.mySharePct == null && terms?.mySharePct != null);
+  return { commissionPct, mySharePct, suggested };
+}
+
 /**
  * The "≈ US$ X" hint next to "Tu parte (US$)": price × commission% × share%.
  * Display only — shown as an estimate, never written to `my_share_usd`.

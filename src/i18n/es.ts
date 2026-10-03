@@ -446,6 +446,7 @@ export const esPanel = {
   deleteUser: "Eliminar",
   linkAgency: "Vincular",
   noPasswordBadge: "Sin contraseña",
+  userWeakPassword: "La contraseña necesita al menos 8 caracteres.",
   userEmailTaken: "Ese email ya está en uso por otra cuenta.",
   userSelfRoleError: "No podés cambiarte el rol a vos mismo.",
   userSelfDeleteError: "No podés eliminar tu propia cuenta.",
@@ -650,7 +651,7 @@ export const esPanel = {
   historyWhat: "Qué",
   historyTarget: "Sobre",
   historyDetail: "Detalle",
-  historyTargetLabel: { lead: "Consulta", listing: "Aviso", user: "Usuario" } as Record<string, string>,
+  historyTargetLabel: { lead: "Consulta", listing: "Aviso", user: "Usuario", agent: "Agente" } as Record<string, string>,
   historyAction: {
     "lead.share": "Compartió una consulta",
     "lead.revoke": "Quitó el acceso a una consulta",
@@ -1423,139 +1424,149 @@ export const esNordico = {
 
 /**
  * `/vender` seller landing page strings (docs/style/inmobiliaria.com.py.md
- * §5 "Seller landing page /vender"). Rendered only on the Spanish door —
- * `sellerLandingEnabled()` (src/design/sections.ts) redirects every other
- * vertical's `/vender` request to `/` before this page ever mounts.
+ * §5 "Seller landing page /vender", rewritten 2026-10-03 around the
+ * "marketing firm, not a listing site" positioning — see
+ * docs/log/vender-rewrite.md). The Spanish door renders all of it, including
+ * the independent-realtor band; the English door renders `enVender`.
  *
- * Every placeholder is marked explicitly in both the string and the PR
- * description that shipped it (guide §1: "a placeholder number in a mockup
- * is not a licence to ship it" — the placeholders below are content the
- * founder must confirm, not numbers pretending to be real).
+ * Nothing here states a fee, a commission, a number or a ranking: those are
+ * the founder's to sign (docs/decisions-needed.md, 2026-10-03).
  */
 export const esVender = {
-  metaTitle: "Vendé tu propiedad al mejor precio",
+  breadcrumbHome: "Inicio",
+  metaTitle: "Vendé tu propiedad con una estrategia de marketing",
   metaDescription: (brand: string) =>
-    `Vendé con ${brand}: fotografía profesional, marketing digital, tasación con datos del mercado y compradores del exterior. Sin costo, sin exclusividad.`,
-  heroKicker: "Vender con nosotros",
-  heroTitle: "Vendé al mejor precio, con un proceso que se ve.",
-  // Guide §5.1: "what the seller gets, in three lines."
+    `${brand}: precio con datos del mercado, fotografía y video profesional, marketing digital y compradores del exterior. Contanos de tu propiedad y armamos el plan para venderla.`,
+  // Positioning (founder, 2026-10-03): a marketing firm that sells property,
+  // not a place to post an ad. No superlative and no number: "la mejor" or a
+  // count would be a claim the founder has to sign first.
+  heroKicker: "Marketing inmobiliario en Paraguay",
+  heroTitle: "Tu propiedad merece una estrategia de venta, no un aviso más.",
   heroSubtitleLines: [
-    "Fotografía profesional y home styling para tu propiedad.",
-    "Marketing digital y publicación en español e inglés.",
-    "Un proceso de venta documentado, no un aviso más.",
+    "Un precio definido con datos del mercado, no con una corazonada.",
+    "Fotografía, video y home styling para que tu propiedad se destaque.",
+    "Campañas en Meta, Google y portales, con la experiencia de Suecia, España y EE. UU.",
   ],
-  formTitle: "Quiero una tasación",
+  // Every field of the form is required (founder, 2026-10-03). The hero
+  // no longer sells a free valuation: it asks for a conversation.
+  formTitle: "Contanos de tu propiedad",
   formNameLabel: "Nombre",
   formPhoneLabel: "Teléfono (WhatsApp)",
   formCityLabel: "Ciudad / barrio",
   formCityPlaceholder: "Elegí tu ciudad",
   formTypeLabel: "Tipo de propiedad",
   formTypePlaceholder: "Elegí el tipo",
-  formMessageLabel: "Mensaje (opcional)",
-  formMessagePlaceholder: "Contanos algo más sobre tu propiedad",
-  formSubmit: "Quiero una tasación",
+  formSelectPlaceholder: "Elegí una opción",
+  formMessageLabel: "Sobre tu propiedad",
+  formMessagePlaceholder:
+    "Dirección o zona, tamaño, estado y en qué plazo querés vender",
+  formSubmit: "Hablemos de mi propiedad",
   formSending: "Enviando…",
-  // Guide §5.1: "Sin costo. Sin compromiso. Respondemos en < 24 h (only if
-  // true)." No measured response-time figure exists — the same reasoning
-  // esNordico.proofRow's comment already gives for cutting a fabricated
-  // "48 h" claim — so this states only the two facts that are true today.
-  formNote: "Sin costo. Sin compromiso.",
-  formSuccessTitle: "¡Listo! Recibimos tus datos.",
-  formSuccessText: "Te contactamos por WhatsApp para coordinar la tasación.",
+  formNote:
+    "Te escribimos por WhatsApp para entender tu propiedad y armar el plan de venta.",
+  formRequiredNote: "Todos los campos son obligatorios.",
+  formRequired: "Completá este campo.",
+  formSelectRequired: "Elegí una opción.",
+  formMessageTooShort: (min: number) =>
+    `Contanos un poco más (mínimo ${min} caracteres).`,
+  formSuccessTitle: "¡Gracias! Recibimos los datos de tu propiedad.",
+  formSuccessText:
+    "Te escribimos por WhatsApp para conocerla y definir el plan de venta.",
   formError:
-    "No pudimos enviar tu mensaje. Probá de nuevo o escribinos por WhatsApp.",
+    "No pudimos enviar tu mensaje. Probá de nuevo en unos minutos.",
+  formRateLimited:
+    "Enviaste varias solicitudes seguidas. Esperá unos minutos y probá de nuevo.",
   formPhoneError: "Ingresá un número de WhatsApp válido.",
   formFineprintPrefix: "Al enviar aceptás",
   formFineprintAnd: "y la",
   formTerms: "nuestros términos",
   formPrivacy: "política de privacidad",
-  differentTitle: "Qué hacemos distinto",
+  expertiseTitle: "Marketing digital de mercados maduros, ahora en Paraguay",
+  expertiseText:
+    "Traemos al mercado paraguayo la experiencia en marketing digital que desarrollamos en Suecia, España y Estados Unidos: campañas medidas, contenido hecho para generar consultas y una forma de trabajar aprendida en mercados exigentes.",
+  expertisePoints: [
+    "Campañas medidas con datos, no con intuición",
+    "Contenido visual pensado para generar consultas",
+    "Experiencia de Suecia, España y Estados Unidos aplicada a Paraguay",
+  ],
+  differentTitle: "Cómo vendemos tu propiedad",
   differentCards: [
     {
-      title: "Fotografía y video profesional",
-      text: "Fotografía profesional y video corto de cada propiedad, incluidos en la publicación.",
+      title: "Estrategia de precio",
+      text: "Un rango basado en ventas comparables reales de la zona. Salís al mercado con el precio que sostiene la venta, no con el que ojalá alguien pague.",
+    },
+    {
+      title: "Fotografía y video",
+      text: "Producción visual profesional de cada propiedad: la primera impresión es la que decide quién te escribe.",
     },
     {
       title: "Home styling",
       text: "Puesta en escena pensada para mostrar el potencial de cada ambiente, no solo para retratarlo.",
     },
     {
-      title: "Tasación con datos del mercado",
-      text: "Un rango de precio basado en ventas comparables reales de la zona, no en una corazonada.",
-    },
-    {
-      title: "Publicación en español e inglés",
-      text: "El mismo aviso llega a compradores locales y a compradores que buscan desde el exterior.",
-    },
-    {
       title: "Marketing digital",
-      text: "Promoción paga en Meta, Google y portales — tu aviso se promociona, no solo se publica.",
+      text: "Campañas pagas en Meta, Google y portales: tu propiedad se promueve de forma activa, no espera a que alguien la encuentre.",
+    },
+    {
+      title: "Español e inglés",
+      text: "La misma propiedad se presenta a compradores locales y a quienes buscan desde el exterior.",
     },
     {
       title: "Red de sitios",
-      // Named only the two sites that actually carry the same listing today
-      // (inmobiliaria.com.py + its English translation) — terreno.com.py
-      // filters to property_type: ["terreno"] (verticals.ts) and would never
-      // show a casa/departamento, and "el resto de la red" implied doors
-      // beyond the three that exist. Review finding: don't overclaim reach.
+      // Names only the two sites that carry the same property today
+      // (terreno.com.py is land-only) — don't overclaim reach.
       text: "Tu propiedad visible en inmobiliaria.com.py y en realestateinparaguay.com, la puerta de entrada para compradores del exterior.",
     },
   ],
-  foreignTitle: "Compradores del exterior",
-  // Softened from "se traduce y se publica" (present tense, claims the
-  // translation already happened): per CLAUDE.md, npm run cron:translate has
-  // never run against the live database, so title_en/description_en are
-  // still empty and every listing shows its Spanish fallback on the English
-  // door today. The listing itself IS already live there (that part is
-  // true) — only the translation step is described as in progress, not done.
+  foreignTitle: "Compradores locales y del exterior",
+  // Softened on purpose: `npm run cron:translate` may not have reached every
+  // listing yet (CLAUDE.md), so the English text is described as in progress.
   foreignText:
-    "Cada propiedad se publica también en realestateinparaguay.com, la puerta de entrada del portal para quien busca desde otro país, con su ficha en camino de traducirse al inglés.",
+    "Cada propiedad se publica también en realestateinparaguay.com, el sitio del portal pensado para quien busca desde otro país, con su ficha en camino de traducirse al inglés.",
   foreignPoints: [
     "Publicada también en realestateinparaguay.com",
     "Precio de referencia en dólares",
     "Contacto directo por WhatsApp, sin intermediarios",
   ],
-  // PLACEHOLDER (guide §5.4): a real screenshot of realestateinparaguay.com
-  // on a laptop belongs here — this renders a marked placeholder frame
-  // instead of a fabricated screenshot.
-  foreignImageLabel: "Vista previa de realestateinparaguay.com",
-  foreignImagePlaceholderNote: "Imagen de referencia — pendiente de reemplazo",
-  behindTitle: "Quién está detrás",
-  // PLACEHOLDER (guide §5.6): founder's name inferred from the repository
-  // owner, not sourced from app copy anywhere else. Review finding: an
-  // inferred name must carry the same visible marker the photo and the
-  // laptop mock already do, not ship as unmarked fact — so the rendered
-  // string itself says so, the same way the photo/mock captions do.
-  behindName: "Anton Marklund (nombre a confirmar)",
-  behindRole:
-    "Fundador de Inmobiliaria Paraguay y de la red de sitios del portal.",
-  // PLACEHOLDER (guide §5.6 asks for "the EAS company named" — a real razón
-  // social, not the type of entity). "EAS" is the only company reference
-  // anywhere in this codebase (src/i18n/es.ts's existing disclaimer line,
-  // reused here) and isn't itself a company name — no real razón social
-  // exists in this repo to reuse. Flagged rather than invented.
-  behindCompany: (brand: string) =>
-    `${brand} es un servicio de EAS (razón social a confirmar).`,
-  // PLACEHOLDER (guide §5.6): stated without a specific status this codebase
-  // doesn't establish. verticals.ts's own note only says "license issues
-  // (~Oct 2026)" generally — it does not say a licence application is
-  // actually filed/"en trámite", so this no longer claims that. The
-  // "confirm before launch" instruction lives in this comment now, not in
-  // the rendered string (review finding: a builder-to-founder note had
-  // leaked into visitor-facing copy) — confirm the real status before
-  // publishing.
-  behindLicense: "Sin matrícula profesional publicada.",
-  behindPhotoLabel: "Foto del fundador",
-  behindPhotoPlaceholderNote: "Imagen de referencia — pendiente de reemplazo",
+  // The partner band (Spanish door only): independent realtors. Every bullet
+  // is something the portal does today — shared leads, verified directory
+  // profile, the panel, the network of sites — and none names a commission or
+  // a split, which is a founder decision (docs/decisions-needed.md).
+  partnerKicker: "Para corredores independientes",
+  partnerTitle: "¿Sos corredor? Trabajá con el respaldo de una firma de marketing.",
+  partnerText:
+    "Sumate como socio independiente: vos ponés tu criterio y la relación con tu cliente; nosotros ponemos la plataforma, la exposición y las consultas.",
+  partnerPoints: [
+    "Recibís consultas que el portal comparte con socios verificados",
+    "Perfil verificado en el directorio de inmobiliarios",
+    "Tus propiedades en español e inglés, en toda la red de sitios",
+    "Un panel propio para seguir tus consultas",
+  ],
+  partnerFormTitle: "Quiero ser socio",
+  partnerCityLabel: "Ciudad donde trabajás",
+  partnerMessageLabel: "Contanos de tu trabajo",
+  partnerMessagePlaceholder:
+    "Zonas que cubrís, años de experiencia y qué propiedades manejás hoy",
+  partnerSubmit: "Quiero ser socio",
+  partnerFormNote:
+    "Revisamos cada solicitud y te escribimos por WhatsApp.",
+  partnerSuccessTitle: "¡Gracias! Recibimos tu solicitud.",
+  partnerSuccessText:
+    "Te escribimos por WhatsApp para conocerte y contarte cómo trabajamos con socios.",
   faqTitle: "Preguntas de vendedores",
-  // Guide §5.7: comisión, plazo, exclusividad, qué pasa si no se vende, quién
-  // atiende las visitas. Answers adapted from the portal's own existing
-  // policy copy (src/config/faq.ts's "¿Cobran comisión por la operación?" and
-  // /terminos's "licencia no exclusiva y gratuita"), not invented fresh.
+  // The pricing and exclusivity answers deliberately promise nothing about
+  // fees, a term or exclusivity: the earlier "no cobramos comisión / publicar
+  // es gratis" is exactly the free-listing-site framing this page moves away
+  // from, and the replacement terms are the founder's to state
+  // (docs/decisions-needed.md, 2026-10-03).
   faq: [
     {
-      q: "¿Cobran comisión por vender con ustedes?",
-      a: "No cobramos comisión sobre la venta. Publicar es gratis; si tu propiedad la gestiona una inmobiliaria o agente de la red, sus honorarios los acordás directamente con esa persona.",
+      q: "¿Cómo trabajan?",
+      a: "Empezamos con una conversación para entender tu propiedad, tu plazo y el precio que buscás. Con eso armamos el plan: precio con datos del mercado, producción visual, campañas y seguimiento de cada consulta.",
+    },
+    {
+      q: "¿Cuánto cuesta y cuáles son las condiciones?",
+      a: "Depende de la propiedad y del plan de marketing que corresponda. Te explicamos las condiciones en la primera conversación y las dejamos por escrito antes de empezar.",
     },
     {
       q: "¿Cuánto tarda en venderse mi propiedad?",
@@ -1563,20 +1574,20 @@ export const esVender = {
     },
     {
       q: "¿Tengo que darles exclusividad?",
-      a: "No. Al publicar nos das una licencia no exclusiva y gratuita para mostrar tu propiedad — podés seguir vendiéndola por tu cuenta o con otra inmobiliaria al mismo tiempo.",
+      a: "Lo conversamos según tu caso. Un plan de marketing rinde más cuando una sola voz coordina el precio, el mensaje y las visitas, y cualquier acuerdo queda por escrito.",
     },
     {
-      q: "¿Qué pasa si no se vende?",
-      a: "No hay costo ni compromiso de plazo. Podés ajustar el precio, actualizar las fotos o pausar el aviso cuando quieras.",
+      q: "¿Cómo llegan a compradores del exterior?",
+      a: "Tu propiedad se publica también en realestateinparaguay.com, el sitio en inglés del portal para quien busca desde otro país.",
     },
     {
       q: "¿Quién atiende las visitas?",
-      a: "Las consultas te llegan directo por WhatsApp. Si publicás como particular, coordinás vos las visitas; si tu propiedad la gestiona una inmobiliaria o agente de la red, ellos se encargan del contacto y las visitas.",
+      a: "Lo definimos con vos en el plan. Las consultas llegan por WhatsApp y cada una tiene seguimiento; si tu propiedad la gestiona una inmobiliaria o un corredor de la red, ellos se encargan del contacto y las visitas.",
     },
   ],
-  closingTitle: "¿Listo para vender?",
+  closingTitle: "Hablemos de tu propiedad.",
   closingText:
-    "Dejanos tus datos y te contactamos para empezar con la tasación.",
+    "Contanos qué tenés y qué querés lograr. Con eso armamos el plan para venderla.",
 } as const;
 
 /**
@@ -1644,6 +1655,7 @@ export const esGuideEn = {
   ],
   footerCompanyLinks: [
     { label: "Nosotros", href: "/nosotros" },
+    { label: "Vender mi propiedad", href: "/vender" },
     { label: "Contacto", href: "/contacto" },
   ],
   footerLegalLinks: [
@@ -2171,6 +2183,17 @@ export const esListing = {
   financingFoot:
     "Estimación referencial para esta propiedad — la aprobación depende del banco y del programa.",
 
+  // Financing the publisher offers on this listing (plan-admin-next O8): their
+  // own words, labelled as theirs, in place of the estimated cuota.
+  sellerFinancingHead: "Financiación del vendedor",
+  sellerFinancingEntity: "Financia",
+  sellerFinancingRate: "Tasa",
+  sellerFinancingTerm: "Plazo",
+  sellerFinancingDownPayment: "Entrega inicial",
+  sellerFinancingNotes: "Condiciones",
+  sellerFinancingSource: (who: string) => `Datos provistos por ${who}, no por el portal.`,
+  sellerFinancingWhoGeneric: "el anunciante",
+
   detailsTitle: "Detalles de la propiedad",
   detailBarrio: "Barrio",
   detailCity: "Ciudad",
@@ -2203,6 +2226,10 @@ export const esListing = {
   sellerKindAgent: "Agente",
   /** FSBO: the listing was published by its owner, not by a professional. */
   sellerKindOwner: "Particular",
+  /** Duplicate listings (plan-admin-next O5): the same property, other listers. */
+  alsoListedBy: "También publicado por",
+  alsoListedHint: "La misma propiedad, publicada por otros anunciantes. Podés consultar a cualquiera.",
+  alsoListedLink: "Ver su aviso",
 
   contactTitle: "¿Interesado en esta propiedad?",
   contactSubtitle: "Contactanos hoy para más información o para agendar una visita.",
