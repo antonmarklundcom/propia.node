@@ -553,3 +553,74 @@ is a policy on who may do what.
   no "#1"/"la mejor" without a source.
 - **Site-wide "free" signals** (see docs/log/vender-rewrite.md): say which to change.
 - **Sweden / Spain / US experience claim.** `/vender` and `/sell` say the team brings digital-marketing experience from those three countries. Confirm the wording (and whether to name clients or results) before launch.
+
+## 2026-10-03 — Category pages, place pages and zone maps (founder)
+
+From `docs/plan-category-pages-build.md`. Nothing here needs a schema change:
+place text lives in `src/content/places/*.ts` and boundaries in
+`src/content/places/geo/*.json`. The unused `locations.guide_content_es/en`
+columns stay as they are. Dropping them later would be its own
+`MIGRATION REQUIRED —` PR and is not part of this plan.
+
+- **P-1 — Place page URL.** (a) `/zonas/<ciudad>[/<barrio>]` on every door;
+  (b) `/zonas/…` in Spanish and `/areas/…` in English, paired with 308s like
+  `rentalPath()`; (c) no new URL: put the place text on
+  `/venta|alquiler/<ciudad>`. **Recommendation: (a).** One spelling, through
+  one `placePath()` helper so (b) remains a one-function change. (c) would put
+  one long text on two URLs (venta and alquiler) or split it in half.
+- **P-2 — Which doors own place pages.** **Recommendation:** inmobiliaria.com.py
+  (es) and realestateinparaguay.com (en). The other marketplace doors
+  canonicalise to inmobiliaria's page, the same as `ownsCategories: false`.
+  Doors without marketplace pages 308 `/zonas` like `/guias`.
+- **P-3 — robots.txt.** Disallow `?`/`&` + `vista`, `precio_min`, `precio_max`,
+  `dormitorios`, `orden`, `barrio`, `tipo`, `ciudad`, `tipo_vacio`.
+  **Keep `page` crawlable:** page 2+ is already `noindex,follow` and is how
+  crawlers reach older listings. Trade-off: a disallowed URL's noindex is never
+  read, so parameter URLs Google already holds may linger as "Indexed, though
+  blocked" for a while. None of them is canonical. Yes, or change the list?
+- **P-4 — Map images.** (a) Hybrid: a base map per place (all ~85 tree places),
+  plus a per-URL map with the type badge for evergreen pages and place pages.
+  Every other combination shows its place's base map with the badge as an HTML
+  overlay. (b) Pre-render every valid combination: thousands of files, too big
+  for git. (c) Render on demand in a route with `sharp`: CPU on the shared host,
+  which is already near its process cap. **Recommendation: (a)**, with a size
+  budget of about 25 MB for `public/img/maps`. They move to R2 once R2 exists.
+- **P-5 — OpenStreetMap licence.** ODbL 1.0. The images need a visible
+  "© OpenStreetMap contributors" credit (under each map and inside the image).
+  The GeoJSON stays private to the repo and is never served as data, which
+  keeps share-alike off it. Please acknowledge, or say if you want a lawyer to
+  look first.
+- **P-6 — Draft → verified.** A place file merges as `status: "draft"`: live
+  but noindex. It becomes indexable when you have checked its
+  `claimsToVerify` and the file is flipped to `verified`. **Recommendation:**
+  you reply per claim on the PR, and the session flips the status in a
+  follow-up PR. OK?
+- **P-7 — English place pages.** **Recommendation:** Asunción and Encarnación
+  first, then San Bernardino if P-10 is yes. Others only when Search Console
+  shows English impressions.
+- **P-8 — Concepción and Villarrica are not in the location tree.** Together
+  they have about 1,100 searches/mo in the 2026-10-01 file, partly
+  Chilean (P-9). Adding them means a tree entry (departamento and a centroid
+  you trust), then `seed:locations` and `cron:geo` on production.
+  **Recommendation:** yes, in batch 5, after the noise check.
+- **P-9 — Place names shared with other countries.** The totals for Recoleta,
+  San Antonio, Concepción and Villarrica include searches for places in
+  Chile, Argentina or Texas. **Recommendation:** build Recoleta (an Asunción
+  barrio that people search with "local" and "departamento"), and hold the
+  other three until Search Console shows Paraguayan impressions for them.
+- **P-10 — Places with evergreen pages but 0 volume in the 2026-10-01 file**
+  (San Bernardino, Fernando de la Mora, Areguá, Loma Pytã, Mariano Roque
+  Alonso). The brief says to build place pages only where the file shows
+  volume. **Recommendation:** not in the first 15; revisit with Search
+  Console. Note that S10 quoted about 210/mo for "terrenos en san bernardino"
+  from the earlier export, and this file shows 0.
+- **P-11 — Merge policy per phase.** AGENTS.md allows an agent merge only for
+  low-risk work a plan names. **Proposed:** the agent may merge phase 5
+  (market box), phase 6 (map data) and draft-content PRs (noindex) once
+  green. You merge phases 1–4 and 7 (robots, the hot path, indexability, new
+  routes, image weight) and every `verified` flip.
+- **P-12 — OSM data from a cloud session.** This environment's network policy
+  blocks `overpass-api.de` (403). Either add `overpass-api.de` to the
+  environment's allowed domains (cloud environment settings → Network access →
+  Custom), or run `npm run maps:fetch` once on your machine and commit the
+  output. The script needs no credentials.
