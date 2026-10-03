@@ -1467,3 +1467,22 @@ export const listingFinancing = mysqlTable("listing_financing", {
   updatedByUserId: fk("updated_by_user_id").notNull(),
   updatedAt: datetime("updated_at").notNull(),
 });
+
+/**
+ * Exclusive listings (plan-admin-next O1): the operator holds this listing on
+ * an exclusive mandate — the owner's, or a Socio's "exclusive marketing with
+ * us". A row = exclusive; no row = not. **Admin only** (founder decision
+ * 2026-10-02): nothing public reads this table, no badge, no ranking.
+ *
+ * Its own table, not a column on `listings` (selected whole by every public
+ * page), for the same reason as `listing_financing`.
+ */
+export const listingExclusives = mysqlTable("listing_exclusives", {
+  listingId: fk("listing_id").primaryKey(),
+  /** Last day of the mandate, when there is one. Past it the panel says "vencida". */
+  until: date("until", { mode: "string" }),
+  /** For the operator: "firmado con el propietario", "socio: Inmo X"… */
+  note: varchar("note", { length: 280 }),
+  setByUserId: fk("set_by_user_id").notNull(),
+  setAt: datetime("set_at").notNull(),
+});

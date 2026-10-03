@@ -585,6 +585,13 @@ default, `--dry` first). It records itself as a revertible import job.
       pre-push hook).
     - 0025 holds the audit's four indexes (P9).
 
+30. **Exclusive listings (O1, 2026-10-03, migration 0026,
+    `docs/log/listing-exclusive.md`).** **Admin only** (founder decision): a
+    row in `listing_exclusives` = exclusive, with an optional end date and
+    note. Set on /admin/propiedades/[id], filtered and badged on
+    /admin/propiedades. `src/lib/listing-exclusive.ts` is the only module on
+    the table. **Nothing public reads it** — no badge, ranking or JSON-LD.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
@@ -989,6 +996,7 @@ that section no longer lists everything:
 | `drizzle/0021_tiresome_newton_destine.sql` | `whatsapp_messages`, `whatsapp_contacts` (WhatsApp Cloud API inbox, `docs/log/whatsapp-inbox.md`) | **no** — founder applies before merging the WhatsApp PR; `db:migrate` also runs 0020 if still pending |
 | `drizzle/0024_wild_iron_man.sql` | `partner_terms`, `listing_financing` (O2, O8, `docs/log/partner-ledger-financing.md`) | **no** — founder applies before merging the O2/O8 PR |
 | `drizzle/0025_mute_the_hand.sql` | indexes `leads.idx_routed_status`, `listings.idx_owner` / `idx_updated`, `ops_runs.idx_job_id` (audit 2026-10 P9) | **no** — same PR, same step |
+| `drizzle/0026_dizzy_lorna_dane.sql` | `listing_exclusives` (O1, admin-only exclusive flag) | **no** — founder applies after 0024/0025, before merging the O1 PR |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

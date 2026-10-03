@@ -10,6 +10,8 @@
  * user can edit, pause, unpublish or soft-remove, never publish or destroy.
  */
 import { revalidatePath } from "next/cache";
+import { exclusiveFromForm } from "@/lib/listing-exclusive-state";
+import { saveListingExclusive } from "@/lib/listing-exclusive";
 import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireStaffOrAbove, requireSuperAdmin } from "@/lib/auth/guards";
@@ -151,4 +153,20 @@ export async function bulkListingAction(formData: FormData): Promise<void> {
 export async function adminSaveFinancingAction(formData: FormData): Promise<void> {
   const user = await requireStaffOrAbove();
   await handleFinancingForm({ formData, scope: { kind: "admin" }, userId: user.id, basePath: "/admin/propiedades" });
+}
+
+/**
+ * Mark or unmark a listing exclusive (plan-admin-next O1). Admin only: the
+ * flag is never shown to visitors. Staff may set it — they manage listings.
+ */
+export async function adminSaveExclusiveAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  const listingId = Number(formData.get("listingId"));
+  if (!Number.isInteger(listingId) || listingId <= 0) redirect("/admin/propiedades");
+  const input = exclusiveFromForm((k) => formData.get(k));
+  if ("error" in input) redirect(`/admin/propiedades/${listingId}?msg=exclusive_invalid#exclusiva`);
+  const ok = await saveListingExclusive({ listingId, input, userId: user.id });
+  if (!ok) redirect("/admin/propiedades?msg=not_found");
+  revalidatePath("/admin/propiedades");
+  redirect(`/admin/propiedades/${listingId}?msg=exclusive_saved#exclusiva`);
 }
