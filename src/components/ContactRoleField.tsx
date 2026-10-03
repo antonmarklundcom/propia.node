@@ -29,6 +29,8 @@ export function ContactRoleField({
   labelClassName,
   inputClassName,
   id,
+  required,
+  placeholder,
 }: {
   locale: Locale;
   roles: readonly ContactRole[];
@@ -42,6 +44,11 @@ export function ContactRoleField({
   inputClassName?: string;
   /** Overrides the generated id, for forms that render the field twice. */
   id?: string;
+  /** A form that needs the answer (`/vender`) marks the select required. The
+   *  default stays optional, which is what every other form wants. */
+  required?: boolean;
+  /** Replaces the "(optional)" placeholder; a required field must not say it. */
+  placeholder?: string;
 }) {
   const t = getDictionary(locale).contactRole;
   const generatedId = useId();
@@ -54,9 +61,10 @@ export function ContactRoleField({
         id={selectId}
         className={inputClassName}
         value={value}
+        required={required}
         onChange={(e) => onChange(isContactRole(e.target.value) ? e.target.value : "")}
       >
-        <option value="">{t.placeholder}</option>
+        <option value="">{placeholder ?? t.placeholder}</option>
         {roles.map((r) => (
           <option key={r} value={r}>
             {t.options[r]}

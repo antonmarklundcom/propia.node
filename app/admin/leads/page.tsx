@@ -631,9 +631,9 @@ export default async function AdminLeadsPage({
                 {esWa.sourceChip}
               </span>
             ) : null}
-            {lead.utm?.source === "vender" ? (
+            {lead.utm?.source === "vender" || lead.utm?.source === "vender:socio" ? (
               <span className="panel-chip panel-chip--active">
-                /vender
+                {lead.utm?.source === "vender:socio" ? "/vender · socio" : "/vender"}
               </span>
             ) : null}
             {lead.utm?.source === BRIEF_SOURCE ? (

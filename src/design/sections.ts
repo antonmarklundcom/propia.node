@@ -295,26 +295,36 @@ export function sellerCta(_key: VerticalKey): SellerCta {
 /**
  * The href every Nórdico "sell" CTA points at — the header's "Vender mi
  * propiedad" button, the sales-process section's "Empezar a vender", the
- * hero's black button. `/vender` (PR4, build-prompt.md) is the Spanish
- * door's own seller landing page, so only `inmobiliaria` repoints to it;
- * every other key keeps `/publicar` — `/vender` 404s/redirects on every
- * other door (`sellerLandingEnabled()` below), so nothing outside the
- * Spanish door should ever link to it.
+ * hero's black button. `/vender` is the seller landing page of the two
+ * marketplace doors (`sellerLandingEnabled()` below): `inmobiliaria` and, since
+ * 2026-10-03, `en`. Every other key keeps `/publicar` — `/vender` redirects on
+ * every other door, so nothing outside those two should ever link to it. The
+ * English door has no header CTA (`chromeShowPublishCta`), so there the link
+ * only shows where the home page offers to sell: low focus, by design.
  */
 export function sellerCtaHref(key: VerticalKey): string {
-  return key === "inmobiliaria" ? "/vender" : "/publicar";
+  return key === "inmobiliaria" || key === "en" ? "/vender" : "/publicar";
 }
 
 /**
- * Whether `/vender` (docs/style/inmobiliaria.com.py.md §5) renders for this
- * door at all. Spanish door only — build-prompt.md PR4: "Build /vender on
- * the Spanish door only (the English door 404s it or redirects to /)."
- * `terreno.com.py` isn't named explicitly by the guide; treated the same as
- * the English door here (redirect to home) since `/vender` is a Nórdico-
- * branded, Spanish-marketplace-primary page terreno's feeder audience never
- * asked for — see the PR description for the reasoning.
+ * Whether `/vender` renders for this door at all: the Spanish marketplace
+ * primary (docs/style/inmobiliaria.com.py.md §5) and, since 2026-10-03, its
+ * English translation `realestateinparaguay.com` with a lighter page in its own
+ * language, paired by hreflang. Every other door redirects `/vender` to `/` —
+ * `terreno.com.py` and the land, rental, directory and residency doors are
+ * not the seller's door, and a seller form there would route leads from a
+ * brand the seller never chose.
  */
 export function sellerLandingEnabled(key: VerticalKey): boolean {
+  return key === "inmobiliaria" || key === "en";
+}
+
+/**
+ * The independent-realtor band on `/vender` is the Spanish door's alone: the
+ * partner network recruits Paraguayan realtors, and the English door's seller
+ * page is deliberately lighter (founder, 2026-10-03).
+ */
+export function sellerPartnerBandEnabled(key: VerticalKey): boolean {
   return key === "inmobiliaria";
 }
 

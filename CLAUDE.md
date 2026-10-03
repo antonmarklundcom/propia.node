@@ -605,6 +605,14 @@ default, `--dry` first). It records itself as a revertible import job.
     - **Only writer:** `src/lib/listing-duplicates.ts`. `verify:duplicates` is
       in the hook.
 
+32. **/vender (2026-10-03, no migration, `docs/log/vender-rewrite.md`).** Marketing-firm
+    positioning; every form field required (`VenderForm`, own validation);
+    served on the Spanish door and, lighter, on `realestateinparaguay.com`
+    (`sellerLandingEnabled()`, hreflang-paired). Spanish door has an
+    independent-realtor form (`vender:socio`, `agent_signup`). Fee/exclusivity
+    wording awaits the founder (`docs/decisions-needed.md`).
+    `tests/e2e/vender-form.spec.ts` submits for real.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

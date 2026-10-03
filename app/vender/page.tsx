@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { doorOgImages } from "@/lib/og-urls";
 import { redirect } from "next/navigation";
-import { dict } from "@/i18n/server";
+import { currentLocale, dict } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
-import { sellerLandingEnabled } from "@/design/sections";
+import { sellerLandingEnabled, sellerPartnerBandEnabled } from "@/design/sections";
+import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { listCities } from "@/lib/queries";
@@ -19,16 +20,24 @@ import { Section, FeatureGrid } from "@/components/MarketingUI";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [d, brand, origin] = await Promise.all([
+  const [d, brand, origin, vertical] = await Promise.all([
     dict(),
     brandName(),
     siteOrigin(),
+    currentVertical(),
   ]);
   const t = d.vender;
+  // The Spanish page and its English translation pair by hreflang; a door
+  // that redirects /vender away never renders this metadata.
+  const languages = await pageLanguageAlternates({
+    path: "/vender",
+    scope: "site",
+    family: vertical.family,
+  });
   return {
     title: t.metaTitle,
     description: t.metaDescription(brand),
-    alternates: { canonical: `${origin}/vender` },
+    alternates: { canonical: `${origin}/vender`, ...(languages ? { languages } : {}) },
     // Indexable — guide: "Meta: title '...', indexable." No noindex here,
     // unlike a thin category page.
     robots: { index: true, follow: true },
@@ -65,16 +74,16 @@ function VenderIcon({ path }: { path: string }) {
 }
 
 const DIFFERENT_ICON_PATHS = [
+  // chart / pricing strategy
+  "M4 20V10 M10 20V4 M16 20v-7 M22 20H2",
   // camera
   "M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
   // home styling (sofa-ish / room)
   "M4 20v-6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6 M4 14V9a2 2 0 0 1 2-2h2v5 M16 14V7h2a2 2 0 0 1 2 2v5 M2 20h20",
-  // chart / valuation
-  "M4 20V10 M10 20V4 M16 20v-7 M22 20H2",
-  // languages / globe
-  "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M3 12h18 M12 3c2.4 2.6 3.6 5.7 3.6 9s-1.2 6.4-3.6 9c-2.4-2.6-3.6-5.7-3.6-9s1.2-6.4 3.6-9Z",
   // marketing / megaphone
   "M3 11v2a2 2 0 0 0 2 2h1l3 5V4l-3 5H5a2 2 0 0 0-2 2Z M14 9a3 3 0 0 1 0 6 M17 6a7 7 0 0 1 0 12",
+  // languages / globe
+  "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M3 12h18 M12 3c2.4 2.6 3.6 5.7 3.6 9s-1.2 6.4-3.6 9c-2.4-2.6-3.6-5.7-3.6-9s1.2-6.4 3.6-9Z",
   // network
   "M12 3v4 M12 17v4 M4.2 7.8l3.5 2 M16.3 14.2l3.5 2 M4.2 16.2l3.5-2 M16.3 9.8l3.5-2 M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M12 20a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M4 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M20 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M4 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M20 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
 ];
@@ -88,13 +97,14 @@ export default async function VenderPage() {
     redirect("/");
   }
 
-  const [d, brand, origin, cities] = await Promise.all([
+  const [d, origin, cities, locale] = await Promise.all([
     dict(),
-    brandName(),
     siteOrigin(),
     listCities(),
+    currentLocale(),
   ]);
   const t = d.vender;
+  const showPartners = sellerPartnerBandEnabled(vertical.key);
   const cityOptions = cities.map((c) => ({ slug: c.slug, name: c.name }));
   const faq = [...t.faq];
 
@@ -103,7 +113,7 @@ export default async function VenderPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: t.breadcrumbHome, url: "/" },
             { name: t.metaTitle, url: "/vender" },
           ]),
           faqJsonLd(faq),
@@ -123,7 +133,7 @@ export default async function VenderPage() {
             </ul>
           </div>
           <div className="vd-hero__form-wrap">
-            <VenderForm cities={cityOptions} idPrefix="vd-hero" />
+            <VenderForm cities={cityOptions} idPrefix="vd-hero" locale={locale} />
           </div>
         </div>
       </section>
@@ -131,7 +141,7 @@ export default async function VenderPage() {
       {/* 2. Proof row — same component as home (guide §5.2). */}
       <ProofRow rows={d.nordico.proofRow} />
 
-      {/* 3. "Qué hacemos distinto" — six cards, 3x2 grid, stroke icons
+      {/* 3. "Cómo vendemos tu propiedad" — six cards, 3x2 grid, stroke icons
           (guide §5.3). */}
       <Section title={t.differentTitle} width="wide">
         <FeatureGrid
@@ -144,36 +154,21 @@ export default async function VenderPage() {
         />
       </Section>
 
-      {/* 4. "Compradores del exterior" — split, placeholder screenshot
-          (guide §5.4). */}
+      {/* 4. Local and international buyers — copy left, the points in a card
+          right. No laptop mock: a marked placeholder frame made the page read
+          unfinished, and there is no real capture to put there. */}
       <section className="ds-section ds-container vd-foreign">
         <div className="vd-foreign__grid">
           <div className="vd-foreign__copy">
             <h2 className="home-section__title">{t.foreignTitle}</h2>
             <p className="vd-foreign__text">{t.foreignText}</p>
+          </div>
+          <div className="vd-foreign__card">
             <ul className="vd-foreign__points">
               {t.foreignPoints.map((p) => (
                 <li key={p}>{p}</li>
               ))}
             </ul>
-          </div>
-          {/* PLACEHOLDER (founder): replace with a real screenshot of
-              realestateinparaguay.com on a laptop. Not a fabricated
-              screenshot — a marked frame instead. */}
-          <div
-            className="vd-foreign__mock"
-            role="img"
-            aria-label={t.foreignImageLabel}
-          >
-            <div className="vd-foreign__mock-screen">
-              <span className="vd-foreign__mock-url">
-                realestateinparaguay.com
-              </span>
-            </div>
-            <div className="vd-foreign__mock-base" aria-hidden />
-            <p className="vd-foreign__mock-note">
-              {t.foreignImagePlaceholderNote}
-            </p>
           </div>
         </div>
       </section>
@@ -188,44 +183,34 @@ export default async function VenderPage() {
         ctaHref="#vd-closing-form"
       />
 
-      {/* 6. "Quién está detrás" (guide §5.6) — photo and licence line are
-          placeholders, marked for the founder. */}
-      <section className="ds-section ds-container vd-behind">
-        <div className="vd-behind__grid">
-          {/* PLACEHOLDER (founder): replace with the founder's real photo. */}
-          <div
-            className="vd-behind__photo"
-            role="img"
-            aria-label={t.behindPhotoLabel}
-          >
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              aria-hidden
-            >
-              <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4 20c1.5-4 4.7-6 8-6s6.5 2 8 6" />
-            </svg>
-            <p className="vd-behind__photo-note">
-              {t.behindPhotoPlaceholderNote}
-            </p>
+      {/* 6. Independent realtors — Spanish door only. The same endpoint and
+          the same required-field rules as the seller form, marked
+          `utm.source: "vender:socio"` and `leadType: "agent_signup"`. (The
+          "Quién está detrás" block that sat here carried a placeholder name,
+          photo and licence line; it returns when the founder supplies the
+          real ones — docs/decisions-needed.md, 2026-10-03.) */}
+      {showPartners && (
+        <section id="vd-partners" className="ds-section ds-container vd-partner">
+          <div className="vd-closing__inner vd-partner__inner">
+            <div>
+              <p className="ds-label">{t.partnerKicker}</p>
+              <h2 className="home-section__title">{t.partnerTitle}</h2>
+              <p className="vd-closing__text">{t.partnerText}</p>
+              <ul className="vd-foreign__points vd-partner__points">
+                {t.partnerPoints.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </div>
+            <VenderForm
+              cities={cityOptions}
+              idPrefix="vd-partner"
+              locale={locale}
+              variant="partner"
+            />
           </div>
-          <div className="vd-behind__copy">
-            <h2 className="home-section__title">{t.behindTitle}</h2>
-            <p className="vd-behind__name">{t.behindName}</p>
-            <p className="vd-behind__line">{t.behindRole}</p>
-            <p className="vd-behind__line">{t.behindCompany(brand)}</p>
-            {/* PLACEHOLDER (founder): confirm licence wording/number before
-                launch — see esVender.behindLicense's comment in es.ts. */}
-            <p className="vd-behind__line vd-behind__line--license">
-              {t.behindLicense}
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 7. FAQ for sellers (guide §5.7) — real policy content, adapted
           from src/config/faq.ts and /terminos, not invented. */}
@@ -247,7 +232,7 @@ export default async function VenderPage() {
             <h2 className="home-section__title">{t.closingTitle}</h2>
             <p className="vd-closing__text">{t.closingText}</p>
           </div>
-          <VenderForm cities={cityOptions} idPrefix="vd-closing" />
+          <VenderForm cities={cityOptions} idPrefix="vd-closing" locale={locale} />
         </div>
       </section>
     </main>

@@ -386,115 +386,141 @@ export const enNordico = {
 } as const;
 
 /**
- * English peer of `esVender` (src/i18n/es.ts) — required for `Dictionary`'s
- * shape (`npm run verify:i18n` walks both dictionaries) even though this
- * copy is never rendered: `/vender` exists on the Spanish door only, and
- * `sellerLandingEnabled()` (src/design/sections.ts) redirects the English
- * door's `/vender` request to `/` before any page reads this namespace. Same
- * inverse situation as `esGuideEn` (Spanish copy that only exists for shape
- * parity), mirrored the other way around.
+ * English peer of `esVender` (src/i18n/es.ts). Rendered since 2026-10-03: the
+ * English door (realestateinparaguay.com) serves `/vender` — a lighter seller
+ * page than the Spanish door's, with no partner band (the `partner*` keys
+ * exist for `Dictionary`'s shape and for `npm run verify:i18n`). Plain
+ * declarative English: facts before adjectives, no superlatives, and no fee,
+ * timeline or legal claim without a source the founder signs.
  */
 export const enVender = {
-  metaTitle: "Sell your property for the best price",
+  breadcrumbHome: "Home",
+  metaTitle: "Sell your Paraguay property with a marketing plan",
   metaDescription: (brand: string) =>
-    `Sell with ${brand}: professional photography, digital marketing, data-based valuation and buyers from abroad. No cost, no exclusivity.`,
-  heroKicker: "Sell with us",
-  heroTitle: "Sell for the best price, with a process you can see.",
+    `${brand}: price set from comparable-sales data, professional photography and video, digital marketing and buyers searching from abroad. Tell us about your property and we'll build the plan to sell it.`,
+  heroKicker: "Selling property in Paraguay",
+  heroTitle: "Your property needs a sales plan, not just a listing.",
   heroSubtitleLines: [
-    "Professional photography and home styling for your property.",
-    "Digital marketing and listing in Spanish and English.",
-    "A documented sales process, not just another listing.",
+    "Priced from real comparable-sales data, not a hunch.",
+    "Professional photography, video and styling.",
+    "Marketed in English and Spanish to buyers in Paraguay and abroad.",
   ],
-  formTitle: "I want a valuation",
+  formTitle: "Tell us about your property",
   formNameLabel: "Name",
   formPhoneLabel: "Phone (WhatsApp)",
   formCityLabel: "City / neighborhood",
   formCityPlaceholder: "Choose your city",
   formTypeLabel: "Property type",
   formTypePlaceholder: "Choose the type",
-  formMessageLabel: "Message (optional)",
-  formMessagePlaceholder: "Tell us more about your property",
-  formSubmit: "I want a valuation",
+  formSelectPlaceholder: "Choose an option",
+  formMessageLabel: "About your property",
+  formMessagePlaceholder:
+    "Address or area, size, condition and when you want to sell",
+  formSubmit: "Talk about my property",
   formSending: "Sending…",
-  formNote: "No cost. No commitment.",
-  formSuccessTitle: "Done! We received your details.",
-  formSuccessText: "We'll reach out on WhatsApp to schedule the valuation.",
-  formError: "We couldn't send your message. Try again or write to us on WhatsApp.",
+  formNote:
+    "We'll message you on WhatsApp to understand your property and plan the sale.",
+  formRequiredNote: "All fields are required.",
+  formRequired: "Please fill in this field.",
+  formSelectRequired: "Please choose an option.",
+  formMessageTooShort: (min: number) =>
+    `Please tell us a little more (at least ${min} characters).`,
+  formSuccessTitle: "Thank you! We received your property details.",
+  formSuccessText:
+    "We'll message you on WhatsApp to learn about it and plan the sale.",
+  formError: "We couldn't send your message. Please try again in a few minutes.",
+  formRateLimited:
+    "You've sent several requests in a row. Please wait a few minutes and try again.",
   formPhoneError: "Enter a valid WhatsApp number.",
   formFineprintPrefix: "By submitting you accept",
   formFineprintAnd: "and the",
   formTerms: "our terms",
   formPrivacy: "privacy policy",
-  differentTitle: "What we do differently",
+  differentTitle: "How we sell your property",
   differentCards: [
     {
-      title: "Professional photography and video",
-      text: "Professional photography and a short video for every property, included in the listing.",
+      title: "Pricing strategy",
+      text: "A range based on real comparable sales in the area, so you go to market at a price that supports the sale.",
+    },
+    {
+      title: "Photography and video",
+      text: "Professional visuals for every property: the first impression decides who writes to you.",
     },
     {
       title: "Home styling",
       text: "Staging designed to show each room's potential, not just photograph it as-is.",
     },
     {
-      title: "Data-based valuation",
-      text: "A price range based on real comparable sales in the area, not a guess.",
-    },
-    {
-      title: "Listed in Spanish and English",
-      text: "The same listing reaches local buyers and buyers searching from abroad.",
-    },
-    {
       title: "Digital marketing",
-      text: "Paid promotion on Meta, Google and portals — your listing is promoted, not just posted.",
+      text: "Paid campaigns on Meta, Google and portals: your property is promoted, not left waiting to be found.",
+    },
+    {
+      title: "English and Spanish",
+      text: "The same property is presented to local buyers and to buyers searching from abroad.",
     },
     {
       title: "A network of sites",
       text: "Your property visible on inmobiliaria.com.py and on realestateinparaguay.com, the door for buyers from abroad.",
     },
   ],
-  foreignTitle: "Buyers from abroad",
+  foreignTitle: "Local and international buyers",
   foreignText:
-    "Every property is also published on realestateinparaguay.com, the portal's door for buyers searching from another country, with its listing on its way to being translated into English.",
+    "Every property is also published on realestateinparaguay.com, the portal's site for people searching from another country, with its listing on its way to being translated into English.",
   foreignPoints: [
-    "Also published on realestateinparaguay.com",
+    "Published on realestateinparaguay.com",
     "Reference price in US dollars",
     "Direct WhatsApp contact, no middleman",
   ],
-  foreignImageLabel: "Preview of realestateinparaguay.com",
-  foreignImagePlaceholderNote: "Reference image — pending replacement",
-  behindTitle: "Who's behind it",
-  behindName: "Anton Marklund (name to confirm)",
-  behindRole: "Founder of Inmobiliaria Paraguay and the portal's network of sites.",
-  behindCompany: (brand: string) =>
-    `${brand} is a service of EAS (legal entity name to confirm).`,
-  behindLicense: "No professional license currently published.",
-  behindPhotoLabel: "Founder's photo",
-  behindPhotoPlaceholderNote: "Reference image — pending replacement",
+  partnerKicker: "For independent realtors",
+  partnerTitle: "Are you a realtor? Work with a marketing firm behind you.",
+  partnerText:
+    "Join as an independent partner: you bring your judgment and your client relationship; we bring the platform, the exposure and the enquiries.",
+  partnerPoints: [
+    "Receive enquiries the portal shares with verified partners",
+    "A verified profile in the realtor directory",
+    "Your listings in English and Spanish, across the network of sites",
+    "Your own panel to follow your enquiries",
+  ],
+  partnerFormTitle: "I want to be a partner",
+  partnerCityLabel: "City where you work",
+  partnerMessageLabel: "Tell us about your work",
+  partnerMessagePlaceholder:
+    "Areas you cover, years of experience and what you list today",
+  partnerSubmit: "I want to be a partner",
+  partnerFormNote: "We review every request and message you on WhatsApp.",
+  partnerSuccessTitle: "Thank you! We received your request.",
+  partnerSuccessText:
+    "We'll message you on WhatsApp to get to know you and explain how we work with partners.",
   faqTitle: "Questions from sellers",
   faq: [
     {
-      q: "Do you charge a commission to sell with you?",
-      a: "We don't charge a commission on the sale. Listing is free; if your property is handled by an agency or agent from the network, their fees are agreed directly with them.",
+      q: "How do you work?",
+      a: "We start with a conversation to understand your property, your timeline and the price you're aiming for. From that we build the plan: pricing from market data, professional visuals, campaigns and follow-up on every enquiry.",
+    },
+    {
+      q: "What does it cost, and on what terms?",
+      a: "It depends on the property and the marketing plan that fits it. We explain the terms in the first conversation and put them in writing before we start.",
     },
     {
       q: "How long does it take to sell my property?",
-      a: "It depends on price, location and market conditions — we don't give a generic timeline. A data-based valuation avoids the most common mistake: listing above market price and going months with no inquiries.",
+      a: "It depends on price, location and market conditions — we don't give a generic timeline. A valuation based on real data avoids the most common mistake: listing above market price and going months with no enquiries.",
+    },
+    {
+      q: "How do you reach buyers from abroad?",
+      a: "Your property is also published on realestateinparaguay.com, the portal's English-language site for people searching from another country.",
     },
     {
       q: "Do I have to give you exclusivity?",
-      a: "No. Publishing grants us a non-exclusive, free license to show your property — you can keep selling it on your own or with another agency at the same time.",
-    },
-    {
-      q: "What happens if it doesn't sell?",
-      a: "There's no cost and no time commitment. You can adjust the price, update the photos or pause the listing whenever you want.",
+      a: "We discuss it case by case. A marketing plan works best when one voice coordinates price, message and showings, and any agreement is put in writing.",
     },
     {
       q: "Who handles the showings?",
-      a: "Inquiries reach you directly on WhatsApp. If you're listing as a private seller, you coordinate showings yourself; if your property is handled by an agency or agent from the network, they handle contact and showings.",
+      a: "We agree that with you in the plan. Enquiries arrive on WhatsApp and each one is followed up; if your property is handled by an agency or realtor from the network, they handle contact and showings.",
     },
   ],
-  closingTitle: "Ready to sell?",
-  closingText: "Leave your details and we'll reach out to start the valuation.",
+  closingTitle: "Let's talk about your property.",
+  closingText:
+    "Tell us what you have and what you want to achieve. We'll build the plan to sell it.",
 } as const;
 
 /**
@@ -566,6 +592,7 @@ export const enGuideEn = {
   footerCompanyTitle: "Company",
   footerCompanyLinks: [
     { label: "About", href: "/nosotros" },
+    { label: "Sell your property", href: "/vender" },
     { label: "Contact", href: "/contacto" },
   ],
   footerLegalTitle: "Legal",
