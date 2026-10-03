@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { SellerLanding, sellerMetadata } from "@/components/SellerLanding";
 
-// Reads the live city list; the DB isn't reachable at build time on Hostinger
-// (same reason /tasacion and /para-inmobiliarias carry this).
+// The English door's address for the seller page (Spanish: /vender). Same
+// component; SellerLanding redirects the wrong spelling to the right one.
 export const dynamic = "force-dynamic";
 
 export const generateMetadata = (): Promise<Metadata> => sellerMetadata();
 
-export default function VenderPage() {
-  return <SellerLanding route="/vender" />;
+export default function SellPage() {
+  return <SellerLanding route="/sell" />;
 }

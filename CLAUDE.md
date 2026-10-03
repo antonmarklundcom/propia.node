@@ -626,6 +626,15 @@ default, `--dry` first). It records itself as a revertible import job.
       `verify:reviews` is in the hook.
     - **No JSON-LD `aggregateRating`, on purpose.**
 
+33. **/vender (2026-10-03, no migration, `docs/log/vender-rewrite.md`).** Marketing-firm
+    positioning; every form field required (`VenderForm`, own validation);
+    served on the Spanish door at `/vender` and, lighter, on
+    `realestateinparaguay.com` at **`/sell`** (`sellerPath()`; the other door's
+    spelling 308s across; `SellerLanding` is the one component; hreflang-paired). Spanish door has an
+    independent-realtor form (`vender:socio`, `agent_signup`). Fee/exclusivity
+    wording awaits the founder (`docs/decisions-needed.md`).
+    `tests/e2e/vender-form.spec.ts` submits for real.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:

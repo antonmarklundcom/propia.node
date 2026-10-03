@@ -48,6 +48,7 @@ import { notHiddenDuplicate, verticalConds } from "./facet-sql";
 import {
   marketplacePagesEnabled,
   sellerLandingEnabled,
+  sellerPath,
 } from "@/design/sections";
 
 export interface SitemapEntry {
@@ -208,7 +209,7 @@ export async function buildSitemapEntries(
     .filter(hubIndexable)
     .filter((path) => includeSitePages || !isSitePagePath(path))
     .filter((path) => includeDirectory || !DIRECTORY_INDEX_PATHS.includes(path))
-    .map((path) => ({ path }));
+    .map((path) => ({ path: path === "/vender" && vertical ? sellerPath(vertical.key) : path }));
 
   // 1. Listing detail pages — always indexable when published, but only on a
   //    host that actually owns them. The published rows are still read either
