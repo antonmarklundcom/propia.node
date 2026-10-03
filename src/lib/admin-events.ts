@@ -45,10 +45,12 @@ export type AdminEventAction =
   | "listing.exclusive"
   // A listing put in or taken out of a duplicate group (O5).
   | "listing.duplicate"
+  // A partner review approved, rejected or taken down on /admin/resenas (O7).
+  | "review.moderate"
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
   | "deal.delete";
 
-export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "agent" | "setting" | "email" | "whatsapp";
+export type AdminEventTarget = "lead" | "listing" | "user" | "agency" | "agent" | "setting" | "email" | "whatsapp" | "review";
 
 type DbConn = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 

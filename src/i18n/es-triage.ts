@@ -145,6 +145,7 @@ export const esTriage = {
     operations: (n: number) => `${n} tareas cuya última corrida falló`,
     agencies: (n: number) => `${n} inmobiliarias registradas sin verificar`,
     agents: (n: number) => `${n} agentes registrados sin verificar`,
+    reviews: (n: number) => `${n} reseñas esperando aprobación`,
   },
 
   /** /admin/agentes: the per-agent "Socio" switch (site setting partner_agent_ids). */

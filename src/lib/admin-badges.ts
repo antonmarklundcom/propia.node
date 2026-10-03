@@ -15,7 +15,8 @@
  * - posts       draft guides/notes;
  * - operations  jobs whose last run threw;
  * - agencies    agencies someone registered (a linked account) not yet verified;
- * - agents      agents who claimed a profile, not yet verified.
+ * - agents      agents who claimed a profile, not yet verified;
+ * - reviews     partner reviews waiting for approval (O7, migration 0028).
  *
  * Not cached: a badge that lags the action the operator just took reads as
  * "my approve didn't work". The core counts are one round trip of scalar
@@ -39,6 +40,7 @@ export interface AdminBadges {
   operations: number;
   agencies: number;
   agents: number;
+  reviews: number;
 }
 
 export const NO_BADGES: AdminBadges = {
@@ -50,6 +52,7 @@ export const NO_BADGES: AdminBadges = {
   operations: 0,
   agencies: 0,
   agents: 0,
+  reviews: 0,
 };
 
 /** mysql2 returns the first row of a raw `db.execute()` as `[rows, fields]`. */
@@ -91,6 +94,11 @@ async function unpaidWonDeals(): Promise<number> {
   return n(firstRow(result).n);
 }
 
+async function pendingReviews(): Promise<number> {
+  const result = await db.execute(sql`SELECT COUNT(*) AS n FROM reviews WHERE status = 'pending'`);
+  return n(firstRow(result).n);
+}
+
 async function failedJobs(): Promise<number> {
   // The newest run of each job, by id — the same rule as lastRunByJob().
   const result = await db.execute(sql`
@@ -102,12 +110,13 @@ async function failedJobs(): Promise<number> {
 
 export async function getAdminBadges(user: { id: number; role: UserRole }): Promise<AdminBadges> {
   const superAdmin = isSuperAdmin(user.role);
-  const [core, deals, operations, email, whatsapp] = await Promise.all([
+  const [core, deals, operations, email, whatsapp, reviews] = await Promise.all([
     coreCounts().catch(() => null),
     superAdmin ? unpaidWonDeals().catch(() => 0) : 0,
     superAdmin ? failedJobs().catch(() => 0) : 0,
     countUnreadInbox({ userId: user.id, superAdmin }),
     superAdmin || isStaff(user.role) ? countUnreadWhatsAppChats().catch(() => 0) : 0,
+    pendingReviews().catch(() => 0),
   ]);
   return {
     ...NO_BADGES,
@@ -115,5 +124,6 @@ export async function getAdminBadges(user: { id: number; role: UserRole }): Prom
     deals,
     operations,
     inbox: email + whatsapp,
+    reviews,
   };
 }

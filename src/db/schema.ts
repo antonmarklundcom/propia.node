@@ -1508,3 +1508,41 @@ export const listingDuplicates = mysqlTable(
   },
   (t) => [index("idx_group").on(t.groupId)],
 );
+
+/**
+ * Reviews of agencies and agents (plan-admin-next O7). Founder decision
+ * 2026-10-02: only a buyer from a verified lead or deal may review — through a
+ * signed link the operator sends (src/lib/review-token.ts) — and the operator
+ * approves every review before it shows. Full reviews on the directory door,
+ * stars only on the marketplace doors.
+ *
+ * Target convention as `lead_assignments`: exactly one of `agency_id` /
+ * `agent_id` is non-zero. One review per lead and target (`uq_lead_target`):
+ * the link cannot be used twice.
+ */
+export const reviews = mysqlTable(
+  "reviews",
+  {
+    id: id(),
+    leadId: fk("lead_id").notNull(),
+    agencyId: fk("agency_id").notNull().default(0),
+    agentId: fk("agent_id").notNull().default(0),
+    /** 1–5. */
+    rating: int("rating", { unsigned: true }).notNull(),
+    body: varchar("body", { length: 2000 }),
+    /** As the reviewer wants it shown ("María G."). */
+    authorName: varchar("author_name", { length: 80 }).notNull(),
+    /** The door's locale the review was written on. */
+    locale: varchar("locale", { length: 5 }).notNull().default("es"),
+    status: mysqlEnum("status", ["pending", "approved", "rejected"]).notNull().default("pending"),
+    moderatedByUserId: fk("moderated_by_user_id"),
+    moderatedAt: datetime("moderated_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("uq_lead_target").on(t.leadId, t.agencyId, t.agentId),
+    index("idx_agency_status").on(t.agencyId, t.status),
+    index("idx_agent_status").on(t.agentId, t.status),
+    index("idx_status").on(t.status, t.createdAt),
+  ],
+);
