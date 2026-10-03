@@ -12,7 +12,7 @@
   confirmar" blocks removed, FAQ no longer says "publicar es gratis".
 - **Partner band** (Spanish door): "Quiero ser socio" form → `agent_signup`,
   `utm.source=vender:socio`, role `agent`.
-- **English door**: `realestateinparaguay.com/vender` now renders (lighter: no
+- **English door**: `realestateinparaguay.com/sell` now renders (its `/vender` 308s to `/sell`; one component, `SellerLanding`) (lighter: no
   partner band, no header CTA), hreflang-paired with the Spanish page, linked
   from the footer and the home sell tile only.
 
@@ -36,3 +36,6 @@ Partner: "¿Sos corredor? Trabajá con el respaldo de una firma de marketing."
 Subhead angles: precio con datos · producción visual · campañas ES/EN ·
 seguimiento hasta la firma. CTA verbs: "Hablemos de mi propiedad",
 "Armar mi plan de venta", "Quiero ser socio".
+
+## Positioning added
+Both pages carry a "digital marketing from Sweden, Spain and the US, brought to Paraguay" section (`expertise*` keys). It is the founder's own statement; no per-country detail was added.

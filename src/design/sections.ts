@@ -303,7 +303,17 @@ export function sellerCta(_key: VerticalKey): SellerCta {
  * only shows where the home page offers to sell: low focus, by design.
  */
 export function sellerCtaHref(key: VerticalKey): string {
-  return key === "inmobiliaria" || key === "en" ? "/vender" : "/publicar";
+  return sellerLandingEnabled(key) ? sellerPath(key) : "/publicar";
+}
+
+/**
+ * The seller page's own URL on a door that serves it: Spanish `/vender`,
+ * English `/sell`. (`/propiedad` stays Spanish-slugged on every door; this
+ * page is a door's own page, so it is spelled in the door's language — the
+ * rental family does the same with `rentalPath()`.)
+ */
+export function sellerPath(key: VerticalKey): "/vender" | "/sell" {
+  return key === "en" ? "/sell" : "/vender";
 }
 
 /**

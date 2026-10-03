@@ -403,7 +403,7 @@ export const enVender = {
   heroSubtitleLines: [
     "Priced from real comparable-sales data, not a hunch.",
     "Professional photography, video and styling.",
-    "Marketed in English and Spanish to buyers in Paraguay and abroad.",
+    "Campaigns on Meta, Google and portals, built on experience from Sweden, Spain and the US.",
   ],
   formTitle: "Tell us about your property",
   formNameLabel: "Name",
@@ -436,6 +436,14 @@ export const enVender = {
   formFineprintAnd: "and the",
   formTerms: "our terms",
   formPrivacy: "privacy policy",
+  expertiseTitle: "Digital marketing from mature markets, now in Paraguay",
+  expertiseText:
+    "We bring to Paraguay the digital marketing experience we built in Sweden, Spain and the United States: measured campaigns, content built to generate enquiries and a way of working learned in demanding markets.",
+  expertisePoints: [
+    "Campaigns measured with data, not instinct",
+    "Visual content built to generate enquiries",
+    "Experience from Sweden, Spain and the United States, applied to Paraguay",
+  ],
   differentTitle: "How we sell your property",
   differentCards: [
     {
@@ -592,7 +600,7 @@ export const enGuideEn = {
   footerCompanyTitle: "Company",
   footerCompanyLinks: [
     { label: "About", href: "/nosotros" },
-    { label: "Sell your property", href: "/vender" },
+    { label: "Sell your property", href: "/sell" },
     { label: "Contact", href: "/contacto" },
   ],
   footerLegalTitle: "Legal",

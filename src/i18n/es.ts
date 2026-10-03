@@ -1436,7 +1436,7 @@ export const esVender = {
   heroSubtitleLines: [
     "Un precio definido con datos del mercado, no con una corazonada.",
     "Fotografía, video y home styling para que tu propiedad se destaque.",
-    "Campañas en Meta, Google y portales, en español y en inglés.",
+    "Campañas en Meta, Google y portales, con la experiencia de Suecia, España y EE. UU.",
   ],
   // Every field of the form is required (founder, 2026-10-03). The hero
   // no longer sells a free valuation: it asks for a conversation.
@@ -1472,6 +1472,14 @@ export const esVender = {
   formFineprintAnd: "y la",
   formTerms: "nuestros términos",
   formPrivacy: "política de privacidad",
+  expertiseTitle: "Marketing digital de mercados maduros, ahora en Paraguay",
+  expertiseText:
+    "Traemos al mercado paraguayo la experiencia en marketing digital que desarrollamos en Suecia, España y Estados Unidos: campañas medidas, contenido hecho para generar consultas y una forma de trabajar aprendida en mercados exigentes.",
+  expertisePoints: [
+    "Campañas medidas con datos, no con intuición",
+    "Contenido visual pensado para generar consultas",
+    "Experiencia de Suecia, España y Estados Unidos aplicada a Paraguay",
+  ],
   differentTitle: "Cómo vendemos tu propiedad",
   differentCards: [
     {

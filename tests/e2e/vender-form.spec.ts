@@ -10,8 +10,9 @@
  *     sees the thank-you;
  *   - the independent-realtor form (Spanish door only) is stored as an
  *     `agent_signup` lead marked `vender:socio`;
- *   - the English door serves its own lighter page, in English, without the
- *     partner band, and its form submits too.
+ *   - the English door serves its own lighter page at /sell (its /vender
+ *     redirects there), in English, without the partner band, and its form
+ *     submits too.
  *
  * Chromium's resolver maps each door's hostname to the local dev server (same
  * trick as contrast-doors.spec.ts), so the app sees the real Host header. The
@@ -177,13 +178,15 @@ test("es: the independent-realtor form is stored as an agent sign-up", async ({ 
 });
 
 test("en: the English door has its own lighter page and its form submits", async ({ page }) => {
+  // The English door's address is /sell; its /vender redirects there.
   await page.goto(`${EN}/vender`);
-  await expect(page).toHaveURL(/\/vender$/);
+  await expect(page).toHaveURL(/\/sell$/);
   await expect(page.locator("h1")).toContainText("sales plan");
   await expect(page.locator("#vd-partners")).toHaveCount(0);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /realestateinparaguay\.com\/vender$/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /realestateinparaguay\.com\/sell$/);
   await expect(page.locator('link[rel="alternate"][hreflang="es"]')).toHaveAttribute("href", /inmobiliaria\.com\.py\/vender$/);
+  await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute("href", /realestateinparaguay\.com\/sell$/);
 
   const form = page.locator("form.vd-form").first();
   await form.getByRole("button", { name: "Talk about my property" }).click();

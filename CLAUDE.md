@@ -628,8 +628,9 @@ default, `--dry` first). It records itself as a revertible import job.
 
 33. **/vender (2026-10-03, no migration, `docs/log/vender-rewrite.md`).** Marketing-firm
     positioning; every form field required (`VenderForm`, own validation);
-    served on the Spanish door and, lighter, on `realestateinparaguay.com`
-    (`sellerLandingEnabled()`, hreflang-paired). Spanish door has an
+    served on the Spanish door at `/vender` and, lighter, on
+    `realestateinparaguay.com` at **`/sell`** (`sellerPath()`; the other door's
+    spelling 308s across; `SellerLanding` is the one component; hreflang-paired). Spanish door has an
     independent-realtor form (`vender:socio`, `agent_signup`). Fee/exclusivity
     wording awaits the founder (`docs/decisions-needed.md`).
     `tests/e2e/vender-form.spec.ts` submits for real.

@@ -336,6 +336,7 @@ export const MARKETPLACE_PATH_ROOTS: readonly string[] = [
   "desarrolladoras",
   "tasacion",
   "vender",
+  "sell",
   "planes",
   "datos",
   "guias",

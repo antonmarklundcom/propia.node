@@ -552,3 +552,4 @@ is a policy on who may do what.
 - **Positioning claims.** "Marketing inmobiliario" is positioning, not a ranking;
   no "#1"/"la mejor" without a source.
 - **Site-wide "free" signals** (see docs/log/vender-rewrite.md): say which to change.
+- **Sweden / Spain / US experience claim.** `/vender` and `/sell` say the team brings digital-marketing experience from those three countries. Confirm the wording (and whether to name clients or results) before launch.
