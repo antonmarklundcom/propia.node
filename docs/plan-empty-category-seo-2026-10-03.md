@@ -176,3 +176,44 @@ and multiply database connections (6 per copy). That is the likely source of
 the `Failed query` errors. Phase 4's robots change and caching
 `resolveCity()`/`resolveBarrio()` (report §C) reduce that load. Confirm by
 counting requests with `vista=` in the access log.
+
+## 7. Images: a generated zone map per page, real photos for the place page
+
+The founder's idea (2026-10-03): one base-map style for every page, with the
+page's zone outlined. Every page then gets its own image, and that image is
+factually relevant.
+
+- **What:** a clean, modern map of the city in the site's colours. The page's
+  barrio or zone is outlined and filled, neighbouring barrios are named, and a
+  small badge shows the property type (casa / departamento / terreno icon) and
+  the operation. Each URL gets its own image: `/venta/asuncion/villa-morra/casas`
+  shows Asunción with Villa Morra highlighted and a house badge.
+- **How (no AI, no credits):**
+  - A build-time or ops script renders **SVG → WebP** from boundary data.
+  - Boundaries come from **OpenStreetMap** (barrio/city polygons, ODbL). The
+    page needs a visible "© OpenStreetMap contributors" credit.
+  - Today `locations` holds only centroids. Polygons need a data file
+    (`src/content/places/geo/*.json`) or a new column; a column is a schema
+    change, so it needs the founder.
+  - Where no polygon exists, draw a soft circle at the centroid.
+  - Images are pre-rendered at 2–3 widths (mobile 640, desktop 1280) with
+    `srcset`, lazy below the fold, a stable aspect ratio (no layout shift), and
+    alt text: "Mapa de Asunción con Villa Morra resaltado, casas en venta".
+  - Reuse the same renderer for the og:image (`src/lib/og-image.tsx`), so
+    shared links show the zone too.
+- **SEO value:** unique, relevant images with alt text, image search for
+  "mapa villa morra", and visual clarity on mobile. The map is not a ranking
+  trick on its own: it supports the text and the listings, and does not
+  replace them.
+- **Real photos vs AI (Higgsfield):**
+  - Use real photos for the place page: the real lake, the real streets.
+  - An AI image presented as a real place is misleading to visitors, and a
+    trust problem if noticed.
+  - AI is fine for **generic illustrations** that don't claim to show the
+    place: a stylised house, apartment or plot icon set for the type badge,
+    or a hero illustration.
+  - Start with the generated maps (free, there for every page on day one), add
+    real photos to the priority places, and use AI only for the generic
+    illustrations.
+- **Phase:** an extra phase after §5.2. It needs the boundary data source
+  decided first (OSM extract vs hand-drawn for the top places).
