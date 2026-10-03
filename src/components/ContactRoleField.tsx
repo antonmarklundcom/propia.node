@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { getDictionary, type Locale } from "@/i18n";
 import { isContactRole, type ContactRole } from "@/lib/contact-role";
 
@@ -31,6 +31,7 @@ export function ContactRoleField({
   id,
   required,
   placeholder,
+  labelSuffix,
 }: {
   locale: Locale;
   roles: readonly ContactRole[];
@@ -49,6 +50,8 @@ export function ContactRoleField({
   required?: boolean;
   /** Replaces the "(optional)" placeholder; a required field must not say it. */
   placeholder?: string;
+  /** Rendered after the caption, e.g. the form's own required-field star. */
+  labelSuffix?: ReactNode;
 }) {
   const t = getDictionary(locale).contactRole;
   const generatedId = useId();
@@ -56,7 +59,10 @@ export function ContactRoleField({
 
   return (
     <label className={className} htmlFor={selectId}>
-      <span className={labelClassName}>{t.label}</span>
+      <span className={labelClassName}>
+        {t.label}
+        {labelSuffix}
+      </span>
       <select
         id={selectId}
         className={inputClassName}

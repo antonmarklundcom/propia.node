@@ -266,6 +266,7 @@ export function VenderForm({
             value={contactRole}
             onChange={setContactRole}
             required
+            labelSuffix={star}
             placeholder={t.formSelectPlaceholder}
             className="vd-form__field"
             labelClassName="vd-form__label"

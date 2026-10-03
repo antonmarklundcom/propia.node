@@ -2621,8 +2621,8 @@ export const esContactRole = {
   placeholder: "Elegí una opción (opcional)",
   options: {
     particular: "Particular",
-    owner: "Dueño/a de una propiedad",
-    agent: "Agente inmobiliario independiente",
+    owner: "Dueño/a",
+    agent: "Agente inmobiliario",
     agency: "Inmobiliaria",
     developer: "Desarrolladora / constructora",
   },
