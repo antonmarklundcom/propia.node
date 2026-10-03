@@ -855,6 +855,33 @@ phase 3 (`docs/plan-category-pages-build.md`, `docs/log/empty-category-state.md`
 - Menus still hide empty links (`withoutEmptyCategoryLinks()`): a page that
   exists is not a page we promote.
 
+## Place guides — `/zonas/<ciudad>[/<barrio>]` (plan phase 4, 2026-10-03)
+
+One guide per city or barrio, written once and borrowed by every category
+page of that place (`docs/plan-category-pages-build.md` §3, `docs/log/place-pages.md`).
+
+- **`src/content/places/index.ts` is the only list** (`PLACE_PAGES`); each file
+  is typed by `src/content/places/types.ts` and names its owner door (P-2:
+  `inmobiliaria` for Spanish, `en` for English). The URL is spelled only by
+  `placePath()` (`src/lib/place-path.ts`, P-1).
+- **Draft until verified (E-3/P-6).** A file merges as `status: "draft"`: the
+  page is live, `noindex,follow` and out of the sitemap. It becomes indexable
+  on its own door, and enters that door's sitemap, only when the founder has
+  checked `claimsToVerify` and it is flipped to `"verified"` with `verifiedAt`
+  and 5–8 photos (`placeIndexable()`, `placeSitemapPaths()`).
+- Another marketplace door of the same language renders the same guide with
+  its canonical on the owner; hreflang pairs only two **verified** guides in
+  different languages (`placeAlternates()`, derived from `verticals.ts`).
+- **No number in a place file**; the page counts its live links from the
+  door's rows. Photos live in `public/img/places/<city>[--<barrio>]/` as
+  `<file>-640.webp` / `-1280.webp`.
+- Every category page of a place with a guide shows its `excerpt` and a link
+  (an evergreen page only the link).
+- `verify:seo` block (q) enforces §3.3 of the plan: tree place, owner door,
+  keywords, 500–1000 words, 4–6 FAQ, no digits, claims, photos, excerpt,
+  meta, no shared paragraph with any guide or evergreen page, and no
+  swapped-name template (≤ 15 % shared five-word shingles).
+
 ## Listing filters — one vocabulary, two files
 
 Every surface that narrows a listing set goes through the same layer. Adding a

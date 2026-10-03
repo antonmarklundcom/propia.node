@@ -25,6 +25,7 @@ import {
 import { getIndexability } from "./indexability";
 import { EVERGREEN_PAGES, evergreenPathsFor } from "../content/evergreen";
 import { categoryTarget } from "./category-owner";
+import { placeSitemapPaths } from "../content/places";
 import { isSitePagePath } from "./site-page-owner";
 import { categoryOwnerForLocale } from "./origin";
 import { citiesWithPrices } from "./precios-queries";
@@ -379,6 +380,13 @@ export async function buildSitemapEntries(
     if (operation && shape && seeded(shape) && listsCategory(operation, shape, path)) categoryPaths.add(path);
   }
   for (const path of categoryPaths) entries.push({ path });
+
+  // Place guides (plan phase 4): a door lists only its own verified files —
+  // a draft is noindex (decision P-6), and another door's file canonicalises
+  // to its owner.
+  if (servesMarketplace && vertical) {
+    for (const path of placeSitemapPaths(vertical.key)) entries.push({ path });
+  }
 
   // 3. Price pages — only cities with a defensible sample, which is the same
   //    rule the page's own robots meta applies. Sitemap and page must agree.

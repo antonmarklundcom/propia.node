@@ -94,6 +94,18 @@ import { TREE, flatten, treePlace } from "../src/lib/ops/location-tree";
 import { emptyStateLinks } from "../src/lib/category-context";
 import { doorAllowsCategory, emptyStateCtas, otherOperationsFor } from "../src/lib/empty-state";
 import { closestSlug, editDistance } from "../src/lib/did-you-mean";
+import {
+  PLACE_PAGES,
+  placeHeadings,
+  placeIndexable,
+  placeParagraphs,
+  placeSitemapPaths,
+  placeWordCount,
+  type PlacePage,
+} from "../src/content/places";
+import { placePath } from "../src/lib/place-path";
+import { placeAlternates } from "../src/lib/place-alternates";
+import { existsSync } from "node:fs";
 
 let failures = 0;
 
@@ -2010,6 +2022,134 @@ console.log("\n(p) empty category pages (E-1..E-4)");
   check("(p) …and nothing it does not know", treePlace("nowhere") === null && treePlace("asuncion", "nowhere") === null);
   const sm = readFileSync(new URL("../src/lib/sitemap.ts", import.meta.url), "utf8");
   check("(p) the sitemap holds back evergreen paths whose place is not seeded", /seeded\(shape\)/.test(sm));
+}
+
+// (q) Place guides — plan docs/plan-category-pages-build.md §3.3, phase 4.
+console.log("\n(q) place guides (src/content/places/)");
+{
+  const flat = flatten(TREE, "");
+  const fold = (x: string) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const PLACE_DOORS = ["inmobiliaria", "en"]; // decision P-2
+  const DENY = /infocasas|clasipar|inmoclick|tavamay|matrisa/i;
+  const seen = new Set<string>();
+  const evergreenMains = new Set(EVERGREEN_PAGES.map((p) => p.keyword));
+  const placeMains = new Map<string, string>();
+  for (const p of PLACE_PAGES) placeMains.set(p.keyword, placePath(p.city, p.barrio));
+
+  const textOf = (p: PlacePage) => [
+    ...placeHeadings(p), ...placeParagraphs(p), p.excerpt,
+    ...p.photos.flatMap((ph) => [ph.alt, ph.caption]),
+  ];
+  const ownNames = (p: PlacePage) => {
+    const city = flat.find((n) => n.level === "ciudad" && n.slug === p.city);
+    const barrio = p.barrio ? flat.find((n) => n.level === "barrio" && n.slug === p.barrio) : undefined;
+    return [city?.name, barrio?.name].filter((n): n is string => !!n);
+  };
+  const shingles = (p: PlacePage) => {
+    let text = fold(textOf(p).join(" "));
+    for (const n of ownNames(p)) text = text.split(fold(n)).join(" lugar ");
+    const w = text.replace(/[^a-z0-9ñ ]+/g, " ").split(/\s+/).filter(Boolean);
+    const out = new Set<string>();
+    for (let i = 0; i + 5 <= w.length; i++) out.add(w.slice(i, i + 5).join(" "));
+    return out;
+  };
+
+  for (const p of PLACE_PAGES) {
+    const id = `${p.door}${placePath(p.city, p.barrio)}`;
+    const city = flat.find((n) => n.level === "ciudad" && n.slug === p.city);
+    const barrio = p.barrio ? flat.find((n) => n.level === "barrio" && n.slug === p.barrio && n.parentFullSlug === city?.fullSlug) : null;
+    check(`(q) ${id}: its place is in the location tree`, !!city && (!p.barrio || !!barrio));
+    check(`(q) ${id}: one file per place and door`, !seen.has(id));
+    seen.add(id);
+    check(`(q) ${id}: its door owns place pages (P-2)`, PLACE_DOORS.includes(p.door), p.door);
+    check(`(q) ${id}: its main keyword is no evergreen page's`, !evergreenMains.has(p.keyword));
+    check(`(q) ${id}: its main keyword is no other place's`, placeMains.get(p.keyword) === placePath(p.city, p.barrio));
+    check(`(q) ${id}: no secondary keyword is another page's main keyword`,
+      p.secondaryKeywords.every((k) => !evergreenMains.has(k) && (!placeMains.has(k) || placeMains.get(k) === placePath(p.city, p.barrio))));
+    const words = placeWordCount(p);
+    check(`(q) ${id}: 500–1000 words of its own`, words >= 500 && words <= 1000, `${words} words`);
+    check(`(q) ${id}: 4–6 FAQ entries`, p.faq.length >= 4 && p.faq.length <= 6, String(p.faq.length));
+    const allowed = p.namesWithDigits ?? [];
+    check(`(q) ${id}: every name with digits is also a claim to verify`,
+      allowed.every((n) => p.claimsToVerify.some((c) => c.includes(n))));
+    const strip = (x: string) => allowed.reduce((acc, n) => acc.split(n).join(""), x);
+    const withDigits = [...textOf(p), p.metaDescription].filter((x) => /\d/.test(strip(x)));
+    check(`(q) ${id}: no digits in prose, FAQ, captions or alt text`, withDigits.length === 0, withDigits[0]?.slice(0, 60));
+    check(`(q) ${id}: lists its claims to verify`, p.claimsToVerify.length > 0);
+    if (p.status === "verified") {
+      check(`(q) ${id}: verified carries a date`, !!p.verifiedAt && /^\d{4}-\d{2}-\d{2}$/.test(p.verifiedAt));
+      check(`(q) ${id}: verified carries 5–8 photos`, p.photos.length >= 5 && p.photos.length <= 8, String(p.photos.length));
+    }
+    const dir = `public/img/places/${p.barrio ? `${p.city}--${p.barrio}` : p.city}`;
+    for (const ph of p.photos) {
+      check(`(q) ${id}: photo ${ph.file} exists at both widths`,
+        existsSync(`${dir}/${ph.file}-640.webp`) && existsSync(`${dir}/${ph.file}-1280.webp`));
+      check(`(q) ${id}: photo ${ph.file} has alt text of 1–125 characters`, ph.alt.length > 0 && ph.alt.length <= 125);
+      check(`(q) ${id}: photo ${ph.file} has a credit and licence`, ph.credit.length > 0 && !!ph.licence);
+      check(`(q) ${id}: a Creative Commons photo links its source`, !ph.licence.startsWith("cc") || !!ph.sourceUrl);
+    }
+    const excerptWords = p.excerpt.split(/\s+/).filter(Boolean).length;
+    check(`(q) ${id}: excerpt is 40–80 words`, excerptWords >= 40 && excerptWords <= 80, String(excerptWords));
+    check(`(q) ${id}: excerpt is not a body paragraph`, !placeParagraphs(p).includes(p.excerpt));
+    check(`(q) ${id}: meta description fits in 155 characters`, p.metaDescription.length <= 155, String(p.metaDescription.length));
+    check(`(q) ${id}: H1 names the place`, ownNames(p).some((n) => fold(p.h1).includes(fold(n))));
+    check(`(q) ${id}: no portal or brand names in the text`, !textOf(p).some((x) => DENY.test(x)));
+    check(`(q) ${id}: indexable iff verified, and only on its door`,
+      placeIndexable(p, p.door) === (p.status === "verified") && !placeIndexable(p, p.door === "en" ? "inmobiliaria" : "en"));
+    check(`(q) ${id}: in its door's sitemap iff verified`,
+      placeSitemapPaths(p.door).includes(placePath(p.city, p.barrio)) === (p.status === "verified"));
+  }
+
+  // No shared paragraph or section title with another place or an evergreen page.
+  const owners = new Map<string, string>();
+  const clashes: string[] = [];
+  const norm = (x: string) => x.toLowerCase().replace(/\s+/g, " ").trim();
+  for (const p of PLACE_PAGES) {
+    const id = `${p.door}${placePath(p.city, p.barrio)}`;
+    for (const para of new Set([...placeParagraphs(p), ...placeHeadings(p).slice(1)].map(norm))) {
+      const other = owners.get(para);
+      if (other && other !== id) clashes.push(`${other} & ${id}: "${para.slice(0, 50)}…"`);
+      owners.set(para, id);
+    }
+  }
+  const evergreenParas = new Set(EVERGREEN_PAGES.flatMap((p) => evergreenParagraphs(p)).map(norm));
+  for (const p of PLACE_PAGES) for (const para of placeParagraphs(p)) {
+    if (evergreenParas.has(norm(para))) clashes.push(`${p.city} shares an evergreen paragraph: "${para.slice(0, 50)}…"`);
+  }
+  check("(q) no place guide shares a paragraph with another guide or an evergreen page", clashes.length === 0, clashes.join(" | "));
+
+  // No swapped-name template: ≤ 15% shared 5-word shingles between any two guides.
+  const sims: string[] = [];
+  for (let i = 0; i < PLACE_PAGES.length; i++) for (let j = i + 1; j < PLACE_PAGES.length; j++) {
+    const a = shingles(PLACE_PAGES[i]);
+    const b = shingles(PLACE_PAGES[j]);
+    let shared = 0;
+    for (const x of a) if (b.has(x)) shared++;
+    const ratio = shared / Math.max(1, Math.min(a.size, b.size));
+    if (ratio > 0.15) sims.push(`${PLACE_PAGES[i].city}~${PLACE_PAGES[j].city} ${(ratio * 100).toFixed(0)}%`);
+  }
+  check("(q) no two guides are the same template with the place swapped", sims.length === 0, sims.join(" | "));
+
+  // The rule itself, on synthetic files: a renamed copy is caught.
+  const base = PLACE_PAGES[0];
+  const copy: PlacePage = JSON.parse(JSON.stringify(base).split("Asunción").join("Luque"));
+  copy.city = "luque";
+  const a = shingles(base);
+  const b = shingles(copy);
+  let shared = 0;
+  for (const x of a) if (b.has(x)) shared++;
+  check("(q) the template check catches a copy with the city name swapped", shared / Math.min(a.size, b.size) > 0.15);
+
+  // hreflang: only between verified files on doors of different languages.
+  const es = { ...base, status: "verified" as const, verifiedAt: "2026-10-03" };
+  const en = { ...es, door: "en" as const };
+  const alts = placeAlternates(VERTICALS, [es, en]);
+  check("(q) two verified guides in two languages pair by hreflang",
+    alts?.es === "https://inmobiliaria.com.py/zonas/asuncion" && alts?.en === "https://realestateinparaguay.com/zonas/asuncion" && alts?.["x-default"] === alts?.es,
+    JSON.stringify(alts));
+  check("(q) a draft never joins an hreflang set", placeAlternates(VERTICALS, [es, { ...en, status: "draft" }]) === undefined);
+  check("(q) /zonas is a marketplace path root (other doors 308 it)", MARKETPLACE_PATH_ROOTS.includes("zonas"));
+  check("(q) placePath spells the URL", placePath("asuncion") === "/zonas/asuncion" && placePath("asuncion", "villa-morra") === "/zonas/asuncion/villa-morra");
 }
 
 console.log(
