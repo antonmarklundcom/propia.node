@@ -45,6 +45,9 @@ export const SETTING_KEYS = {
   leadRoutingRules: "lead_routing_rules",
   // Saved reply texts for /admin/leads (src/lib/reply-templates.ts): JSON array of strings.
   replyTemplates: "reply_templates",
+  // "Pedir datos antes de WhatsApp" (plan-admin-next O9): the listing page's
+  // WhatsApp buttons go through the contact form first. Unset = off.
+  waGate: "wa_gate_enabled",
 } as const;
 
 /** Uncached — for scripts and jobs, which have no Next.js cache around them. */
@@ -166,6 +169,11 @@ export async function getPublisherSettings(): Promise<PublisherSettings> {
     houseAgencyId: parseHouseAgencyId(s[SETTING_KEYS.houseAgencyId]),
     partnerAgentIds: parsePartnerAgentIds(s[SETTING_KEYS.partnerAgentIds]),
   };
+}
+
+/** Whether the listing page asks for the visitor's details before WhatsApp (O9). */
+export async function getWaGateEnabled(): Promise<boolean> {
+  return (await readSiteSettings())[SETTING_KEYS.waGate] === "true";
 }
 
 /** The lead routing switch and its raw rules JSON (parse with `parseRoutingConfig()`). */

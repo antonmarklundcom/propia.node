@@ -415,12 +415,21 @@ export async function listShareBoard(): Promise<ShareBoardRow[]> {
 export interface PanelViewer {
   agencyId: number | null;
   userId: number;
+  /**
+   * Narrow an agency member to the shares addressed to their own `agents` row
+   * (agency-lead view, `src/lib/panel-lead-access.ts`): an agent always, an
+   * agency admin in "Mis consultas". Unset = the whole agency, as before.
+   * Build it with `panelLeadAccess()`, never by hand.
+   */
+  onlyAgentId?: number | null;
 }
 
 /**
  * The one visibility predicate for shares, used by the read AND the write.
  * - Agency member: shares with the agency, and shares with any agent of it
- *   (the agency admin sees what was handed to their people).
+ *   (the agency admin sees what was handed to their people) — unless
+ *   `onlyAgentId` narrows them to shares with their own `agents` row (an
+ *   agent always; an agency admin in "Mis consultas").
  * - Independent agent: shares with their own `agents` row.
  * - Anyone else (no agents row): nothing.
  *
@@ -429,6 +438,19 @@ export interface PanelViewer {
  */
 export function sharedWithPanel(viewer: PanelViewer): SQL {
   const active = isNull(leadAssignments.revokedAt);
+  if (viewer.agencyId != null && viewer.onlyAgentId != null) {
+    // A member who sees only their own: shares to their agents row, and only
+    // while that row is still in this agency (a member who left sees nothing
+    // of the old agency's shares, same as the unrestricted branch below).
+    return and(
+      active,
+      eq(leadAssignments.agentId, viewer.onlyAgentId),
+      inArray(
+        leadAssignments.agentId,
+        db.select({ id: agents.id }).from(agents).where(eq(agents.agencyId, viewer.agencyId)),
+      ),
+    )!;
+  }
   if (viewer.agencyId != null) {
     return and(
       active,

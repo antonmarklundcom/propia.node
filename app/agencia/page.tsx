@@ -24,6 +24,8 @@ import { esA1 } from "@/i18n/es-a1";
 import { agencyTabs } from "./tabs";
 import { setListingStatusAction } from "./actions";
 import { JoinedListingsNotice } from "./JoinedListingsNotice";
+import { getProfileWaTaps, profileSlugsFor } from "@/lib/wa-taps";
+import { esWaGate } from "@/i18n/es-wa-gate";
 
 export const metadata: Metadata = {
   title: `Tus propiedades`,
@@ -80,12 +82,30 @@ export default async function AgencyListingsPage({
           <AgencyListings scope={scope} />
         )}
 
+        <ProfileTaps userId={user.id} agencyId={canManageTeam(ctx) ? agencyId : null} />
+
         {/* Agency 4: only the responsable sees colleagues' numbers. */}
         {canManageTeam(ctx) && agencyId != null ? (
           <TeamNumbers agencyId={agencyId} />
         ) : null}
       </main>
     </>
+  );
+}
+
+/**
+ * WhatsApp taps on the public profiles (plan-admin-next O9): the agency's,
+ * for its responsable, and the member's own agent page. Listing taps are the
+ * table's column above; nothing shows when the member has no profile.
+ */
+async function ProfileTaps({ userId, agencyId }: { userId: number; agencyId: number | null }) {
+  const slugs = await profileSlugsFor(userId, agencyId);
+  if (slugs.agencySlug == null && slugs.agentSlug == null) return null;
+  const taps = await getProfileWaTaps(slugs);
+  return (
+    <p className="panel-stats-summary" data-profile-taps="">
+      {esWaGate.profileTapsLabel}: <strong>{esWaGate.profileTaps(taps.agency, taps.own)}</strong>
+    </p>
   );
 }
 

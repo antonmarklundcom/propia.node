@@ -66,7 +66,7 @@ import { RecentlyViewedRecorder } from "@/components/RecentlyViewed";
 import { FavoriteButton, CompareButton } from "@/components/SavedListings";
 import { ReportListing } from "@/components/ReportListing";
 import { safeImageUrl } from "@/lib/external-image";
-import { isAgencyMode } from "@/lib/site-settings";
+import { getWaGateEnabled, isAgencyMode } from "@/lib/site-settings";
 import { CONTACT_WHATSAPP } from "@/config/contact";
 
 // Canonical URLs are derived from the Host header (one deployment, several
@@ -300,6 +300,15 @@ export default async function ListingPage({ params }: Params) {
     listingRef(listing.publicId),
   );
   const waHref = waLink(contactWhatsapp, waMessage);
+  /**
+   * "Pedir datos antes de WhatsApp" (/admin/ajustes, plan-admin-next O9):
+   * the WhatsApp buttons scroll to the form instead, which saves the lead and
+   * then opens WhatsApp. `data-wa-tap` keeps the tap counted by the beacon.
+   */
+  const waGate = waHref != null && (await getWaGateEnabled());
+  const waButton = waGate
+    ? { href: "#contacto", "data-wa-tap": "" }
+    : { href: waHref ?? undefined, target: "_blank", rel: "noopener noreferrer" };
   /**
    * "También publicado por" (O5): the other published listers of the same
    * property. Not in agency mode, where the lister is never named.
@@ -754,10 +763,11 @@ export default async function ListingPage({ params }: Params) {
           </div>
           {!contactPrimaryFirst(vertical.key) && waHref && (
             <>
-              <a className="seller-card__whatsapp" href={waHref} target="_blank" rel="noopener noreferrer">
+              <a className="seller-card__whatsapp" {...waButton}>
                 <Glyph name="whatsapp" /> {t.askWhatsapp}
               </a>
-              <div className="seller-card__divider"><span>{t.contactOr}</span></div>
+              {/* Gated, the button leads into the form below: not an "or". */}
+              {!waGate && <div className="seller-card__divider"><span>{t.contactOr}</span></div>}
             </>
           )}
           <ContactForm
@@ -766,6 +776,7 @@ export default async function ListingPage({ params }: Params) {
             contactWhatsapp={contactWhatsapp}
             leadType={leadType}
             prefillMessage={waMessage}
+            waGate={waGate}
             variant="card"
             locale={locale}
             foreignBuyer={foreignBuyerEnquiry(vertical.key)}
@@ -922,9 +933,7 @@ export default async function ListingPage({ params }: Params) {
           {waHref && (
             <a
               className="listing-cta-bar__btn listing-cta-bar__btn--whatsapp"
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
+              {...waButton}
               aria-label={t.ctaBarWhatsapp}
             >
               <Glyph name="whatsapp" />

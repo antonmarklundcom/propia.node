@@ -1,4 +1,6 @@
 import { getAdminBadges } from "@/lib/admin-badges";
+import { leadChannelOf } from "@/lib/lead-channel";
+import { esWaGate } from "@/i18n/es-wa-gate";
 import { reviewLink, reviewTargetsForLeads, reviewedKeys, reviewsEnabled, type ReviewTarget } from "@/lib/reviews";
 import { esReviewsAdmin } from "@/i18n/es-reviews-admin";
 import { isStaff } from "@/lib/auth/roles";
@@ -640,6 +642,11 @@ export default async function AdminLeadsPage({
             {lead.utm?.source === WHATSAPP_MANUAL_SOURCE ? (
               <span className="panel-chip panel-chip--active">
                 {esWa.sourceChip}
+              </span>
+            ) : null}
+            {leadChannelOf(lead.utm) === "whatsapp" ? (
+              <span className="panel-chip panel-chip--active" data-lead-channel="whatsapp">
+                {esWaGate.leadChannel}
               </span>
             ) : null}
             {lead.utm?.source === "vender" || lead.utm?.source === "vender:socio" ? (
