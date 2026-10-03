@@ -1071,6 +1071,18 @@ export const enCategory = {
     `${n} ${n === 1 ? "property" : "properties"} available.`,
   emptyTypeNotice: (typeLabel: string, opLabel: string, city: string) =>
     `There are no ${typeLabel.toLowerCase()} ${opLabel} in ${city} right now. Here is everything available in ${city}.`,
+  emptyNow: (what: string, opLabel: string, where: string) =>
+    `There are no ${what} ${opLabel} in ${where} right now.`,
+  emptyIntro:
+    "Tell us what you are looking for and we will let you know when something like it is listed, or see the nearest listings below.",
+  emptyWhatsappCta: "Ask on WhatsApp",
+  emptyWhatsappText: (what: string, where: string) => `Hi, I am looking for ${what} in ${where}.`,
+  emptyLinksAria: "The nearest listings today",
+  emptySameTypeTitle: (what: string, opLabel: string) => `Nearest ${what} ${opLabel}`,
+  emptyNearbyCitiesTitle: (what: string, places: string) => `${what} in nearby cities: ${places}`,
+  emptyOtherOpTitle: (where: string) => `The same in ${where}, another way`,
+  emptyOtherOpLink: (typeLabel: string, opLabel: string) => `${typeLabel} ${opLabel}`,
+  emptyOtherTypesTitle: (opLabel: string, where: string) => `Other property types ${opLabel} in ${where}`,
   viewSwitchLabel: "View",
   viewList: "List",
   viewMap: "Map",
@@ -2912,6 +2924,7 @@ export const enNotFound = {
   "explanation": "There may not be listings in that area or category yet. Try another city or property type.",
   "popularSearches": "POPULAR SEARCHES",
   "home": "Back to home",
+  didYouMean: (place: string) => `Did you mean ${place}?`,
   "suggestions": [
     "Houses in Asunción",
     "Apartments in Asunción",
@@ -2964,4 +2977,17 @@ export const enEmail = {
   shareBody: (count: number) =>
     `You'll find ${count === 1 ? "it" : "them"} in your panel, under “Compartidas por el portal”. Let us know what you did with each one: La tomo, No puedo, Ya lo contacté or Cerrada.`,
   shareCta: "Open my enquiries",
+} as const;
+
+/** Zone maps — peer of `esZoneMap`. */
+export const enZoneMap = {
+  /** "Map of Asunción with Villa Morra highlighted: houses for sale" */
+  alt: (zone: string, city: string | null, typeLabel: string | null, opLabel: string | null) => {
+    const where = city ? `Map of ${city} with ${zone} highlighted` : `Map of ${zone}`;
+    return typeLabel && opLabel ? `${where}: ${typeLabel.toLowerCase()} ${opLabel}` : where;
+  },
+  /** "Houses for sale" */
+  badge: (typeLabel: string, opLabel: string) => `${typeLabel} ${opLabel}`,
+  credit: "© OpenStreetMap contributors",
+  creditTitle: "Map data: OpenStreetMap, ODbL licence",
 } as const;

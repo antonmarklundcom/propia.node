@@ -146,3 +146,6 @@ vite.config.ts.timestamp-*
 
 # Claude Code agent worktrees (local, per-session)
 .claude/worktrees/
+
+# Zone-map contact sheet (scripts/maps-contact-sheet.ts) — a review aid, not a site file
+/maps-contact-sheet.svg

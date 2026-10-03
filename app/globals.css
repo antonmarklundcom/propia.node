@@ -1826,6 +1826,75 @@ body {
 
 /* Shown when a city+tipo URL had zero listings and redirected to the city
    page — explains the bounce instead of silently swapping the search. */
+/* Empty category page (E-1/E-4, src/components/EmptyCategory.tsx). Mobile
+   first: the honest line, then the CTAs stacked, then the nearest stock. */
+.empty-category {
+  margin-top: 16px;
+  display: grid;
+  gap: 20px;
+}
+.empty-category__now {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.empty-category__intro {
+  margin: -12px 0 0;
+  color: var(--color-ink-secondary);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.empty-category__ctas {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+}
+.empty-category__whatsapp {
+  margin-top: 0;
+  padding: 0 20px;
+}
+@media (min-width: 641px) {
+  .empty-category__whatsapp {
+    justify-self: start;
+  }
+}
+.empty-category__nearby .listing-results-grid,
+.empty-category__nearby .category-results {
+  margin-top: 8px;
+}
+
+/* Place guides (plan phase 4): /zonas/… and the excerpt on category pages. */
+.place-page__head { margin-bottom: 12px; }
+.place-page__lede { font-size: 17px; line-height: 1.55; color: var(--color-ink-secondary); max-width: 760px; }
+.place-page__hero { margin: 16px 0; }
+.place-page__hero img,
+.place-page__gallery img { width: 100%; height: auto; display: block; }
+.place-page__hero figcaption,
+.place-page__gallery figcaption { font-size: 13px; color: var(--color-ink-secondary); margin-top: 6px; }
+.place-page__live { margin: 20px 0; }
+.place-page__body { max-width: 760px; }
+.place-page__body p { line-height: 1.65; }
+.place-page__zones { display: grid; gap: 12px; margin: 12px 0 0; }
+.place-page__zones dt { font-weight: 700; }
+.place-page__zones dd { margin: 4px 0 0; line-height: 1.6; }
+.place-page__gallery { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 641px) {
+  .place-page__gallery { grid-template-columns: repeat(2, 1fr); }
+}
+.place-page__faq { border-top: 1px solid var(--color-border); padding: 12px 0; }
+.place-page__faq summary { font-weight: 700; cursor: pointer; }
+.place-page__brief { max-width: 640px; margin: 24px 0; }
+.place-excerpt {
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  max-width: 760px;
+}
+.place-excerpt p { margin: 8px 0; line-height: 1.6; }
+.place-excerpt__link { font-weight: 700; }
+
 .category-redirect-notice {
   margin-top: 10px;
   padding: 10px 14px;
@@ -11096,4 +11165,42 @@ a.panel-chip--active:focus-visible {
 
 .vd-partner__points {
   margin-top: 18px;
+}
+
+/* Zone map (src/components/ZoneMap.tsx): a pre-rendered WebP, a type badge
+   overlay when the image carries none, and the OpenStreetMap credit, which
+   must stay visible (ODbL attribution). */
+.zone-map {
+  margin: 0;
+}
+.zone-map__frame {
+  position: relative;
+}
+.zone-map__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+.zone-map__badge {
+  position: absolute;
+  top: 2%;
+  left: 2%;
+  padding: 0.35em 0.75em;
+  background: var(--color-primary);
+  border-bottom: 2px solid var(--color-accent);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.zone-map__credit {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--color-ink-secondary);
+  text-align: right;
+}
+.zone-map__credit a {
+  color: inherit;
 }

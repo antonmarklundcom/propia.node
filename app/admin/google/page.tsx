@@ -10,6 +10,8 @@ import {
   type GscRow,
 } from "@/lib/search-console";
 import { esPanel } from "@/i18n/es";
+import { esAdminInsights } from "@/i18n/es-admin-insights";
+import type { Candidate } from "@/lib/gsc-candidates";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
@@ -45,6 +47,42 @@ function RowsTable({ first, rows }: { first: string; rows: (GscRow & { label?: s
               <td>{n(r.impressions)}</td>
               <td>{r.impressions > 0 ? pct(r.ctr) : "—"}</td>
               <td>{pos(r.position)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Category pages Google shows that are not evergreen yet (`src/lib/gsc-candidates.ts`). */
+function CandidatesTable({ rows }: { rows: Candidate[] }) {
+  const t = esAdminInsights.candidates;
+  if (rows.length === 0) return <p className="panel-empty">{t.none}</p>;
+  return (
+    <div className="panel-table__wrap">
+      <table className="panel-table">
+        <thead>
+          <tr>
+            <th>{t.colPage}</th>
+            <th>{esPanel.gscClicks}</th>
+            <th>{esPanel.gscImpressions}</th>
+            <th>{esPanel.gscPosition}</th>
+            <th>{t.colQueries}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.path}>
+              <td className="panel-table__name">{r.path}</td>
+              <td>{n(r.clicks)}</td>
+              <td>{n(r.impressions)}</td>
+              <td>{pos(r.position)}</td>
+              <td>
+                {r.topQueries.length > 0
+                  ? r.topQueries.map((q) => `${q.query} (${n(q.impressions)})`).join(" · ")
+                  : "—"}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -118,6 +156,18 @@ export default async function AdminGooglePage() {
                             .sort((a, b) => b.impressions - a.impressions)
                             .map((e) => ({ ...e, label: e.path }))}
                         />
+                      </>
+                    ) : null}
+                    {r.host && r.categoryPages.length > 0 ? (
+                      <>
+                        <h4 className="panel-card__title">{esAdminInsights.candidates.title}</h4>
+                        <p className="panel-card__meta">{esAdminInsights.candidates.intro}</p>
+                        {r.candidateQueriesError ? (
+                          <p className="panel-card__meta">
+                            {esAdminInsights.candidates.queriesUnavailable(r.candidateQueriesError)}
+                          </p>
+                        ) : null}
+                        <CandidatesTable rows={r.candidates} />
                       </>
                     ) : null}
                     <h4 className="panel-card__title">{esPanel.gscTopPages}</h4>

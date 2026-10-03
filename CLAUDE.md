@@ -767,6 +767,19 @@ route handler rather than Next's `generateSitemaps()` **because that
 enumerates its chunk ids at build time and this build has no database** — the
 same constraint that keeps every route dynamic.
 
+**The `locations` table is one cached read** (`cachedLocationRows` in
+`src/lib/queries.ts`, tag `locations`, 2026-10-03 report §C-2).
+`resolveCity()`, `resolveBarrio()`, `locationChain()`, `citySubtreeIds()` and
+`listCityBarrios()` all look up in it (`src/lib/location-lookup.ts`), so a warm
+category, map or `/api/mapa` request costs no location query. The panel's
+`seed:locations` run drops the tag; a run **from the CLI cannot**, so a new
+place appears within `CACHE_TTL.locations` (an hour) — run the seed from
+`/admin/operaciones` to see it at once. Scripts read `locationRowsRaw()`.
+Asides that are not cached at all (the category grid's city/barrio chips and
+stocked-path set) go through `loadAsides()`: capped, and the fallback under
+pool pressure even when every section failed. `/api/mapa` answers 503 with
+`Retry-After` under pool pressure instead of 500.
+
 `app/not-found.tsx` deliberately does `listCities().catch(() => [])`: a 404 is
 also the zero-match category surface, and it must not become a 500 during the
 exact incident where MySQL is the thing that is unwell.
@@ -830,6 +843,59 @@ Rules that bite:
 - The page body is `src/components/evergreen/EvergreenCategory.tsx`; its UI
   strings are `esEvergreen` / `enEvergreen` (`src/i18n/es-evergreen.ts`).
   The brief posts with `surface: "evergreen"`.
+
+## Empty category pages — 200 at 0 listings, never indexed (E-1..E-4, 2026-10-03)
+
+Founder decisions in `docs/plan-empty-category-seo-2026-10-03.md`; build plan
+phase 3 (`docs/plan-category-pages-build.md`, `docs/log/empty-category-state.md`).
+
+- **A valid combination renders at 0 listings.** `getIndexability()` takes
+  `emptyRenders` (the category page passes `doorAllowsCategory()`,
+  `src/lib/empty-state.ts`): at 0 it returns `noindex`, not `gone`, so the page
+  renders `EmptyCategory` — an honest line, the CTAs in E-4 order
+  (`emptyStateCtas()`: brief → WhatsApp when `NEXT_PUBLIC_CONTACT_WHATSAPP` is
+  set → saved-search alert when email is configured), the nearest real stock
+  (`emptyStateLinks()` in `category-context.ts`: sibling barrios, the city
+  page, the other operation, other types — **only pages with ≥ 1 listing**)
+  and a few cards from the nearest cities. The sitemap is unchanged: it never
+  listed a 0-count non-evergreen page.
+- **What still 404s or redirects:** an unknown city or barrio slug (the 404
+  page offers "¿Quisiste decir …?", `closestSlug()`), and a combination the
+  door never carries (`/venta/…/casas` on `terreno.com.py` keeps the old
+  bounce). Profile pages leave `emptyRenders` unset and keep their 404 at 0.
+- **A place in `location-tree.ts` but not yet in the database renders from
+  the tree** (`treePlace()`, synthetic negative ids, count 0) — report
+  2026-10-03 §A — and the sitemap leaves its evergreen paths out until
+  `seed:locations` runs.
+- Menus still hide empty links (`withoutEmptyCategoryLinks()`): a page that
+  exists is not a page we promote.
+
+## Place guides — `/zonas/<ciudad>[/<barrio>]` (plan phase 4, 2026-10-03)
+
+One guide per city or barrio, written once and borrowed by every category
+page of that place (`docs/plan-category-pages-build.md` §3, `docs/log/place-pages.md`).
+
+- **`src/content/places/index.ts` is the only list** (`PLACE_PAGES`); each file
+  is typed by `src/content/places/types.ts` and names its owner door (P-2:
+  `inmobiliaria` for Spanish, `en` for English). The URL is spelled only by
+  `placePath()` (`src/lib/place-path.ts`, P-1).
+- **Draft until verified (E-3/P-6).** A file merges as `status: "draft"`: the
+  page is live, `noindex,follow` and out of the sitemap. It becomes indexable
+  on its own door, and enters that door's sitemap, only when the founder has
+  checked `claimsToVerify` and it is flipped to `"verified"` with `verifiedAt`
+  and 5–8 photos (`placeIndexable()`, `placeSitemapPaths()`).
+- Another marketplace door of the same language renders the same guide with
+  its canonical on the owner; hreflang pairs only two **verified** guides in
+  different languages (`placeAlternates()`, derived from `verticals.ts`).
+- **No number in a place file**; the page counts its live links from the
+  door's rows. Photos live in `public/img/places/<city>[--<barrio>]/` as
+  `<file>-640.webp` / `-1280.webp`.
+- Every category page of a place with a guide shows its `excerpt` and a link
+  (an evergreen page only the link).
+- `verify:seo` block (q) enforces §3.3 of the plan: tree place, owner door,
+  keywords, 500–1000 words, 4–6 FAQ, no digits, claims, photos, excerpt,
+  meta, no shared paragraph with any guide or evergreen page, and no
+  swapped-name template (≤ 15 % shared five-word shingles).
 
 ## Listing filters — one vocabulary, two files
 

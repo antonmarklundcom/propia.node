@@ -33,7 +33,7 @@ import {
   listingSetSignature,
   ownsCategoryPages,
 } from "../src/lib/category-owner";
-import { PROPERTY_TYPES } from "../src/lib/import/types";
+import { PROPERTY_TYPES, type PropertyType } from "../src/lib/import/types";
 import type { CategoryShape } from "../src/lib/urls";
 import {
   DIRECTORY_SITEMAP_PATHS,
@@ -89,7 +89,24 @@ import { propertyHost, reportWindow, serviceAccount, signedAssertion } from "../
 import { readFileSync } from "node:fs";
 import { createVerify, generateKeyPairSync } from "node:crypto";
 import { getIndexability } from "../src/lib/indexability";
-import { TREE, flatten } from "../src/lib/ops/location-tree";
+import { TREE, flatten, treePlace } from "../src/lib/ops/location-tree";
+import { emptyStateLinks } from "../src/lib/category-context";
+import { doorAllowsCategory, emptyStateCtas, otherOperationsFor } from "../src/lib/empty-state";
+import { closestSlug, editDistance } from "../src/lib/did-you-mean";
+import {
+  PLACE_PAGES,
+  placeHeadings,
+  placeIndexable,
+  placeParagraphs,
+  placeSitemapPaths,
+  placeWordCount,
+  type PlacePage,
+} from "../src/content/places";
+import { placePath } from "../src/lib/place-path";
+import { placeAlternates } from "../src/lib/place-alternates";
+import { existsSync } from "node:fs";
+import { CRAWL_BLOCKED_PARAMS, isDisallowed, robotsDisallow } from "../src/lib/robots-rules";
+import { FACET_PARAM } from "../src/lib/facets";
 
 let failures = 0;
 
@@ -1912,6 +1929,232 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
     const withAlternates = files.filter((f) => src(f).includes("pageLanguageAlternates"));
     check("(o) no site page emits hreflang (a new one needs an owners-only scope first)", withAlternates.length === 0, withAlternates.join(", "));
   }
+}
+
+// robots.txt (src/lib/robots-rules.ts, plan decision P-3): every facet and
+// map variant is out of the crawl, and nothing canonical is.
+{
+  const rules = robotsDisallow();
+  for (const p of [...Object.values(FACET_PARAM), "vista", "tipo_vacio"]) {
+    check(`(robots) ?${p}= is blocked first and later in the query`,
+      isDisallowed(`/venta/asuncion?${p}=x`, rules) && isDisallowed(`/venta/asuncion/casas?orden=recientes&${p}=x`, rules));
+  }
+  check("(robots) the blocked list is exactly the facets plus vista and tipo_vacio",
+    CRAWL_BLOCKED_PARAMS.length === Object.values(FACET_PARAM).length + 2, CRAWL_BLOCKED_PARAMS.join());
+  const open = [
+    "/", "/venta", "/alquiler/asuncion", "/venta/asuncion/casas", "/venta/asuncion/villa-morra/casas",
+    "/venta/asuncion/casas?page=2", "/propiedad/casa-en-luque-123", "/guias", "/precios/asuncion",
+    "/zonas/asuncion", "/zonas/asuncion/villa-morra", "/inmobiliarias", "/sitemap.xml",
+    ...EVERGREEN_PAGES.map((p) => p.path),
+  ];
+  const blocked = open.filter((u) => isDisallowed(u, rules));
+  check("(robots) no canonical path, ?page= or evergreen page is blocked", blocked.length === 0, blocked.join(" "));
+  check("(robots) a query name that merely starts like a facet is not blocked", !isDisallowed("/venta?tipos=x", rules));
+  check("(robots) the panels and the API stay blocked",
+    ["/api/mapa?bbox=1", "/admin", "/agencia/leads", "/publicar", "/login"].every((u) => isDisallowed(u, rules)));
+}
+
+// (p) Empty category pages — founder decisions E-1..E-4 (2026-10-03), plan
+// phase 3: a valid page renders at 0 listings, noindex and out of the
+// sitemap; a profile page keeps its 404; the CTAs keep their order; the
+// nearest-stock links only ever point at pages with listings.
+console.log("\n(p) empty category pages (E-1..E-4)");
+{
+  check("(p) a valid category at 0 listings renders noindex, never gone",
+    getIndexability({ listingCount: 0, emptyRenders: true }).state === "noindex");
+  check("(p) …even as a typed child of an empty parent",
+    getIndexability({ listingCount: 0, emptyRenders: true, parentUrl: "/venta/x", parentIndexable: false }).state === "noindex");
+  check("(p) an evergreen page at 0 is still indexable",
+    getIndexability({ listingCount: 0, emptyRenders: true, evergreen: true }).state === "index");
+  check("(p) a profile page (no emptyRenders) still 404s at 0",
+    getIndexability({ listingCount: 0 }).state === "gone");
+  check("(p) the count rule above 0 is unchanged",
+    getIndexability({ listingCount: 2, emptyRenders: true }).state === "noindex" &&
+      getIndexability({ listingCount: 3, emptyRenders: true }).state === "index");
+
+  const land = { property_type: ["terreno"] };
+  const rent = { operation: ["alquiler", "alquiler_temporal"] };
+  check("(p) a land-only door does not carry a house page", !doorAllowsCategory(land, "venta", "casa"));
+  check("(p) …but carries its land page and its untyped city page",
+    doorAllowsCategory(land, "venta", "terreno") && doorAllowsCategory(land, "venta", null));
+  check("(p) a rental door does not carry a sale page", !doorAllowsCategory(rent, "venta", "casa"));
+  check("(p) an unfiltered door carries every combination", doorAllowsCategory(undefined, "alquiler", "oficina"));
+
+  check("(p) E-4 order: brief, WhatsApp, alert",
+    emptyStateCtas({ whatsapp: true, email: true }).join() === "brief,whatsapp,alert");
+  check("(p) no WhatsApp button without a number",
+    emptyStateCtas({ whatsapp: false, email: true }).join() === "brief,alert");
+  check("(p) no alert form without email", emptyStateCtas({ whatsapp: true, email: false }).join() === "brief,whatsapp");
+  check("(p) the brief is always first", emptyStateCtas({ whatsapp: false, email: false }).join() === "brief");
+  check("(p) a sale page offers rentals; a rental door never offers sales",
+    otherOperationsFor("venta", undefined).join() === "alquiler" && otherOperationsFor("alquiler", rent).length === 0);
+
+  // City 1 (barrios 11, 12, 13), city 2 nearby. Venta stock: casas in 12
+  // and 13, departamentos in 11; alquiler: casas in 11.
+  const loc = (id: number, level: string, parentId: number | null, lat: number, lng: number) =>
+    ({ id, name: `L${id}`, slug: `l${id}`, level, parentId, lat, lng });
+  const byId = new Map([
+    loc(1, "ciudad", null, -25.3, -57.6), loc(11, "barrio", 1, -25.30, -57.60),
+    loc(12, "barrio", 1, -25.31, -57.61), loc(13, "barrio", 1, -25.40, -57.70),
+    loc(2, "ciudad", null, -25.5, -57.5),
+  ].map((l) => [l.id, l]));
+  const row = (locationId: number, propertyType: string, count: number) =>
+    ({ locationId, propertyType: propertyType as PropertyType, count, minUsd: 1, maxUsd: 2 });
+  const venta = [row(12, "casa", 2), row(13, "casa", 5), row(11, "departamento", 4)];
+  const alquiler = [row(11, "casa", 1)];
+  const links = emptyStateLinks(venta, [{ operation: "alquiler", rows: alquiler }], byId,
+    { operation: "venta", cityId: 1, barrioId: 11, type: "casa" });
+  check("(p) same type here: sibling barrios nearest first, then the city page",
+    links.sameTypeHere.map((l) => l.href).join() === "/venta/l1/l12/casas,/venta/l1/l13/casas,/venta/l1/casas",
+    links.sameTypeHere.map((l) => l.href).join());
+  check("(p) the other operation, same barrio and type",
+    links.otherOperation.map((l) => l.href).join() === "/alquiler/l1/l11/casas", JSON.stringify(links.otherOperation));
+  check("(p) other types in this barrio", links.otherTypes.map((l) => l.href).join() === "/venta/l1/l11/departamentos");
+  const all = [...links.sameTypeHere, ...links.otherOperation, ...links.otherTypes];
+  check("(p) no nearest-stock link points at a page with 0 listings", all.every((l) => l.count > 0));
+  check("(p) a page whose city is not in the table gets no links (and no crash)",
+    emptyStateLinks(venta, [], byId, { operation: "venta", cityId: 999, barrioId: null, type: "casa" }).sameTypeHere.length === 0);
+
+  check("(p) did-you-mean: one typo finds the city", closestSlug("san-lorenso", ["san-lorenzo", "luque", "lambare"]) === "san-lorenzo");
+  check("(p) …a far-off slug finds nothing", closestSlug("nowhere", ["san-lorenzo", "luque"]) === null);
+  check("(p) …a tie suggests nothing", closestSlug("lugue", ["luque", "lague"]) === null);
+  check("(p) …an exact match is not a suggestion", closestSlug("luque", ["luque"]) === null);
+  check("(p) edit distance", editDistance("kitten", "sitting") === 3);
+
+  check("(p) the location tree resolves a seeded-later place (report §A)",
+    treePlace("san-bernardino")?.city.name === "San Bernardino" &&
+      treePlace("asuncion", "loma-pyta")?.barrio?.name === "Loma Pytã");
+  check("(p) …and nothing it does not know", treePlace("nowhere") === null && treePlace("asuncion", "nowhere") === null);
+  const sm = readFileSync(new URL("../src/lib/sitemap.ts", import.meta.url), "utf8");
+  check("(p) the sitemap holds back evergreen paths whose place is not seeded", /seeded\(shape\)/.test(sm));
+}
+
+// (q) Place guides — plan docs/plan-category-pages-build.md §3.3, phase 4.
+console.log("\n(q) place guides (src/content/places/)");
+{
+  const flat = flatten(TREE, "");
+  const fold = (x: string) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const PLACE_DOORS = ["inmobiliaria", "en"]; // decision P-2
+  const DENY = /infocasas|clasipar|inmoclick|tavamay|matrisa/i;
+  const seen = new Set<string>();
+  const evergreenMains = new Set(EVERGREEN_PAGES.map((p) => p.keyword));
+  const placeMains = new Map<string, string>();
+  for (const p of PLACE_PAGES) placeMains.set(p.keyword, placePath(p.city, p.barrio));
+
+  const textOf = (p: PlacePage) => [
+    ...placeHeadings(p), ...placeParagraphs(p), p.excerpt,
+    ...p.photos.flatMap((ph) => [ph.alt, ph.caption]),
+  ];
+  const ownNames = (p: PlacePage) => {
+    const city = flat.find((n) => n.level === "ciudad" && n.slug === p.city);
+    const barrio = p.barrio ? flat.find((n) => n.level === "barrio" && n.slug === p.barrio) : undefined;
+    return [city?.name, barrio?.name].filter((n): n is string => !!n);
+  };
+  const shingles = (p: PlacePage) => {
+    let text = fold(textOf(p).join(" "));
+    for (const n of ownNames(p)) text = text.split(fold(n)).join(" lugar ");
+    const w = text.replace(/[^a-z0-9ñ ]+/g, " ").split(/\s+/).filter(Boolean);
+    const out = new Set<string>();
+    for (let i = 0; i + 5 <= w.length; i++) out.add(w.slice(i, i + 5).join(" "));
+    return out;
+  };
+
+  for (const p of PLACE_PAGES) {
+    const id = `${p.door}${placePath(p.city, p.barrio)}`;
+    const city = flat.find((n) => n.level === "ciudad" && n.slug === p.city);
+    const barrio = p.barrio ? flat.find((n) => n.level === "barrio" && n.slug === p.barrio && n.parentFullSlug === city?.fullSlug) : null;
+    check(`(q) ${id}: its place is in the location tree`, !!city && (!p.barrio || !!barrio));
+    check(`(q) ${id}: one file per place and door`, !seen.has(id));
+    seen.add(id);
+    check(`(q) ${id}: its door owns place pages (P-2)`, PLACE_DOORS.includes(p.door), p.door);
+    check(`(q) ${id}: its main keyword is no evergreen page's`, !evergreenMains.has(p.keyword));
+    check(`(q) ${id}: its main keyword is no other place's`, placeMains.get(p.keyword) === placePath(p.city, p.barrio));
+    check(`(q) ${id}: no secondary keyword is another page's main keyword`,
+      p.secondaryKeywords.every((k) => !evergreenMains.has(k) && (!placeMains.has(k) || placeMains.get(k) === placePath(p.city, p.barrio))));
+    const words = placeWordCount(p);
+    check(`(q) ${id}: 500–1000 words of its own`, words >= 500 && words <= 1000, `${words} words`);
+    check(`(q) ${id}: 4–6 FAQ entries`, p.faq.length >= 4 && p.faq.length <= 6, String(p.faq.length));
+    const allowed = p.namesWithDigits ?? [];
+    check(`(q) ${id}: every name with digits is also a claim to verify`,
+      allowed.every((n) => p.claimsToVerify.some((c) => c.includes(n))));
+    const strip = (x: string) => allowed.reduce((acc, n) => acc.split(n).join(""), x);
+    const withDigits = [...textOf(p), p.metaDescription].filter((x) => /\d/.test(strip(x)));
+    check(`(q) ${id}: no digits in prose, FAQ, captions or alt text`, withDigits.length === 0, withDigits[0]?.slice(0, 60));
+    check(`(q) ${id}: lists its claims to verify`, p.claimsToVerify.length > 0);
+    if (p.status === "verified") {
+      check(`(q) ${id}: verified carries a date`, !!p.verifiedAt && /^\d{4}-\d{2}-\d{2}$/.test(p.verifiedAt));
+      check(`(q) ${id}: verified carries 5–8 photos`, p.photos.length >= 5 && p.photos.length <= 8, String(p.photos.length));
+    }
+    const dir = `public/img/places/${p.barrio ? `${p.city}--${p.barrio}` : p.city}`;
+    for (const ph of p.photos) {
+      check(`(q) ${id}: photo ${ph.file} exists at both widths`,
+        existsSync(`${dir}/${ph.file}-640.webp`) && existsSync(`${dir}/${ph.file}-1280.webp`));
+      check(`(q) ${id}: photo ${ph.file} has alt text of 1–125 characters`, ph.alt.length > 0 && ph.alt.length <= 125);
+      check(`(q) ${id}: photo ${ph.file} has a credit and licence`, ph.credit.length > 0 && !!ph.licence);
+      check(`(q) ${id}: a Creative Commons photo links its source`, !ph.licence.startsWith("cc") || !!ph.sourceUrl);
+    }
+    const excerptWords = p.excerpt.split(/\s+/).filter(Boolean).length;
+    check(`(q) ${id}: excerpt is 40–80 words`, excerptWords >= 40 && excerptWords <= 80, String(excerptWords));
+    check(`(q) ${id}: excerpt is not a body paragraph`, !placeParagraphs(p).includes(p.excerpt));
+    check(`(q) ${id}: meta description fits in 155 characters`, p.metaDescription.length <= 155, String(p.metaDescription.length));
+    check(`(q) ${id}: H1 names the place`, ownNames(p).some((n) => fold(p.h1).includes(fold(n))));
+    check(`(q) ${id}: no portal or brand names in the text`, !textOf(p).some((x) => DENY.test(x)));
+    check(`(q) ${id}: indexable iff verified, and only on its door`,
+      placeIndexable(p, p.door) === (p.status === "verified") && !placeIndexable(p, p.door === "en" ? "inmobiliaria" : "en"));
+    check(`(q) ${id}: in its door's sitemap iff verified`,
+      placeSitemapPaths(p.door).includes(placePath(p.city, p.barrio)) === (p.status === "verified"));
+  }
+
+  // No shared paragraph or section title with another place or an evergreen page.
+  const owners = new Map<string, string>();
+  const clashes: string[] = [];
+  const norm = (x: string) => x.toLowerCase().replace(/\s+/g, " ").trim();
+  for (const p of PLACE_PAGES) {
+    const id = `${p.door}${placePath(p.city, p.barrio)}`;
+    for (const para of new Set([...placeParagraphs(p), ...placeHeadings(p).slice(1)].map(norm))) {
+      const other = owners.get(para);
+      if (other && other !== id) clashes.push(`${other} & ${id}: "${para.slice(0, 50)}…"`);
+      owners.set(para, id);
+    }
+  }
+  const evergreenParas = new Set(EVERGREEN_PAGES.flatMap((p) => evergreenParagraphs(p)).map(norm));
+  for (const p of PLACE_PAGES) for (const para of placeParagraphs(p)) {
+    if (evergreenParas.has(norm(para))) clashes.push(`${p.city} shares an evergreen paragraph: "${para.slice(0, 50)}…"`);
+  }
+  check("(q) no place guide shares a paragraph with another guide or an evergreen page", clashes.length === 0, clashes.join(" | "));
+
+  // No swapped-name template: ≤ 15% shared 5-word shingles between any two guides.
+  const sims: string[] = [];
+  for (let i = 0; i < PLACE_PAGES.length; i++) for (let j = i + 1; j < PLACE_PAGES.length; j++) {
+    const a = shingles(PLACE_PAGES[i]);
+    const b = shingles(PLACE_PAGES[j]);
+    let shared = 0;
+    for (const x of a) if (b.has(x)) shared++;
+    const ratio = shared / Math.max(1, Math.min(a.size, b.size));
+    if (ratio > 0.15) sims.push(`${PLACE_PAGES[i].city}~${PLACE_PAGES[j].city} ${(ratio * 100).toFixed(0)}%`);
+  }
+  check("(q) no two guides are the same template with the place swapped", sims.length === 0, sims.join(" | "));
+
+  // The rule itself, on synthetic files: a renamed copy is caught.
+  const base = PLACE_PAGES[0];
+  const copy: PlacePage = JSON.parse(JSON.stringify(base).split("Asunción").join("Luque"));
+  copy.city = "luque";
+  const a = shingles(base);
+  const b = shingles(copy);
+  let shared = 0;
+  for (const x of a) if (b.has(x)) shared++;
+  check("(q) the template check catches a copy with the city name swapped", shared / Math.min(a.size, b.size) > 0.15);
+
+  // hreflang: only between verified files on doors of different languages.
+  const es = { ...base, status: "verified" as const, verifiedAt: "2026-10-03" };
+  const en = { ...es, door: "en" as const };
+  const alts = placeAlternates(VERTICALS, [es, en]);
+  check("(q) two verified guides in two languages pair by hreflang",
+    alts?.es === "https://inmobiliaria.com.py/zonas/asuncion" && alts?.en === "https://realestateinparaguay.com/zonas/asuncion" && alts?.["x-default"] === alts?.es,
+    JSON.stringify(alts));
+  check("(q) a draft never joins an hreflang set", placeAlternates(VERTICALS, [es, { ...en, status: "draft" }]) === undefined);
+  check("(q) /zonas is a marketplace path root (other doors 308 it)", MARKETPLACE_PATH_ROOTS.includes("zonas"));
+  check("(q) placePath spells the URL", placePath("asuncion") === "/zonas/asuncion" && placePath("asuncion", "villa-morra") === "/zonas/asuncion/villa-morra");
 }
 
 console.log(
