@@ -23,13 +23,16 @@ import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { agencyTabs } from "../../tabs";
-import { agencyUpdateListingAction } from "./actions";
+import { agencySaveFinancingAction, agencyUpdateListingAction } from "./actions";
 import {
   agencyDeletePhotoAction,
   agencyMovePhotoAction,
   agencySetCoverAction,
   agencyUploadPhotosAction,
 } from "./photo-actions";
+
+import { SellerFinancingForm } from "@/components/panel/SellerFinancingForm";
+import { getListingFinancing } from "@/lib/listing-financing";
 
 export const metadata: Metadata = {
   title: `Editar aviso`,
@@ -82,6 +85,8 @@ export default async function AgencyListingEditPage({
     getListingMapPosition(listingId, scope),
   ]);
   if (!listing) notFound();
+  // Read only once the scoped load above found the listing (plan-admin-next O8).
+  const financing = await getListingFinancing(listing.id);
 
   const flash = msg ? FLASH[msg] : undefined;
 
@@ -143,6 +148,14 @@ export default async function AgencyListingEditPage({
             }
           />
         </article>
+
+        <SellerFinancingForm
+          listingId={listing.id}
+          operation={listing.operation}
+          financing={financing}
+          action={agencySaveFinancingAction}
+          msg={msg}
+        />
 
 
         <PhotoManager

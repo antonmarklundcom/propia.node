@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks",
-    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox && npm run verify:prices && npm run verify:telegram && npm run verify:reset && npm run verify:ai-reply && npm run verify:whatsapp && npm run verify:triage && npm run verify:publish && npm run verify:lifecycle && npm run verify:proxy && npm run verify:routing",
+    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox && npm run verify:prices && npm run verify:telegram && npm run verify:reset && npm run verify:ai-reply && npm run verify:whatsapp && npm run verify:triage && npm run verify:publish && npm run verify:lifecycle && npm run verify:proxy && npm run verify:routing && npm run verify:financing",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -47,6 +47,7 @@
     "verify:publish": "tsx --tsconfig scripts/tsconfig.json scripts/verify-publish.ts",
     "verify:lifecycle": "tsx --tsconfig scripts/tsconfig.json scripts/verify-lifecycle.ts",
     "verify:proxy": "tsx --tsconfig scripts/tsconfig.json scripts/verify-proxy.ts",
+    "verify:financing": "tsx --tsconfig scripts/tsconfig.json scripts/verify-financing.ts",
     "verify:routing": "tsx --tsconfig scripts/tsconfig.json scripts/verify-routing.ts",
     "verify:triage": "tsx --tsconfig scripts/tsconfig.json scripts/verify-triage.ts",
     "verify:whatsapp": "tsx --tsconfig scripts/tsconfig.json scripts/verify-whatsapp.ts",

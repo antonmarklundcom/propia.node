@@ -567,6 +567,24 @@ default, `--dry` first). It records itself as a revertible import job.
     for the /admin/leads chip counts (P7), and /admin/analitica reading the
     rollup (P8).
 
+27. **Partner ledger + split suggestion (O2) and seller financing (O8)
+    (2026-10-02, migrations 0024 + 0025, `docs/log/partner-ledger-financing.md`).**
+    - **Ledger.** `/admin/negocios/socios` (super-admin) shows every lead each
+      Socio got, from shares and their own listings, and its outcome. Derived
+      in `src/lib/partner-ledger.ts`. **Still no partner column on `leads`.**
+    - **Split suggestion.** Each Socio's usual split lives in `partner_terms`
+      (`src/lib/partner-terms.ts`). It only prefills empty percentages on a
+      lead's Negocio block (`splitPrefill()`); nothing is saved without
+      Guardar, and no amount is derived.
+    - **Seller financing.** `listing_financing` (`src/lib/listing-financing.ts`,
+      the only module on it) holds the publisher's own terms, edited on the
+      three edit pages. `/propiedad` shows them, labelled "Datos provistos por
+      …, no por el portal", in place of the estimated cuota. Saving clears
+      `cuota_gs`, and `cron:cuotas` skips those listings.
+    - Pure checks: `npm run verify:financing` (in `verify:local` and the
+      pre-push hook).
+    - 0025 holds the audit's four indexes (P9).
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
@@ -923,7 +941,7 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`.
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`, `npm run verify:financing`.
   Same thing by hand: `npm run verify:local`. The last eleven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
@@ -969,6 +987,8 @@ that section no longer lists everything:
 | `drizzle/0019_fuzzy_ego.sql` | `deals`, `analytics_events`, `analytics_daily`, `lead_assignments.partner_note` / `reminded_at`, `users.telegram_chat_id` (`docs/plan-agency-2026-09-26.md` batch 2) | **yes, 2026-09-27** (founder: `db:status` → 0 pending, 20 applied, No drift) |
 | `drizzle/0020_dry_caretaker.sql` | the `web_vitals` table (page speed from real visitors, PR #244) | **no** — the founder applies it before merging #244; until then the beacon's inserts are dropped and `/admin/analitica` says "migración 0020 pendiente" |
 | `drizzle/0021_tiresome_newton_destine.sql` | `whatsapp_messages`, `whatsapp_contacts` (WhatsApp Cloud API inbox, `docs/log/whatsapp-inbox.md`) | **no** — founder applies before merging the WhatsApp PR; `db:migrate` also runs 0020 if still pending |
+| `drizzle/0024_wild_iron_man.sql` | `partner_terms`, `listing_financing` (O2, O8, `docs/log/partner-ledger-financing.md`) | **no** — founder applies before merging the O2/O8 PR |
+| `drizzle/0025_mute_the_hand.sql` | indexes `leads.idx_routed_status`, `listings.idx_owner` / `idx_updated`, `ops_runs.idx_job_id` (audit 2026-10 P9) | **no** — same PR, same step |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import { updateListing } from "@/lib/listing-edit";
 import { readListingForm } from "@/lib/listing-form-input";
+import { handleFinancingForm } from "@/lib/listing-financing-action";
 
 export async function agencyUpdateListingAction(formData: FormData): Promise<void> {
   const scope = panelScope(await requireAgencyContext());
@@ -31,4 +32,15 @@ export async function agencyUpdateListingAction(formData: FormData): Promise<voi
   redirect(
     `/agencia/propiedad/${parsed.id}?msg=${affected ? "saved" : "not_found"}`,
   );
+}
+
+/** "Financiación propia" (plan-admin-next O8), in the panel's own scope. */
+export async function agencySaveFinancingAction(formData: FormData): Promise<void> {
+  const ctx = await requireAgencyContext();
+  await handleFinancingForm({
+    formData,
+    scope: panelScope(ctx),
+    userId: ctx.user.id,
+    basePath: "/agencia/propiedad",
+  });
 }

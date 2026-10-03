@@ -650,7 +650,7 @@ export const esPanel = {
   historyWhat: "Qué",
   historyTarget: "Sobre",
   historyDetail: "Detalle",
-  historyTargetLabel: { lead: "Consulta", listing: "Aviso", user: "Usuario" } as Record<string, string>,
+  historyTargetLabel: { lead: "Consulta", listing: "Aviso", user: "Usuario", agent: "Agente" } as Record<string, string>,
   historyAction: {
     "lead.share": "Compartió una consulta",
     "lead.revoke": "Quitó el acceso a una consulta",
@@ -2162,6 +2162,17 @@ export const esListing = {
   financingTerms: (rate: string, years: number) => `Tasa ${rate}% · ${years} años`,
   financingFoot:
     "Estimación referencial para esta propiedad — la aprobación depende del banco y del programa.",
+
+  // Financing the publisher offers on this listing (plan-admin-next O8): their
+  // own words, labelled as theirs, in place of the estimated cuota.
+  sellerFinancingHead: "Financiación del vendedor",
+  sellerFinancingEntity: "Financia",
+  sellerFinancingRate: "Tasa",
+  sellerFinancingTerm: "Plazo",
+  sellerFinancingDownPayment: "Entrega inicial",
+  sellerFinancingNotes: "Condiciones",
+  sellerFinancingSource: (who: string) => `Datos provistos por ${who}, no por el portal.`,
+  sellerFinancingWhoGeneric: "el anunciante",
 
   detailsTitle: "Detalles de la propiedad",
   detailBarrio: "Barrio",

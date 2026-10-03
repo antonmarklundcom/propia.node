@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 import { revalidateListings } from "@/lib/cache";
 import { redirect } from "next/navigation";
 import { requireStaffOrAbove, requireSuperAdmin } from "@/lib/auth/guards";
+import { handleFinancingForm } from "@/lib/listing-financing-action";
 import { isStaff } from "@/lib/auth/roles";
 import {
   ADMIN_STATUSES,
@@ -140,4 +141,14 @@ export async function bulkListingAction(formData: FormData): Promise<void> {
   revalidatePath("/admin/propiedades");
   revalidatePath("/admin");
   revalidateListings();
+}
+
+/**
+ * "Financiación propia" (plan-admin-next O8) from /admin: staff and the
+ * super-admin, like every other listing edit here. It is the publisher's
+ * text, not the operator's money.
+ */
+export async function adminSaveFinancingAction(formData: FormData): Promise<void> {
+  const user = await requireStaffOrAbove();
+  await handleFinancingForm({ formData, scope: { kind: "admin" }, userId: user.id, basePath: "/admin/propiedades" });
 }

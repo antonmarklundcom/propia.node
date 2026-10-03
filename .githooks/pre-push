@@ -39,4 +39,6 @@ echo "pre-push: verify:proxy…"
 npm run --silent verify:proxy
 echo "pre-push: verify:routing…"
 npm run --silent verify:routing
+echo "pre-push: verify:financing…"
+npm run --silent verify:financing
 echo "pre-push: OK"

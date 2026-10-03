@@ -2629,6 +2629,22 @@ body {
   color: #9b7c3c;
 }
 
+/* Seller financing (plan-admin-next O8): the publisher's own words, so a
+   smaller value than the computed cuota, and room for a sentence. */
+.financing-box[data-seller-financing] dd {
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.financing-box__notes {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--color-ink);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 /* "Avisame si baja" price alert next to the price. Spacing comes from the
    .listing-price flex gap, so no margin here — a margin survives wrapping and
    left-indented the button once it dropped to its own line. */
