@@ -197,6 +197,13 @@
       "when": 1790986170489,
       "tag": "0027_burly_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1790986718276,
+      "tag": "0028_crazy_slayback",
+      "breakpoints": true
     }
   ]
 }

@@ -139,6 +139,8 @@ import { enBrief } from "./en-brief";
 import { esEvergreen } from "./es-evergreen";
 import { enEvergreen } from "./en-evergreen";
 import { esWa } from "./es-wa";
+import { esReview } from "./es-review";
+import { enReview } from "./en-review";
 import { enWa } from "./en-wa";
 
 export type Locale = "es" | "en";
@@ -210,6 +212,7 @@ const esDictionary = {
   evergreen: esEvergreen,
   wa: esWa,
   authReset: esAuthReset,
+  review: esReview,
 } as const;
 
 /**
@@ -307,6 +310,7 @@ const enDictionary = {
   evergreen: enEvergreen,
   wa: enWa,
   authReset: enAuthReset,
+  review: enReview,
 } satisfies Dictionary;
 
 const DICTIONARIES: Record<Locale, Dictionary> = {

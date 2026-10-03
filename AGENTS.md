@@ -80,9 +80,9 @@ git push -u origin claude/<feature-name>
 - **`npm run verify:local` must pass before every push.** It is
   `typecheck → build → verify:import → verify:facets → verify:i18n → verify:seo →
   verify:rate-limit → verify:inbox → verify:prices → verify:telegram → verify:reset → verify:ai-reply → verify:whatsapp → verify:publish → verify:lifecycle →
-  verify:proxy → verify:routing → verify:financing → verify:duplicates`. Everything after `build` needs no network.
+  verify:proxy → verify:routing → verify:financing → verify:duplicates → verify:reviews`. Everything after `build` needs no network.
   `verify:facets`, `verify:i18n`, `verify:seo`, `verify:rate-limit` (a fake clock),
-  `verify:inbox`, `verify:prices`, `verify:telegram`, `verify:reset`, `verify:ai-reply`, `verify:whatsapp`, `verify:routing`, `verify:financing` and `verify:duplicates` never touch a database;
+  `verify:inbox`, `verify:prices`, `verify:telegram`, `verify:reset`, `verify:ai-reply`, `verify:whatsapp`, `verify:routing`, `verify:financing`, `verify:duplicates` and `verify:reviews` never touch a database;
   `verify:import` also runs a database half (plan → commit → re-run → rollback)
   when `DATABASE_URL` points at localhost, and refuses any other host.
 - **Never `git push --no-verify`.** `.githooks/pre-push` runs the same gate; it is
@@ -350,8 +350,7 @@ These files explain *why*, and are not a substitute for anything above.
   "Caching", "Listing filters", "Map coordinates", "i18n", "CI",
   "Migrations", "Launch track". Read the domain table and the backlog before proposing work;
   the backlog says what is **deliberately not built** (R2 is written and waits on
-  a bucket; the import image job `backfill:images` is written and waits on R2; reviews need a founder
-  decision). This file supersedes `CLAUDE.md`'s old "Working agreements" section.
+  a bucket; the import image job `backfill:images` is written and waits on R2). This file supersedes `CLAUDE.md`'s old "Working agreements" section.
 - **`ARCHITECTURE.md`** — the design contract. Where it disagrees with
   `CLAUDE.md`, `CLAUDE.md` wins and the contract describes an intention.
 - **`PLAN.md`** — product tracker: milestones, founder decisions D1–D21, the

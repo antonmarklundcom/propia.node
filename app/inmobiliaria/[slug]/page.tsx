@@ -1,4 +1,6 @@
 import { Glyph } from "@/components/Glyph";
+import { publicReviews } from "@/lib/reviews";
+import { ProfileReviews } from "@/components/ProfileReviews";
 import { cache } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -120,6 +122,16 @@ export default async function AgencyProfilePage({ params }: Params) {
   // a different host than the one serving this profile (audit F9).
   const listingOrigin = await listingCanonicalOrigin();
   const agencyMode = await isAgencyMode();
+  // Approved reviews (O7): full on the directory door, stars on the marketplace.
+  const reviewData = await publicReviews({ kind: "agency", id: agency.id });
+  const reviewBlock = (
+    <ProfileReviews
+      data={reviewData}
+      full={isDirectory}
+      t={d.review}
+      numberLocale={locale === "en" ? "en-US" : "es-PY"}
+    />
+  );
   const logo = safeImageUrl(agency.logoUrl) ?? undefined;
   const initials = agency.name
     .split(/\s+/)
@@ -226,6 +238,7 @@ export default async function AgencyProfilePage({ params }: Params) {
             </section>
 
             <div className="dir-profile__main">
+              {reviewBlock}
               {team.length > 0 && (
                 <section className="similar-listings dir-profile__rail" style={{ borderTop: "none", paddingTop: 0 }}>
                   <h2 className="similar-listings__title">
@@ -310,6 +323,8 @@ export default async function AgencyProfilePage({ params }: Params) {
             )}
           </div>
         </header>
+
+        {reviewBlock}
 
         {listings.length > 0 ? (
           <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>

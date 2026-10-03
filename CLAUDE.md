@@ -251,8 +251,8 @@ default, `--dry` first). It records itself as a revertible import job.
 3. **Individual agent profile pages** — done (`/agente/[slug]`, PR #32,
    2026-07-31). Mirrors `/inmobiliaria/[slug]` (PR #28): same indexability
    rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
-4. **Reviews/ratings** — does not exist. Needs a migration and a moderation /
-   anti-fake-review design. **Ask the founder before starting.**
+4. **Reviews/ratings** — founder answered (O7, 2026-10-02) and it is built on
+   the O7 PR (migration 0028) — see item 32. Not on `main` until that merges.
 5. **Import image pipeline** — **written, waiting on R2.** `syncImages()` writes
    the *remote source URL* into `listing_images.r2_key` as an interim, and
    `imageUrl()` passes it through while `R2_PUBLIC_BASE_URL` is unset. The
@@ -605,7 +605,28 @@ default, `--dry` first). It records itself as a revertible import job.
     - **Only writer:** `src/lib/listing-duplicates.ts`. `verify:duplicates` is
       in the hook.
 
-32. **/vender (2026-10-03, no migration, `docs/log/vender-rewrite.md`).** Marketing-firm
+32. **Partner reviews (O7, 2026-10-03, migration 0028, `docs/log/reviews.md`).**
+    - **Who may review:** only the buyer of a lead the partner worked:
+      - a deal with that partner;
+      - a share the partner took (accepted / contacted / closed);
+      - or a lead routed to the lister and marked contacted / closed.
+
+      `reviewTargetsForLeads()` decides, and is re-checked when the link is
+      opened and when it is submitted.
+    - **The link:** the operator sends a signed link from /admin/leads ("Pedir
+      reseña"; `src/lib/review-token.ts`, `AUTH_TOKEN_SECRET`, prefix
+      `review.v1`, 60 days). It is single-use through the
+      `uq_lead_target` index.
+    - **Moderation:** every review waits for approval on /admin/resenas (staff
+      and super-admin, badged tab, logged as `review.moderate`).
+    - **Where it shows:** full reviews on the directory door
+      (`directoryPagesEnabled()`), stars and count only on the marketplace
+      doors (`ProfileReviews`).
+    - **Code:** `src/lib/reviews.ts` is the only module on `reviews`.
+      `verify:reviews` is in the hook.
+    - **No JSON-LD `aggregateRating`, on purpose.**
+
+33. **/vender (2026-10-03, no migration, `docs/log/vender-rewrite.md`).** Marketing-firm
     positioning; every form field required (`VenderForm`, own validation);
     served on the Spanish door and, lighter, on `realestateinparaguay.com`
     (`sellerLandingEnabled()`, hreflang-paired). Spanish door has an
@@ -969,7 +990,7 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`, `npm run verify:financing`, `npm run verify:duplicates`.
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`, `npm run verify:financing`, `npm run verify:duplicates`, `npm run verify:reviews`.
   Same thing by hand: `npm run verify:local`. The last eleven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
@@ -1019,6 +1040,7 @@ that section no longer lists everything:
 | `drizzle/0025_mute_the_hand.sql` | indexes `leads.idx_routed_status`, `listings.idx_owner` / `idx_updated`, `ops_runs.idx_job_id` (audit 2026-10 P9) | **no** — same PR, same step |
 | `drizzle/0026_dizzy_lorna_dane.sql` | `listing_exclusives` (O1, admin-only exclusive flag) | **no** — founder applies after 0024/0025, before merging the O1 PR |
 | `drizzle/0027_burly_proudstar.sql` | `listing_duplicates` (O5; **every public grid reads it** — apply before merging, or grids 500) | **no** — founder applies after 0026, before merging the O5 PR |
+| `drizzle/0028_crazy_slayback.sql` | `reviews` (O7; profile pages and /admin read it, all degrade without it) | **no** — founder applies after 0027, before merging the O7 PR |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

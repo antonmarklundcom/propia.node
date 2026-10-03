@@ -1,4 +1,6 @@
 import { getAdminBadges } from "@/lib/admin-badges";
+import { reviewLink, reviewTargetsForLeads, reviewedKeys, reviewsEnabled, type ReviewTarget } from "@/lib/reviews";
+import { esReviewsAdmin } from "@/i18n/es-reviews-admin";
 import { isStaff } from "@/lib/auth/roles";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -449,6 +451,15 @@ export default async function AdminLeadsPage({
   // stage alone — their query never selects a money column.
   const superAdmin = isSuperAdmin(user.role);
   const leadIds = rows.map((r) => r.id);
+  // Review invitations (O7): which partner worked each lead, and which of those
+  // already have a review. Skipped without the signing secret; a read failure
+  // (migration 0028 not applied) only hides the block.
+  const [reviewTargets, reviewed] = reviewsEnabled()
+    ? await Promise.all([
+        reviewTargetsForLeads(leadIds).catch(() => new Map<number, ReviewTarget[]>()),
+        reviewedKeys(leadIds).catch(() => new Set<string>()),
+      ])
+    : [new Map<number, ReviewTarget[]>(), new Set<string>()];
   // D3 matching, loaded once for the page rather than per card: one candidate
   // query and one matches query, then the ranking is pure TS per lead. Skipped
   // entirely when the filter shows no directory lead — a buyer inbox must not
@@ -772,6 +783,41 @@ export default async function AdminLeadsPage({
           leadName={lead.name}
         />
       )}
+
+      {/* Review invitation (O7): only for a partner who worked this lead. */}
+      {!isReport(lead) && (reviewTargets.get(lead.id)?.length ?? 0) > 0 ? (
+        <details className="panel-card__review" data-review-ask={lead.id}>
+          <summary>{esReviewsAdmin.askTitle}</summary>
+          <p className="panel-note">{esReviewsAdmin.askHint}</p>
+          {reviewTargets.get(lead.id)!.map((target) => {
+            if (reviewed.has(`${lead.id}:${target.kind}:${target.id}`)) {
+              return (
+                <p key={`${target.kind}:${target.id}`} className="panel-card__meta">
+                  <strong>{target.name}</strong> · {esReviewsAdmin.askDone}
+                </p>
+              );
+            }
+            const link = reviewLink(origin, lead.id, target);
+            if (!link) return null;
+            const wa = waLink(lead.whatsapp, esReviewsAdmin.askMessage(target.name, link));
+            return (
+              <div key={`${target.kind}:${target.id}`} className="panel-form" data-review-link={`${target.kind}:${target.id}`}>
+                <label className="panel-form__field" style={{ flexBasis: "360px" }}>
+                  <span className="auth-field__label">{target.name}</span>
+                  <input className="auth-field__input" readOnly value={link} />
+                </label>
+                {wa ? (
+                  <div className="panel-form__field panel-form__field--action">
+                    <a className="panel-btn panel-btn--whatsapp" href={wa} target="_blank" rel="noopener noreferrer">
+                      {esReviewsAdmin.askWhatsApp}
+                    </a>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </details>
+      ) : null}
 
       {/* The deal and commission ledger. A report never becomes a deal. */}
       {isReport(lead) ? null : superAdmin ? (

@@ -11040,6 +11040,22 @@ summary.panel-btn::-webkit-details-marker {
   .panel-shortcuts__help { display: none; }
 }
 
+/* Reviews (plan-admin-next O7): the /resena star input and the profile block. */
+.review-stars { border: 0; padding: 0; margin: 0 0 16px; display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 4px; }
+.review-stars legend { width: 100%; margin-bottom: 6px; }
+.review-stars__star { cursor: pointer; font-size: 32px; line-height: 1; color: var(--color-border, #cfcfcf); }
+.review-stars__star input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.review-stars__star:hover, .review-stars__star:hover ~ .review-stars__star,
+.review-stars__star:has(input:checked), .review-stars__star:has(input:checked) ~ .review-stars__star { color: #b8860b; }
+.review-stars__star:has(input:focus-visible) { outline: 2px solid currentColor; outline-offset: 2px; }
+.reviews { margin: 32px 0; }
+.reviews__summary { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.reviews__stars { color: #8a6508; letter-spacing: 1px; }
+.reviews__list { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 16px; }
+.reviews__item { border-top: 1px solid var(--color-border, rgba(0,0,0,.1)); padding-top: 12px; }
+.reviews__meta { font-size: 13px; color: var(--color-ink-secondary); }
+.reviews__note { font-size: 12px; color: var(--color-ink-secondary); margin-top: 12px; }
+
 /* ---- /vender: required-field markers, foreign card, partner band --------- */
 
 .vd-form__star {
