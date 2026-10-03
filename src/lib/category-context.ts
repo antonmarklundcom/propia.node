@@ -370,3 +370,123 @@ export function nearbyStockedCities(
   }
   return out.sort(byProximity(byId.get(page.cityId), byId)).slice(0, limit);
 }
+
+/** The link groups an empty category page offers (E-1), each with real stock. */
+export interface EmptyStateLinks {
+  /** The same type nearby: other barrios of this city, then the city/type page. */
+  sameTypeHere: RelatedLink[];
+  /** The same place and type in another operation (alquiler ↔ venta). */
+  otherOperation: (RelatedLink & { operation: Operation })[];
+  /** Other types in this city (or barrio) for this operation. */
+  otherTypes: RelatedLink[];
+}
+
+const MAX_EMPTY_LINKS = 6;
+
+/**
+ * Where an empty category page (0 listings, E-1) sends the visitor next.
+ * Unlike `relatedCategoryLinks()`, a link here only needs **at least one
+ * listing**, not indexability: the page itself is noindex, and a visitor who
+ * found nothing wants the nearest real stock, not the nearest indexable URL.
+ * Every target is a valid category page, so none of them 404s or redirects.
+ *
+ * `otherOps` carries the door's inventory for the other operation(s) the
+ * page offers — the caller reads it from the same cached aggregate.
+ */
+export function emptyStateLinks(
+  rows: InventoryRow[],
+  otherOps: { operation: Operation; rows: InventoryRow[] }[],
+  byId: Map<number, InventoryLocation>,
+  page: CategoryPageRef,
+): EmptyStateLinks {
+  const city = byId.get(page.cityId);
+  const barrio = page.barrioId != null ? byId.get(page.barrioId) : undefined;
+  const out: EmptyStateLinks = { sameTypeHere: [], otherOperation: [], otherTypes: [] };
+  if (!city) return out;
+  const t = tally(rows, byId);
+  const op = page.operation;
+
+  // 1. The same type here: sibling barrios (nearest first), then the city page.
+  if (page.type != null) {
+    const siblings: { id: number; count: number }[] = [];
+    for (const [key, n] of t.barrioType) {
+      const [idStr, type] = key.split("|");
+      const id = Number(idStr);
+      if (type !== page.type || id === page.barrioId || n < 1) continue;
+      if (byId.get(id)?.parentId !== page.cityId) continue;
+      siblings.push({ id, count: n });
+    }
+    siblings.sort(byProximity(barrio ?? city, byId));
+    for (const s of siblings.slice(0, MAX_EMPTY_LINKS - 1)) {
+      const b = byId.get(s.id)!;
+      out.sameTypeHere.push({
+        href: categoryUrl({ operation: op, citySlug: city.slug, barrioSlug: b.slug, type: page.type }),
+        count: s.count,
+        type: page.type,
+        place: b.name,
+      });
+    }
+    const cityTypeCount = t.cityType.get(`${page.cityId}|${page.type}`) ?? 0;
+    if (page.barrioId != null && cityTypeCount > 0) {
+      out.sameTypeHere.push({
+        href: categoryUrl({ operation: op, citySlug: city.slug, type: page.type }),
+        count: cityTypeCount,
+        type: page.type,
+        place: city.name,
+      });
+    }
+  }
+
+  // 2. The same place and type in the other operation(s).
+  for (const other of otherOps) {
+    if (other.operation === op) continue;
+    const o = tally(other.rows, byId);
+    const here =
+      barrio && page.type != null
+        ? { n: o.barrioType.get(`${barrio.id}|${page.type}`) ?? 0, barrioSlug: barrio.slug, place: barrio.name }
+        : null;
+    const cityN =
+      page.type != null ? (o.cityType.get(`${page.cityId}|${page.type}`) ?? 0) : (o.city.get(page.cityId) ?? 0);
+    if (here && here.n > 0) {
+      out.otherOperation.push({
+        operation: other.operation,
+        href: categoryUrl({ operation: other.operation, citySlug: city.slug, barrioSlug: here.barrioSlug, type: page.type! }),
+        count: here.n,
+        type: page.type,
+        place: here.place,
+      });
+    } else if (cityN > 0) {
+      out.otherOperation.push({
+        operation: other.operation,
+        href: categoryUrl({ operation: other.operation, citySlug: city.slug, type: page.type ?? undefined }),
+        count: cityN,
+        type: page.type,
+        place: city.name,
+      });
+    }
+  }
+
+  // 3. Other types here, most stock first.
+  const typeCounts: { type: PropertyType; count: number }[] = [];
+  if (barrio) {
+    for (const [key, n] of t.barrioType) {
+      const [idStr, type] = key.split("|") as [string, PropertyType];
+      if (Number(idStr) === barrio.id && type !== page.type && n > 0) typeCounts.push({ type, count: n });
+    }
+  } else {
+    for (const [key, n] of t.cityType) {
+      const [idStr, type] = key.split("|") as [string, PropertyType];
+      if (Number(idStr) === page.cityId && type !== page.type && n > 0) typeCounts.push({ type, count: n });
+    }
+  }
+  typeCounts.sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
+  for (const { type, count } of typeCounts.slice(0, MAX_EMPTY_LINKS)) {
+    out.otherTypes.push({
+      href: categoryUrl({ operation: op, citySlug: city.slug, barrioSlug: barrio?.slug, type }),
+      count,
+      type,
+      place: barrio?.name ?? city.name,
+    });
+  }
+  return out;
+}

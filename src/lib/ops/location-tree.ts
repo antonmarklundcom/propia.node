@@ -233,3 +233,22 @@ export function flatten(
   return into;
 }
 
+
+/**
+ * A place by its URL slugs, from the tree `seed:locations` writes — the
+ * fallback a category page renders from when production has not been seeded
+ * with a place the code already links (report 2026-10-03 §A: the evergreen
+ * San Bernardino and Loma Pytã pages 404'd until the seed ran). Null when the
+ * code does not know the place either: that URL is a real 404.
+ */
+export function treePlace(
+  citySlug: string,
+  barrioSlug?: string,
+): { city: FlatNode; barrio: FlatNode | null } | null {
+  const all = flatten(TREE, "");
+  const city = all.find((n) => n.level === "ciudad" && n.slug === citySlug);
+  if (!city) return null;
+  if (!barrioSlug) return { city, barrio: null };
+  const barrio = all.find((n) => n.level === "barrio" && n.slug === barrioSlug && n.parentFullSlug === city.fullSlug);
+  return barrio ? { city, barrio } : null;
+}

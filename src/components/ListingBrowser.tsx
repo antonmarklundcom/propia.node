@@ -17,6 +17,28 @@ import { BuyerBrief } from "./BuyerBrief";
 import { SaveSearch } from "./SaveSearch";
 import { isEmailConfigured } from "@/lib/email";
 import { BRIEF_FEW_RESULTS, briefChoices, type BriefPrefill } from "@/lib/buyer-brief";
+import { loadAsides } from "@/lib/degrade";
+import type { VerticalConfig } from "@/config/verticals";
+
+type BrowserLinks = {
+  cities: Awaited<ReturnType<typeof listCities>>;
+  barrios: Awaited<ReturnType<typeof listCityBarrios>>;
+  stocked: Set<string> | null;
+};
+
+/** The non-essential reads beside the grid, capped and degradable (see the call site). */
+function browserLinks(city: LocationRow | null, door: VerticalConfig): Promise<BrowserLinks> {
+  return loadAsides<BrowserLinks>(
+    "listing-browser",
+    {
+      cities: () => listCities(),
+      barrios: () => (city ? listCityBarrios(city.id) : Promise.resolve([])),
+      stocked: () => stockedPathsOrNull(door),
+    },
+    { cities: [], barrios: [], stocked: null },
+    2,
+  );
+}
 
 export function listingPage(value: string | string[] | undefined) {
   const n = typeof value === "string" ? Number(value) : 1;
@@ -39,11 +61,15 @@ export async function ListingBrowser({ basePath, query, searchParams, city, barr
   const selectedBarrio = city && !barrio && barrioSlug ? await resolveBarrio(city.id, barrioSlug) : null;
   const locationIds = city && !barrio && barrioSlug ? (selectedBarrio ? [selectedBarrio.id] : []) : undefined;
   const page = listingPage(searchParams.page);
-  const doorPromise = currentVertical();
-  const [{ listings, filteredCount }, cities, barrios, stocked, door] = await Promise.all([
+  const door = await currentVertical();
+  // The grid is the page and fails loudly. The link lists beside it are not:
+  // at most two of them run at once, and under pool pressure each falls back
+  // (no city/barrio chips; `null` = "show every link") instead of a 500 —
+  // report 2026-10-03 §C-3, where the map view's five parallel reads were the
+  // heaviest render on the site.
+  const [{ listings, filteredCount }, { cities, barrios, stocked }] = await Promise.all([
     getFilteredCategoryListings({ ...query, limit: 48, offset: (page - 1) * 48 }, { ...filters, locationIds }),
-    listCities(), city ? listCityBarrios(city.id) : Promise.resolve([]),
-    doorPromise.then(stockedPathsOrNull), doorPromise,
+    browserLinks(city ?? null, door),
   ]);
   const href = (changes: Record<string,string | undefined>, path = basePath) => {
     const sp = new URLSearchParams(params);

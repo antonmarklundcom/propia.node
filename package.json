@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks",
-    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox && npm run verify:prices && npm run verify:telegram && npm run verify:reset && npm run verify:ai-reply && npm run verify:whatsapp && npm run verify:triage && npm run verify:publish && npm run verify:lifecycle && npm run verify:proxy && npm run verify:routing && npm run verify:financing && npm run verify:duplicates && npm run verify:reviews && npm run verify:admin-insights",
+    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo && npm run verify:rate-limit && npm run verify:inbox && npm run verify:prices && npm run verify:telegram && npm run verify:reset && npm run verify:ai-reply && npm run verify:whatsapp && npm run verify:triage && npm run verify:publish && npm run verify:lifecycle && npm run verify:proxy && npm run verify:routing && npm run verify:financing && npm run verify:duplicates && npm run verify:reviews && npm run verify:degrade && npm run verify:admin-insights",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -50,6 +50,7 @@
     "verify:financing": "tsx --tsconfig scripts/tsconfig.json scripts/verify-financing.ts",
     "verify:duplicates": "tsx --tsconfig scripts/tsconfig.json scripts/verify-duplicates.ts",
     "verify:reviews": "tsx --tsconfig scripts/tsconfig.json scripts/verify-reviews.ts",
+    "verify:degrade": "tsx --tsconfig scripts/tsconfig.json scripts/verify-degrade.ts",
     "verify:admin-insights": "tsx --tsconfig scripts/tsconfig.json scripts/verify-admin-insights.ts",
     "verify:routing": "tsx --tsconfig scripts/tsconfig.json scripts/verify-routing.ts",
     "verify:triage": "tsx --tsconfig scripts/tsconfig.json scripts/verify-triage.ts",

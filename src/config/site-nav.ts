@@ -346,6 +346,9 @@ export const MARKETPLACE_PATH_ROOTS: readonly string[] = [
   "para-inmobiliarias",
   "mis-avisos",
   "servicios",
+  // Place guides (plan phase 4): a marketplace page type, so a door without
+  // marketplace pages 308s them to the primary like /guias.
+  "zonas",
 ];
 
 /**

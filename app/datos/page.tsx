@@ -6,6 +6,7 @@ import { sitePageOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { citiesWithPrices } from "@/lib/precios-queries";
+import { orDegraded } from "@/lib/degrade";
 import {
   getPortalStats,
   listFinancingPrograms,
@@ -60,11 +61,15 @@ const TOOLS = [
  * entry point, and states plainly how each number is produced.
  */
 export default async function DatosPage() {
+  // The counts and the best rate are asides: under pool pressure they render
+  // as "—" for this request (src/lib/degrade.ts, never cached) instead of
+  // failing the page — report 2026-10-03 §C-4, where `COUNT(*) from projects`
+  // 500'd /datos. The price table is the page's content and still throws.
   const [origin, priceCities, programs, stats] = await Promise.all([
     sitePageOrigin("/datos"),
     citiesWithPrices(),
-    listFinancingPrograms(),
-    getPortalStats(),
+    orDegraded("datos:programs", listFinancingPrograms(), []),
+    orDegraded("datos:portal-stats", getPortalStats(), null),
   ]);
 
   const totalSample = priceCities.reduce((n, c) => n + c.reliableSample, 0);
@@ -91,7 +96,7 @@ export default async function DatosPage() {
         <StatRow
           stats={[
             {
-              value: stats.listings.toLocaleString("es-PY"),
+              value: stats ? stats.listings.toLocaleString("es-PY") : "—",
               label: "Avisos publicados analizados",
             },
             {

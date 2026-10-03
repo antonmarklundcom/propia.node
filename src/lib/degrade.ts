@@ -193,6 +193,28 @@ export async function loadSections<T extends Record<string, unknown>>(
 }
 
 /**
+ * `loadSections` for reads that are all asides: a partial result is used as
+ * is, and pool pressure on every section is the fallback rather than a throw.
+ * Nothing here is cached by a caller, so there is no `PartialResult` to keep
+ * out of a cache. Any non-pressure error still throws.
+ */
+export async function loadAsides<T extends Record<string, unknown>>(
+  label: string,
+  loaders: { [K in keyof T]: () => Promise<T[K]> },
+  fallback: T,
+  concurrency: number,
+): Promise<T> {
+  try {
+    return await loadSections(label, loaders, fallback, concurrency);
+  } catch (err) {
+    if (err instanceof PartialResult) return err.value as T;
+    if (!isPoolPressureError(err)) throw err;
+    logDegraded(label, err);
+    return fallback;
+  }
+}
+
+/**
  * A single non-essential read that falls back under pool pressure, for a
  * section outside any cache (a count in the chrome, an aside). Other errors
  * still throw.
