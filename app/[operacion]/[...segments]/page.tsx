@@ -56,6 +56,9 @@ import { ListingBrowser, listingPage as parsePage } from "@/components/ListingBr
 import { EmptyCategory } from "@/components/EmptyCategory";
 import { doorAllowsCategory } from "@/lib/empty-state";
 import { treePlace, type FlatNode } from "@/lib/ops/location-tree";
+import { PLACE_PAGES, type PlacePage } from "@/content/places";
+import { placePath } from "@/lib/place-path";
+import { hostForDoor } from "@/lib/place-alternates";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
 // Already rendered per request (searchParams drive the filter bar); the Host
@@ -82,6 +85,23 @@ interface Resolved {
    * 2026-10-03 §A. The sitemap leaves such a path out until the seed runs.
    */
   fromTree: boolean;
+}
+
+/**
+ * The place guide a category page borrows its excerpt from (plan phase 4): the
+ * barrio's own guide on a barrio page when there is one, else the city's —
+ * this door's file first, else one another door of the same language owns.
+ */
+function placeGuideFor(vertical: VerticalConfig, citySlug: string, barrioSlug?: string): PlacePage | null {
+  const sameLocale = (p: PlacePage) => {
+    const host = hostForDoor(VERTICALS, p.door);
+    return host != null && VERTICALS[host].locale === vertical.locale;
+  };
+  const pick = (barrio?: string) => {
+    const here = PLACE_PAGES.filter((p) => p.city === citySlug && (p.barrio ?? null) === (barrio ?? null));
+    return here.find((p) => p.door === vertical.key) ?? here.find(sameLocale) ?? null;
+  };
+  return (barrioSlug ? pick(barrioSlug) : null) ?? pick();
 }
 
 /**
@@ -661,6 +681,11 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     </aside>
   );
 
+  // The place guide's excerpt and link (plan phase 4), on every combination
+  // page of a place that has a guide in this door's language.
+  const guide = placeGuideFor(vertical, r.city.slug, r.barrio?.slug);
+  const guidePlace = guide ? (guide.barrio && r.barrio ? r.barrio.name : r.city.name) : null;
+
   const marketplaceClass =
     vertical.key === "inmobiliaria" || vertical.key === "en" ? "c3b-marketplace c3b-category" : undefined;
 
@@ -687,6 +712,11 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           related={related}
           pricesAside={pricesAside}
         />
+        {guide && (
+          <p className="place-excerpt__link">
+            <Link href={placePath(guide.city, guide.barrio)}>{d.place.excerptLink(guidePlace!)}</Link>
+          </p>
+        )}
       </main>
     );
   }
@@ -732,6 +762,16 @@ export default async function CategoryPage({ params, searchParams }: Params) {
       )}
 
       {related}
+
+      {guide && (
+        <aside className="place-excerpt">
+          <h2 className="category-related__title">{d.place.excerptTitle(guidePlace!)}</h2>
+          <p>{guide.excerpt}</p>
+          <Link className="place-excerpt__link" href={placePath(guide.city, guide.barrio)}>
+            {d.place.excerptLink(guidePlace!)}
+          </Link>
+        </aside>
+      )}
 
       {pricesAside}
     </main>
