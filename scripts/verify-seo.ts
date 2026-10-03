@@ -13,7 +13,6 @@
  *
  * Run: npm run verify:seo   (also part of npm run verify:local)
  */
-import { RESIDENCY_PAGES, residencySitemapPaths } from "../src/content/residency";
 import {
   VERTICALS,
   CANONICAL_HOST,
@@ -598,7 +597,7 @@ check(
 check(
   "(e) every vertical declares a family",
   Object.values(VERTICALS).every((v) =>
-    ["marketplace", "rental", "directory", "residency"].includes(v.family),
+    ["marketplace", "rental", "directory"].includes(v.family),
   ),
   Object.entries(VERTICALS)
     .filter(([, v]) => !v.family)
@@ -636,8 +635,8 @@ check(
 );
 
 check(
-  "(g) seven doors are served — four marketplace, one rental (rentparaguay.com), one directory, one residency (residenciaenparaguay.es); alquiler.com.py is disabled (S6)",
-  servedDoors(CANONICAL_HOST).length === 7,
+  "(g) six doors are served — four marketplace, one rental (rentparaguay.com), one directory; alquiler.com.py is disabled (S6)",
+  servedDoors(CANONICAL_HOST).length === 6,
   servedDoors(CANONICAL_HOST)
     .map((d) => d.host)
     .join(", "),
@@ -1318,7 +1317,7 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
 
   // Live table: only the doors flipped so far have the flag; the rest are
   // unset (= owns). Flip one door at a time, adding it here.
-  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com", "terreno.com.py", "rentparaguay.com", "residenciaenparaguay.es"]);
+  const FLIPPED_CATEGORY_FEEDERS = new Set<string>(["landforsaleparaguay.com", "terreno.com.py", "rentparaguay.com"]);
   check(
     "(n) the flag is false on exactly the flipped doors, unset on the rest",
     Object.entries(VERTICALS).every(([host, v]) =>
@@ -1795,7 +1794,7 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
     sitePageOwnerForLocale("es") === "inmobiliaria.com.py" && sitePageOwnerForLocale("en") === "realestateinparaguay.com",
     `${sitePageOwnerForLocale("es")} / ${sitePageOwnerForLocale("en")}`,
   );
-  const FLIPPED_SITE_PAGE_FEEDERS = new Set<string>(["terreno.com.py", "landforsaleparaguay.com", "rentparaguay.com", "residenciaenparaguay.es"]);
+  const FLIPPED_SITE_PAGE_FEEDERS = new Set<string>(["terreno.com.py", "landforsaleparaguay.com", "rentparaguay.com"]);
   check(
     "(o) the flag is false on exactly the flipped doors, unset on the rest",
     Object.entries(VERTICALS).every(([host, v]) =>
@@ -1913,25 +1912,6 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
     const withAlternates = files.filter((f) => src(f).includes("pageLanguageAlternates"));
     check("(o) no site page emits hreflang (a new one needs an owners-only scope first)", withAlternates.length === 0, withAlternates.join(", "));
   }
-}
-
-// ---------------------------------------------------------------------------
-// (r) residenciaenparaguay.es — the residency door's content
-// ---------------------------------------------------------------------------
-{
-  console.log("\nresidency: unique, well-formed landing pages");
-  const slugs = RESIDENCY_PAGES.map((p) => p.slug);
-  check("(r) slugs are unique and flat", new Set(slugs).size === slugs.length && slugs.every((s) => /^[a-z0-9-]+$/.test(s)), slugs.join(","));
-  check("(r) no slug shadows a marketplace path root", slugs.every((s) => !MARKETPLACE_PATH_ROOTS.includes(s) && s !== "contacto"), "");
-  check("(r) titles <= 60 chars, descriptions <= 160", RESIDENCY_PAGES.every((p) => p.metaTitle.length <= 60 && p.metaDescription.length <= 160),
-    RESIDENCY_PAGES.filter((p) => p.metaTitle.length > 60 || p.metaDescription.length > 160).map((p) => p.slug).join(","));
-  check("(r) titles and descriptions are unique", new Set(RESIDENCY_PAGES.map((p) => p.metaTitle)).size === slugs.length && new Set(RESIDENCY_PAGES.map((p) => p.metaDescription)).size === slugs.length, "");
-  check("(r) every related slug exists", RESIDENCY_PAGES.every((p) => p.related.every((r) => slugs.includes(r))), "");
-  const paras = RESIDENCY_PAGES.flatMap((p) => p.sections.flatMap((s) => s.paras)).filter((t) => t.length > 80 && !t.startsWith("Las reglas migratorias"));
-  check("(r) no two pages share a paragraph", new Set(paras).size === paras.length, "");
-  check("(r) the sitemap lists exactly home, contact, legal and the pages", residencySitemapPaths().length === slugs.length + 4, "");
-  const door = VERTICALS["residenciaenparaguay.es"];
-  check("(r) the door serves no marketplace page type", door.family === "residency" && !door.ownsListingDetail && door.ownsCategories === false, "");
 }
 
 console.log(

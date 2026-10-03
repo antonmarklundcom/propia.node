@@ -49,7 +49,7 @@ The `title` gets " — Inmobiliaria Paraguay" from the layout template.
 | `/inmobiliarias`, `/agentes` (owned by `inmobiliarios.com.py`) | Directorio de inmobiliarias de Paraguay · Agentes inmobiliarios en Paraguay | — |
 
 Other doors: `terreno.com.py` (land, Spanish), `realestateinparaguay.com`
-(English), `rentparaguay.com`, `residenciaenparaguay.es` (14 residency pages).
+(English), `rentparaguay.com`. (`residenciaenparaguay.es` was removed from this app 2026-10-03; it lives in its own repo.)
 Property types that already exist: casa, departamento, terreno, duplex,
 **comercial** (`comerciales`), **oficina**, **deposito** (`depositos`),
 **quinta** (`quintas`). No **habitación** type.
@@ -79,7 +79,7 @@ Order: quick wins (existing page, change copy) → new pages that need no code
 Guides live in the `posts` table. The repo pattern is a seed script with
 `--dry` that the founder runs (`seed:guias-en` already does this for
 English). Every legal or tax statement goes in a claims list for the founder
-to check, like `docs/log/residencia-claims.md`.
+to check, like `docs/log/evergreen-en-claims.md`.
 
 | # | Group(s) | /mo | Page | Main keyword | Variants | Content |
 | --- | --- | --- | --- | --- | --- | --- |

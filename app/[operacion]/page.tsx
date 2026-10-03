@@ -1,9 +1,4 @@
 import type { Metadata } from "next";
-import {
-  ResidencyPageBody,
-  residencyEnabled,
-  residencyPageMetadata,
-} from "@/lib/residency-routes";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -48,8 +43,6 @@ type Params = { params: Promise<{ operacion: string }>; searchParams: Promise<Re
 export async function generateMetadata({ params, searchParams }: Params): Promise<Metadata> {
   const brand = await brandName();
   const { operacion } = await params;
-  // The residency door's flat landing pages (`/requisitos-residencia-paraguay`…).
-  if (await residencyEnabled()) return residencyPageMetadata(operacion);
   const op = parseOperation(operacion);
   if (!op) return { title: brand };
   // hreflang pairs a page only with the same content on a door of the same
@@ -85,7 +78,6 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
 
 export default async function OperationHubPage({ params, searchParams }: Params) {
   const { operacion } = await params;
-  if (await residencyEnabled()) return <ResidencyPageBody slug={operacion} />;
   const op = parseOperation(operacion);
   if (!op) notFound();
 

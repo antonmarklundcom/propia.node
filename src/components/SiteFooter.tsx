@@ -13,7 +13,6 @@ import { brandName } from "@/lib/brand-server";
 import { dict } from "@/i18n/server";
 import { currentVertical } from "@/lib/vertical-context";
 import { chromeVariant, rentalPath } from "@/design/sections";
-import { ResidencyFooter } from "@/components/residency/ResidencyChrome";
 import { RENTAL_SERVICES } from "@/config/rental-services";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
@@ -100,9 +99,6 @@ export async function SiteFooter() {
     currentVertical(),
     dict(),
   ]);
-  if (chromeVariant(vertical.key) === "residency") {
-    return <ResidencyFooter brand={brand} />;
-  }
   const stocked = await stockedPathsOrNull(vertical);
   const year = new Date().getFullYear();
   const whatsapp = CONTACT_WHATSAPP;

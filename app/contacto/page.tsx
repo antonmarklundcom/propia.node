@@ -1,9 +1,4 @@
 import type { Metadata } from "next";
-import {
-  ResidencyContactBody,
-  residencyContactMetadata,
-  residencyEnabled,
-} from "@/lib/residency-routes";
 import { doorOgImages } from "@/lib/og-urls";
 import Link from "next/link";
 import { brandName } from "@/lib/brand-server";
@@ -28,7 +23,6 @@ export const dynamic = "force-dynamic";
 
 
 export async function generateMetadata(): Promise<Metadata> {
-  if (await residencyEnabled()) return residencyContactMetadata();
   const c = (await dict()).contactPage;
   const [brand, vertical, d, origin] = await Promise.all([
     brandName(),
@@ -56,7 +50,6 @@ export async function generateMetadata(): Promise<Metadata> {
  * queue we can't answer.
  */
 export default async function ContactoPage() {
-  if (await residencyEnabled()) return <ResidencyContactBody />;
   const c = (await dict()).contactPage;
   const vertical = await currentVertical();
   // The English rental door publishes this page at /contact (R2).

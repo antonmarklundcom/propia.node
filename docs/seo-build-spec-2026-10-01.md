@@ -46,7 +46,7 @@ merges `main` in first and re-runs `verify:local`.
 
 The founder asked for one document to check every unverified fact at once.
 Today they are spread over 50 evergreen files (386 `claimsToVerify` entries),
-`docs/log/residencia-claims.md`, `evergreen-en-claims.md` and
+`evergreen-en-claims.md` and
 `evergreen-pr2-claims.md`, with no pointer to where on the page each sits.
 
 - `scripts/claims-report.ts` + `npm run claims:report` → writes

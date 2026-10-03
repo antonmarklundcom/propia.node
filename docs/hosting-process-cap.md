@@ -102,7 +102,7 @@ change: every request goes to the **same** hostname with a different header.
 cnt(){ pgrep -u "$USER" -f 'next-server' | while read p; do readlink /proc/$p/cwd; done | grep -c realestateinparaguay; }
 pkill -u "$USER" next-server; sleep 5; echo "start $(cnt)"
 for d in realestateinparaguay.com inmobiliaria.com.py www.inmobiliaria.com.py inmobiliarios.com.py terreno.com.py \
-         www.terreno.com.py rentparaguay.com residenciaenparaguay.es landforsaleparaguay.com; do
+         www.terreno.com.py rentparaguay.com landforsaleparaguay.com; do
   curl -s -o /dev/null -w "$d %{http_code} " -H "X-Forwarded-Host: $d" https://realestateinparaguay.com/
   sleep 20; echo "copies=$(cnt)"
 done
@@ -119,7 +119,7 @@ Read the result like this:
 
 **Test C — the control, same session:** run your existing `~/dtest.sh` (real
 hostnames) right after and paste `~/dtest.log`. That also covers the domains
-the earlier test didn't reach (terreno, rentparaguay, residenciaenparaguay,
+the earlier test didn't reach (terreno, rentparaguay,
 landforsale*, www variants).
 
 **While watching:** this prints process tree, start time, threads and parent
@@ -161,7 +161,7 @@ Before you start: merge this PR (Hostinger deploys it). Pick a secret:
    reap.log kills per day before and after.
 9. If it holds, repeat steps 2–7 per door. The order: landforsaleparaguay.com
    (+ landforsaleinparaguay.com, which the Worker answers with the 308 itself),
-   rentparaguay.com, residenciaenparaguay.es, inmobiliarios.com.py, and
+   rentparaguay.com, inmobiliarios.com.py, and
    inmobiliaria.com.py last. inmobiliaria's mail is already on Cloudflare Email
    Routing, so its MX records must stay exactly as they are.
 

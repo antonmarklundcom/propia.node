@@ -26,7 +26,7 @@ table.
 | `landforsaleinparaguay.com` | **Owned since 2024-06-11 ("In Account"), same acquisition as `landforsaleparaguay.com` above.** NOT a vertical — two near-identical English "land for sale" domains would be a duplicate-content SEO problem, not a neutral extra. It whole-host 308s to `https://landforsaleparaguay.com` from `next.config.ts`'s `redirects()`. Do not add it to `verticals.ts`. |
 | `alquiler.com.py` | **DISABLED 2026-09-29 (decision S6): the domain is taken by another party, not merely unpurchased.** `enabled: false` in `verticals.ts`, so `resolveVertical()` ignores the host and `rentparaguay.com` stands alone (no es / x-default hreflang to a domain nobody owns). The code for the rental family's Spanish door stays (brand "Alquiler Paraguay", `family: "rental"`, Spanish `/servicios/<slug>` URLs, the `localeMap("es")` redirects in `next.config.ts`), and `verify:seo` keeps a synthetic table where the Spanish rental door is served so the pairing logic stays tested. Replacement is a founder decision (S5, open): candidate `alquilar.com.py`, or none. Once a domain is bought: rename the host key in `verticals.ts`, set `enabled: true`, update the redirect map in `next.config.ts` (~line 159), `NOT_LIVE_YET` in `src/lib/ops/live-check.ts` and this doc. |
 | `rentparaguay.com` | **The same rental business in English — code landed 2026-09-09 (O1). DNS live as of 2026-09-10** (Anton confirmed the domain points at Hostinger), so this door now reaches real visitors. Its own `VerticalKey` (`"rent"`), would pair to a Spanish rental door by `family`, not by key (none is served while `alquiler.com.py` is disabled). Brand "Rent Paraguay", `locale: "en"`, same filters, `ownsListingDetail: false` — its `/propiedad` pages canonicalise to `realestateinparaguay.com`, the door that owns detail **in its own language**. With no Spanish rental door served it emits no hreflang (a set needs two locales in the family); a door is never a language version of a door in another family. **Its own pages are English URLs since R2 (2026-09-10)** — `/services/<slugEn>`, `/about`, `/contact` — and it 308s the Spanish ones. `/propiedad/*` is NOT localised: that is the marketplace's page type and stays Spanish-slugged on every door. **`ownsCategories: false` since 2026-09-29 (S3(a)):** its English rental grids (`/alquiler/…`, `/alquiler-temporal/…`) canonicalise to the same path on `realestateinparaguay.com` (which owns the English rental evergreen pages too, so there is no chain), leave its sitemap and emit no hreflang; a `/venta/…` grid has no equivalent there and is noindex. Its home, `/alquiler` hub, services, about and contact stay self-canonical. The rental family's "a door is never a language version of another family's door" rule is untouched: a delegating door is not a language version of anything. **Also `ownsSitePages: false` (S4(a))**: its price, project, developer and guide pages — which its sitemap used to submit — canonicalise to `realestateinparaguay.com` and leave it. Reverse (S3(b)) only on evidence of old rental search traffic. **Still open, founder-only**: `NEXT_PUBLIC_CONTACT_WHATSAPP` is unset, so this door's WhatsApp CTA is hidden until it is set and the app rebuilt (see backlog item 10); the old `rentparaguay.com`'s WordPress redirects still need checking before that deployment is decommissioned. `alquiler.com.py`, its Spanish pair, is disabled — see its own row. |
-| `residenciaenparaguay.es` | **The Spanish residency-information door (2026-10-01).** Its own family `"residency"` (`key: "residencia"`, brand "Residencia en Paraguay", `locale: "es"`), written to rank for Spanish Paraguay-residency searches (requisitos, costos, temporal/permanente, españoles, Mercosur, cédula, jubilados, inversores, nómadas). It serves none of the marketplace's page types — `middleware.ts` 308s them to `inmobiliaria.com.py` through `marketplacePagesEnabled()`, like the directory door — and owns no listing detail, categories, site pages or directory (all flags false/unset-equivalent, `verify:seo` knows it). Content is Spanish files in `src/content/residency/` (`RESIDENCY_PAGES` is the only list, flat `/<slug>` URLs served through `app/[operacion]/page.tsx`'s one-line fork), chrome in `src/components/residency/`, route logic in `src/lib/residency-routes.tsx`, sitemap = `residencySitemapPaths()` (no DB read). Leads go through `LeadForm` with `utm.source = residencia:<page>`. **Claims awaiting the founder: `docs/log/residencia-claims.md`.** DNS/Hostinger domain mapping is a manual step. |
+| `residenciaenparaguay.es` | **Not served by this app (removed 2026-10-03).** It was a residency-content door here from 2026-10-01 (PR #263) but the domain belongs to a separate site in its own repo. Do not add it back to `verticals.ts`. |
 | `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
 
 **Outstanding manual step:** `NEXT_PUBLIC_CANONICAL_HOST` on Hostinger must
@@ -426,7 +426,10 @@ default, `--dry` first). It records itself as a revertible import job.
     `NOT_LIVE_YET` in that file excludes `alquiler.com.py` and
     `landforsaleparaguay.com`: **remove a host from it the day its DNS is live.**
     A run where every URL fails the same way says "the check is probably
-    blocked", not "the site is down". Button in `/admin/operaciones`; CLI
+    blocked", not "the site is down". **It alerts once per failure set** (2026-10-03,
+    `src/lib/live-check-alerts.ts`, memory in the `live_check_alert_state` site
+    setting): the same broken pages again are silent, one reminder a day while
+    they last, one "✅" line when they clear. Button in `/admin/operaciones`; CLI
     `npm run check:live -- --dry`. Checks in `verify:telegram`.
 
 17. **Admin insight pages (2026-09-27).** `/admin/calidad` scores every
@@ -740,8 +743,7 @@ On every other door, and for every other URL, the count rule is unchanged.
 State as of PR 2 (2026-09-27): **42 pages** — the 38 of table A in
 `docs/seo-evergreen-keywords.md` (29 + the Luque pilot on
 `inmobiliaria.com.py`, 8 land pages on `terreno.com.py`, founder decision
-S9) and 4 for the places added by S10 (San Bernardino, Loma Pytã — they 404
-until `seed:locations` runs on production). Each page's `claimsToVerify`
+S9) and 4 for the places added by S10 (San Bernardino, Loma Pytã — seeded on production 2026-10-03). Each page's `claimsToVerify`
 still awaits the founder's check. A rental page's `financing` section is
 about moving-in costs and shows no `/financiamiento` link.
 `npx tsx scripts/check-evergreen-file.ts <file>` checks a new content file
@@ -1026,13 +1028,13 @@ that section no longer lists everything:
 | `drizzle/0017_mushy_madrox.sql` | the `lead_assignments` and `admin_events` tables (lead sharing, history) | yes, same |
 | `drizzle/0018_hard_deathstrike.sql` | inbound email: `email_messages`, `email_attachments` (E2/E3, #219) | **yes, 2026-09-26** (founder, before merging #219) |
 | `drizzle/0019_fuzzy_ego.sql` | `deals`, `analytics_events`, `analytics_daily`, `lead_assignments.partner_note` / `reminded_at`, `users.telegram_chat_id` (`docs/plan-agency-2026-09-26.md` batch 2) | **yes, 2026-09-27** (founder: `db:status` → 0 pending, 20 applied, No drift) |
-| `drizzle/0020_dry_caretaker.sql` | the `web_vitals` table (page speed from real visitors, PR #244) | **no** — the founder applies it before merging #244; until then the beacon's inserts are dropped and `/admin/analitica` says "migración 0020 pendiente" |
-| `drizzle/0021_tiresome_newton_destine.sql` | `whatsapp_messages`, `whatsapp_contacts` (WhatsApp Cloud API inbox, `docs/log/whatsapp-inbox.md`) | **no** — founder applies before merging the WhatsApp PR; `db:migrate` also runs 0020 if still pending |
-| `drizzle/0024_wild_iron_man.sql` | `partner_terms`, `listing_financing` (O2, O8, `docs/log/partner-ledger-financing.md`) | **no** — founder applies before merging the O2/O8 PR |
-| `drizzle/0025_mute_the_hand.sql` | indexes `leads.idx_routed_status`, `listings.idx_owner` / `idx_updated`, `ops_runs.idx_job_id` (audit 2026-10 P9) | **no** — same PR, same step |
-| `drizzle/0026_dizzy_lorna_dane.sql` | `listing_exclusives` (O1, admin-only exclusive flag) | **no** — founder applies after 0024/0025, before merging the O1 PR |
-| `drizzle/0027_burly_proudstar.sql` | `listing_duplicates` (O5; **every public grid reads it** — apply before merging, or grids 500) | **no** — founder applies after 0026, before merging the O5 PR |
-| `drizzle/0028_crazy_slayback.sql` | `reviews` (O7; profile pages and /admin read it, all degrade without it) | **no** — founder applies after 0027, before merging the O7 PR |
+| `drizzle/0020_dry_caretaker.sql` | the `web_vitals` table (page speed from real visitors, PR #244) | yes, by 2026-10-03 (`db:status` that day: 24 applied before 0024) |
+| `drizzle/0021_tiresome_newton_destine.sql` | `whatsapp_messages`, `whatsapp_contacts` (WhatsApp Cloud API inbox, `docs/log/whatsapp-inbox.md`) | yes, by 2026-10-03 (`db:status` that day: 24 applied before 0024) |
+| `drizzle/0024_wild_iron_man.sql` | `partner_terms`, `listing_financing` (O2, O8, `docs/log/partner-ledger-financing.md`) | **yes, 2026-10-03** (founder: `db:migrate` 0024–0028 → 0 pending, 29 applied, No drift) |
+| `drizzle/0025_mute_the_hand.sql` | indexes `leads.idx_routed_status`, `listings.idx_owner` / `idx_updated`, `ops_runs.idx_job_id` (audit 2026-10 P9) | **yes, 2026-10-03** (founder: `db:migrate` 0024–0028 → 0 pending, 29 applied, No drift) |
+| `drizzle/0026_dizzy_lorna_dane.sql` | `listing_exclusives` (O1, admin-only exclusive flag) | **yes, 2026-10-03** (founder: `db:migrate` 0024–0028 → 0 pending, 29 applied, No drift) |
+| `drizzle/0027_burly_proudstar.sql` | `listing_duplicates` (O5; **every public grid reads it** — apply before merging, or grids 500) | **yes, 2026-10-03** (founder: `db:migrate` 0024–0028 → 0 pending, 29 applied, No drift) |
+| `drizzle/0028_crazy_slayback.sql` | `reviews` (O7; profile pages and /admin read it, all degrade without it) | **yes, 2026-10-03** (founder: `db:migrate` 0024–0028 → 0 pending, 29 applied, No drift) |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a
@@ -1042,6 +1044,8 @@ from the LF files the server reads; `db:status` matches either spelling since
 #208, and `.gitattributes` pins `drizzle/*.sql` to LF for future runs. The
 database is MariaDB 11.8 with a non-strict `sql_mode` (informational in the
 `/admin` health box; `src/db/index.ts` is not edited to change it).
+
+**Update 2026-10-03:** the founder ran `db:migrate` for 0024–0028 (all additive): **0 pending, 29 applied, No drift**, and `seed:locations` (35 new places, incl. San Bernardino and Loma Pytã — the evergreen 404s); `cron:geo --dry` found nothing stale.
 
 "Nobody knows" is the literal state, and it is the reason `db:status` exists: no
 file in this repo can answer it, because a migration pasted into phpMyAdmin
