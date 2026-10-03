@@ -26,6 +26,7 @@ import {
   getBusinessMode,
   getLeadRoutingSettings,
   getHouseAgencyId,
+  getWaGateEnabled,
   parseHouseAgencyId,
   getWhatsAppAutoSettings,
   getReplyTemplates,
@@ -212,4 +213,24 @@ export async function saveReplyTemplatesAction(formData: FormData): Promise<void
     });
   }
   redirect("/admin/ajustes?msg=tpl_saved#plantillas");
+}
+
+/**
+ * "Pedir datos antes de abrir WhatsApp" (plan-admin-next O9): the listing
+ * page's WhatsApp buttons go through the contact form first. Default off —
+ * the site as it was. Logged in /admin/historial.
+ */
+export async function saveWaGateAction(formData: FormData): Promise<void> {
+  const user = await requireSuperAdmin();
+  const next = formData.get("waGate") === "on";
+  const current = await getWaGateEnabled();
+  if (next !== current) {
+    await setSiteSetting(SETTING_KEYS.waGate, next ? "true" : "false", user.id);
+    await recordAdminEvent(user.id, "setting.change", "setting", 0, {
+      key: SETTING_KEYS.waGate,
+      from: current ? "true" : "false",
+      to: next ? "true" : "false",
+    });
+  }
+  redirect("/admin/ajustes?msg=wagate_saved#whatsapp-avisos");
 }

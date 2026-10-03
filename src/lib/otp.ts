@@ -7,7 +7,7 @@
  */
 import "server-only";
 import { randomInt } from "node:crypto";
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, gte, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { otpCodes } from "@/db/schema";
 import { canonPhone } from "@/lib/import/normalize";
@@ -96,22 +96,46 @@ export async function verifyOtp(
   if (!row) return { ok: false, reason: "expired" };
   if (row.attempts >= MAX_ATTEMPTS) return { ok: false, reason: "too_many" };
 
+  /**
+   * Claim one attempt atomically BEFORE comparing (audit 2026-10 A3). The old
+   * read-then-write let N concurrent guesses all read the same count and each
+   * write `attempts + 1`, so a code got about N guesses instead of five. Now
+   * every guess must win this conditional increment, and the database counts.
+   */
+  const [claim] = await db
+    .update(otpCodes)
+    .set({ attempts: sql`${otpCodes.attempts} + 1` })
+    .where(
+      and(
+        eq(otpCodes.id, row.id),
+        isNull(otpCodes.consumedAt),
+        lt(otpCodes.attempts, MAX_ATTEMPTS),
+      ),
+    );
+  if (claim.affectedRows !== 1) return { ok: false, reason: "too_many" };
+
   if (row.code !== code) {
-    const attempts = row.attempts + 1;
-    await db
+    // Burn the code once the database's count reaches the limit, so it can't
+    // be brute-forced further — decided by the row, not by the count this
+    // request read, which concurrent guesses have already moved.
+    const [burn] = await db
       .update(otpCodes)
-      .set({
-        attempts,
-        // Burn the code on the final miss so it can't be brute-forced further.
-        consumedAt: attempts >= MAX_ATTEMPTS ? now : undefined,
-      })
-      .where(eq(otpCodes.id, row.id));
-    return { ok: false, reason: attempts >= MAX_ATTEMPTS ? "too_many" : "mismatch" };
+      .set({ consumedAt: now })
+      .where(
+        and(
+          eq(otpCodes.id, row.id),
+          isNull(otpCodes.consumedAt),
+          gte(otpCodes.attempts, MAX_ATTEMPTS),
+        ),
+      );
+    return { ok: false, reason: burn.affectedRows === 1 ? "too_many" : "mismatch" };
   }
 
-  await db
+  // Consumed once: a second concurrent correct guess finds it gone.
+  const [used] = await db
     .update(otpCodes)
     .set({ consumedAt: now })
-    .where(eq(otpCodes.id, row.id));
+    .where(and(eq(otpCodes.id, row.id), isNull(otpCodes.consumedAt)));
+  if (used.affectedRows !== 1) return { ok: false, reason: "expired" };
   return { ok: true };
 }

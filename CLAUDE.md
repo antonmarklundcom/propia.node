@@ -588,6 +588,37 @@ default, `--dry` first). It records itself as a revertible import job.
       pre-push hook).
     - 0025 holds the audit's four indexes (P9).
 
+28. **/agencia/leads "Mis consultas / Todo el equipo" (2026-10-02, no
+    migration, `docs/log/agency-team-leads.md`).**
+    - **Who sees what:**
+      - An agent inside an agency reads only their own: leads on listings with
+        their `agent_id`, and shares addressed to their own `agents` row.
+      - An agency_admin reads the whole agency ("Todo el equipo", the default).
+        They can narrow to "Mis consultas" with `?vista=mias`; the choice is
+        remembered in the `agencia_leads_vista` cookie.
+      - Independent agents are unchanged.
+    - **One resolver: `panelLeadAccess()` (`src/lib/panel-lead-access.ts`).**
+      The page, the CSV, `panelCanSeeLead()` / `userMaySeeLead()` and the
+      share, note and deal writes all use it. Never build a `PanelViewer` by
+      hand on /agencia: `getPanelLeads(…, onlyAgentId)` and
+      `sharedWithPanel()`'s `onlyAgentId` are its two halves.
+    - **Access checks ask for "team":** the toggle narrows the display only,
+      while the role narrows access. Checked by `npm run verify:scopes`.
+29. **WhatsApp taps + "Pedir datos antes de WhatsApp" (O9, 2026-10-02, no
+    migration, `docs/log/whatsapp-taps-gate.md`).**
+    - **Taps are the beacon's `wa_click`**: a wa.me link, or any link marked
+      `data-wa-tap` (a WhatsApp button that goes to the form first). Readers
+      are `src/lib/wa-taps.ts` only: `waTapsByPublisher()` for
+      /admin/analitica's "WhatsApp por anunciante" (listing taps by publisher,
+      profile taps, gate leads), `getProfileWaTaps()` for the /agencia line.
+      Per-listing taps were already on /agencia and /mis-avisos.
+    - **The gate is off by default** (`wa_gate_enabled`, /admin/ajustes,
+      `getWaGateEnabled()`). On: the listing's WhatsApp buttons go to
+      `#contacto`, `ContactForm` saves the lead and then opens wa.me.
+    - **A gate lead is `leads.utm.channel = "whatsapp"`**, stamped by
+      `/api/leads` from its `channel` enum only (`src/lib/lead-channel.ts`); a
+      client-sent `utm.channel` is dropped. **No column.**
+    - Paid WhatsApp templates (writing after 24 h) are not built.
 30. **Exclusive listings (O1, 2026-10-03, migration 0026,
     `docs/log/listing-exclusive.md`).** **Admin only** (founder decision): a
     row in `listing_exclusives` = exclusive, with an optional end date and
@@ -628,6 +659,15 @@ default, `--dry` first). It records itself as a revertible import job.
     - **Code:** `src/lib/reviews.ts` is the only module on `reviews`.
       `verify:reviews` is in the hook.
     - **No JSON-LD `aggregateRating`, on purpose.**
+
+33. **/vender (2026-10-03, no migration, `docs/log/vender-rewrite.md`).** Marketing-firm
+    positioning; every form field required (`VenderForm`, own validation);
+    served on the Spanish door at `/vender` and, lighter, on
+    `realestateinparaguay.com` at **`/sell`** (`sellerPath()`; the other door's
+    spelling 308s across; `SellerLanding` is the one component; hreflang-paired). Spanish door has an
+    independent-realtor form (`vender:socio`, `agent_signup`). Fee/exclusivity
+    wording awaits the founder (`docs/decisions-needed.md`).
+    `tests/e2e/vender-form.spec.ts` submits for real.
 
 ## Launch track — state as of 2026-09-22
 

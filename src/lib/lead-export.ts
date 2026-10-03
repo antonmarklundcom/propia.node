@@ -27,10 +27,10 @@ import {
 import {
   getSharedLeads,
   isLeadSharedWithPanel,
-  type PanelViewer,
   type SharedLeadRow,
 } from "@/lib/lead-assignments";
 import { csvDate, toCsv } from "@/lib/csv";
+import { panelLeadAccess, type PanelLeadAccess } from "@/lib/panel-lead-access";
 import { isReportLead } from "@/lib/report-queries";
 import { listingUrl } from "@/lib/urls";
 import { isContactKind, isLeadSort, type ContactKind, type LeadSort } from "@/lib/contact-kind";
@@ -60,8 +60,13 @@ export async function panelCanSeeLead(
   scope: EditScope,
   leadId: number,
 ): Promise<boolean> {
-  if (panelShowsOwnLeads(ctx) && (await getPanelLeads(scope, leadId)).length > 0) return true;
-  return isLeadSharedWithPanel({ agencyId: ctx.agencyId, userId: ctx.user.id }, leadId);
+  // The widest view the role allows: an agency admin may read the whole
+  // agency whichever view the page is on; an agent only their own.
+  const access = await panelLeadAccess(ctx, "team");
+  if (panelShowsOwnLeads(ctx) && (await getPanelLeads(scope, leadId, undefined, access.onlyAgentId)).length > 0) {
+    return true;
+  }
+  return isLeadSharedWithPanel(access.viewer, leadId);
 }
 
 export interface PanelLeadSet {
@@ -69,15 +74,21 @@ export interface PanelLeadSet {
   shared: SharedLeadRow[];
 }
 
-/** Exactly the two lists /agencia/leads shows this caller. */
+/**
+ * Exactly the two lists /agencia/leads shows this caller, in the view the
+ * page is on (`panelLeadAccess()`: an agent's own, or an agency admin's
+ * "Mis consultas" / "Todo el equipo").
+ */
 export async function panelLeadSet(params: {
   scope: EditScope;
-  viewer: PanelViewer;
+  access: Pick<PanelLeadAccess, "viewer" | "onlyAgentId">;
   showOwn: boolean;
 }): Promise<PanelLeadSet> {
   const [own, shared] = await Promise.all([
-    params.showOwn ? getPanelLeads(params.scope) : Promise.resolve([] as LeadRow[]),
-    getSharedLeads(params.viewer),
+    params.showOwn
+      ? getPanelLeads(params.scope, undefined, undefined, params.access.onlyAgentId)
+      : Promise.resolve([] as LeadRow[]),
+    getSharedLeads(params.access.viewer),
   ]);
   return { own, shared };
 }

@@ -4284,6 +4284,13 @@ summary.panel-btn::-webkit-details-marker {
   color: #fff;
 }
 
+/* A link chip that is active keeps white text on hover: the site-wide link
+   hover colour put dark gold on the primary fill (both /admin and /agencia). */
+a.panel-chip--active:hover,
+a.panel-chip--active:focus-visible {
+  color: #fff;
+}
+
 .panel-chip--active .panel-tab__count {
   background: rgba(255, 255, 255, 0.24);
   color: #fff;
@@ -11055,3 +11062,38 @@ summary.panel-btn::-webkit-details-marker {
 .reviews__item { border-top: 1px solid var(--color-border, rgba(0,0,0,.1)); padding-top: 12px; }
 .reviews__meta { font-size: 13px; color: var(--color-ink-secondary); }
 .reviews__note { font-size: 12px; color: var(--color-ink-secondary); margin-top: 12px; }
+
+/* ---- /vender: required-field markers, foreign card, partner band --------- */
+
+.vd-form__star {
+  color: var(--color-accent);
+}
+
+.vd-form__field-error {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+.vd-form__input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.vd-form__note--required {
+  margin-top: -6px;
+}
+
+.vd-foreign__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 28px;
+}
+
+.vd-partner__inner {
+  align-items: start;
+}
+
+.vd-partner__points {
+  margin-top: 18px;
+}

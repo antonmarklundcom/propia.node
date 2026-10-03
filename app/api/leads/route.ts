@@ -6,6 +6,7 @@
  */
 import { checkPhone } from "@/lib/wa";
 import { CONTACT_ROLE_UTM_KEY, CONTACT_ROLES, type ContactRole } from "@/lib/contact-role";
+import { LEAD_CHANNELS, withLeadChannel } from "@/lib/lead-channel";
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
@@ -105,6 +106,12 @@ const bodySchema = z.object({
    * the server from this enum, never copied from the client's own utm keys.
    */
   contactRole: z.enum(CONTACT_ROLES).optional(),
+  /**
+   * "Pedir datos antes de WhatsApp" (plan-admin-next O9): the form says the
+   * visitor came through a WhatsApp button. Stamped as `utm.channel` from this
+   * enum only (src/lib/lead-channel.ts). Not on a report or a brief.
+   */
+  channel: z.enum(LEAD_CHANNELS).optional(),
   name: z.string().max(140).optional(),
   whatsapp: z.string().min(6).max(30),
   email: z.string().email().max(190).optional(),
@@ -430,7 +437,10 @@ export async function POST(req: NextRequest) {
   // The "¿Quién sos?" answer, from the validated enum only: a client-sent
   // `contact_role` utm key is dropped, so the panel's "Quién escribe" filter
   // reads what the form asked and nothing else. Not on a report.
-  const leadUtm = withContactRole(withDetails, report ? undefined : parsed.contactRole);
+  const leadUtm = withLeadChannel(
+    withContactRole(withDetails, report ? undefined : parsed.contactRole),
+    report || brief ? undefined : parsed.channel,
+  );
 
   // The brief's answers become the lead's message, in Spanish whatever the
   // door — the operator reads /admin/leads in Spanish (same rule as esPanel).

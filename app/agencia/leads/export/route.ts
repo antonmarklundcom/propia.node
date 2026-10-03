@@ -8,15 +8,26 @@ import { panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import { csvFilename, csvResponse } from "@/lib/csv";
 import { panelLeadSet, panelLeadsCsv, panelShowsOwnLeads } from "@/lib/lead-export";
 import { listingCanonicalOrigin } from "@/lib/origin";
+import type { NextRequest } from "next/server";
+import { AGENCY_LEAD_VIEW_COOKIE, panelLeadAccess, parseAgencyLeadView } from "@/lib/panel-lead-access";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+export async function GET(req: NextRequest): Promise<Response> {
   const ctx = await requireAgencyContext();
+  // The page's view (?vista=, else the remembered cookie): an agent's own,
+  // or an agency admin's "Mis consultas" / "Todo el equipo".
+  const access = await panelLeadAccess(
+    ctx,
+    parseAgencyLeadView(
+      req.nextUrl.searchParams.get("vista") ?? undefined,
+      req.cookies.get(AGENCY_LEAD_VIEW_COOKIE)?.value,
+    ),
+  );
   const [set, origin] = await Promise.all([
     panelLeadSet({
       scope: panelScope(ctx),
-      viewer: { agencyId: ctx.agencyId, userId: ctx.user.id },
+      access,
       showOwn: panelShowsOwnLeads(ctx),
     }),
     listingCanonicalOrigin(),

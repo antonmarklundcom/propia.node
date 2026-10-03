@@ -1,4 +1,6 @@
 import { getAdminBadges } from "@/lib/admin-badges";
+import { waTapsByPublisher, type PublisherTapRow } from "@/lib/wa-taps";
+import { esWaGate } from "@/i18n/es-wa-gate";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { inArray } from "drizzle-orm";
@@ -83,6 +85,43 @@ function DimTable<R extends { value: string } = DimRow>({
           </tbody>
         </table>
       </div>
+    </article>
+  );
+}
+
+/** "WhatsApp por anunciante" (plan-admin-next O9, src/lib/wa-taps.ts). */
+function PublisherTaps({ rows }: { rows: PublisherTapRow[] }) {
+  const t = esWaGate;
+  return (
+    <article className="panel-card" id="whatsapp-anunciantes">
+      <h3 className="panel-section__title">{t.publisherTitle}</h3>
+      <p className="panel-note">{t.publisherHint}</p>
+      {rows.length === 0 ? (
+        <p className="panel-empty">{t.publisherEmpty}</p>
+      ) : (
+        <div className="panel-table__wrap">
+          <table className="panel-table">
+            <thead>
+              <tr>
+                {t.publisherHead.map((h) => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={`${r.kind}:${r.id}`}>
+                  <td>{r.name}</td>
+                  <td>{t.kind[r.kind]}</td>
+                  <td>{r.listingTaps.toLocaleString("es-PY")}</td>
+                  <td>{r.profileTaps.toLocaleString("es-PY")}</td>
+                  <td>{r.waLeads.toLocaleString("es-PY")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </article>
   );
 }
@@ -197,7 +236,7 @@ export default async function AdminAnalyticsPage({
   const w = await analyticsWindow(days, vertical);
   // The period of equal length right before this one, for the +/- on the headline numbers.
   const prevWindow = await analyticsWindow(days, vertical, dayMinus(w.from, 1));
-  const [prevSummary, badges, summary, daily, pages, listingRows, sources, campaigns, devices, vitals] =
+  const [prevSummary, badges, summary, daily, pages, listingRows, sources, campaigns, devices, vitals, publisherTaps] =
     await Promise.all([
       summaryByVertical(prevWindow),
       getAdminBadges(user),
@@ -209,6 +248,7 @@ export default async function AdminAnalyticsPage({
       topUtmCampaigns(w),
       byDevice(w),
       webVitalsSummary({ days: 7, vertical, device }),
+      waTapsByPublisher(w),
     ]);
 
   const ids = listingRows.map((r) => Number(r.value)).filter((id) => Number.isInteger(id) && id > 0);
@@ -404,6 +444,8 @@ export default async function AdminAnalyticsPage({
               }}
               cells={(r) => [r.pageViews, r.waClicks, r.leads]}
             />
+
+            <PublisherTaps rows={publisherTaps} />
 
             <DimTable
               title={t.pagesTitle}

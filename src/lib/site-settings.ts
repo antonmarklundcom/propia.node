@@ -48,6 +48,9 @@ export const SETTING_KEYS = {
   // check:live's memory of what it already alerted (src/lib/live-check-alerts.ts).
   // Written by the job itself, never by a person; read uncached.
   liveCheckAlerts: "live_check_alert_state",
+  // "Pedir datos antes de WhatsApp" (plan-admin-next O9): the listing page's
+  // WhatsApp buttons go through the contact form first. Unset = off.
+  waGate: "wa_gate_enabled",
 } as const;
 
 /** Uncached — for scripts and jobs, which have no Next.js cache around them. */
@@ -169,6 +172,11 @@ export async function getPublisherSettings(): Promise<PublisherSettings> {
     houseAgencyId: parseHouseAgencyId(s[SETTING_KEYS.houseAgencyId]),
     partnerAgentIds: parsePartnerAgentIds(s[SETTING_KEYS.partnerAgentIds]),
   };
+}
+
+/** Whether the listing page asks for the visitor's details before WhatsApp (O9). */
+export async function getWaGateEnabled(): Promise<boolean> {
+  return (await readSiteSettings())[SETTING_KEYS.waGate] === "true";
 }
 
 /** The lead routing switch and its raw rules JSON (parse with `parseRoutingConfig()`). */

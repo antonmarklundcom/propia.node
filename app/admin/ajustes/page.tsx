@@ -6,6 +6,9 @@ import { getAnalyticsRawDays, getBusinessMode } from "@/lib/site-settings";
 import { CONTACT_WHATSAPP } from "@/config/contact";
 import { esAgency } from "@/i18n/es-agency";
 import { adminTabs } from "../tabs";
+import { esWaGate } from "@/i18n/es-wa-gate";
+import { getWaGateEnabled } from "@/lib/site-settings";
+import { saveWaGateAction } from "./actions";
 import { saveHouseAgencyAction, saveLeadRoutingAction, saveReplyTemplatesAction, saveSettingsAction, saveWhatsAppAutoAction } from "./actions";
 import { getHouseAgencyId, getReplyTemplates } from "@/lib/site-settings";
 import { REPLY_TEMPLATES_MAX, REPLY_TEMPLATE_CHARS, templatesToText } from "@/lib/reply-templates";
@@ -38,6 +41,7 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   wa_invalid: { text: esWhatsApp.settings.invalid, error: true },
   house_saved: { text: esTriage.settings.houseSaved },
   house_invalid: { text: esTriage.settings.houseInvalid, error: true },
+  wagate_saved: { text: esWaGate.saved },
   routing_saved: { text: esRouting.saved },
   routing_invalid: { text: esRouting.invalid, error: true },
   tpl_saved: { text: esTriage.templates.saved },
@@ -72,6 +76,7 @@ export default async function AdminSettingsPage({
     aiReplyUsageThisMonth().catch(() => null),
     getWhatsAppAutoSettings(),
   ]);
+  const waGate = await getWaGateEnabled();
   const [houseAgencyId, agencyOptions, routing, locationOptions, replyTemplates] = await Promise.all([
     getHouseAgencyId(),
     listAgencies(),
@@ -237,6 +242,26 @@ export default async function AdminSettingsPage({
           </article>
           <button className="panel-btn panel-btn--primary" type="submit">
             {ws.save}
+          </button>
+        </form>
+
+        <form action={saveWaGateAction} className="panel-form" id="whatsapp-avisos">
+          <article className="panel-card">
+            <h3 className="panel-section__title">{esWaGate.settingsTitle}</h3>
+            <p className="panel-note">{esWaGate.settingsHint}</p>
+            <p className="panel-note">
+              <strong>{esWaGate.current(waGate)}</strong>
+            </p>
+            <label className="panel-form__field">
+              <span>
+                <input type="checkbox" name="waGate" defaultChecked={waGate} />{" "}
+                <strong>{esWaGate.settingsLabel}</strong>
+              </span>
+              <span className="auth-field__hint">{esWaGate.settingsTradeoff}</span>
+            </label>
+          </article>
+          <button className="panel-btn panel-btn--primary" type="submit">
+            {esWaGate.save}
           </button>
         </form>
 

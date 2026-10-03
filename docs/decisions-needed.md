@@ -538,3 +538,18 @@ is a policy on who may do what.
    - `leads(routed_to, status, created_at)`
    - `listings(updated_at)`
    - `ops_runs(job, id)`
+
+## 2026-10-03 — /vender repositioning (founder to confirm)
+- **Fees and terms.** The FAQ no longer says "sin comisión / publicar es gratis".
+  It says terms depend on the property and are agreed in writing first. State the
+  real model (fee, retainer, success fee) before launch, or keep it vague.
+- **Exclusivity.** Copy says "lo conversamos según tu caso". Decide the policy.
+- **Partner perks.** The band lists only what exists today (shared leads,
+  verified directory profile, network of sites, panel). Commission splits are
+  not mentioned; say whether to.
+- **"Quién está detrás".** Removed (placeholder name, photo and licence line).
+  Supply the real name, photo, razón social and licence wording to bring it back.
+- **Positioning claims.** "Marketing inmobiliario" is positioning, not a ranking;
+  no "#1"/"la mejor" without a source.
+- **Site-wide "free" signals** (see docs/log/vender-rewrite.md): say which to change.
+- **Sweden / Spain / US experience claim.** `/vender` and `/sell` say the team brings digital-marketing experience from those three countries. Confirm the wording (and whether to name clients or results) before launch.

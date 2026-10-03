@@ -28,7 +28,8 @@ type BeaconEvent = {
   v?: number;
 };
 
-const PRIVATE = ["/admin", "/agencia", "/mis-avisos", "/login", "/registro"];
+// `/recuperar/<token>` is a live password-reset link (audit 2026-10 A2).
+const PRIVATE = ["/admin", "/agencia", "/mis-avisos", "/login", "/registro", "/recuperar"];
 const queue: BeaconEvent[] = [];
 /**
  * Where this visit came from — the referrer and utm tags of its first page,
@@ -124,7 +125,10 @@ export function AnalyticsBeacon() {
     const onClick = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.("a[href]");
       const href = a?.getAttribute("href") ?? "";
-      if (!/^https?:\/\/(wa\.me|api\.whatsapp\.com)\//.test(href)) return;
+      // `data-wa-tap`: a WhatsApp button that goes through the contact form
+      // first ("Pedir datos antes de WhatsApp", plan-admin-next O9) — still a
+      // tap, though its href is `#contacto`.
+      if (!/^https?:\/\/(wa\.me|api\.whatsapp\.com)\//.test(href) && !a?.hasAttribute("data-wa-tap")) return;
       const path = window.location.pathname;
       if (!tracked(path)) return;
       push({ e: "wa", p: path });
