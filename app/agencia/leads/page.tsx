@@ -1,4 +1,12 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { RememberView } from "../../admin/leads/RememberView";
+import {
+  AGENCY_LEAD_VIEW_COOKIE,
+  agencyLeadViewParam,
+  panelLeadAccess,
+  parseAgencyLeadView,
+} from "@/lib/panel-lead-access";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
@@ -154,17 +162,26 @@ function EmailBlock({ leadId, email, threads }: { leadId: number; email: string 
 export default async function AgencyLeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ msg?: string }>;
+  searchParams: Promise<{ msg?: string; vista?: string }>;
 }) {
-  const [{ msg }, ctx, origin] = await Promise.all([
+  const [{ msg, vista }, ctx, origin, jar] = await Promise.all([
     searchParams,
     requireAgencyContext(),
     // The door that owns the detail page — the listing link in a reply.
     listingCanonicalOrigin(),
+    cookies(),
   ]);
-  const { user, agencyId } = ctx;
+  const { user } = ctx;
   const scope = panelScope(ctx);
   const flash = msg ? FLASH[msg] : undefined;
+  // An agent reads only their own; an agency admin picks "Mis consultas" or
+  // "Todo el equipo" (remembered per browser). One resolver for the page, its
+  // CSV and every answer the page posts (src/lib/panel-lead-access.ts).
+  const access = await panelLeadAccess(
+    ctx,
+    parseAgencyLeadView(vista, jar.get(AGENCY_LEAD_VIEW_COOKIE)?.value),
+  );
+  const viewParam = agencyLeadViewParam(access.view);
 
   return (
     <>
@@ -179,30 +196,59 @@ export default async function AgencyLeadsPage({
           <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p>
         ) : null}
 
+        {access.canChooseView ? (
+          <>
+            <RememberView name={AGENCY_LEAD_VIEW_COOKIE} value={viewParam} path="/agencia" />
+            <nav className="panel-chips" aria-label={esPanel.agencyLeadsViewLabel} data-lead-view={viewParam}>
+              {(["mine", "team"] as const).map((v) => (
+                <Link
+                  key={v}
+                  href={`/agencia/leads?vista=${agencyLeadViewParam(v)}`}
+                  className={`panel-chip${access.view === v ? " panel-chip--active" : ""}`}
+                  aria-current={access.view === v ? "page" : undefined}
+                >
+                  {v === "mine" ? esPanel.agencyLeadsViewMine : esPanel.agencyLeadsViewTeam}
+                </Link>
+              ))}
+            </nav>
+            {access.view === "mine" ? <p className="panel-note">{esPanel.agencyLeadsViewMineHint}</p> : null}
+          </>
+        ) : access.onlyAgentId != null ? (
+          <p className="panel-note">{esPanel.agencyLeadsAgentHint}</p>
+        ) : null}
+
         {/* Exactly what this page shows, as a spreadsheet (lead-export.ts). */}
         <p className="panel-note">
-          <a className="panel-btn" href="/agencia/leads/export" download>
+          <a className="panel-btn" href={`/agencia/leads/export?vista=${viewParam}`} download>
             {esA1.exportCsv}
           </a>{" "}
           {esA1.exportHint}
         </p>
 
-        <SharedLeads viewer={{ agencyId, userId: user.id }} origin={origin} />
+        <SharedLeads viewer={access.viewer} origin={origin} />
 
         <h2 className="panel-section__title">{esPanel.agencyLeadsTitle}</h2>
 
         {!panelShowsOwnLeads(ctx) ? (
           <p className="panel-empty">{esPanel.agencyNoLink}</p>
         ) : (
-          <AgencyLeads scope={scope} origin={origin} />
+          <AgencyLeads scope={scope} onlyAgentId={access.onlyAgentId} origin={origin} />
         )}
       </main>
     </>
   );
 }
 
-async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string }) {
-  const leads = await getPanelLeads(scope, undefined, PANEL_LEADS_LIMIT);
+async function AgencyLeads({
+  scope,
+  onlyAgentId,
+  origin,
+}: {
+  scope: EditScope;
+  onlyAgentId: number | null;
+  origin: string;
+}) {
+  const leads = await getPanelLeads(scope, undefined, PANEL_LEADS_LIMIT, onlyAgentId);
   if (leads.length === 0) {
     return <p className="panel-empty">{esPanel.agencyLeadsEmpty}</p>;
   }

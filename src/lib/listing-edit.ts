@@ -207,9 +207,14 @@ export async function listAllListings(params: {
   q?: string;
   /** Only listings of this publisher kind. */
   publisher?: PublisherKind;
+  /** Only listings marked exclusive (plan-admin-next O1, `listing_exclusives`). */
+  exclusive?: boolean;
   limit?: number;
 }): Promise<AdminListingRow[]> {
   const filters: SQL[] = [];
+  if (params.exclusive) {
+    filters.push(sql`exists (select 1 from listing_exclusives e where e.listing_id = ${listings.id})`);
+  }
   const kind = publisherKindSql(await getPublisherSettings());
   // The enum's own element, never the request value (audit 2026-10 Q3).
   const publisher = PUBLISHER_KINDS.find((k) => k === params.publisher);

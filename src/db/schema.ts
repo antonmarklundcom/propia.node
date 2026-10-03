@@ -184,6 +184,12 @@ export const listings = mysqlTable(
      */
     index("idx_geo").on(t.status, t.displayLat, t.displayLng),
     index("idx_agency").on(t.agencyId, t.status),
+    // Owner-scope reads (`owner_user_id = ? AND agency_id IS NULL`, every
+    // /mis-avisos page and an independent agent's /agencia) had only
+    // idx_agency's NULL ref, i.e. every agency-less listing (audit 2026-10 P9).
+    index("idx_owner").on(t.ownerUserId, t.agencyId),
+    // /admin/propiedades' default `ORDER BY updated_at DESC LIMIT 200` (P9).
+    index("idx_updated").on(t.updatedAt),
     index("idx_project").on(t.projectId, t.status),
     index("idx_fresh").on(t.status, t.publishedAt),
     /**
@@ -696,6 +702,10 @@ export const leads = mysqlTable(
     index("idx_type").on(t.leadType, t.createdAt),
     // Panel inboxes default-sort on created_at with no type filter (F38).
     index("idx_created").on(t.createdAt),
+    // The Consultas badge on every /admin page (`routed_to = 'internal' AND
+    // status = 'new'`), the "Mis consultas" view and every panel lane read
+    // (audit 2026-10 P9).
+    index("idx_routed_status").on(t.routedTo, t.status, t.createdAt),
   ],
 );
 
@@ -986,6 +996,8 @@ export const opsRuns = mysqlTable(
     // "The last run of each job", the health panel's query, and the history
     // view's default order.
     index("idx_job_started").on(t.job, t.startedAt),
+    // "Latest run per job" is MAX(id) GROUP BY job (P9).
+    index("idx_job_id").on(t.job, t.id),
     index("idx_started").on(t.startedAt),
   ],
 );
@@ -1392,5 +1404,145 @@ export const savedSearches = mysqlTable(
     uniqueIndex("uq_token").on(t.token),
     uniqueIndex("uq_email_search").on(t.email, t.vertical, t.criteriaHash),
     index("idx_confirmed").on(t.confirmedAt),
+  ],
+);
+
+/* ------------------------------------------------------------------ */
+/* Partner terms and seller financing (plan-admin-next O2 + O8)        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The commission split the operator usually agrees with one Socio
+ * (docs/plan-admin-next-2026-10-02.md, O2). A SUGGESTION only: it prefills the
+ * two percentages of a lead's "Negocio" block when they are still empty, and
+ * nothing is saved on a deal until the operator presses Guardar. The founder
+ * signs a separate contract per partner; this row never computes or defaults
+ * an amount. Same target convention as `lead_assignments`: exactly one of
+ * `agency_id` / `agent_id` is non-zero.
+ *
+ * Its own table, not columns on `agencies` / `agents`: those are selected
+ * whole by every directory page, so a column there would 500 the public site
+ * whenever the code ran ahead of the migration. This table is read by
+ * /admin only.
+ */
+export const partnerTerms = mysqlTable(
+  "partner_terms",
+  {
+    id: id(),
+    agencyId: fk("agency_id").notNull().default(0),
+    agentId: fk("agent_id").notNull().default(0),
+    /** Total commission on a sale, percent — the usual figure, editable per deal. */
+    commissionPct: decimal("commission_pct", { precision: 5, scale: 2 }),
+    /** The operator's share of that commission, percent. */
+    mySharePct: decimal("my_share_pct", { precision: 5, scale: 2 }),
+    /** Free text for the operator: "contrato firmado 2026-09", "50/50 en alquileres"… */
+    note: varchar("note", { length: 500 }),
+    updatedByUserId: fk("updated_by_user_id").notNull(),
+    updatedAt: datetime("updated_at").notNull(),
+  },
+  (t) => [uniqueIndex("uq_partner").on(t.agencyId, t.agentId)],
+);
+
+/**
+ * Financing the PUBLISHER offers on one listing (O8): their own terms, typed
+ * by them, shown on the listing page with "Datos provistos por <publisher>,
+ * no por el portal". Off unless `enabled`. While on, that listing shows these
+ * terms instead of the site-wide estimated cuota (`cron:cuotas` skips it and
+ * the save clears its cached `cuota_gs`). Free text on purpose: nothing here
+ * is a number the portal computes with.
+ *
+ * Its own table, not columns on `listings` (selected whole by every public
+ * page), for the same reason as `partner_terms`.
+ */
+export const listingFinancing = mysqlTable("listing_financing", {
+  listingId: fk("listing_id").primaryKey(),
+  enabled: boolean("enabled").notNull().default(false),
+  /** Who finances: "el propietario", "Banco X", "la desarrolladora". */
+  entity: varchar("entity", { length: 120 }),
+  /** As the publisher writes it: "8 % anual", "sin interés". */
+  rate: varchar("rate", { length: 120 }),
+  term: varchar("term", { length: 120 }),
+  downPayment: varchar("down_payment", { length: 120 }),
+  notes: varchar("notes", { length: 500 }),
+  updatedByUserId: fk("updated_by_user_id").notNull(),
+  updatedAt: datetime("updated_at").notNull(),
+});
+
+/**
+ * Exclusive listings (plan-admin-next O1): the operator holds this listing on
+ * an exclusive mandate — the owner's, or a Socio's "exclusive marketing with
+ * us". A row = exclusive; no row = not. **Admin only** (founder decision
+ * 2026-10-02): nothing public reads this table, no badge, no ranking.
+ *
+ * Its own table, not a column on `listings` (selected whole by every public
+ * page), for the same reason as `listing_financing`.
+ */
+export const listingExclusives = mysqlTable("listing_exclusives", {
+  listingId: fk("listing_id").primaryKey(),
+  /** Last day of the mandate, when there is one. Past it the panel says "vencida". */
+  until: date("until", { mode: "string" }),
+  /** For the operator: "firmado con el propietario", "socio: Inmo X"… */
+  note: varchar("note", { length: 280 }),
+  setByUserId: fk("set_by_user_id").notNull(),
+  setAt: datetime("set_at").notNull(),
+});
+
+/**
+ * Duplicate listings (plan-admin-next O5): the same property published by
+ * several listers, grouped by the operator in /admin. One row per member;
+ * `group_id` is the id of the listing the group started from (any member's
+ * id works as a key — it is never shown).
+ *
+ * Who holds the slot is NOT stored: the earliest-published *published* member
+ * is the primary (`primaryOf()`, src/lib/listing-duplicate-rules.ts), so when
+ * it goes the next one takes over by itself. Its own table, not a column on
+ * `listings`, like `listing_financing`.
+ */
+export const listingDuplicates = mysqlTable(
+  "listing_duplicates",
+  {
+    listingId: fk("listing_id").primaryKey(),
+    groupId: fk("group_id").notNull(),
+    markedByUserId: fk("marked_by_user_id").notNull(),
+    markedAt: datetime("marked_at").notNull(),
+  },
+  (t) => [index("idx_group").on(t.groupId)],
+);
+
+/**
+ * Reviews of agencies and agents (plan-admin-next O7). Founder decision
+ * 2026-10-02: only a buyer from a verified lead or deal may review — through a
+ * signed link the operator sends (src/lib/review-token.ts) — and the operator
+ * approves every review before it shows. Full reviews on the directory door,
+ * stars only on the marketplace doors.
+ *
+ * Target convention as `lead_assignments`: exactly one of `agency_id` /
+ * `agent_id` is non-zero. One review per lead and target (`uq_lead_target`):
+ * the link cannot be used twice.
+ */
+export const reviews = mysqlTable(
+  "reviews",
+  {
+    id: id(),
+    leadId: fk("lead_id").notNull(),
+    agencyId: fk("agency_id").notNull().default(0),
+    agentId: fk("agent_id").notNull().default(0),
+    /** 1–5. */
+    rating: int("rating", { unsigned: true }).notNull(),
+    body: varchar("body", { length: 2000 }),
+    /** As the reviewer wants it shown ("María G."). */
+    authorName: varchar("author_name", { length: 80 }).notNull(),
+    /** The door's locale the review was written on. */
+    locale: varchar("locale", { length: 5 }).notNull().default("es"),
+    status: mysqlEnum("status", ["pending", "approved", "rejected"]).notNull().default("pending"),
+    moderatedByUserId: fk("moderated_by_user_id"),
+    moderatedAt: datetime("moderated_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("uq_lead_target").on(t.leadId, t.agencyId, t.agentId),
+    index("idx_agency_status").on(t.agencyId, t.status),
+    index("idx_agent_status").on(t.agentId, t.status),
+    index("idx_status").on(t.status, t.createdAt),
   ],
 );

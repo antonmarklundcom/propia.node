@@ -23,13 +23,24 @@ import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../../tabs";
-import { adminDeleteListingAction, adminUpdateListingAction } from "../actions";
+import { adminMarkDuplicateAction, adminRemoveDuplicateAction } from "../actions";
+import { getDuplicateGroup } from "@/lib/listing-duplicates";
+import { isHiddenDuplicate } from "@/lib/listing-duplicate-rules";
+import { esDuplicates } from "@/i18n/es-duplicates";
+import { adminDeleteListingAction, adminSaveExclusiveAction, adminSaveFinancingAction, adminUpdateListingAction } from "../actions";
+import { getListingExclusive } from "@/lib/listing-exclusive";
+import { exclusiveState } from "@/lib/listing-exclusive-state";
+import { analyticsDay } from "@/lib/analytics";
+import { esExclusive } from "@/i18n/es-exclusive";
 import {
   adminDeletePhotoAction,
   adminMovePhotoAction,
   adminSetCoverAction,
   adminUploadPhotosAction,
 } from "./photo-actions";
+
+import { SellerFinancingForm } from "@/components/panel/SellerFinancingForm";
+import { getListingFinancing } from "@/lib/listing-financing";
 
 export const metadata: Metadata = {
   title: `Editar aviso`,
@@ -50,6 +61,12 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   photos_too_many: { text: esPanel.photosTooManyFiles, error: true },
   photos_unconfigured: { text: esPanel.photosNotConfigured, error: true },
   staff_publish: { text: esPanel.staffCannotPublish, error: true },
+  exclusive_saved: { text: esExclusive.saved },
+  exclusive_invalid: { text: esExclusive.invalidUntil, error: true },
+  dup_saved: { text: esDuplicates.saved },
+  dup_removed: { text: esDuplicates.removed },
+  dup_bad_ref: { text: esDuplicates.badRef, error: true },
+  dup_same: { text: esDuplicates.same, error: true },
 };
 
 export default async function AdminListingEditPage({
@@ -76,6 +93,13 @@ export default async function AdminListingEditPage({
     getListingDailyViews(listingId, { kind: "admin" }),
   ]);
   if (!listing) notFound();
+  // Read only once the scoped load above found the listing (plan-admin-next O8).
+  const [financing, exclusive, dupGroup] = await Promise.all([
+    getListingFinancing(listing.id),
+    getListingExclusive(listing.id),
+    getDuplicateGroup(listing.id),
+  ]);
+  const exclusiveNow = exclusiveState(exclusive, analyticsDay());
 
   // Lead count for this one listing, from the same scoped aggregate the
   // listings table uses.
@@ -134,6 +158,119 @@ export default async function AdminListingEditPage({
             deleteAction={adminDeleteListingAction}
           />
         </article>
+
+        <form action={adminSaveExclusiveAction} className="panel-form" id="exclusiva">
+          <input type="hidden" name="listingId" value={listing.id} />
+          <article className="panel-card">
+            <h3 className="panel-section__title">
+              {esExclusive.title}{" "}
+              {exclusiveNow !== "none" ? (
+                <span className={`panel-kind panel-kind--${exclusiveNow === "active" ? "partner" : "none"}`}>
+                  {exclusiveNow === "active" ? esExclusive.badge : esExclusive.badgeExpired}
+                </span>
+              ) : null}
+            </h3>
+            <p className="panel-note">{esExclusive.hint}</p>
+            <label className="panel-form__field">
+              <span>
+                <input type="checkbox" name="exclusive" defaultChecked={exclusive != null} />{" "}
+                <strong>{esExclusive.checkbox}</strong>
+              </span>
+            </label>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esExclusive.untilLabel}</span>
+              <input className="auth-field__input" type="date" name="until" defaultValue={exclusive?.until ?? ""} />
+            </label>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esExclusive.noteLabel}</span>
+              <input
+                className="auth-field__input"
+                name="note"
+                maxLength={280}
+                placeholder={esExclusive.notePlaceholder}
+                defaultValue={exclusive?.note ?? ""}
+              />
+            </label>
+            {exclusive ? (
+              <p className="auth-field__hint">{esExclusive.since(analyticsDay(new Date(exclusive.setAt)))}</p>
+            ) : null}
+          </article>
+          <button className="panel-btn panel-btn--primary" type="submit">
+            {esExclusive.save}
+          </button>
+        </form>
+
+        <article className="panel-card" id="duplicados">
+          <h3 className="panel-section__title">{esDuplicates.title}</h3>
+          <p className="panel-note">{esDuplicates.hint}</p>
+          {dupGroup ? (
+            <div className="panel-table__wrap">
+              <table className="panel-table" data-duplicate-group={dupGroup.groupId}>
+                <caption className="panel-card__meta">{esDuplicates.groupTitle}</caption>
+                <tbody>
+                  {dupGroup.members.map((m) => (
+                    <tr key={m.id} data-member={m.publicId}>
+                      <td>
+                        {m.id === listing.id ? (
+                          <strong>
+                            {m.title} ({esDuplicates.thisOne})
+                          </strong>
+                        ) : (
+                          <Link href={`/admin/propiedades/${m.id}#duplicados`}>{m.title}</Link>
+                        )}
+                        <div className="panel-card__meta">
+                          <span>#{m.publicId}</span>
+                          <span>
+                            {m.publisherName ??
+                              (m.publisherKind === "owner" ? esDuplicates.owner : esDuplicates.none)}
+                          </span>
+                        </div>
+                      </td>
+                      <td data-dup-state="">
+                        {m.status !== "published" ? (
+                          <span className="panel-status">{esDuplicates.notPublished}</span>
+                        ) : dupGroup.primary?.id === m.id ? (
+                          <span className="panel-kind panel-kind--partner">{esDuplicates.primary}</span>
+                        ) : isHiddenDuplicate(m, dupGroup.members) ? (
+                          <span className="panel-kind panel-kind--none">{esDuplicates.hidden}</span>
+                        ) : null}
+                      </td>
+                      <td>
+                        <form action={adminRemoveDuplicateAction}>
+                          <input type="hidden" name="listingId" value={listing.id} />
+                          <input type="hidden" name="removeId" value={m.id} />
+                          <button className="panel-btn" type="submit">
+                            {esDuplicates.remove}
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          <form action={adminMarkDuplicateAction} className="panel-form">
+            <input type="hidden" name="listingId" value={listing.id} />
+            <label className="panel-form__field" style={{ flexBasis: "320px" }}>
+              <span className="auth-field__label">{esDuplicates.refLabel}</span>
+              <input className="auth-field__input" name="ref" required placeholder={esDuplicates.refPlaceholder} />
+            </label>
+            <div className="panel-form__field panel-form__field--action">
+              <button className="panel-btn panel-btn--primary" type="submit">
+                {esDuplicates.mark}
+              </button>
+            </div>
+          </form>
+        </article>
+
+        <SellerFinancingForm
+          listingId={listing.id}
+          operation={listing.operation}
+          financing={financing}
+          action={adminSaveFinancingAction}
+          msg={msg}
+        />
 
 
         <PhotoManager

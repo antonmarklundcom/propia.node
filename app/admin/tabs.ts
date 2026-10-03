@@ -5,6 +5,7 @@ import { esAgency } from "@/i18n/es-agency";
 import { esAnalytics } from "@/i18n/es-analytics";
 import { esDeals } from "@/i18n/es-deals";
 import { esTriage } from "@/i18n/es-triage";
+import { esReviewsAdmin } from "@/i18n/es-reviews-admin";
 import { NO_BADGES, type AdminBadges } from "@/lib/admin-badges";
 
 /** Which /admin screen is open. */
@@ -25,7 +26,8 @@ export type AdminTabKey =
   | "history"
   | "settings"
   | "analytics"
-  | "account";
+  | "account"
+  | "reviews";
 
 /**
  * The /admin tabs, with the active one flagged and every tab that has
@@ -81,6 +83,13 @@ export function adminTabs(active: AdminTabKey, badges: AdminBadges = NO_BADGES):
       count: badges.inbox,
       countTitle: b.inbox(badges.inbox),
       active: active === "inbox",
+    },
+    {
+      href: "/admin/resenas",
+      label: esReviewsAdmin.tab,
+      count: badges.reviews,
+      countTitle: b.reviews(badges.reviews),
+      active: active === "reviews",
     },
     {
       href: "/admin/analitica",

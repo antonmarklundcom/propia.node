@@ -251,8 +251,8 @@ default, `--dry` first). It records itself as a revertible import job.
 3. **Individual agent profile pages** — done (`/agente/[slug]`, PR #32,
    2026-07-31). Mirrors `/inmobiliaria/[slug]` (PR #28): same indexability
    rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
-4. **Reviews/ratings** — does not exist. Needs a migration and a moderation /
-   anti-fake-review design. **Ask the founder before starting.**
+4. **Reviews/ratings** — founder answered (O7, 2026-10-02) and it is built on
+   the O7 PR (migration 0028) — see item 32. Not on `main` until that merges.
 5. **Import image pipeline** — **written, waiting on R2.** `syncImages()` writes
    the *remote source URL* into `listing_images.r2_key` as an interim, and
    `imageUrl()` passes it through while `R2_PUBLIC_BASE_URL` is unset. The
@@ -567,6 +567,40 @@ default, `--dry` first). It records itself as a revertible import job.
     for the /admin/leads chip counts (P7), and /admin/analitica reading the
     rollup (P8).
 
+27. **Partner ledger + split suggestion (O2) and seller financing (O8)
+    (2026-10-02, migrations 0024 + 0025, `docs/log/partner-ledger-financing.md`).**
+    - **Ledger.** `/admin/negocios/socios` (super-admin) shows every lead each
+      Socio got, from shares and their own listings, and its outcome. Derived
+      in `src/lib/partner-ledger.ts`. **Still no partner column on `leads`.**
+    - **Split suggestion.** Each Socio's usual split lives in `partner_terms`
+      (`src/lib/partner-terms.ts`). It only prefills empty percentages on a
+      lead's Negocio block (`splitPrefill()`); nothing is saved without
+      Guardar, and no amount is derived.
+    - **Seller financing.** `listing_financing` (`src/lib/listing-financing.ts`,
+      the only module on it) holds the publisher's own terms, edited on the
+      three edit pages. `/propiedad` shows them, labelled "Datos provistos por
+      …, no por el portal", in place of the estimated cuota. Saving clears
+      `cuota_gs`, and `cron:cuotas` skips those listings.
+    - Pure checks: `npm run verify:financing` (in `verify:local` and the
+      pre-push hook).
+    - 0025 holds the audit's four indexes (P9).
+
+28. **/agencia/leads "Mis consultas / Todo el equipo" (2026-10-02, no
+    migration, `docs/log/agency-team-leads.md`).**
+    - **Who sees what:**
+      - An agent inside an agency reads only their own: leads on listings with
+        their `agent_id`, and shares addressed to their own `agents` row.
+      - An agency_admin reads the whole agency ("Todo el equipo", the default).
+        They can narrow to "Mis consultas" with `?vista=mias`; the choice is
+        remembered in the `agencia_leads_vista` cookie.
+      - Independent agents are unchanged.
+    - **One resolver: `panelLeadAccess()` (`src/lib/panel-lead-access.ts`).**
+      The page, the CSV, `panelCanSeeLead()` / `userMaySeeLead()` and the
+      share, note and deal writes all use it. Never build a `PanelViewer` by
+      hand on /agencia: `getPanelLeads(…, onlyAgentId)` and
+      `sharedWithPanel()`'s `onlyAgentId` are its two halves.
+    - **Access checks ask for "team":** the toggle narrows the display only,
+      while the role narrows access. Checked by `npm run verify:scopes`.
 29. **WhatsApp taps + "Pedir datos antes de WhatsApp" (O9, 2026-10-02, no
     migration, `docs/log/whatsapp-taps-gate.md`).**
     - **Taps are the beacon's `wa_click`**: a wa.me link, or any link marked
@@ -582,6 +616,55 @@ default, `--dry` first). It records itself as a revertible import job.
       `/api/leads` from its `channel` enum only (`src/lib/lead-channel.ts`); a
       client-sent `utm.channel` is dropped. **No column.**
     - Paid WhatsApp templates (writing after 24 h) are not built.
+30. **Exclusive listings (O1, 2026-10-03, migration 0026,
+    `docs/log/listing-exclusive.md`).** **Admin only** (founder decision): a
+    row in `listing_exclusives` = exclusive, with an optional end date and
+    note. Set on /admin/propiedades/[id], filtered and badged on
+    /admin/propiedades. `src/lib/listing-exclusive.ts` is the only module on
+    the table. **Nothing public reads it** — no badge, ranking or JSON-LD.
+
+31. **Duplicate listings (O5, 2026-10-03, migration 0027,
+    `docs/log/listing-duplicates.md`).**
+    - **The rule:** the operator groups the same property's listings
+      (`listing_duplicates`). The earliest-published *published* member holds
+      the slot (`primaryOf()`, `src/lib/listing-duplicate-rules.ts`). **Who
+      holds it is never stored**, so the next one takes over when it goes.
+    - **Grids:** every public grid ANDs `notHiddenDuplicate()` (facet-sql),
+      including the map and the sitemap. Profile lists do not.
+    - **Pages:** a hidden member canonicalises to the primary, and every
+      published member shows "También publicado por".
+    - **Only writer:** `src/lib/listing-duplicates.ts`. `verify:duplicates` is
+      in the hook.
+
+32. **Partner reviews (O7, 2026-10-03, migration 0028, `docs/log/reviews.md`).**
+    - **Who may review:** only the buyer of a lead the partner worked:
+      - a deal with that partner;
+      - a share the partner took (accepted / contacted / closed);
+      - or a lead routed to the lister and marked contacted / closed.
+
+      `reviewTargetsForLeads()` decides, and is re-checked when the link is
+      opened and when it is submitted.
+    - **The link:** the operator sends a signed link from /admin/leads ("Pedir
+      reseña"; `src/lib/review-token.ts`, `AUTH_TOKEN_SECRET`, prefix
+      `review.v1`, 60 days). It is single-use through the
+      `uq_lead_target` index.
+    - **Moderation:** every review waits for approval on /admin/resenas (staff
+      and super-admin, badged tab, logged as `review.moderate`).
+    - **Where it shows:** full reviews on the directory door
+      (`directoryPagesEnabled()`), stars and count only on the marketplace
+      doors (`ProfileReviews`).
+    - **Code:** `src/lib/reviews.ts` is the only module on `reviews`.
+      `verify:reviews` is in the hook.
+    - **No JSON-LD `aggregateRating`, on purpose.**
+
+33. **/vender (2026-10-03, no migration, `docs/log/vender-rewrite.md`).** Marketing-firm
+    positioning; every form field required (`VenderForm`, own validation);
+    served on the Spanish door at `/vender` and, lighter, on
+    `realestateinparaguay.com` at **`/sell`** (`sellerPath()`; the other door's
+    spelling 308s across; `SellerLanding` is the one component; hreflang-paired). Spanish door has an
+    independent-realtor form (`vender:socio`, `agent_signup`). Fee/exclusivity
+    wording awaits the founder (`docs/decisions-needed.md`).
+    `tests/e2e/vender-form.spec.ts` submits for real.
 
 ## Launch track — state as of 2026-09-22
 
@@ -939,7 +1022,7 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`.
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`, `npm run verify:financing`, `npm run verify:duplicates`, `npm run verify:reviews`.
   Same thing by hand: `npm run verify:local`. The last eleven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
@@ -985,6 +1068,11 @@ that section no longer lists everything:
 | `drizzle/0019_fuzzy_ego.sql` | `deals`, `analytics_events`, `analytics_daily`, `lead_assignments.partner_note` / `reminded_at`, `users.telegram_chat_id` (`docs/plan-agency-2026-09-26.md` batch 2) | **yes, 2026-09-27** (founder: `db:status` → 0 pending, 20 applied, No drift) |
 | `drizzle/0020_dry_caretaker.sql` | the `web_vitals` table (page speed from real visitors, PR #244) | **no** — the founder applies it before merging #244; until then the beacon's inserts are dropped and `/admin/analitica` says "migración 0020 pendiente" |
 | `drizzle/0021_tiresome_newton_destine.sql` | `whatsapp_messages`, `whatsapp_contacts` (WhatsApp Cloud API inbox, `docs/log/whatsapp-inbox.md`) | **no** — founder applies before merging the WhatsApp PR; `db:migrate` also runs 0020 if still pending |
+| `drizzle/0024_wild_iron_man.sql` | `partner_terms`, `listing_financing` (O2, O8, `docs/log/partner-ledger-financing.md`) | **no** — founder applies before merging the O2/O8 PR |
+| `drizzle/0025_mute_the_hand.sql` | indexes `leads.idx_routed_status`, `listings.idx_owner` / `idx_updated`, `ops_runs.idx_job_id` (audit 2026-10 P9) | **no** — same PR, same step |
+| `drizzle/0026_dizzy_lorna_dane.sql` | `listing_exclusives` (O1, admin-only exclusive flag) | **no** — founder applies after 0024/0025, before merging the O1 PR |
+| `drizzle/0027_burly_proudstar.sql` | `listing_duplicates` (O5; **every public grid reads it** — apply before merging, or grids 500) | **no** — founder applies after 0026, before merging the O5 PR |
+| `drizzle/0028_crazy_slayback.sql` | `reviews` (O7; profile pages and /admin read it, all degrade without it) | **no** — founder applies after 0027, before merging the O7 PR |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

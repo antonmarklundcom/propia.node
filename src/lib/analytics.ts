@@ -77,7 +77,8 @@ export function normalizePath(path: string | null | undefined): string | null {
  * Staff and account surfaces are not "the site": an operator refreshing
  * /admin all day must not look like traffic.
  */
-const PRIVATE_PREFIXES = ["/admin", "/agencia", "/mis-avisos", "/login", "/registro", "/api"];
+// `/recuperar`: its path carries a live password-reset token (audit 2026-10 A2).
+const PRIVATE_PREFIXES = ["/admin", "/agencia", "/mis-avisos", "/login", "/registro", "/recuperar", "/api"];
 
 export function isTrackedPath(path: string): boolean {
   return !PRIVATE_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));

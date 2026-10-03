@@ -7,6 +7,7 @@ import { leadPhoneKey } from "@/lib/panel-queries";
 import { dealSummary, listDeals, type DealListRow } from "@/lib/deals";
 import { formatPaidDate, formatPct, formatUsd } from "@/lib/deal-form";
 import { esDeals } from "@/i18n/es-deals";
+import { esLedger } from "@/i18n/es-ledger";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
@@ -51,6 +52,11 @@ export default async function AdminDealsPage() {
       <main className="panel site-main">
         <h2 className="panel-section__title">{esDeals.title}</h2>
         <p className="panel-note">{esDeals.hint}</p>
+        <p className="panel-note">
+          <Link className="panel-chip" href="/admin/negocios/socios">
+            {esLedger.link} →
+          </Link>
+        </p>
 
         <section className="panel-card">
           <h3 className="panel-card__title">{esDeals.kpiTitle}</h3>

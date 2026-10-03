@@ -3,11 +3,12 @@
  * password and the next attempt — scrypt's cost factor slows a single guess
  * but nothing capped how many guesses an attacker got against one account.
  *
- * Per-process Map, not a DB table: this app runs as a single Node process on
- * shared hosting (no horizontal scaling to split state across), so it's a
- * real defense without a schema migration. It resets on deploy/restart,
- * which is an acceptable trade for a pre-launch site — revisit if the app
- * ever runs multiple instances.
+ * Per-process Map, not a DB table. **Best-effort, not exact:** the host runs
+ * several copies of the app (CLAUDE.md backlog 23, apparently one per
+ * hostname), each with its own counters, so an attacker spreading guesses
+ * across doors gets roughly the limits below times the number of processes.
+ * It also resets on deploy/restart. A shared counter needs a table (a
+ * migration, a founder decision — docs/log/audit-2026-10.md A6).
  *
  * **Three counters, not one** (audit F26). Keying only on the email made the
  * lockout itself the attack: anyone who knew the founder's address — the sole
