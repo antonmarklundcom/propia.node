@@ -4183,6 +4183,43 @@ summary.panel-btn::-webkit-details-marker {
   align-items: flex-end;
 }
 
+/* A form whose children stack as blocks (lead routing rules in /admin/ajustes). */
+.panel-form--stack {
+  display: block;
+}
+
+.routing-socios {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.routing-socios .panel-card {
+  margin-bottom: 0;
+}
+
+.routing-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  border: 0;
+  padding: 0;
+  margin: 8px 0;
+}
+
+.routing-checks legend {
+  flex: 1 1 100%;
+  margin-bottom: 4px;
+}
+
+.routing-price {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
 .panel-form__field {
   display: flex;
   flex-direction: column;
@@ -10871,4 +10908,131 @@ summary.panel-btn::-webkit-details-marker {
   .evg-primary {
     width: auto;
   }
+}
+
+/* ---- Admin triage 3 ---- */
+
+/* Change vs the previous period, beside a headline number. Text colours are the
+   panel's own success / error tokens, both above 4.5:1 on the white table. */
+.panel-delta {
+  margin-left: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-ink-secondary);
+}
+.panel-delta--up { color: var(--color-success); }
+.panel-delta--down { color: var(--color-error); }
+
+/* Cover thumbnail in the admin tables. */
+.panel-thumb {
+  display: block;
+  width: 56px;
+  height: 42px;
+  object-fit: cover;
+  background: var(--color-accent-soft);
+}
+.panel-table__thumb { width: 72px; }
+
+/* Review queue: keyboard-highlighted row and the shortcut help. */
+.panel-table tr.panel-row--active td {
+  background: #fbf6e8;
+  box-shadow: inset 0 0 0 0 transparent;
+}
+.panel-table tr.panel-row--active td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+.panel-shortcuts__hint {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  color: var(--color-ink-secondary);
+}
+.panel-shortcuts__hint kbd,
+.panel-shortcuts__help kbd {
+  font: inherit;
+  font-weight: 700;
+  padding: 0 5px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.panel-shortcuts__help {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  max-width: calc(100vw - 32px);
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 28px rgba(14, 31, 23, 0.18);
+  font-size: 13px;
+}
+.panel-shortcuts__help h4 { margin: 0 0 8px; font-size: 14px; }
+.panel-shortcuts__help dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 10px; }
+.panel-shortcuts__help dd { margin: 0; }
+
+.panel-export {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 0 0 14px;
+}
+
+/* Mobile: a .panel-table--stack row becomes a card. Cells that carry data-label show it
+   as a small caption; no horizontal scroll on the page. */
+@media (max-width: 699px) {
+  .panel-table__wrap:has(.panel-table--stack) {
+    overflow-x: visible;
+    border: 0;
+    background: transparent;
+  }
+  .panel-table--stack,
+  .panel-table--stack tbody,
+  .panel-table--stack tr,
+  .panel-table--stack td {
+    display: block;
+    width: 100%;
+  }
+  .panel-table--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .panel-table--stack tr {
+    margin: 0 0 12px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .panel-table--stack td {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .panel-table--stack tr td:last-child { border-bottom: none; }
+  .panel-table--stack td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-ink-secondary);
+    text-align: left;
+  }
+  .panel-table--stack td.panel-table__name { display: block; text-align: left; font-weight: 700; }
+  .panel-table--stack td.panel-table__name::before { display: none; }
+  .panel-table--stack td.panel-table__check { width: 100%; text-align: left; justify-content: flex-start; }
+  .panel-table--stack td.panel-table__thumb { width: 100%; justify-content: flex-start; }
+  .panel-table--stack td .panel-actions { justify-content: flex-end; }
+  .panel-shortcuts__hint,
+  .panel-shortcuts__help { display: none; }
 }

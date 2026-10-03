@@ -30,8 +30,13 @@ export interface AnalyticsWindow {
   vertical: string | null;
 }
 
-export async function analyticsWindow(days: number, vertical: string | null): Promise<AnalyticsWindow> {
-  const to = analyticsDay();
+/** `endDay` ends the window earlier than today (the previous period of a comparison). */
+export async function analyticsWindow(
+  days: number,
+  vertical: string | null,
+  endDay?: string,
+): Promise<AnalyticsWindow> {
+  const to = endDay ?? analyticsDay();
   const from = dayMinus(to, days - 1);
   const cutoff = dayMinus(to, await getAnalyticsRawDays());
   return { from, to, rawFrom: from > cutoff ? from : cutoff, vertical };
@@ -44,7 +49,9 @@ function rawWhere(w: AnalyticsWindow): SQL {
 /** Null when the window is entirely inside the raw retention. */
 function dailyWhere(w: AnalyticsWindow): SQL | null {
   if (w.from >= w.rawFrom) return null;
-  const last = dayMinus(w.rawFrom, 1);
+  const before = dayMinus(w.rawFrom, 1);
+  // A window that ends before the raw retention starts is all rollup.
+  const last = before < w.to ? before : w.to;
   return sql`day BETWEEN ${w.from} AND ${last}${w.vertical ? sql` AND vertical = ${w.vertical}` : sql``}`;
 }
 
@@ -179,6 +186,15 @@ export interface DimRow {
   leads: number;
 }
 
+const TOP_DIMENSION_SQL = {
+  path: { expr: "LEFT(path, 191)", notNull: "path" },
+  listing_id: { expr: "CAST(listing_id AS CHAR)", notNull: "listing_id" },
+  referrer: { expr: "COALESCE(referrer_host, '')", notNull: "referrer_host" },
+  utm_source: { expr: "utm_source", notNull: "utm_source" },
+  utm_campaign: { expr: "LEFT(utm_campaign, 191)", notNull: "utm_campaign" },
+  device: { expr: "device", notNull: "device" },
+} as const satisfies Record<string, { expr: string; notNull: string }>;
+
 /**
  * Top values of one dimension. `column` is the raw-event expression and `dim`
  * the rollup's name for the same thing — both fixed strings from this file,
@@ -191,15 +207,13 @@ async function topDimension(
   limit: number,
   onlyNonNull = false,
 ): Promise<DimRow[]> {
-  const expr =
-    column === "referrer"
-      ? "COALESCE(referrer_host, '')"
-      : column === "listing_id"
-        ? "CAST(listing_id AS CHAR)"
-        : column === "path" || column === "utm_campaign"
-          ? `LEFT(${column}, 191)`
-          : column;
-  const notNull = onlyNonNull ? sql` AND ${sql.raw(column)} IS NOT NULL` : sql``;
+  // Looked up, never spelled from the argument: the column is raw SQL, and a
+  // type alone does not stop a future caller passing a request value
+  // (audit 2026-10 Q2). `notNull` is the column the dimension reads.
+  const spec = TOP_DIMENSION_SQL[column];
+  if (!spec) throw new Error(`topDimension: unknown column ${String(column)}`);
+  const notNull = onlyNonNull ? sql` AND ${sql.raw(spec.notNull)} IS NOT NULL` : sql``;
+  const expr = spec.expr;
   const out = new Map<string, DimRow>();
   const get = (v: string) => {
     let r = out.get(v);

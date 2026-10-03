@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireOwnerContext } from "@/lib/auth/guards";
-import { getPanelLeads } from "@/lib/panel-queries";
-import { esOwner } from "@/i18n/es";
+import { getPanelLeads, PANEL_LEADS_LIMIT } from "@/lib/panel-queries";
+import { esOwner, esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { leadReplyHref } from "@/lib/lead-reply";
 import { listingCanonicalOrigin } from "@/lib/origin";
@@ -51,7 +51,7 @@ export default async function OwnerLeadsPage({
   // Scope-guarded: the WHERE clause joins through the caller's own listings,
   // so this reads their leads and cannot read anyone else's.
   const [leads, origin] = await Promise.all([
-    getPanelLeads(scope),
+    getPanelLeads(scope, undefined, PANEL_LEADS_LIMIT),
     // The door that owns the detail page — the listing link in a reply.
     listingCanonicalOrigin(),
   ]);
@@ -78,6 +78,9 @@ export default async function OwnerLeadsPage({
         ) : (
           <>
             <p className="panel-note">{esOwner.leadsNote}</p>
+            {leads.length >= PANEL_LEADS_LIMIT ? (
+              <p className="panel-note">{esPanel.panelLeadsTruncated(PANEL_LEADS_LIMIT)}</p>
+            ) : null}
             {leads.map((lead) => (
               <article className="panel-card" key={lead.id}>
                 <div className="panel-card__head">

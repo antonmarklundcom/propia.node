@@ -39,7 +39,10 @@ export async function listQualityRows(): Promise<QualityRow[]> {
       status: listings.status,
       priceAmount: listings.priceAmount,
       propertyType: listings.propertyType,
-      description: listings.descriptionEs,
+      // Scoring only asks whether the trimmed text reaches 150 characters
+      // (listing-quality.ts), so a prefix is enough — not 5 000 full
+      // descriptions per render (audit 2026-10 P4).
+      description: sql<string | null>`left(${listings.descriptionEs}, 400)`,
       lat: listings.lat,
       displayLat: listings.displayLat,
       areaM2: listings.areaM2,

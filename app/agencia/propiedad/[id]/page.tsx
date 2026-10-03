@@ -81,7 +81,7 @@ export default async function AgencyListingEditPage({
     // Same scope the listing was loaded with — an agency reaches only its own.
     listListingImages(listingId, scope),
     getListingDailyViews(listingId, scope),
-    getPanelListingStats(scope),
+    getPanelListingStats(scope, false, listingId),
     getListingMapPosition(listingId, scope),
   ]);
   if (!listing) notFound();

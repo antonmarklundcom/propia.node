@@ -640,6 +640,7 @@ export const esPanel = {
     contacted: "Ya lo contacté",
     closed: "Cerrada",
   } as Record<string, string>,
+  panelLeadsTruncated: (n: number) => `Se muestran las ${n} consultas más recientes.`,
   historyTitle: "Historial",
   historyHint:
     "Quién compartió o quitó una consulta, publicó o borró un aviso, o cambió un rol o una contraseña.",
@@ -655,6 +656,7 @@ export const esPanel = {
     "lead.revoke": "Quitó el acceso a una consulta",
     "lead.spam": "Marcó una consulta como spam",
     "lead.unspam": "Sacó una consulta de spam",
+    "lead.contacted": "Marcó una consulta como contactada",
     "lead.delete": "Borró una consulta",
     "listing.publish": "Publicó un aviso",
     "listing.delete": "Borró un aviso",
@@ -663,6 +665,7 @@ export const esPanel = {
     "user.delete": "Borró un usuario",
     "lead.from_email": "Convirtió un email en consulta",
     "lead.from_whatsapp": "Registró una consulta de WhatsApp",
+    "lead.auto_share": "Compartió una consulta (regla automática)",
   } as Record<string, string>,
   staffCannotPublish:
     "Publicar y borrar definitivamente quedan para el superadmin. Podés dejarlo en revisión.",

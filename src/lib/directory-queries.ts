@@ -7,7 +7,7 @@
  * pages and aggregate across whole tables, so keeping them apart keeps the
  * hot module's surface honest.
  */
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   agencies,
@@ -356,7 +356,9 @@ async function listAgentsForDirectoryUncached(): Promise<AgentDirectoryRow[]> {
         n: sql<number>`COUNT(*)`,
       })
       .from(listings)
-      .where(eq(listings.status, "published"))
+      // Agent-less rows are skipped below; leave them out of the GROUP BY
+      // instead of grouping the whole published set (audit 2026-10 P5).
+      .where(and(eq(listings.status, "published"), isNotNull(listings.agentId)))
       .groupBy(listings.agentId, listings.locationId),
   ]);
 
@@ -767,7 +769,9 @@ export async function listAgentMatchCandidates(): Promise<AgentMatchCandidate[]>
         n: sql<number>`COUNT(*)`,
       })
       .from(listings)
-      .where(eq(listings.status, "published"))
+      // Agent-less rows are skipped below; leave them out of the GROUP BY
+      // instead of grouping the whole published set (audit 2026-10 P5).
+      .where(and(eq(listings.status, "published"), isNotNull(listings.agentId)))
       .groupBy(listings.agentId, listings.locationId),
   ]);
 

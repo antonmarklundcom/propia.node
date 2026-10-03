@@ -69,7 +69,7 @@ export default async function OwnerListingEditPage({
     // Same scope the listing was loaded with — owner rows only.
     listListingImages(listingId, scope),
     getListingDailyViews(listingId, scope),
-    getPanelListingStats(scope),
+    getPanelListingStats(scope, false, listingId),
     // Scope-guarded too; null unless a median with enough samples exists.
     getOwnerPriceContext(listingId, scope),
   ]);

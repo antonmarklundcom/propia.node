@@ -14,6 +14,7 @@ import { unstable_cache } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
+import { parseReplyTemplates } from "./reply-templates";
 import { CACHE_TAGS, CACHE_TTL, revalidateSettings, singleFlight } from "./cache";
 
 /**
@@ -38,6 +39,12 @@ export const SETTING_KEYS = {
   // Independent agents the operator works with as partners ("Socio" in
   // /admin/agentes): comma-separated agents.id. Unset = none.
   partnerAgentIds: "partner_agent_ids",
+  // Lead routing rules (src/lib/lead-routing-rules.ts, plan-admin-next O3):
+  // the switch ("true" = on; unset = manual, the default) and the rules JSON.
+  leadRoutingEnabled: "lead_routing_enabled",
+  leadRoutingRules: "lead_routing_rules",
+  // Saved reply texts for /admin/leads (src/lib/reply-templates.ts): JSON array of strings.
+  replyTemplates: "reply_templates",
 } as const;
 
 /** Uncached — for scripts and jobs, which have no Next.js cache around them. */
@@ -137,6 +144,16 @@ export async function getPartnerAgentIds(opts: { uncached?: boolean } = {}): Pro
   return parsePartnerAgentIds((await readSiteSettings())[SETTING_KEYS.partnerAgentIds]);
 }
 
+/** The saved reply texts the lead cards' pickers offer (empty when none or unreadable). */
+export async function getReplyTemplates(opts: { uncached?: boolean } = {}): Promise<string[]> {
+  try {
+    const s = opts.uncached ? await readSiteSettingsRaw() : await readSiteSettings();
+    return parseReplyTemplates(s[SETTING_KEYS.replyTemplates]);
+  } catch {
+    return [];
+  }
+}
+
 /** What `publisherKindSql()` needs: the house agency and the partner agents. */
 export interface PublisherSettings {
   houseAgencyId: number | null;
@@ -148,6 +165,35 @@ export async function getPublisherSettings(): Promise<PublisherSettings> {
   return {
     houseAgencyId: parseHouseAgencyId(s[SETTING_KEYS.houseAgencyId]),
     partnerAgentIds: parsePartnerAgentIds(s[SETTING_KEYS.partnerAgentIds]),
+  };
+}
+
+/** The lead routing switch and its raw rules JSON (parse with `parseRoutingConfig()`). */
+export interface LeadRoutingSettings {
+  enabled: boolean;
+  rulesRaw: string | null;
+}
+
+/**
+ * `uncached` for the lead writers' `after()`, for the same reason as the
+ * WhatsApp auto-responder below: a cold cached read there throws, and "off"
+ * would then silently skip routing after every deploy. A failed read is
+ * "off" — the lead simply stays with the operator, which is the default.
+ */
+export async function getLeadRoutingSettings(opts: { uncached?: boolean } = {}): Promise<LeadRoutingSettings> {
+  let s: Record<string, string>;
+  if (opts.uncached) {
+    try {
+      s = await readSiteSettingsRaw();
+    } catch {
+      s = {};
+    }
+  } else {
+    s = await readSiteSettings();
+  }
+  return {
+    enabled: s[SETTING_KEYS.leadRoutingEnabled] === "true",
+    rulesRaw: s[SETTING_KEYS.leadRoutingRules] ?? null,
   };
 }
 

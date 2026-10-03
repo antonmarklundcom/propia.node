@@ -85,7 +85,7 @@ export default async function AdminListingEditPage({
   // Lead count for this one listing, from the same scoped aggregate the
   // listings table uses.
   const leadCount =
-    (await getPanelListingStats({ kind: "admin" }, isStaff(user.role))).get(listing.id)?.leads ?? 0;
+    (await getPanelListingStats({ kind: "admin" }, isStaff(user.role), listing.id)).get(listing.id)?.leads ?? 0;
 
   const flash = msg ? FLASH[msg] : undefined;
   const staff = isStaff(user.role);

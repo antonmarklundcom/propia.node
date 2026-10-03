@@ -50,7 +50,7 @@ export function publisherKindSql(settings: {
     ? sql` OR (${listings.agencyId} IS NULL AND ${listings.agentId} IN (${sql.raw(partnerIds.map(String).join(", "))}))`
     : sql``;
   const house =
-    houseAgencyId && Number.isInteger(houseAgencyId) && houseAgencyId > 0
+    houseAgencyId && Number.isSafeInteger(houseAgencyId) && houseAgencyId > 0
       ? sql`${listings.agencyId} = ${sql.raw(String(houseAgencyId))} OR `
       : sql``;
   return sql<PublisherKind>`CASE

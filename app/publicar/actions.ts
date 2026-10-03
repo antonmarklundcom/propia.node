@@ -24,12 +24,17 @@ import { esPanel } from "@/i18n/es";
 import { siteOrigin } from "@/lib/origin";
 import { createOtp, verifyOtp } from "@/lib/otp";
 import { allowRequest } from "@/lib/rate-limit";
+import { LISTING_DESCRIPTION_MAX, LISTING_TITLE_MAX, priceWithinBounds } from "@/lib/listing-form-input";
 import {
   getPublishContact,
   saveDraft,
   submitDraftForReview,
   type PublishContact,
 } from "@/lib/publish-queries";
+
+/** Draft saves per user per window (`saveDraftAction`); the generic error past it. */
+const DRAFT_SAVE_MAX = 60;
+const DRAFT_SAVE_WINDOW_MS = 10 * 60_000;
 
 /** Raw wizard payload from the client — every field re-validated below. */
 export interface DraftPayload {
@@ -76,10 +81,15 @@ export async function saveDraftAction(
 ): Promise<SaveDraftResult> {
   const user = await requireUser("/publicar");
   if (await publishingClosedFor(user.role)) return { ok: false, error: "closed" };
+  // Each call can insert a listings row; the wizard saves once per step, so a
+  // person never comes near this (audit 2026-10 S4).
+  if (!allowRequest(`publish-draft|${user.id}`, DRAFT_SAVE_MAX, DRAFT_SAVE_WINDOW_MS)) {
+    return { ok: false, error: "rate" };
+  }
 
   const operation = payload.operation as Operation;
   const propertyType = payload.propertyType as PropertyType;
-  const title = String(payload.title ?? "").trim();
+  const title = String(payload.title ?? "").trim().slice(0, LISTING_TITLE_MAX);
   const priceAmount = Number(payload.priceAmount ?? 0);
   const priceCurrency = payload.priceCurrency === "PYG" ? "PYG" : "USD";
   const locationId = Number(payload.locationId);
@@ -88,7 +98,7 @@ export async function saveDraftAction(
   if (!PROPERTY_TYPES.includes(propertyType))
     return { ok: false, error: "propertyType" };
   if (title.length < 8) return { ok: false, error: "title" };
-  if (!Number.isFinite(priceAmount) || priceAmount < 0)
+  if (!Number.isFinite(priceAmount) || priceAmount < 0 || !priceWithinBounds(priceAmount, priceCurrency))
     return { ok: false, error: "price" };
   if (!Number.isInteger(locationId) || locationId <= 0)
     return { ok: false, error: "location" };
@@ -100,7 +110,7 @@ export async function saveDraftAction(
       operation,
       propertyType,
       title,
-      descriptionEs: String(payload.descriptionEs ?? "").trim() || null,
+      descriptionEs: String(payload.descriptionEs ?? "").trim().slice(0, LISTING_DESCRIPTION_MAX) || null,
       priceAmount,
       priceCurrency,
       bedrooms: posIntOrNull(payload.bedrooms),

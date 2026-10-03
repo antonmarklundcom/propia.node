@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import type { EditScope } from "@/lib/listing-edit";
-import { getPanelLeads } from "@/lib/panel-queries";
+import { getPanelLeads, PANEL_LEADS_LIMIT } from "@/lib/panel-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { leadReplyHref } from "@/lib/lead-reply";
@@ -202,7 +202,7 @@ export default async function AgencyLeadsPage({
 }
 
 async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string }) {
-  const leads = await getPanelLeads(scope);
+  const leads = await getPanelLeads(scope, undefined, PANEL_LEADS_LIMIT);
   if (leads.length === 0) {
     return <p className="panel-empty">{esPanel.agencyLeadsEmpty}</p>;
   }
@@ -214,6 +214,9 @@ async function AgencyLeads({ scope, origin }: { scope: EditScope; origin: string
 
   return (
     <>
+      {leads.length >= PANEL_LEADS_LIMIT ? (
+        <p className="panel-note">{esPanel.panelLeadsTruncated(PANEL_LEADS_LIMIT)}</p>
+      ) : null}
       {leads.map((lead) => (
         <article className="panel-card" key={lead.id}>
           <div className="panel-card__head">
