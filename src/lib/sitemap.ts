@@ -358,12 +358,25 @@ export async function buildSitemapEntries(
     }
   }
 
-  // …and the evergreen paths with no published row at all on this door.
+  // …and the evergreen paths with no published row at all on this door —
+  // but only once their place is in this database. A path whose city or
+  // barrio `seed:locations` has not written yet still renders (from the
+  // location tree, report 2026-10-03 §A), and stays out of the sitemap until
+  // the seed runs (§A-3): submitting it earlier is how those pages reached
+  // Search Console as 404s.
+  const seeded = (shape: CategoryShape): boolean => {
+    const city = [...locById.values()].find((l) => l.level === "ciudad" && l.slug === shape.citySlug);
+    if (!city) return false;
+    if (shape.kind !== "barrio-type") return true;
+    return [...locById.values()].some(
+      (l) => l.level === "barrio" && l.parentId === city.id && l.slug === shape.barrioSlug,
+    );
+  };
   for (const path of evergreen) {
     const seg = path.split("/").filter(Boolean);
     const operation = parseOperation(seg[0]);
     const shape = parseCategorySegments(seg.slice(1));
-    if (operation && shape && listsCategory(operation, shape, path)) categoryPaths.add(path);
+    if (operation && shape && seeded(shape) && listsCategory(operation, shape, path)) categoryPaths.add(path);
   }
   for (const path of categoryPaths) entries.push({ path });
 

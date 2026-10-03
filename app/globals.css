@@ -1826,6 +1826,44 @@ body {
 
 /* Shown when a city+tipo URL had zero listings and redirected to the city
    page — explains the bounce instead of silently swapping the search. */
+/* Empty category page (E-1/E-4, src/components/EmptyCategory.tsx). Mobile
+   first: the honest line, then the CTAs stacked, then the nearest stock. */
+.empty-category {
+  margin-top: 16px;
+  display: grid;
+  gap: 20px;
+}
+.empty-category__now {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.empty-category__intro {
+  margin: -12px 0 0;
+  color: var(--color-ink-secondary);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.empty-category__ctas {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+}
+.empty-category__whatsapp {
+  margin-top: 0;
+  padding: 0 20px;
+}
+@media (min-width: 641px) {
+  .empty-category__whatsapp {
+    justify-self: start;
+  }
+}
+.empty-category__nearby .listing-results-grid,
+.empty-category__nearby .category-results {
+  margin-top: 8px;
+}
+
 .category-redirect-notice {
   margin-top: 10px;
   padding: 10px 14px;

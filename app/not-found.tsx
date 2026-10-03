@@ -2,7 +2,8 @@ import { Glyph } from "@/components/Glyph";
 import Link from "next/link";
 import { tokens } from "@/design/tokens";
 import { headers } from "next/headers";
-import { listCities, listNavigationInventory, resolveBarrio, stockedNavigationPaths } from "@/lib/queries";
+import { listCities, listCityBarrios, listNavigationInventory, resolveBarrio, stockedNavigationPaths } from "@/lib/queries";
+import { closestSlug } from "@/lib/did-you-mean";
 import { currentVertical } from "@/lib/vertical-context";
 import { SearchBar } from "@/components/SearchBar";
 import { BuyerBrief } from "@/components/BuyerBrief";
@@ -17,10 +18,11 @@ import { briefChoices, briefFromPath, type BriefPrefill } from "@/lib/buyer-brie
 export const dynamic = "force-dynamic";
 
 /**
- * Branded 404. Also what renders for category URLs with zero matching
- * listings (getIndexability() → "gone" with no parent to redirect to,
- * ARCHITECTURE.md §4.3) — that's an intentional SEO signal, but a visitor
- * who just searched should get somewhere to go next, not a dead end.
+ * Branded 404. Since E-1 (2026-10-03) a valid category URL with no listings
+ * renders its own empty state instead, so a category URL lands here only when
+ * its city or barrio is unknown — usually a typo, which is why a near-miss
+ * slug gets a "¿Quisiste decir …?" link (`closestSlug()`). A visitor who
+ * just searched should get somewhere to go next, not a dead end.
  */
 export default async function NotFound() {
   // A 404 must never become a 500. This page is also the error surface for
@@ -51,6 +53,27 @@ export default async function NotFound() {
     propertyType: fromPath.propertyType,
     where: briefCity ? (briefBarrio ? `${briefBarrio.name}, ${briefCity.name}` : briefCity.name) : undefined,
   };
+  // "¿Quisiste decir …?": the same URL with the one slug that is a near miss.
+  // Cities come from the cached list above; a barrio from its city's rows.
+  let didYouMean: { href: string; label: string } | null = null;
+  const segs = pathname ? pathname.split("/").filter(Boolean) : [];
+  if (fromPath.citySlug && !briefCity) {
+    const slug = closestSlug(fromPath.citySlug, cities.map((c) => c.slug));
+    const city = slug ? cities.find((c) => c.slug === slug) : undefined;
+    if (city) {
+      segs[1] = city.slug;
+      didYouMean = { href: `/${segs.join("/")}`, label: city.name };
+    }
+  } else if (briefCity && fromPath.barrioSlug && !briefBarrio) {
+    const barrios = await listCityBarrios(briefCity.id).catch(() => []);
+    const slug = closestSlug(fromPath.barrioSlug, barrios.map((b) => b.slug));
+    const barrio = slug ? barrios.find((b) => b.slug === slug) : undefined;
+    if (barrio) {
+      segs[2] = barrio.slug;
+      didYouMean = { href: `/${segs.join("/")}`, label: `${barrio.name}, ${briefCity.name}` };
+    }
+  }
+
   // The directory door is seller-first (it has its own lead form); a buyer
   // brief there would be off-message.
   const showBrief = door.family !== "directory";
@@ -78,6 +101,14 @@ export default async function NotFound() {
       <p style={{ fontSize: 16, color: tokens.color.inkSecondary, lineHeight: 1.6 }}>
         {d.notFound.explanation}
       </p>
+
+      {didYouMean && (
+        <p style={{ fontSize: 17, fontWeight: 700, marginTop: 12 }}>
+          <Link href={didYouMean.href} style={{ color: tokens.color.primary }}>
+            {d.notFound.didYouMean(didYouMean.label)}
+          </Link>
+        </p>
+      )}
 
       <div style={{ textAlign: "left" }}>
         <SearchBar cities={cities} locale={locale} />
