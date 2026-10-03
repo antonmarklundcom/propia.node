@@ -68,6 +68,7 @@ export const esAgency = {
     "agency.invite": "Invitó a un socio",
     "agency.invite_revoke": "Anuló una invitación de socio",
     "listing.exclusive": "Cambió la exclusiva de un aviso",
+    "listing.duplicate": "Cambió un grupo de duplicados",
   } as Record<string, string>,
   historyTargetLabel: { setting: "Ajuste" } as Record<string, string>,
 } as const;

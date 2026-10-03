@@ -592,6 +592,19 @@ default, `--dry` first). It records itself as a revertible import job.
     /admin/propiedades. `src/lib/listing-exclusive.ts` is the only module on
     the table. **Nothing public reads it** — no badge, ranking or JSON-LD.
 
+31. **Duplicate listings (O5, 2026-10-03, migration 0027,
+    `docs/log/listing-duplicates.md`).**
+    - **The rule:** the operator groups the same property's listings
+      (`listing_duplicates`). The earliest-published *published* member holds
+      the slot (`primaryOf()`, `src/lib/listing-duplicate-rules.ts`). **Who
+      holds it is never stored**, so the next one takes over when it goes.
+    - **Grids:** every public grid ANDs `notHiddenDuplicate()` (facet-sql),
+      including the map and the sitemap. Profile lists do not.
+    - **Pages:** a hidden member canonicalises to the primary, and every
+      published member shows "También publicado por".
+    - **Only writer:** `src/lib/listing-duplicates.ts`. `verify:duplicates` is
+      in the hook.
+
 ## Launch track — state as of 2026-09-22
 
 The queue is `docs/plan-next-work-2026-09-22.md`. What landed and what it means:
@@ -948,7 +961,7 @@ shared quota on a deploy path that does not use it.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
   `npm run verify:i18n`, `npm run verify:seo`, `npm run verify:rate-limit`,
-  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`, `npm run verify:financing`.
+  `npm run verify:inbox`, `npm run verify:prices`, `npm run verify:telegram`, `npm run verify:reset`, `npm run verify:ai-reply`, `npm run verify:whatsapp`, `npm run verify:routing`, `npm run verify:financing`, `npm run verify:duplicates`.
   Same thing by hand: `npm run verify:local`. The last eleven are pure — no database, no network —
   which is why they belong in a hook at all.
 - Hooks install themselves via `prepare` on `npm install`; after a fresh clone
@@ -997,6 +1010,7 @@ that section no longer lists everything:
 | `drizzle/0024_wild_iron_man.sql` | `partner_terms`, `listing_financing` (O2, O8, `docs/log/partner-ledger-financing.md`) | **no** — founder applies before merging the O2/O8 PR |
 | `drizzle/0025_mute_the_hand.sql` | indexes `leads.idx_routed_status`, `listings.idx_owner` / `idx_updated`, `ops_runs.idx_job_id` (audit 2026-10 P9) | **no** — same PR, same step |
 | `drizzle/0026_dizzy_lorna_dane.sql` | `listing_exclusives` (O1, admin-only exclusive flag) | **no** — founder applies after 0024/0025, before merging the O1 PR |
+| `drizzle/0027_burly_proudstar.sql` | `listing_duplicates` (O5; **every public grid reads it** — apply before merging, or grids 500) | **no** — founder applies after 0026, before merging the O5 PR |
 
 **Update 2026-09-23:** the founder ran `db:status` against production (0012–0015
 pending, `/admin` 500ing on the missing `ops_runs`), then `db:migrate` from a

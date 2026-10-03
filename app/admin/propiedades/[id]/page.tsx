@@ -23,6 +23,10 @@ import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../../tabs";
+import { adminMarkDuplicateAction, adminRemoveDuplicateAction } from "../actions";
+import { getDuplicateGroup } from "@/lib/listing-duplicates";
+import { isHiddenDuplicate } from "@/lib/listing-duplicate-rules";
+import { esDuplicates } from "@/i18n/es-duplicates";
 import { adminDeleteListingAction, adminSaveExclusiveAction, adminSaveFinancingAction, adminUpdateListingAction } from "../actions";
 import { getListingExclusive } from "@/lib/listing-exclusive";
 import { exclusiveState } from "@/lib/listing-exclusive-state";
@@ -59,6 +63,10 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   staff_publish: { text: esPanel.staffCannotPublish, error: true },
   exclusive_saved: { text: esExclusive.saved },
   exclusive_invalid: { text: esExclusive.invalidUntil, error: true },
+  dup_saved: { text: esDuplicates.saved },
+  dup_removed: { text: esDuplicates.removed },
+  dup_bad_ref: { text: esDuplicates.badRef, error: true },
+  dup_same: { text: esDuplicates.same, error: true },
 };
 
 export default async function AdminListingEditPage({
@@ -86,9 +94,10 @@ export default async function AdminListingEditPage({
   ]);
   if (!listing) notFound();
   // Read only once the scoped load above found the listing (plan-admin-next O8).
-  const [financing, exclusive] = await Promise.all([
+  const [financing, exclusive, dupGroup] = await Promise.all([
     getListingFinancing(listing.id),
     getListingExclusive(listing.id),
+    getDuplicateGroup(listing.id),
   ]);
   const exclusiveNow = exclusiveState(exclusive, analyticsDay());
 
@@ -190,6 +199,70 @@ export default async function AdminListingEditPage({
             {esExclusive.save}
           </button>
         </form>
+
+        <article className="panel-card" id="duplicados">
+          <h3 className="panel-section__title">{esDuplicates.title}</h3>
+          <p className="panel-note">{esDuplicates.hint}</p>
+          {dupGroup ? (
+            <div className="panel-table__wrap">
+              <table className="panel-table" data-duplicate-group={dupGroup.groupId}>
+                <caption className="panel-card__meta">{esDuplicates.groupTitle}</caption>
+                <tbody>
+                  {dupGroup.members.map((m) => (
+                    <tr key={m.id} data-member={m.publicId}>
+                      <td>
+                        {m.id === listing.id ? (
+                          <strong>
+                            {m.title} ({esDuplicates.thisOne})
+                          </strong>
+                        ) : (
+                          <Link href={`/admin/propiedades/${m.id}#duplicados`}>{m.title}</Link>
+                        )}
+                        <div className="panel-card__meta">
+                          <span>#{m.publicId}</span>
+                          <span>
+                            {m.publisherName ??
+                              (m.publisherKind === "owner" ? esDuplicates.owner : esDuplicates.none)}
+                          </span>
+                        </div>
+                      </td>
+                      <td data-dup-state="">
+                        {m.status !== "published" ? (
+                          <span className="panel-status">{esDuplicates.notPublished}</span>
+                        ) : dupGroup.primary?.id === m.id ? (
+                          <span className="panel-kind panel-kind--partner">{esDuplicates.primary}</span>
+                        ) : isHiddenDuplicate(m, dupGroup.members) ? (
+                          <span className="panel-kind panel-kind--none">{esDuplicates.hidden}</span>
+                        ) : null}
+                      </td>
+                      <td>
+                        <form action={adminRemoveDuplicateAction}>
+                          <input type="hidden" name="listingId" value={listing.id} />
+                          <input type="hidden" name="removeId" value={m.id} />
+                          <button className="panel-btn" type="submit">
+                            {esDuplicates.remove}
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          <form action={adminMarkDuplicateAction} className="panel-form">
+            <input type="hidden" name="listingId" value={listing.id} />
+            <label className="panel-form__field" style={{ flexBasis: "320px" }}>
+              <span className="auth-field__label">{esDuplicates.refLabel}</span>
+              <input className="auth-field__input" name="ref" required placeholder={esDuplicates.refPlaceholder} />
+            </label>
+            <div className="panel-form__field panel-form__field--action">
+              <button className="panel-btn panel-btn--primary" type="submit">
+                {esDuplicates.mark}
+              </button>
+            </div>
+          </form>
+        </article>
 
         <SellerFinancingForm
           listingId={listing.id}

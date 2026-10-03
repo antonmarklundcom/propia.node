@@ -16,7 +16,7 @@ import "server-only";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { listings } from "@/db/schema";
-import { facetConds, verticalConds } from "@/lib/facet-sql";
+import { facetConds, notHiddenDuplicate, verticalConds } from "@/lib/facet-sql";
 import type { ListingFacets } from "@/lib/facets";
 import type { VerticalConfig } from "@/config/verticals";
 import { COORD_DECIMALS, roundCoord as round } from "@/lib/coords";
@@ -113,6 +113,7 @@ export async function listingsInBounds(
     .where(
       and(
         eq(listings.status, "published"),
+        notHiddenDuplicate(),
         // No IS NOT NULL here, and that is deliberate: a NULL fails the
         // BETWEEN anyway, and the redundant predicate is what stops MariaDB
         // choosing a range seek — measured on 3 000 rows, it fell back to

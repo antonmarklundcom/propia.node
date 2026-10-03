@@ -2206,6 +2206,10 @@ export const esListing = {
   sellerKindAgent: "Agente",
   /** FSBO: the listing was published by its owner, not by a professional. */
   sellerKindOwner: "Particular",
+  /** Duplicate listings (plan-admin-next O5): the same property, other listers. */
+  alsoListedBy: "También publicado por",
+  alsoListedHint: "La misma propiedad, publicada por otros anunciantes. Podés consultar a cualquiera.",
+  alsoListedLink: "Ver su aviso",
 
   contactTitle: "¿Interesado en esta propiedad?",
   contactSubtitle: "Contactanos hoy para más información o para agendar una visita.",

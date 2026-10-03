@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { getDuplicateGroup } from "@/lib/listing-duplicates";
 import { after } from "next/server";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -85,6 +86,8 @@ const load = cache(async (slugParam: string) => {
 });
 
 const subtreeIds = cache(citySubtreeIds);
+// Duplicate group (plan-admin-next O5), shared by generateMetadata and the body.
+const duplicateGroup = cache(getDuplicateGroup);
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
@@ -107,7 +110,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     locale === "en"
       ? (listing.descriptionEn ?? listing.descriptionEs)
       : listing.descriptionEs;
-  const canonical = `${await listingCanonicalOrigin()}${listingUrl(listing)}`;
+  // A published duplicate that is not the primary (the first lister) points
+  // its canonical at the primary and carries no hreflang (O5).
+  const group = await duplicateGroup(listing.id);
+  const primaryElsewhere =
+    group?.primary && group.primary.id !== listing.id && listing.status === "published" ? group.primary : null;
+  const canonical = `${await listingCanonicalOrigin()}${listingUrl(primaryElsewhere ?? listing)}`;
   // Only a host that OWNS its detail pages is a language version of anything;
   // a feeder canonicalises this page away, and hreflang on a non-canonical URL
   // is a contradiction. Same predicate the sitemap gates on (origin.ts).
@@ -119,7 +127,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // alternate would be a page its own door does not list.
   const admitted = verticalAdmits(vertical, listing);
   const ownsDetail = await hostOwnsListingDetail();
-  const allLanguages = admitted && ownsDetail
+  const allLanguages = admitted && ownsDetail && !primaryElsewhere
     ? await pageLanguageAlternates({
         path: listingUrl(listing),
         scope: "listing",
@@ -292,6 +300,15 @@ export default async function ListingPage({ params }: Params) {
     listingRef(listing.publicId),
   );
   const waHref = waLink(contactWhatsapp, waMessage);
+  /**
+   * "También publicado por" (O5): the other published listers of the same
+   * property. Not in agency mode, where the lister is never named.
+   */
+  const alsoListed = agencyMode
+    ? []
+    : ((await duplicateGroup(listing.id))?.members ?? []).filter(
+        (m) => m.id !== listing.id && m.status === "published",
+      );
 
   const city = chain.find((c) => c.level === "ciudad");
   const barrio = chain.find((c) => c.level === "barrio");
@@ -760,6 +777,23 @@ export default async function ListingPage({ params }: Params) {
           />
           <p className="seller-card__privacy">{t.contactPrivacy}</p>
           {isSample && <p className="seller-card__sample-note">{t.sampleNote}</p>}
+          {alsoListed.length > 0 && (
+            <div className="seller-card__also" data-also-listed="">
+              <p className="seller-card__also-title">{t.alsoListedBy}</p>
+              <ul>
+                {alsoListed.map((m) => (
+                  <li key={m.id}>
+                    <strong>
+                      {m.publisherName ??
+                        (m.publisherKind === "owner" ? t.sellerKindOwner : brand)}
+                    </strong>{" "}
+                    · <Link href={listingUrl(m)}>{t.alsoListedLink}</Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="seller-card__sample-note">{t.alsoListedHint}</p>
+            </div>
+          )}
           <ReportListing listingPublicId={listing.publicId} locale={locale} />
           {showForeignerBox && (
             <p className="seller-card__reply-note">{d.guideEn.replyInEnglish}</p>
