@@ -53,6 +53,9 @@ import { orDegraded } from "@/lib/degrade";
 import { pageLanguageAlternates } from "@/lib/alternates-server";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingBrowser, listingPage as parsePage } from "@/components/ListingBrowser";
+import { EmptyCategory } from "@/components/EmptyCategory";
+import { doorAllowsCategory } from "@/lib/empty-state";
+import { treePlace, type FlatNode } from "@/lib/ops/location-tree";
 import type { Operation, PropertyType } from "@/lib/import/types";
 
 // Already rendered per request (searchParams drive the filter bar); the Host
@@ -72,6 +75,34 @@ interface Resolved {
   canonicalPath: string;
   parentUrl?: string;
   title: string;
+  /**
+   * The city or barrio is in the code's location tree but not yet in this
+   * database (`seed:locations` has not run since it was added): the page
+   * renders from the tree with no listings instead of 404ing — report
+   * 2026-10-03 §A. The sitemap leaves such a path out until the seed runs.
+   */
+  fromTree: boolean;
+}
+
+/**
+ * A `locations`-shaped row for a place the tree knows and the database does
+ * not. Negative ids never match a row, so every count on it is 0.
+ */
+function treeRow(node: FlatNode, id: number, parentId: number | null): LocationRow {
+  return {
+    id,
+    parentId,
+    level: node.level,
+    name: node.name,
+    slug: node.slug,
+    fullSlug: node.fullSlug,
+    lat: node.lat != null ? String(node.lat) : null,
+    lng: node.lng != null ? String(node.lng) : null,
+    listingCounts: null,
+    guideContentEs: null,
+    guideContentEn: null,
+    guideUpdatedAt: null,
+  };
 }
 
 /**
@@ -206,8 +237,17 @@ const resolve = cache(async function resolve(
   const shape = parseCategorySegments(segments);
   if (!shape) return null;
 
-  const city = await resolveCity(shape.citySlug);
-  if (!city) return null;
+  const barrioSlug = shape.kind === "barrio-type" ? shape.barrioSlug : undefined;
+  let fromTree = false;
+  let city = await resolveCity(shape.citySlug);
+  // Report 2026-10-03 §A: a place the code links but production has not been
+  // seeded with renders from the tree, never 404s. Unknown to both: 404.
+  const tree = !city || barrioSlug ? treePlace(shape.citySlug, barrioSlug) : null;
+  if (!city) {
+    if (!tree) return null;
+    city = treeRow(tree.city, -1, null);
+    fromTree = true;
+  }
 
   let barrio: LocationRow | null = null;
   let type: PropertyType | null = null;
@@ -222,8 +262,12 @@ const resolve = cache(async function resolve(
     parentUrl = categoryUrl({ operation, citySlug: city.slug });
   } else {
     type = shape.type;
-    barrio = await resolveBarrio(city.id, shape.barrioSlug);
-    if (!barrio) return null;
+    barrio = fromTree ? null : await resolveBarrio(city.id, shape.barrioSlug);
+    if (!barrio) {
+      if (!tree?.barrio) return null;
+      barrio = treeRow(tree.barrio, -2, city.id);
+      fromTree = true;
+    }
     locationIds = [barrio.id];
     parentUrl = categoryUrl({
       operation,
@@ -250,6 +294,7 @@ const resolve = cache(async function resolve(
     }),
     parentUrl,
     title,
+    fromTree,
   };
 });
 
@@ -277,6 +322,8 @@ export async function generateMetadata({
     parentIndexable,
     parentUrl: r.parentUrl,
     evergreen: !!evergreen,
+    // E-1: a combination this door can carry renders at 0 (noindex, E-2).
+    emptyRenders: doorAllowsCategory(vertical.filters, r.operation, r.type),
   });
 
   // Deep pages (?page=2+) self-canonicalise and stay out of the index while
@@ -339,7 +386,15 @@ export async function generateMetadata({
   const facts = await pageContext(r, vertical)
     .then((c) => c.facts)
     .catch(() => null);
-  const description = evergreen && count === 0 ? evergreen.metaDescription : t.metaDescription({
+  const description = evergreen && count === 0
+    ? evergreen.metaDescription
+    : count === 0
+      ? t.emptyNow(
+          (r.type ? t.typeLabel[r.type] : t.typeLabelAny).toLowerCase(),
+          t.operationLabel[r.operation],
+          whereOf(r),
+        )
+      : t.metaDescription({
     count,
     type: nounType(r, vertical),
     opLabel: t.operationLabel[r.operation],
@@ -396,18 +451,23 @@ export default async function CategoryPage({ params, searchParams }: Params) {
     parentIndexable,
     parentUrl: r.parentUrl,
     evergreen: !!evergreen,
+    // E-1: a combination this door can carry renders at 0 (noindex, E-2).
+    emptyRenders: doorAllowsCategory(vertical.filters, r.operation, r.type),
   });
 
   if (ix.state === "gone") {
-    // Only typed pages have a parent to bounce to; the target explains the
-    // bounce (?tipo_vacio) and is never itself an empty page.
+    // Only a combination this door never carries gets here (a house page on a
+    // land-only door): every other valid page renders its empty state below
+    // (E-1). The bounce target explains itself (?tipo_vacio).
     if (ix.redirectTo && r.type) redirect(await emptyRedirectTarget(r, vertical));
     notFound();
   }
+  // A valid page with nothing on this door today (E-1): the empty state, not
+  // the grid. An evergreen page has its own 0-stock body.
+  const emptyNow = count === 0 && !evergreen;
 
-  // Set only when we just redirected here from an empty city+tipo URL
-  // (see the "gone" branch above) — explains the bounce instead of
-  // silently swapping what the visitor asked for.
+  // Set when an old link (or the land-door bounce above) carries ?tipo_vacio
+  // — explains the bounce instead of silently swapping what was asked for.
   const tipoVacio =
     typeof sp.tipo_vacio === "string" ? parseTypePlural(sp.tipo_vacio) : null;
 
@@ -439,12 +499,11 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   const origin = await siteOrigin();
   const numberLocale = numberLocaleFor(vertical.locale);
 
-  // The same URL-hierarchy the redirects walk: operation hub › city ›
-  // city/type › barrio/type. Every ancestor holds at least this page's
-  // listings on this door, so none of them is empty (404) or a redirect —
-  // except under an evergreen page at 0 stock, whose empty ancestors are
-  // dropped below (unless evergreen themselves).
-  const allCrumbs = [
+  // The URL hierarchy: operation hub › city › city/type › barrio/type. Since
+  // E-1 every ancestor of a page this door carries renders (its listings, or
+  // the empty state), so no crumb is ever a 404 or a redirect and none is
+  // dropped.
+  const crumbs = [
     { name: t.breadcrumbHome, url: "/" },
     { name: d.hub.copy[r.operation].label, url: `/${operationSlug(r.operation)}` },
     { name: r.city.name, url: categoryUrl({ operation: r.operation, citySlug: r.city.slug }) },
@@ -456,28 +515,6 @@ export default async function CategoryPage({ params, searchParams }: Params) {
       : []),
     ...(r.barrio ? [{ name: r.barrio.name, url: r.canonicalPath }] : []),
   ];
-  const cityIdsForCrumbs = await subtreeIds(r.city.id);
-  const ancestorEmpty = async (url: string): Promise<boolean> => {
-    if (url === r.canonicalPath || evergreenPageFor(url, vertical.key)) return false;
-    const [, , , typeSeg] = url.split("/");
-    if (url.split("/").length < 3) return false; // "/" and the operation hub always render
-    const ty = typeSeg ? parseTypePlural(typeSeg) : null;
-    return (await countFor(r.operation, cityIdsForCrumbs, ty, vertical)) === 0;
-  };
-  const kept =
-    evergreen && count === 0
-      ? (
-          await Promise.all(
-            allCrumbs.map(async (c) => ((await ancestorEmpty(c.url)) ? null : c)),
-          )
-        ).filter((c): c is (typeof allCrumbs)[number] => c !== null)
-      : allCrumbs;
-  // A dropped city crumb would leave "Casas" without its place: the last
-  // crumb then carries the page's own H1.
-  const crumbs =
-    evergreen && kept.length < allCrumbs.length
-      ? kept.map((c, i) => (i === kept.length - 1 ? { ...c, name: evergreen.h1 } : c))
-      : kept;
 
   // The intro describes the canonical listing set, so it shows only where
   // that set is what the page is about: page 1, no visitor filter, indexable.
@@ -680,7 +717,19 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         </p>
       )}
 
-      <ListingBrowser basePath={r.canonicalPath} query={baseQuery} searchParams={sp} city={r.city} barrio={r.barrio} />
+      {emptyNow ? (
+        <EmptyCategory
+          operation={r.operation}
+          city={r.city}
+          barrio={r.barrio}
+          type={r.type}
+          canonicalPath={r.canonicalPath}
+          vertical={vertical}
+          inventory={context ? { rows: context.rows, byId: context.byId } : null}
+        />
+      ) : (
+        <ListingBrowser basePath={r.canonicalPath} query={baseQuery} searchParams={sp} city={r.city} barrio={r.barrio} />
+      )}
 
       {related}
 

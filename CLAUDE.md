@@ -842,6 +842,32 @@ Rules that bite:
   strings are `esEvergreen` / `enEvergreen` (`src/i18n/es-evergreen.ts`).
   The brief posts with `surface: "evergreen"`.
 
+## Empty category pages — 200 at 0 listings, never indexed (E-1..E-4, 2026-10-03)
+
+Founder decisions in `docs/plan-empty-category-seo-2026-10-03.md`; build plan
+phase 3 (`docs/plan-category-pages-build.md`, `docs/log/empty-category-state.md`).
+
+- **A valid combination renders at 0 listings.** `getIndexability()` takes
+  `emptyRenders` (the category page passes `doorAllowsCategory()`,
+  `src/lib/empty-state.ts`): at 0 it returns `noindex`, not `gone`, so the page
+  renders `EmptyCategory` — an honest line, the CTAs in E-4 order
+  (`emptyStateCtas()`: brief → WhatsApp when `NEXT_PUBLIC_CONTACT_WHATSAPP` is
+  set → saved-search alert when email is configured), the nearest real stock
+  (`emptyStateLinks()` in `category-context.ts`: sibling barrios, the city
+  page, the other operation, other types — **only pages with ≥ 1 listing**)
+  and a few cards from the nearest cities. The sitemap is unchanged: it never
+  listed a 0-count non-evergreen page.
+- **What still 404s or redirects:** an unknown city or barrio slug (the 404
+  page offers "¿Quisiste decir …?", `closestSlug()`), and a combination the
+  door never carries (`/venta/…/casas` on `terreno.com.py` keeps the old
+  bounce). Profile pages leave `emptyRenders` unset and keep their 404 at 0.
+- **A place in `location-tree.ts` but not yet in the database renders from
+  the tree** (`treePlace()`, synthetic negative ids, count 0) — report
+  2026-10-03 §A — and the sitemap leaves its evergreen paths out until
+  `seed:locations` runs.
+- Menus still hide empty links (`withoutEmptyCategoryLinks()`): a page that
+  exists is not a page we promote.
+
 ## Listing filters — one vocabulary, two files
 
 Every surface that narrows a listing set goes through the same layer. Adding a

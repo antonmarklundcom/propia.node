@@ -34,7 +34,7 @@ import {
   listingSetSignature,
   ownsCategoryPages,
 } from "../src/lib/category-owner";
-import { PROPERTY_TYPES } from "../src/lib/import/types";
+import { PROPERTY_TYPES, type PropertyType } from "../src/lib/import/types";
 import type { CategoryShape } from "../src/lib/urls";
 import {
   DIRECTORY_SITEMAP_PATHS,
@@ -90,7 +90,10 @@ import { propertyHost, reportWindow, serviceAccount, signedAssertion } from "../
 import { readFileSync } from "node:fs";
 import { createVerify, generateKeyPairSync } from "node:crypto";
 import { getIndexability } from "../src/lib/indexability";
-import { TREE, flatten } from "../src/lib/ops/location-tree";
+import { TREE, flatten, treePlace } from "../src/lib/ops/location-tree";
+import { emptyStateLinks } from "../src/lib/category-context";
+import { doorAllowsCategory, emptyStateCtas, otherOperationsFor } from "../src/lib/empty-state";
+import { closestSlug, editDistance } from "../src/lib/did-you-mean";
 import { CRAWL_BLOCKED_PARAMS, isDisallowed, robotsDisallow } from "../src/lib/robots-rules";
 import { FACET_PARAM } from "../src/lib/facets";
 
@@ -1957,6 +1960,81 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
   check("(robots) a query name that merely starts like a facet is not blocked", !isDisallowed("/venta?tipos=x", rules));
   check("(robots) the panels and the API stay blocked",
     ["/api/mapa?bbox=1", "/admin", "/agencia/leads", "/publicar", "/login"].every((u) => isDisallowed(u, rules)));
+}
+
+// (p) Empty category pages — founder decisions E-1..E-4 (2026-10-03), plan
+// phase 3: a valid page renders at 0 listings, noindex and out of the
+// sitemap; a profile page keeps its 404; the CTAs keep their order; the
+// nearest-stock links only ever point at pages with listings.
+console.log("\n(p) empty category pages (E-1..E-4)");
+{
+  check("(p) a valid category at 0 listings renders noindex, never gone",
+    getIndexability({ listingCount: 0, emptyRenders: true }).state === "noindex");
+  check("(p) …even as a typed child of an empty parent",
+    getIndexability({ listingCount: 0, emptyRenders: true, parentUrl: "/venta/x", parentIndexable: false }).state === "noindex");
+  check("(p) an evergreen page at 0 is still indexable",
+    getIndexability({ listingCount: 0, emptyRenders: true, evergreen: true }).state === "index");
+  check("(p) a profile page (no emptyRenders) still 404s at 0",
+    getIndexability({ listingCount: 0 }).state === "gone");
+  check("(p) the count rule above 0 is unchanged",
+    getIndexability({ listingCount: 2, emptyRenders: true }).state === "noindex" &&
+      getIndexability({ listingCount: 3, emptyRenders: true }).state === "index");
+
+  const land = { property_type: ["terreno"] };
+  const rent = { operation: ["alquiler", "alquiler_temporal"] };
+  check("(p) a land-only door does not carry a house page", !doorAllowsCategory(land, "venta", "casa"));
+  check("(p) …but carries its land page and its untyped city page",
+    doorAllowsCategory(land, "venta", "terreno") && doorAllowsCategory(land, "venta", null));
+  check("(p) a rental door does not carry a sale page", !doorAllowsCategory(rent, "venta", "casa"));
+  check("(p) an unfiltered door carries every combination", doorAllowsCategory(undefined, "alquiler", "oficina"));
+
+  check("(p) E-4 order: brief, WhatsApp, alert",
+    emptyStateCtas({ whatsapp: true, email: true }).join() === "brief,whatsapp,alert");
+  check("(p) no WhatsApp button without a number",
+    emptyStateCtas({ whatsapp: false, email: true }).join() === "brief,alert");
+  check("(p) no alert form without email", emptyStateCtas({ whatsapp: true, email: false }).join() === "brief,whatsapp");
+  check("(p) the brief is always first", emptyStateCtas({ whatsapp: false, email: false }).join() === "brief");
+  check("(p) a sale page offers rentals; a rental door never offers sales",
+    otherOperationsFor("venta", undefined).join() === "alquiler" && otherOperationsFor("alquiler", rent).length === 0);
+
+  // City 1 (barrios 11, 12, 13), city 2 nearby. Venta stock: casas in 12
+  // and 13, departamentos in 11; alquiler: casas in 11.
+  const loc = (id: number, level: string, parentId: number | null, lat: number, lng: number) =>
+    ({ id, name: `L${id}`, slug: `l${id}`, level, parentId, lat, lng });
+  const byId = new Map([
+    loc(1, "ciudad", null, -25.3, -57.6), loc(11, "barrio", 1, -25.30, -57.60),
+    loc(12, "barrio", 1, -25.31, -57.61), loc(13, "barrio", 1, -25.40, -57.70),
+    loc(2, "ciudad", null, -25.5, -57.5),
+  ].map((l) => [l.id, l]));
+  const row = (locationId: number, propertyType: string, count: number) =>
+    ({ locationId, propertyType: propertyType as PropertyType, count, minUsd: 1, maxUsd: 2 });
+  const venta = [row(12, "casa", 2), row(13, "casa", 5), row(11, "departamento", 4)];
+  const alquiler = [row(11, "casa", 1)];
+  const links = emptyStateLinks(venta, [{ operation: "alquiler", rows: alquiler }], byId,
+    { operation: "venta", cityId: 1, barrioId: 11, type: "casa" });
+  check("(p) same type here: sibling barrios nearest first, then the city page",
+    links.sameTypeHere.map((l) => l.href).join() === "/venta/l1/l12/casas,/venta/l1/l13/casas,/venta/l1/casas",
+    links.sameTypeHere.map((l) => l.href).join());
+  check("(p) the other operation, same barrio and type",
+    links.otherOperation.map((l) => l.href).join() === "/alquiler/l1/l11/casas", JSON.stringify(links.otherOperation));
+  check("(p) other types in this barrio", links.otherTypes.map((l) => l.href).join() === "/venta/l1/l11/departamentos");
+  const all = [...links.sameTypeHere, ...links.otherOperation, ...links.otherTypes];
+  check("(p) no nearest-stock link points at a page with 0 listings", all.every((l) => l.count > 0));
+  check("(p) a page whose city is not in the table gets no links (and no crash)",
+    emptyStateLinks(venta, [], byId, { operation: "venta", cityId: 999, barrioId: null, type: "casa" }).sameTypeHere.length === 0);
+
+  check("(p) did-you-mean: one typo finds the city", closestSlug("san-lorenso", ["san-lorenzo", "luque", "lambare"]) === "san-lorenzo");
+  check("(p) …a far-off slug finds nothing", closestSlug("nowhere", ["san-lorenzo", "luque"]) === null);
+  check("(p) …a tie suggests nothing", closestSlug("lugue", ["luque", "lague"]) === null);
+  check("(p) …an exact match is not a suggestion", closestSlug("luque", ["luque"]) === null);
+  check("(p) edit distance", editDistance("kitten", "sitting") === 3);
+
+  check("(p) the location tree resolves a seeded-later place (report §A)",
+    treePlace("san-bernardino")?.city.name === "San Bernardino" &&
+      treePlace("asuncion", "loma-pyta")?.barrio?.name === "Loma Pytã");
+  check("(p) …and nothing it does not know", treePlace("nowhere") === null && treePlace("asuncion", "nowhere") === null);
+  const sm = readFileSync(new URL("../src/lib/sitemap.ts", import.meta.url), "utf8");
+  check("(p) the sitemap holds back evergreen paths whose place is not seeded", /seeded\(shape\)/.test(sm));
 }
 
 console.log(
