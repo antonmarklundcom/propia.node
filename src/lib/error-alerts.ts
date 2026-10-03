@@ -35,6 +35,33 @@ export function errorKey(message: string, path: string): string {
   return `${norm(message)}|${norm(path.split("?")[0])}`;
 }
 
+/**
+ * The reason under the error, one line. Drizzle's "Failed query: …" wraps the
+ * real driver error in `cause` (`ER_CON_COUNT_ERROR`, `ECONNRESET`, "Queue
+ * limit reached"), and without it every pool failure reads as a broken SQL
+ * statement. Follows the chain a few levels, since a wrapper can wrap a
+ * wrapper. Null when the error carries no cause.
+ */
+export function errorCause(err: unknown): { code: string | null; text: string } | null {
+  let cur: unknown = (err as { cause?: unknown } | null)?.cause;
+  for (let depth = 0; cur != null && depth < 3; depth++) {
+    const c = cur as { code?: unknown; errno?: unknown; sqlMessage?: unknown; message?: unknown; cause?: unknown };
+    const code = typeof c.code === "string" ? c.code : null;
+    const errno = typeof c.errno === "number" ? c.errno : null;
+    const msg =
+      typeof c.sqlMessage === "string" ? c.sqlMessage
+        : typeof c.message === "string" ? c.message
+        : typeof cur === "string" ? cur
+        : "";
+    if (code || msg) {
+      const head = [code, errno != null ? `(${errno})` : null].filter(Boolean).join(" ");
+      return { code, text: [head, msg].filter(Boolean).join(" ").slice(0, 300) };
+    }
+    cur = c.cause;
+  }
+  return null;
+}
+
 /** Errors Next uses for control flow, which must never page anyone. */
 function isControlFlow(err: unknown): boolean {
   const digest = (err as { digest?: unknown })?.digest;
@@ -60,7 +87,10 @@ export interface ErrorContext {
 export function planErrorAlert(err: unknown, ctx: ErrorContext, now = Date.now()): { title: string; detail: string } | null {
   if (isControlFlow(err)) return null;
   const e = err instanceof Error ? err : new Error(String(err));
-  const key = errorKey(e.message, ctx.path);
+  // Two causes behind one message (a full pool vs a dropped connection) are
+  // two problems, so the cause joins the throttle key.
+  const cause = errorCause(err);
+  const key = errorKey(cause ? `${e.message}|${cause.code ?? cause.text}` : e.message, ctx.path);
 
   if (now - windowStart >= HOUR) {
     windowStart = now;
@@ -90,6 +120,7 @@ export function planErrorAlert(err: unknown, ctx: ErrorContext, now = Date.now()
   const lines = [
     `${ctx.method} ${ctx.host ?? ""}${ctx.path}`,
     `${e.name}: ${e.message}`.slice(0, 400),
+    cause ? `causa: ${cause.text}` : null,
     ctx.routeType ? `tipo: ${ctx.routeType}` : null,
     typeof digest === "string" ? `digest: ${digest}` : null,
     prev?.repeats ? `(se repitió ${prev.repeats} veces en la última hora)` : null,

@@ -29,6 +29,7 @@ import { citySubtreeIds, resolveBarrio, resolveCity } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
+import { isPoolPressureError, logDegraded } from "@/lib/degrade";
 
 // Depends on live listing data; never statically cached.
 export const dynamic = "force-dynamic";
@@ -90,15 +91,27 @@ export async function GET(req: NextRequest) {
   }
 
   const { citySlug, barrioSlug } = parseLocationSlugs(sp);
-  const [locationIds, vertical] = await Promise.all([
-    locationIdsFor(citySlug, barrioSlug),
-    currentVertical(),
-  ]);
-
   const { sort: _sort, ...facets } = parseFacetParams(sp);
-  const filters: MapFilters = { ...facets, locationIds };
 
-  const pins = await listingsInBounds(bounds, filters, vertical);
+  let pins: Awaited<ReturnType<typeof listingsInBounds>>;
+  try {
+    const [locationIds, vertical] = await Promise.all([
+      locationIdsFor(citySlug, barrioSlug),
+      currentVertical(),
+    ]);
+    const filters: MapFilters = { ...facets, locationIds };
+    pins = await listingsInBounds(bounds, filters, vertical);
+  } catch (err) {
+    // A full pool is a "try again shortly", not a server error: the map shows
+    // its "couldn't load" state and the next pan retries, and the operator is
+    // not paged for every pin request in a burst (report 2026-10-03 §C-3).
+    if (!isPoolPressureError(err)) throw err;
+    logDegraded("api-mapa", err);
+    return NextResponse.json(
+      { ok: false, degraded: true },
+      { status: 503, headers: { "retry-after": "10", "cache-control": "no-store" } },
+    );
+  }
 
   return NextResponse.json(
     { ok: true, pins, capped: pins.length >= MAP_LIMITS.MAX_PINS },

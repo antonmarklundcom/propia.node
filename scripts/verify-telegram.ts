@@ -26,7 +26,7 @@ import {
   telegramCopy,
   titleIn,
 } from "../src/lib/telegram-text";
-import { errorKey, planErrorAlert, resetErrorThrottle } from "../src/lib/error-alerts";
+import { errorCause, errorKey, planErrorAlert, resetErrorThrottle } from "../src/lib/error-alerts";
 import { liveHosts, sampleSitemap, sitemapLocs } from "../src/lib/ops/live-check";
 import { isVitalMetricName, p75, pageTypeOf, vitalRating } from "../src/lib/web-vitals-shared";
 
@@ -180,6 +180,32 @@ function main() {
   for (let i = 0; i < 30; i++) if (planErrorAlert(new Error(`bug ${"abcdefghijklmnopqrstuvwxyz"[i % 26]}${i}`), { ...ctx, path: `/p${"xyz"[i % 3]}` }, t0)) sent++;
   check("a burst is capped: ten alerts plus one 'muted' line an hour", sent === 11, String(sent));
   check("ids and numbers do not split one bug into many", errorKey("row 12 missing", "/a/12") === errorKey("row 99 missing", "/a/99"));
+
+  // The reason under a Drizzle "Failed query" (report 2026-10-03 §C-1).
+  const failed = (cause: unknown) =>
+    Object.assign(new Error("Failed query: select `id` from `locations` where slug = ?"), { cause });
+  const poolFull = { code: "ER_CON_COUNT_ERROR", errno: 1040, sqlMessage: "Too many connections" };
+  resetErrorThrottle();
+  const withCause = planErrorAlert(failed(poolFull), ctx, t0);
+  check(
+    "a driver error under the message is named in the alert",
+    withCause?.detail.includes("causa: ER_CON_COUNT_ERROR (1040) Too many connections") === true,
+    withCause?.detail,
+  );
+  check(
+    "…a second cause on the same page is a second alert, not a repeat",
+    planErrorAlert(failed(new Error("Queue limit reached.")), ctx, t0 + 1000) !== null,
+  );
+  check(
+    "…the same cause again is still throttled",
+    planErrorAlert(failed({ ...poolFull }), ctx, t0 + 2000) === null,
+  );
+  check("a cause two wrappers deep is found", errorCause(failed({ cause: { code: "ECONNRESET" } }))?.code === "ECONNRESET");
+  resetErrorThrottle();
+  check(
+    "an error without a cause alerts exactly as before",
+    planErrorAlert(new Error("boom"), ctx, t0)?.detail.includes("causa:") === false,
+  );
 
   // Live check (src/lib/ops/live-check.ts): what it loads.
   const xml = `<urlset><url><loc>https://a.com/</loc></url><url><loc>https://a.com/venta?x=1&amp;y=2</loc></url></urlset>`;
