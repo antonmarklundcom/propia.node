@@ -27,8 +27,6 @@ routes = [
   # { pattern = "www.rentparaguay.com/*", zone_name = "rentparaguay.com" },
   # { pattern = "inmobiliarios.com.py/*", zone_name = "inmobiliarios.com.py" },
   # { pattern = "www.inmobiliarios.com.py/*", zone_name = "inmobiliarios.com.py" },
-  # { pattern = "residenciaenparaguay.es/*", zone_name = "residenciaenparaguay.es" },
-  # { pattern = "www.residenciaenparaguay.es/*", zone_name = "residenciaenparaguay.es" },
   # { pattern = "inmobiliaria.com.py/*", zone_name = "inmobiliaria.com.py" },
   # { pattern = "www.inmobiliaria.com.py/*", zone_name = "inmobiliaria.com.py" },
 ]

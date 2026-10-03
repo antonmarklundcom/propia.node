@@ -45,6 +45,9 @@ export const SETTING_KEYS = {
   leadRoutingRules: "lead_routing_rules",
   // Saved reply texts for /admin/leads (src/lib/reply-templates.ts): JSON array of strings.
   replyTemplates: "reply_templates",
+  // check:live's memory of what it already alerted (src/lib/live-check-alerts.ts).
+  // Written by the job itself, never by a person; read uncached.
+  liveCheckAlerts: "live_check_alert_state",
   // "Pedir datos antes de WhatsApp" (plan-admin-next O9): the listing page's
   // WhatsApp buttons go through the contact form first. Unset = off.
   waGate: "wa_gate_enabled",
@@ -253,6 +256,18 @@ export async function setSiteSetting(
       set: { value, updatedAt: sql`CURRENT_TIMESTAMP`, updatedBy: userId },
     });
   revalidateSettings();
+}
+
+/**
+ * A value a job writes for itself (no user, no cache to clear). Only for keys
+ * that are read uncached (`readSiteSettingsRaw()`), and never for a switch an
+ * operator sets: those go through `setSiteSetting()` and its revalidation.
+ */
+export async function setSystemSetting(key: string, value: string): Promise<void> {
+  await db
+    .insert(siteSettings)
+    .values({ key, value, updatedAt: new Date(), updatedBy: null })
+    .onDuplicateKeyUpdate({ set: { value, updatedAt: sql`CURRENT_TIMESTAMP` } });
 }
 
 /**

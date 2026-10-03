@@ -19,7 +19,6 @@ import {
   usdFirstPrice,
 } from "@/design/sections";
 import { dict } from "@/i18n/server";
-import { ResidencyHeader } from "@/components/residency/ResidencyChrome";
 import { stockedPathsOrNull, withoutEmptyCategoryLinks } from "@/lib/queries";
 
 /**
@@ -43,10 +42,6 @@ export async function SiteHeader() {
     currentVertical(),
     dict(),
   ]);
-  // The residency door draws its own chrome (family "residency").
-  if (chromeVariant(vertical.key) === "residency") {
-    return <ResidencyHeader brand={brand} />;
-  }
   const stocked = await stockedPathsOrNull(vertical);
   // No `vertical.key === ...` here — the registry decides both whether there
   // is an extra nav entry and where the CTA points; the *label* comes from
