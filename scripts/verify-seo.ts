@@ -91,6 +91,8 @@ import { readFileSync } from "node:fs";
 import { createVerify, generateKeyPairSync } from "node:crypto";
 import { getIndexability } from "../src/lib/indexability";
 import { TREE, flatten } from "../src/lib/ops/location-tree";
+import { CRAWL_BLOCKED_PARAMS, isDisallowed, robotsDisallow } from "../src/lib/robots-rules";
+import { FACET_PARAM } from "../src/lib/facets";
 
 let failures = 0;
 
@@ -1932,6 +1934,29 @@ check("(l) no two evergreen pages share a paragraph", shared.length === 0, share
   check("(r) the sitemap lists exactly home, contact, legal and the pages", residencySitemapPaths().length === slugs.length + 4, "");
   const door = VERTICALS["residenciaenparaguay.es"];
   check("(r) the door serves no marketplace page type", door.family === "residency" && !door.ownsListingDetail && door.ownsCategories === false, "");
+}
+
+// robots.txt (src/lib/robots-rules.ts, plan decision P-3): every facet and
+// map variant is out of the crawl, and nothing canonical is.
+{
+  const rules = robotsDisallow();
+  for (const p of [...Object.values(FACET_PARAM), "vista", "tipo_vacio"]) {
+    check(`(robots) ?${p}= is blocked first and later in the query`,
+      isDisallowed(`/venta/asuncion?${p}=x`, rules) && isDisallowed(`/venta/asuncion/casas?orden=recientes&${p}=x`, rules));
+  }
+  check("(robots) the blocked list is exactly the facets plus vista and tipo_vacio",
+    CRAWL_BLOCKED_PARAMS.length === Object.values(FACET_PARAM).length + 2, CRAWL_BLOCKED_PARAMS.join());
+  const open = [
+    "/", "/venta", "/alquiler/asuncion", "/venta/asuncion/casas", "/venta/asuncion/villa-morra/casas",
+    "/venta/asuncion/casas?page=2", "/propiedad/casa-en-luque-123", "/guias", "/precios/asuncion",
+    "/zonas/asuncion", "/zonas/asuncion/villa-morra", "/inmobiliarias", "/sitemap.xml",
+    ...EVERGREEN_PAGES.map((p) => p.path),
+  ];
+  const blocked = open.filter((u) => isDisallowed(u, rules));
+  check("(robots) no canonical path, ?page= or evergreen page is blocked", blocked.length === 0, blocked.join(" "));
+  check("(robots) a query name that merely starts like a facet is not blocked", !isDisallowed("/venta?tipos=x", rules));
+  check("(robots) the panels and the API stay blocked",
+    ["/api/mapa?bbox=1", "/admin", "/agencia/leads", "/publicar", "/login"].every((u) => isDisallowed(u, rules)));
 }
 
 console.log(
