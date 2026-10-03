@@ -28,7 +28,8 @@ type BeaconEvent = {
   v?: number;
 };
 
-const PRIVATE = ["/admin", "/agencia", "/mis-avisos", "/login", "/registro"];
+// `/recuperar/<token>` is a live password-reset link (audit 2026-10 A2).
+const PRIVATE = ["/admin", "/agencia", "/mis-avisos", "/login", "/registro", "/recuperar"];
 const queue: BeaconEvent[] = [];
 /**
  * Where this visit came from — the referrer and utm tags of its first page,

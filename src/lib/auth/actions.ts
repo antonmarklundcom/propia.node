@@ -39,6 +39,11 @@ export async function loginAction(formData: FormData): Promise<void> {
     redirect(`/login?error=${error}${next ? `&next=${encodeURIComponent(next)}` : ""}`);
 
   if (!email || !password) bounce();
+  // Bounded before anything stores them (audit 2026-10 A1): a failed login
+  // keeps the email inside the in-memory limiter's keys for up to an hour,
+  // and a server action body may be 8 MB. No real address is longer than 254
+  // characters (RFC 5321), and no password needs more than 1 024.
+  if (email.length > 254 || password.length > 1024) bounce();
 
   // Checked before touching the DB or scrypt: an attacker retrying the same
   // email doesn't get to burn a verify cycle once locked. Failures are
