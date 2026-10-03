@@ -764,6 +764,19 @@ route handler rather than Next's `generateSitemaps()` **because that
 enumerates its chunk ids at build time and this build has no database** — the
 same constraint that keeps every route dynamic.
 
+**The `locations` table is one cached read** (`cachedLocationRows` in
+`src/lib/queries.ts`, tag `locations`, 2026-10-03 report §C-2).
+`resolveCity()`, `resolveBarrio()`, `locationChain()`, `citySubtreeIds()` and
+`listCityBarrios()` all look up in it (`src/lib/location-lookup.ts`), so a warm
+category, map or `/api/mapa` request costs no location query. The panel's
+`seed:locations` run drops the tag; a run **from the CLI cannot**, so a new
+place appears within `CACHE_TTL.locations` (an hour) — run the seed from
+`/admin/operaciones` to see it at once. Scripts read `locationRowsRaw()`.
+Asides that are not cached at all (the category grid's city/barrio chips and
+stocked-path set) go through `loadAsides()`: capped, and the fallback under
+pool pressure even when every section failed. `/api/mapa` answers 503 with
+`Retry-After` under pool pressure instead of 500.
+
 `app/not-found.tsx` deliberately does `listCities().catch(() => [])`: a 404 is
 also the zero-match category surface, and it must not become a 500 during the
 exact incident where MySQL is the thing that is unwell.

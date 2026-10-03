@@ -33,6 +33,7 @@ import {
 import type { Operation, PropertyType } from "./import/types";
 import { CACHE_TAGS, CACHE_TTL, singleFlight } from "./cache";
 import { logDegraded } from "./degrade";
+import { findBarrio, findCity } from "./location-lookup";
 import { VERTICALS, type VerticalConfig, type VerticalKey } from "@/config/verticals";
 import type { InventoryRow } from "./category-context";
 import { facetConds, notHiddenDuplicate, verticalConds, publishedFacetWhere } from "./facet-sql";
@@ -248,33 +249,21 @@ export function withoutEmptyCategoryLinks<T extends { href: string }>(
   });
 }
 
-/** A ciudad by slug (slugs are unique per level in our seed). */
+/**
+ * A ciudad by slug (slugs are unique per level in our seed). Served from the
+ * cached location table below, so the hottest route's first lookup costs no
+ * query on a warm cache (report 2026-10-03 §C-2).
+ */
 export async function resolveCity(citySlug: string): Promise<LocationRow | null> {
-  const [row] = await db
-    .select()
-    .from(locations)
-    .where(and(eq(locations.slug, citySlug), eq(locations.level, "ciudad")))
-    .limit(1);
-  return row ?? null;
+  return findCity((await locationsById()).values(), citySlug);
 }
 
-/** A barrio by slug, scoped to its parent ciudad. */
+/** A barrio by slug, scoped to its parent ciudad. Same cached table. */
 export async function resolveBarrio(
   cityId: number,
   barrioSlug: string,
 ): Promise<LocationRow | null> {
-  const [row] = await db
-    .select()
-    .from(locations)
-    .where(
-      and(
-        eq(locations.slug, barrioSlug),
-        eq(locations.level, "barrio"),
-        eq(locations.parentId, cityId),
-      ),
-    )
-    .limit(1);
-  return row ?? null;
+  return findBarrio((await locationsById()).values(), cityId, barrioSlug);
 }
 
 /**
@@ -292,16 +281,46 @@ export async function citySubtreeIds(cityId: number): Promise<number[]> {
 }
 
 /**
- * The whole `locations` table, keyed by id, loaded once per request.
+ * The whole `locations` table, uncached. For a script (no Next.js runtime, so
+ * no `unstable_cache`); every page reads the cached copy through
+ * `locationsById()`.
+ */
+export async function locationRowsRaw(): Promise<LocationRow[]> {
+  return db.select().from(locations);
+}
+
+/**
+ * The table across requests: it changes only when `seed:locations` runs, and
+ * the panel's run of that job drops the tag (`revalidateLocations()`); a run
+ * from the CLI cannot, so `CACHE_TTL.locations` is the backstop.
+ * Single-flighted: after a deploy every door's first category request asks at
+ * once.
+ */
+const cachedLocationRows = singleFlight("queries:locationRows", unstable_cache(
+  locationRowsRaw,
+  ["queries:locationRows"],
+  { revalidate: CACHE_TTL.locations, tags: [CACHE_TAGS.locations] },
+));
+
+/**
+ * The whole `locations` table, keyed by id: built once per request from the
+ * cross-request cached read (`cachedLocationRows`).
  *
  * It is a small, slow-changing table (país → departamento → ciudad → barrio;
  * tens of rows, not thousands), and walking a parent chain used to cost one
  * round-trip per level. One read serves every chain on the page instead —
- * cache() dedupes it across generateMetadata and the page body.
+ * cache() dedupes it across generateMetadata and the page body, and the
+ * data cache keeps that read off MySQL across requests.
  */
 const locationsById = cache(async (): Promise<Map<number, LocationRow>> => {
-  const rows: LocationRow[] = await db.select().from(locations);
-  return new Map(rows.map((row) => [row.id, row]));
+  const rows = await cachedLocationRows();
+  // Dates come back from the cache as ISO strings (src/lib/cache.ts rule 2).
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      { ...row, guideUpdatedAt: row.guideUpdatedAt == null ? null : new Date(row.guideUpdatedAt) },
+    ]),
+  );
 });
 
 /** The request-scoped location table, for callers that aggregate over it. */
