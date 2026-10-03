@@ -43,4 +43,6 @@ echo "pre-push: verify:financing…"
 npm run --silent verify:financing
 echo "pre-push: verify:duplicates…"
 npm run --silent verify:duplicates
+echo "pre-push: verify:reviews…"
+npm run --silent verify:reviews
 echo "pre-push: OK"

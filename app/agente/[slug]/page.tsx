@@ -1,4 +1,6 @@
 import { Glyph } from "@/components/Glyph";
+import { publicReviews } from "@/lib/reviews";
+import { ProfileReviews } from "@/components/ProfileReviews";
 import { cache } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -116,6 +118,15 @@ export default async function AgentProfilePage({ params }: Params) {
   // Agency mode: an enquiry from a partner's profile reaches the operator
   // first (docs/plan-agency-2026-09-26.md batch 3), never the partner directly.
   const contactWhatsapp = (await isAgencyMode()) ? CONTACT_WHATSAPP : agent.whatsapp;
+  // Approved reviews (O7): full on the directory door, stars on the marketplace.
+  const reviewBlock = (
+    <ProfileReviews
+      data={await publicReviews({ kind: "agent", id: agent.id })}
+      full={isDirectory}
+      t={d.review}
+      numberLocale={locale === "en" ? "en-US" : "es-PY"}
+    />
+  );
   const photo = safeImageUrl(agent.photoUrl) ?? undefined;
   const initials = agent.name
     .split(/\s+/)
@@ -228,6 +239,7 @@ export default async function AgentProfilePage({ params }: Params) {
             </section>
 
             <div className="dir-profile__main">
+              {reviewBlock}
               {listings.length > 0 ? (
                 <section className="similar-listings dir-profile__rail" style={{ borderTop: "none", paddingTop: 0 }}>
                   <h2 className="similar-listings__title">
@@ -286,6 +298,8 @@ export default async function AgentProfilePage({ params }: Params) {
             )}
           </div>
         </header>
+
+        {reviewBlock}
 
         {listings.length > 0 ? (
           <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
