@@ -23,7 +23,11 @@ import { listPublishLocations } from "@/lib/publish-queries";
 import { esPanel } from "@/i18n/es";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../../tabs";
-import { adminDeleteListingAction, adminSaveFinancingAction, adminUpdateListingAction } from "../actions";
+import { adminDeleteListingAction, adminSaveExclusiveAction, adminSaveFinancingAction, adminUpdateListingAction } from "../actions";
+import { getListingExclusive } from "@/lib/listing-exclusive";
+import { exclusiveState } from "@/lib/listing-exclusive-state";
+import { analyticsDay } from "@/lib/analytics";
+import { esExclusive } from "@/i18n/es-exclusive";
 import {
   adminDeletePhotoAction,
   adminMovePhotoAction,
@@ -53,6 +57,8 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   photos_too_many: { text: esPanel.photosTooManyFiles, error: true },
   photos_unconfigured: { text: esPanel.photosNotConfigured, error: true },
   staff_publish: { text: esPanel.staffCannotPublish, error: true },
+  exclusive_saved: { text: esExclusive.saved },
+  exclusive_invalid: { text: esExclusive.invalidUntil, error: true },
 };
 
 export default async function AdminListingEditPage({
@@ -80,7 +86,11 @@ export default async function AdminListingEditPage({
   ]);
   if (!listing) notFound();
   // Read only once the scoped load above found the listing (plan-admin-next O8).
-  const financing = await getListingFinancing(listing.id);
+  const [financing, exclusive] = await Promise.all([
+    getListingFinancing(listing.id),
+    getListingExclusive(listing.id),
+  ]);
+  const exclusiveNow = exclusiveState(exclusive, analyticsDay());
 
   // Lead count for this one listing, from the same scoped aggregate the
   // listings table uses.
@@ -139,6 +149,47 @@ export default async function AdminListingEditPage({
             deleteAction={adminDeleteListingAction}
           />
         </article>
+
+        <form action={adminSaveExclusiveAction} className="panel-form" id="exclusiva">
+          <input type="hidden" name="listingId" value={listing.id} />
+          <article className="panel-card">
+            <h3 className="panel-section__title">
+              {esExclusive.title}{" "}
+              {exclusiveNow !== "none" ? (
+                <span className={`panel-kind panel-kind--${exclusiveNow === "active" ? "partner" : "none"}`}>
+                  {exclusiveNow === "active" ? esExclusive.badge : esExclusive.badgeExpired}
+                </span>
+              ) : null}
+            </h3>
+            <p className="panel-note">{esExclusive.hint}</p>
+            <label className="panel-form__field">
+              <span>
+                <input type="checkbox" name="exclusive" defaultChecked={exclusive != null} />{" "}
+                <strong>{esExclusive.checkbox}</strong>
+              </span>
+            </label>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esExclusive.untilLabel}</span>
+              <input className="auth-field__input" type="date" name="until" defaultValue={exclusive?.until ?? ""} />
+            </label>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{esExclusive.noteLabel}</span>
+              <input
+                className="auth-field__input"
+                name="note"
+                maxLength={280}
+                placeholder={esExclusive.notePlaceholder}
+                defaultValue={exclusive?.note ?? ""}
+              />
+            </label>
+            {exclusive ? (
+              <p className="auth-field__hint">{esExclusive.since(analyticsDay(new Date(exclusive.setAt)))}</p>
+            ) : null}
+          </article>
+          <button className="panel-btn panel-btn--primary" type="submit">
+            {esExclusive.save}
+          </button>
+        </form>
 
         <SellerFinancingForm
           listingId={listing.id}

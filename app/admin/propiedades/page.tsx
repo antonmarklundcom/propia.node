@@ -26,6 +26,10 @@ import { listingFilterQuery, parseListingFilter } from "@/lib/admin-listing-expo
 import { getCoverThumbs } from "@/lib/admin-covers";
 import { CoverThumb } from "@/components/panel/CoverThumb";
 import { bulkListingAction } from "./actions";
+import { countExclusives, exclusivesFor, type ListingExclusiveRow } from "@/lib/listing-exclusive";
+import { exclusiveState } from "@/lib/listing-exclusive-state";
+import { analyticsDay } from "@/lib/analytics";
+import { esExclusive } from "@/i18n/es-exclusive";
 
 export const metadata: Metadata = {
   title: `Propiedades`,
@@ -51,28 +55,33 @@ const BULK_FORM_ID = "admin-bulk";
 export default async function AdminListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; quien?: string; msg?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; quien?: string; exclusiva?: string; msg?: string }>;
 }) {
   const [params, user] = await Promise.all([searchParams, requireStaffOrAbove()]);
   const { status, q, publisher } = parseListingFilter(params);
+  const onlyExclusive = params.exclusiva === "1";
 
-  const [badges, counts, publisherCounts, houseAgencyId, rows] = await Promise.all([
+  const [badges, counts, publisherCounts, houseAgencyId, rows, exclusiveCount] = await Promise.all([
     getAdminBadges(user),
     countListingsByStatus(),
     countListingsByPublisher(status),
     getHouseAgencyId(),
-    listAllListings({ status, q, publisher }),
+    listAllListings({ status, q, publisher, exclusive: onlyExclusive }),
+    countExclusives(),
   ]);
   // One read for the covers of the rows on screen.
   const covers = await getCoverThumbs(rows.map((r) => r.id));
   const exportQuery = listingFilterQuery({ status, q, publisher });
+  const exclusives = await exclusivesFor(rows.map((r) => r.id));
+  const today = analyticsDay();
   /** One URL builder, so the status chips, the publisher chips and the search keep each other. */
-  const href = (p: { status?: string; quien?: PublisherKind | null }) => {
+  const href = (p: { status?: string; quien?: PublisherKind | null; exclusiva?: boolean }) => {
     const sp = new URLSearchParams();
     const st = p.status ?? status;
     if (st !== "all") sp.set("status", st);
     const who = p.quien === null ? undefined : (p.quien ?? publisher);
     if (who) sp.set("quien", who);
+    if (p.exclusiva ?? onlyExclusive) sp.set("exclusiva", "1");
     if (q) sp.set("q", q);
     const qs = sp.toString();
     return qs ? `/admin/propiedades?${qs}` : "/admin/propiedades";
@@ -111,6 +120,7 @@ export default async function AdminListingsPage({
             <input type="hidden" name="status" value={status} />
           ) : null}
           {publisher ? <input type="hidden" name="quien" value={publisher} /> : null}
+          {onlyExclusive ? <input type="hidden" name="exclusiva" value="1" /> : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">{esPanel.searchListingsLabel}</span>
             <input
@@ -164,6 +174,18 @@ export default async function AdminListingsPage({
             </Link>
           ))}
         </nav>
+        {exclusiveCount > 0 || onlyExclusive ? (
+          <nav className="panel-chips" aria-label={esExclusive.filter}>
+            <Link
+              href={href({ exclusiva: !onlyExclusive })}
+              className={`panel-chip${onlyExclusive ? " panel-chip--active" : ""}`}
+              data-filter="exclusiva"
+            >
+              {esExclusive.filter}
+              <span className="panel-tab__count">{exclusiveCount}</span>
+            </Link>
+          </nav>
+        ) : null}
         <p className="panel-bulk__hint">
           {esTriage.publisherHelp}
           {!houseAgencyId && isSuperAdmin(user.role) ? (
@@ -258,6 +280,7 @@ export default async function AdminListingsPage({
                       <div className="panel-card__meta">
                         <span>#{row.publicId}</span>
                         {row.locationName ? <span>{row.locationName}</span> : null}
+                        <ExclusiveBadge row={exclusives.get(row.id)} today={today} />
                       </div>
                     </td>
                     <td data-label="Operación">{OPERATION_LABEL[row.operation] ?? row.operation}</td>
@@ -309,5 +332,17 @@ export default async function AdminListingsPage({
         )}
       </main>
     </>
+  );
+}
+
+/** Admin-only exclusivity marker (plan-admin-next O1). */
+function ExclusiveBadge({ row, today }: { row: ListingExclusiveRow | undefined; today: string }) {
+  const state = exclusiveState(row ?? null, today);
+  if (state === "none") return null;
+  return (
+    <span className={`panel-kind panel-kind--${state === "active" ? "partner" : "none"}`} data-exclusive={state}>
+      {state === "active" ? esExclusive.badge : esExclusive.badgeExpired}
+      {state === "active" && row?.until ? ` ${esExclusive.badgeUntil(row.until)}` : null}
+    </span>
   );
 }

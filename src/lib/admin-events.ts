@@ -41,6 +41,8 @@ export type AdminEventAction =
   | "ai.reply"
   // A Socio's usual commission split edited on /admin/negocios/socios (O2).
   | "partner.terms"
+  // A listing marked or unmarked exclusive on /admin/propiedades/[id] (O1).
+  | "listing.exclusive"
   // `admin_events.action` is a varchar(60), not an enum: a new action needs no migration.
   | "deal.delete";
 
